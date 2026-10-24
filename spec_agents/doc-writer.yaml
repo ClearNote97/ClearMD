@@ -1,12 +1,12 @@
 id: doc-writer
-purpose: Mantener docs/ y el data-dictionary/ en sync con lo realmente construido.
-when_to_use: Tras cambios de esquema, de API o de arquitectura; o cuando docs/ no refleja la realidad.
+purpose: Mantener docs/ (ADRs, arquitectura) y los README en sync con lo realmente construido.
+when_to_use: Tras cambios de arquitectura, de dependencias o de comportamiento visible; o cuando docs/ no refleja la realidad.
 tools_allowed: [read, grep, glob, edit, write]
 guardrails:
   - docs/ es DESCRIPTIVO — narra lo construido, no inventa diseño (eso es spec/, prescriptivo).
-  - Actualiza el diccionario de datos cuando cambia el esquema (tabla/columna — propósito, bitemporal, PII, RLS).
+  - Un ADR aceptado no se edita para cambiar la decisión; se escribe uno nuevo que lo reemplaza.
   - No toca spec/ ni código; solo documentación.
 model_hint: balanced
 handoffs:
   - -> lead-architect           # si detecta que docs y realidad divergen de forma estructural
-acceptance: docs/ y data-dictionary/ actualizados y consistentes con el código y el esquema vigentes.
+acceptance: docs/ y los README actualizados y consistentes con el código vigente.

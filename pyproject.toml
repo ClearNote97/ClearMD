@@ -1,0 +1,53 @@
+[project]
+name = "clearmd"
+version = "0.1.0"
+description = "Convierte documentos a Markdown. 100% local: tus archivos nunca salen de tu máquina."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Nicolás Enrique Valencia Santiago" }]
+# markitdown exige <3.15 (ADR-0004).
+requires-python = ">=3.14,<3.15"
+dependencies = [
+    # Pre-1.0: versión exacta, se actualiza a propósito y con tests (ADR-0004).
+    "markitdown[pdf,docx,pptx,xlsx]==0.1.9",
+    # Conversor propio de .tex (ADR-0006).
+    "pylatexenc>=2.11",
+    # Estrategia "modo artículo" para HTML (ADR-0006).
+    "trafilatura>=2.3.1",
+    # Rutas de configuración por sistema operativo (ADR-0002).
+    "platformdirs>=4.13",
+]
+# Las GUIs (ttkbootstrap, PySide6-Essentials, flet) y el empaquetado (PyInstaller) entran
+# como extras / grupos en la fase de cada una, no antes (ADR-0009).
+
+[project.scripts]
+clearmd = "clearmd.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1",
+    "ruff>=0.17",
+    "mypy>=2.4",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.13,<0.14"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+# El contrato agente ⇄ dev se copia idéntico entre repos: ruff no debe reformatear sus ejemplos.
+extend-exclude = ["README_AGENTS.md"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+strict = true
+files = ["src", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

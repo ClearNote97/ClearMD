@@ -1,13 +1,11 @@
 # tests/ — Verificación (el gate)
 
 Nada se da por bueno sin pasar por aquí. Todo bug corregido lleva primero un test que lo reproduce.
-Cubrir siempre: **happy path + edge cases + estado vacío**.
+Cubrir siempre: **happy path + edge cases + estado vacío**. Se corre dentro del contenedor:
+`uv run pytest`.
 
 | Carpeta | Rol |
 |---|---|
-| `backend/` | Tests de la API, servicios y casos de uso. |
-| `frontend/` | Tests de la interfaz. |
-| `database/` | Tests de modelos, repositorios, migraciones y gobernanza. |
-| `analytics/` | Tests de la lógica analítica. |
+| `unit/` | Tests unitarios del paquete `clearmd` (núcleo, conversores, presenter, CLI). |
 | `acceptance/` | Tests de aceptación **por feature**, contra el `spec.md` correspondiente. |
-| `utils/` | Tests de las utilidades de `src/utils` (Polars). |
+| `fixtures/` | Documentos de muestra pequeños (pdf, docx, tex, odt, html…) usados por los tests. |

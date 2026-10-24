@@ -1,211 +1,27 @@
 # =============================================================================
-# ClearNote_Dev - Infraestructura de Datos y Aplicaciones
-# Plantilla Universal: Cambia APP_NAME en .env para renombrar todo el proyecto.
+# ClearMD - Entorno de desarrollo
+# Un solo servicio: el contenedor de desarrollo. ClearMD no usa base de datos
+# (ADR-0002) y el contenedor solo corre núcleo, CLI, tests y build Linux (ADR-0008).
+# APP_NAME (del .env) lo fija el initializeCommand con el nombre de la carpeta.
 # =============================================================================
 
 services:
-  # 1. BASE DE DATOS (PostgreSQL 18.4)
-  db:
-    # Imagen PROPIA: Postgres 18 + extensiones de gobernanza (pgaudit, pg_cron).
-    # La imagen oficial NO las trae; se instalan en infra/db/Dockerfile (ver B11).
-    build:
-      context: ./infra/db
-      dockerfile: Dockerfile
-    # Sin `image:` explícito: Compose nombra la imagen construida en minúsculas
-    # (<proyecto>-db). Un tag derivado de APP_NAME con mayúsculas sería inválido
-    # para Docker ("repository name must be lowercase").
-    container_name: ${APP_NAME:-clearnote}_db
-    # ── INTERRUPTOR DE DB ──────────────────────────────────────────────────────
-    # Este servicio SOLO arranca si el profile "db" está activo. Se controla con
-    # una sola variable en .env:  COMPOSE_PROFILES=db  (enciende) | vacío (sin DB).
-    # Un proyecto sin base de datos deja COMPOSE_PROFILES vacío y NADA más cambia:
-    # el servicio no se crea y compose no da "no such service".
-    profiles: ["db"]
-    restart: unless-stopped
-    env_file: [.env]
-    # Precarga de librerías al arrancar el servidor. Sin esto,
-    # `CREATE EXTENSION pgaudit / pg_cron` falla (deben cargarse antes de aceptar conexiones).
-    command:
-      - "postgres"
-      - "-c"
-      - "shared_preload_libraries=pg_stat_statements,pgaudit,pg_cron"
-      - "-c"
-      - "cron.database_name=${DB_NAME:-postgres}"
-    environment:
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_DB: ${DB_NAME:-postgres}
-      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
-      # PG18+: Estándar de almacenamiento para evitar errores de permisos
-      PGDATA: /var/lib/postgresql/data/pgdata
-    secrets:
-      - db_password
-    ports:
-      - "${DB_PORT:-5432}:5432"
-    volumes:
-      - db_data:/var/lib/postgresql
-      - ./data/seeds:/docker-entrypoint-initdb.d
-    networks:
-      - clearnote_net
-    healthcheck:
-      # Verificamos salud usando las variables internas del contenedor
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-
-  # 1b. TIMESCALEDB (Opcional - Reemplaza al servicio 'db')
-  # Usar cuando el proyecto requiera series de tiempo, datos IoT o analítica temporal.
-  # IMPORTANTE: Comenta el servicio 'db' de arriba antes de descomentar este.
-  # timescaledb:
-  #   # NOTA: si usas la gobernanza (pgaudit/pg_cron), extiende esta imagen igual que
-  #   #       infra/db/Dockerfile y replica el `command:` con shared_preload_libraries.
-  #   image: timescale/timescaledb-ha:pg18
-  #   container_name: ${APP_NAME:-clearnote}_timescaledb
-  #   restart: unless-stopped
-  #   env_file: [.env]
-  #   environment:
-  #     POSTGRES_USER: ${DB_USER:-postgres}
-  #     POSTGRES_DB: ${DB_NAME:-postgres}
-  #     POSTGRES_PASSWORD_FILE: /run/secrets/db_password
-  #     # Mismo estándar PG18+ aplicado a TimescaleDB
-  #     PGDATA: /var/lib/postgresql/data/pgdata
-  #   secrets: [db_password]
-  #   ports: ["${DB_PORT:-5432}:5432"]
-  #   volumes:
-  #     - db_data:/var/lib/postgresql
-  #     - ./data/seeds:/docker-entrypoint-initdb.d
-  #   networks: [clearnote_net]
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB || exit 1"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 10
-  #     start_period: 30s
-
-  # 2. ORQUESTACION (Prefect - Opcional)
-  # prefect-server:
-  #   image: prefecthq/prefect:3-latest
-  #   container_name: ${APP_NAME:-clearnote}_prefect
-  #   command: prefect server start --host 0.0.0.0 --port 4200
-  #   ports: ["4200:4200"]
-  #   environment:
-  #     PREFECT_API_URL: http://prefect-server:4200/api
-  #     PREFECT_SERVER_DATABASE_CONNECTION_URL: "postgresql+asyncpg://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/${DB_NAME:-postgres}"
-  #   depends_on:
-  #     db: { condition: service_healthy }
-  #   networks: [clearnote_net]
-
-  # 3. TRACKING DE IA (MLflow - Opcional)
-  # mlflow:
-  #   image: ghcr.io/mlflow/mlflow:latest
-  #   container_name: ${APP_NAME:-clearnote}_mlflow
-  #   ports: ["5000:5000"]
-  #   environment:
-  #     - MLFLOW_BACKEND_STORE_URI=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@db:5432/mlflow_db
-  #   volumes:
-  #     - ./data/storage/mlmodels:/mlflow/artifacts
-  #   depends_on:
-  #     db: { condition: service_healthy }
-  #   networks: [clearnote_net]
-
-  # 4. FRONTEND WEB RUNTIME (Reflex - Opcional)
-  # reflex:
-  #   build:
-  #     context: .
-  #     dockerfile: .devcontainer/Dockerfile
-  #     args:
-  #       APP_NAME: ${APP_NAME:-clearnote}
-  #   container_name: ${APP_NAME:-clearnote}_reflex
-  #   restart: unless-stopped
-  #   env_file: [.env]
-  #   environment:
-  #     - DATABASE_URL=${DATABASE_URL}
-  #   depends_on:
-  #     db: { condition: service_healthy }
-  #   ports: ["3000:3000", "8000:8000"]
-  #   volumes:
-  #     - .:/workspaces/${APP_NAME:-clearnote}:cached
-  #   networks: [clearnote_net]
-  #   working_dir: /workspaces/${APP_NAME:-clearnote}
-  #   command: reflex run --env dev
-
-  # 5. FRONTEND DESKTOP/MOBILE RUNTIME (Flet - Opcional)
-  # flet:
-  #   build:
-  #     context: .
-  #     dockerfile: .devcontainer/Dockerfile
-  #     args:
-  #       APP_NAME: ${APP_NAME:-clearnote}
-  #   container_name: ${APP_NAME:-clearnote}_flet
-  #   restart: unless-stopped
-  #   env_file: [.env]
-  #   depends_on:
-  #     db: { condition: service_healthy }
-  #   ports: ["8550:8550"]
-  #   volumes:
-  #     - .:/workspaces/${APP_NAME:-clearnote}:cached
-  #   networks: [clearnote_net]
-  #   working_dir: /workspaces/${APP_NAME:-clearnote}
-  #   command: flet run --web --port 8550
-
-  # 6. GATEWAY / REVERSE PROXY (Nginx - Opcional)
-  # nginx:
-  #   image: nginx:alpine
-  #   container_name: ${APP_NAME:-clearnote}_proxy
-  #   restart: unless-stopped
-  #   ports: ["80:80", "443:443"]
-  #   volumes:
-  #     - ./scripts/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-  #   depends_on: [db]
-  #   networks: [clearnote_net]
-
-  # 7. CONTENEDOR DE DESARROLLO (Tu taller)
-  # Configuramos explícitamente el volumen aquí para evitar carpetas vacías.
   app-dev:
     build:
       context: .
       dockerfile: .devcontainer/Dockerfile
       args:
-        # Pasa tu APP_NAME del .env al Dockerfile para crear el WORKDIR
-        APP_NAME: ${APP_NAME:-project_default}
-    container_name: ${APP_NAME:-clearnote}_dev
+        # Pasa APP_NAME del .env al Dockerfile para crear el WORKDIR
+        APP_NAME: ${APP_NAME:-clearmd}
+    container_name: ${APP_NAME:-clearmd}_dev
     env_file: [.env]
     environment:
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
-    depends_on:
-      db:
-        condition: service_healthy
-        # required:false → si el profile "db" está apagado (proyecto sin DB),
-        # app-dev arranca igual. Sin esto, depender de un servicio con profile
-        # lo forzaría a encenderse y el interruptor no serviría de nada.
-        required: false
-    # 🔥 SOLUCIÓN A CARPETAS VACÍAS:
-    # Montamos la raíz (.) en la ruta dinámica que el Dockerfile espera.
-    # Al definirlo aquí, Docker manda sobre VS Code y asegura la visibilidad.
+    # El código se monta aquí (no en devcontainer.json) para que Docker mande sobre VS Code.
     volumes:
-      - .:/workspaces/${APP_NAME:-clearnote_dev}:cached
-    working_dir: /workspaces/${APP_NAME:-clearnote_dev}
-    networks:
-      - clearnote_net
+      - .:/workspaces/${APP_NAME:-clearmd}:cached
+    working_dir: /workspaces/${APP_NAME:-clearmd}
     command: sleep infinity
     stdin_open: true
     tty: true
-
-networks:
-  clearnote_net:
-    # Red interna aislada con nombre dinámico
-    name: ${APP_NAME:-clearnote}_internal_network
-    driver: bridge
-
-volumes:
-  db_data:
-    # Volumen persistente único por cada valor de APP_NAME
-    name: ${APP_NAME:-clearnote}_db_data
-
-secrets:
-  db_password:
-    # Ruta al archivo de contraseña en tu host (desarrollo).
-    # En producción, el secreto lo inyecta el orquestador, no este archivo.
-    file: ./secrets/db_password.txt

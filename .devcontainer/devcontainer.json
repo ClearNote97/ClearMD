@@ -8,25 +8,11 @@
 
   // initializeCommand (HOST, antes de levantar): vincula APP_NAME al nombre de la carpeta,
   // para que el mount (${APP_NAME}) y workspaceFolder (${localWorkspaceFolderBasename}) NUNCA diverjan.
-  // Crea .env desde el ejemplo si falta y GENERA el secreto de la DB si no existe (docker-compose
-  // lo monta como bind y falla si el archivo no está). Requiere shell POSIX + openssl en el host (WSL/Linux/macOS).
-  "initializeCommand": "bash -lc 'cp -n .env.example .env 2>/dev/null || true; d=$(basename \"$PWD\"); sed -i -E \"s|^APP_NAME=[^#]*|APP_NAME=$d  |\" .env 2>/dev/null || true; mkdir -p secrets; [ -s secrets/db_password.txt ] || openssl rand -base64 24 > secrets/db_password.txt'",
+  // Crea .env desde el ejemplo si falta. Requiere shell POSIX en el host (WSL/Linux/macOS).
+  "initializeCommand": "bash -lc 'cp -n .env.example .env 2>/dev/null || true; d=$(basename \"$PWD\"); sed -i -E \"s|^APP_NAME=[^#]*|APP_NAME=$d  |\" .env 2>/dev/null || true'",
 
-  // runServices: servicios que arrancan junto al devcontainer.
-  // - Solo "app-dev". El servicio "db" NO se nombra aquí a propósito: lo enciende el
-  //   PROFILE, no esta lista. Con COMPOSE_PROFILES=db en .env, app-dev (depends_on: db)
-  //   lo levanta solo; sin ese profile, app-dev arranca sin DB y compose NO da
-  //   "no such service". Así el modo con/sin DB es un ÚNICO switch (COMPOSE_PROFILES).
-  // - Los demás servicios opcionales se activan por su línea en docker-compose.yml.
-  "runServices": [
-    "app-dev"
-    // "timescaledb",     // Alternativa a 'db' para series de tiempo (TimescaleDB, PG18)
-    // "prefect-server",  // Orquestación/Plataforma de flujos (Prefect 3)
-    // "mlflow",          // Tracking de modelos (MLflow)
-    // "reflex",          // Frontend web runtime (Reflex)
-    // "flet",            // Frontend desktop/mobile (Flet)
-    // "nginx"            // Reverse proxy / gateway
-  ],
+  // runServices: único servicio de desarrollo (ClearMD no usa DB, ADR-0002).
+  "runServices": ["app-dev"],
 
   // Al cerrar VS Code, paramos el compose (no lo eliminamos)
   "shutdownAction": "stopCompose",
@@ -72,14 +58,10 @@
         "ms-python.vscode-pylance",
         "ms-python.vscode-python-envs",            // requerida por ms-python
         "charliermarsh.ruff",
-        "ms-toolsai.jupyter",
-        "ms-toolsai.vscode-jupyter-slideshow",    // requerida por jupyter
         "tamasfe.even-better-toml",
         "christian-kohler.path-intellisense",
         "pkief.material-icon-theme",
-        "sst-dev.opencode",
-        "mtxr.sqltools",
-        "mtxr.sqltools-driver-pg"
+        "sst-dev.opencode"
       ]
     }
   },
@@ -87,20 +69,9 @@
   // Usuario dentro del contenedor (root para simplicidad en dev)
   "remoteUser": "root",
 
-  // Puertos que queremos exponer automáticamente en el host
-  "forwardPorts": [5432],
-  "portsAttributes": {
-    "5432": {
-      "label": "PostgreSQL",
-      "onAutoForward": "notify"
-    }
-  },
-
   // ------------------------------------------------------------
-  // postCreateCommand: en dev, init.sh deja el entorno LISTO (autodetecta contexto):
-  // - deps (uv, Estado 0/N) + gobernanza (admin) + migraciones (alembic).
-  // - dentro del devcontainer salta el compose up (la DB ya esta arriba).
-  // - solo en dev (APP_ENV); en prod la gobernanza va por run-admin.sh.
+  // postCreateCommand: init.sh instala las dependencias con uv (uv.lock reproducible).
+  // Solo en dev (APP_ENV).
   // ------------------------------------------------------------
   "postCreateCommand": "bash init.sh"
 }

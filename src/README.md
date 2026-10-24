@@ -1,11 +1,13 @@
-# src/ — Implementación (arquitectura limpia)
+# src/ — Implementación (núcleo + adaptadores)
 
-El código. Separado por responsabilidad; las dependencias apuntan hacia el dominio, no al revés.
+El paquete `clearmd` (layout `src/`, ADR-0007). Las dependencias apuntan **hacia el núcleo**, nunca al revés
+(ADR-0001). Cada subpaquete documenta su rol en el docstring de su `__init__.py`.
 
 | Carpeta | Rol |
 |---|---|
-| `backend/` | API, servicios, casos de uso, esquemas (lógica de aplicación). |
-| `frontend/` | Interfaz de usuario (vistas, componentes, estado, servicios). |
-| `database/` | Modelos, repositorios, migraciones y **gobernanza** (`admin/`). |
-| `analytics/` | Código de analítica: ML, estadística, tracking de experimentos. |
-| `utils/` | Utilidades transversales (limpieza, formateo) — **Polars-first**. |
+| `clearmd/core/` | Dominio: puertos (`DocumentConverter`, `FormatDetector`), modelos y casos de uso. No importa ninguna GUI ni librería de conversión. |
+| `clearmd/converters/` | Adaptadores de conversión: el envoltorio de markitdown y los conversores propios (.tex, .odt, HTML modo artículo). |
+| `clearmd/presenter/` | Lógica de interacción compartida por todas las GUIs (patrón MVP). |
+| `clearmd/cli/` | Adaptador de línea de comandos: la primera interfaz y la que usan los tests de aceptación. |
+
+Las GUIs (`ttk`, `qt`, `flet`) se agregan como subpaquetes en su fase (ver `spec/roadmap.md`).

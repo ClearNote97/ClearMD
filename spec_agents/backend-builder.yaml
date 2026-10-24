@@ -1,18 +1,16 @@
 id: backend-builder
-purpose: Implementar la lógica de aplicación (API FastAPI, services, use_cases) desde el plan de la feature.
-when_to_use: Al construir o extender el backend de una feature YA especificada (spec + plan aprobados).
+purpose: Implementar el núcleo (puertos, modelos, casos de uso), los conversores y la CLI desde el plan de la feature.
+when_to_use: Al construir o extender el núcleo, un conversor o la CLI de una feature YA especificada (spec + plan aprobados).
 tools_allowed: [read, grep, glob, edit, write, bash]
 guardrails:
   - Consume spec/ (no lo modifica). Construye contra el plan.md, no improvisa alcance.
-  - Endpoints delgados — la lógica vive en services/ y use_cases/, no en api/.
-  - Modularidad (principio 8) — respeta las fronteras api → use_cases → services; depende de interfaces, no de implementaciones.
-  - Registra cada router nuevo en el router principal.
-  - Acceso a datos SOLO vía repositories/session; nunca credenciales en claro (usa connection.py).
-  - Acciones mutantes → escriben AuditLog.
+  - Modularidad (principio 8, ADR-0001) — el núcleo no importa GUIs ni librerías de conversión; los conversores implementan el puerto DocumentConverter.
+  - Los documentos de entrada son NO confiables — límites de tamaño, sin seguir symlinks, cuidado con zips (ADR-0010).
+  - 100% local (ADR-0005) — ningún conversor hace red.
 model_hint: balanced
 handoffs:
-  - -> migration-writer         # si necesita cambios de esquema
   - -> test-writer              # cobertura de lo construido
+  - -> security-auditor         # si toca parsing de archivos o rutas
 acceptance: >
-  Endpoints registrados + esquemas de I/O + services/use_cases, funcionando contra el modelo, con
-  tests que verifican los criterios de aceptación del spec.
+  Núcleo / conversor / CLI funcionando según el plan, con tests que verifican los criterios de
+  aceptación del spec y pasando ruff + mypy.

@@ -1,11 +1,9 @@
 # =============================================================================
-# ClearNote_Dev - .gitignore
+# ClearMD - .gitignore
 # =============================================================================
 
-# --- ENTORNO Y SECRETOS ---
+# --- ENTORNO ---
 .env
-secrets/*
-!secrets/README.md
 
 # --- PYTHON ---
 __pycache__/
@@ -22,27 +20,14 @@ build/
 # (En .gitignore los comentarios van en su propia línea; un "#" al final de un
 #  patrón se toma como parte del patrón y lo rompe.)
 
-# --- JUPYTER ---
-.ipynb_checkpoints/
-*.ipynb~
+# --- SALIDAS DE CLEARMD ---
+# Carpetas que la app genera al convertir (p. ej. al probar a mano sobre tests/fixtures).
+ClearMD_Output/
 
-# --- DATOS (Nunca versionar datos reales o pesados) ---
-# Ignora el CONTENIDO de storage pero conserva las carpetas y sus README
-# (para que la estructura viaje con la plantilla).
-data/storage/**
-!data/storage/**/
-!data/storage/**/README.md
-# Fixtures de tests: ignora datos pesados, conserva la carpeta y su README.
-data/tests/*.csv
-data/tests/*.xlsx
-data/tests/*.pdf
-
-# --- MLFLOW ---
-mlruns/
-
-# --- BASE DE DATOS LOCAL ---
-*.sqlite
-*.db
+# --- HERRAMIENTAS ---
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
 
 # --- SISTEMA OPERATIVO ---
 .DS_Store

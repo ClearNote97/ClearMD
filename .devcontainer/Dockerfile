@@ -1,26 +1,23 @@
 # -----------------------------------------------------------------------------
-# DOCKERFILE - ClearNote_Dev (Entorno de Desarrollo)
+# DOCKERFILE - ClearMD (Entorno de Desarrollo)
 # -----------------------------------------------------------------------------
-# Usamos una imagen base de Python moderna (3.14 alpha/experimental o estable)
-# La variante 'slim-bookworm' ofrece un balance perfecto entre peso y estabilidad (Debian 12).
+# Python 3.14 (markitdown exige <3.15). 'slim-bookworm' = Debian 12 (glibc 2.36).
+# Las librerías gráficas de cada GUI se agregan en la fase de esa GUI (ADR-0008).
 FROM python:3.14.5-slim-bookworm
 
 # Evita que Debian abra diálogos interactivos durante la instalación de paquetes.
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Instalación de paquetes esenciales del sistema:
-# - build-essential: Compiladores necesarios para librerías de Python (como psycopg2 o cryptography).
-# - git/openssh-client: Para control de versiones y conexión a repositorios privados.
-# - ca-certificates: Para conexiones seguras HTTPS.
-# - curl: Herramienta de red para auditoría, healthchecks y descarga de archivos.
-# - postgresql-client: cliente psql para consultas ad-hoc y para correr run-admin.sh desde app-dev.
+# Paquetes esenciales del sistema:
+# - git/openssh-client: control de versiones.
+# - ca-certificates: conexiones HTTPS (descarga de dependencias).
+# - curl: utilidades de red y diagnóstico.
+# Sin build-essential: todas las dependencias publican wheels para 3.14 (ADR-0009).
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
     ca-certificates \
     git \
     openssh-client \
     curl \
-    postgresql-client \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Instalación de 'uv': el gestor de paquetes de alto rendimiento (Escrito en Rust).
@@ -36,7 +33,7 @@ ARG APP_NAME=project_default
 ENV PROJECT_NAME=${APP_NAME}
 
 # Establecemos el directorio de trabajo dinámicamente.
-# Ejemplo: si APP_NAME=ClearNote_Dev, el WORKDIR será /workspaces/ClearNote_Dev
+# Ejemplo: si APP_NAME=ClearMD, el WORKDIR será /workspaces/ClearMD
 WORKDIR /workspaces/${PROJECT_NAME}
 
 # Comando por defecto para mantener el contenedor encendido mientras trabajas.
