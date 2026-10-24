@@ -5,8 +5,5 @@ Documenta la **realidad construida**. Si los `docs/` no coinciden con el código
 
 | Carpeta | Contiene |
 |---|---|
-| `architecture/` | Diseño del sistema y **gobernanza de datos** (roles, RLS, audit, multi-tenancy). |
-| `data-dictionary/` | Diccionario de datos: qué significa cada tabla/columna, por schema. |
-| `decisions/` | ADRs (Architecture Decision Records): decisiones no triviales y su porqué. |
-| `business/` | Contexto de negocio: reglas, glosario del dominio, stakeholders. |
-| `audit/` | Notas de auditoría/cumplimiento y evidencias. |
+| `architecture/` | Diseño del sistema: núcleo, puertos, adaptadores y flujo de una conversión. |
+| `decisions/` | ADRs (Architecture Decision Records): decisiones no triviales y su porqué. Empieza por el índice. |

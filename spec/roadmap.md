@@ -2,33 +2,37 @@
 ====================================================================
  ROADMAP  ·  spec/ (fuera de la Constitución)
 --------------------------------------------------------------------
- POR-PROYECTO. El roadmap NO es constitución: cambia con frecuencia
- mientras el propósito, los principios y el stack permanecen. Por eso
- vive aquí y no en spec/constitution/.
- Ordena las features (spec/features/NNN_...) en el tiempo; se lee contra
- el propósito (00) y el alcance (02).
+ Cambia con frecuencia; el propósito, los principios y el stack no.
+ Ordena las features (spec/features/NNN_...) en el tiempo.
 ====================================================================
 -->
 
 # Roadmap
 
-> Qué se construye, en qué orden y por qué ese orden. Cada hito debería aterrizar en una o más
-> features (`spec/features/NNN_...`). Mantener corto y realista; el detalle vive en cada feature.
+El orden sigue un esqueleto que funcione de punta a punta con la interfaz más barata primero: cada GUI nueva
+reutiliza el núcleo y el presenter ya probados (ADR-0001).
 
 ## Ahora (en curso)
 
-- [ ] _(Feature / hito actual.)_
+- [x] **Fase 0:** poda de la plantilla, paquete `clearmd`, ADRs 0001–0010, contenedor de desarrollo limpio.
+- [ ] **001 — Núcleo + CLI:** puertos, detección de formato, plan del lote → confirmar → ejecutar,
+      `ClearMD_Output`, reporte; adaptador markitdown; CLI completa (ADR-0010).
 
 ## Siguiente
 
-- [ ] _(Lo próximo, ya priorizado.)_
+- [ ] **002 — Conversor `.tex`** (subconjunto definido en su spec; matemáticas preservadas).
+- [ ] **003 — Conversor `.odt`** (solo librería estándar).
+- [ ] **004 — HTML modo artículo** (segunda estrategia para `.html`).
+- [ ] **005 — Presenter (MVP)** + GUI **ttkbootstrap**.
+- [ ] **006 — CI:** tests + ejecutables Windows/Linux en GitHub Releases; tamaño del ejecutable como métrica.
 
 ## Después (backlog priorizado)
 
-- [ ] _(Ideas aceptadas, aún sin fecha.)_
+- [ ] **007 — GUI PySide6-Essentials** (distribución *onedir* por LGPL, ADR-0003).
+- [ ] **008 — GUI flet.**
+- [ ] Modo incremental: omitir archivos sin cambios desde la última corrida.
+- [ ] Formatos menores: `.eml`, `.rtf`, subtítulos.
 
 ## Fuera por ahora
 
-> Lo que se decidió NO hacer todavía (enlaza con `02_scope` → Fuera). Evita re-discutir.
-
-- _(…)_
+Ver `spec/constitution/02_scope.md` → Fuera: red/nube, OCR, conversión inversa, base de datos, macOS.

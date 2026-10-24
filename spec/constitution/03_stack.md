@@ -23,6 +23,25 @@ front web en TypeScript, SQL, o un binario en Rust/Go. El núcleo sigue siendo P
 decide en la **conversación de arranque** (abajo) y se registra. La **modularidad** (principio 8) es lo que
 hace barato ese borde: añadir/cambiar un lenguaje en una zona no debe arrastrar al resto.
 
+## Stack de este proyecto: ClearMD (decidido el 2026-10-24)
+
+Respuestas a las preguntas de arranque (al final de este archivo). Cada cambio frente al default está en un ADR.
+
+| Pregunta | Respuesta | ADR |
+|---|---|---|
+| 1. Tipo de interfaz | Escritorio, con **cuatro** adaptadores sobre un núcleo: CLI (`argparse`), ttkbootstrap, PySide6-Essentials y flet. Excepción consciente a "una sola UI". | 0001, 0003 |
+| 2. ¿Otros lenguajes? | No. Python puro; se rechazó pandoc (binario Haskell) para `.tex`. | 0006 |
+| 3. Datos | **Sin base de datos.** Preferencias en TOML (`platformdirs`). | 0002 |
+| 4. Analítica / ML | No. | 0009 |
+| 5. Integraciones / API | Ninguna en ejecución: 100% local. Librerías de conversión: markitdown 0.1.9 (fija), pylatexenc, trafilatura. | 0004, 0005, 0006 |
+| 6. Ejecución / despliegue | Dev Container solo para desarrollo; ejecutables Windows/Linux con PyInstaller (y `flet build`) en GitHub Actions. | 0008 |
+
+**Base:** Python 3.14 (`>=3.14,<3.15` por markitdown) · `uv` · paquete con layout `src/` y `uv_build` (ADR-0007) ·
+calidad con `pytest`, `ruff` y `mypy --strict`.
+
+> Las tablas que siguen son el stack **por defecto de la plantilla** y se conservan como referencia. En ClearMD
+> no aplican: base de datos, ORM, migraciones, Polars ni el menú opcional (ADR-0009).
+
 ## Stack por defecto (recomendado — ajustable por proyecto)
 
 Es lo que trae la plantilla lista para funcionar. Sirve tal cual para la mayoría de los casos; si un
