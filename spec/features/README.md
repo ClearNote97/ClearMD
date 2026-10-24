@@ -1,9 +1,10 @@
-# spec/features — Nivel 2–4: una carpeta por feature
+# spec/features — Levels 2–4: one folder per feature
 
-Cada feature vive en su carpeta numerada (`000_example`, `001_...`) con tres archivos:
+Each feature lives in a numbered folder (`001_batch-conversion-core-cli`, …) with three files:
 
-- `spec.md` — **qué** hace y qué debe ser verdad (criterios de aceptación).
-- `plan.md` — **cómo** se implementa (arquitectura, modelo de datos, contratos).
-- `tasks.md` — **pasos** ejecutables, en orden.
+- `spec.md` — **what** it does and what must be true (acceptance criteria with ids, `AC-NN`).
+- `plan.md` — **how** it is built (architecture, contracts, testing strategy).
+- `tasks.md` — executable **steps**, in order.
 
-`000_example/` es la **plantilla de referencia**: cópiala para arrancar una feature nueva.
+To start a new feature, copy the structure of the most recent one. Every acceptance criterion gets an
+acceptance test named after its id.
