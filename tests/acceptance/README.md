@@ -1,5 +1,5 @@
-# tests/acceptance — Tests de aceptación (por feature)
+# tests/acceptance — Acceptance tests (per feature)
 
-Verifican que lo construido cumple los **criterios de aceptación** del `spec.md` de cada feature.
-Un archivo/carpeta por feature (`test_000_example.py` ↔ `spec/features/000_example/`).
-Son la prueba de que el código honra el spec (nivel SDD más alto).
+They verify that what was built meets the **acceptance criteria** of each feature's `spec.md`.
+One file per feature (`test_001_batch_conversion.py` ↔ `spec/features/001_batch-conversion-core-cli/`),
+one test per criterion, named after its id (`AC-01` …). They are the proof that the code honors the spec.

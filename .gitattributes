@@ -1,8 +1,8 @@
-# Normalización de fin de línea: LF en todo el texto.
-# Evita que archivos con CRLF rompan `source .env`, scripts .sh, SQL, etc.
+# Line-ending normalization: LF for all text.
+# Keeps CRLF files from breaking `source .env`, .sh scripts, etc.
 * text=auto eol=lf
 
-# Explícitos (lo que un shell/DB/Python ejecuta o parsea) — SIEMPRE LF
+# Explicit (what a shell or Python runs or parses) — ALWAYS LF
 *.sh          text eol=lf
 *.sql         text eol=lf
 *.py          text eol=lf
@@ -15,7 +15,7 @@
 Dockerfile    text eol=lf
 *.json        text eol=lf
 
-# Binarios (no tocar)
+# Binaries (leave untouched)
 *.png binary
 *.jpg binary
 *.parquet binary

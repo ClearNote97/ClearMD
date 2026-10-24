@@ -1,9 +1,9 @@
-# docs/ — Cómo y por qué es así (descriptivo)
+# docs/ — How and why it is this way (descriptive)
 
-Documenta la **realidad construida**. Si los `docs/` no coinciden con el código, **los docs están mal**
-(al revés que `spec/`). README como documento vivo.
+Documents the **built reality**. If `docs/` does not match the code, **the docs are wrong**
+(the opposite of `spec/`). README as a living document.
 
-| Carpeta | Contiene |
+| Folder | Contains |
 |---|---|
-| `architecture/` | Diseño del sistema: núcleo, puertos, adaptadores y flujo de una conversión. |
-| `decisions/` | ADRs (Architecture Decision Records): decisiones no triviales y su porqué. Empieza por el índice. |
+| `architecture/` | System design: core, ports, adapters and the flow of a conversion. |
+| `decisions/` | ADRs (Architecture Decision Records): non-trivial decisions and their rationale. Start with the index. |

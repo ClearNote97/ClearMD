@@ -1,30 +1,33 @@
 # docs/decisions — ADRs (Architecture Decision Records)
 
-Un archivo por decisión no trivial: `NNNN-titulo-corto.md`. Formato mínimo:
+One file per non-trivial decision: `NNNN-short-title.md`. Minimum format:
 
 ```
-# ADR-0001: <título>
-- Estado: propuesta | aceptada | reemplazada por ADR-XXXX
-- Fecha: AAAA-MM-DD
-- Contexto: qué problema/fuerzas motivan la decisión
-- Decisión: qué se decidió
-- Consecuencias: qué se gana y qué se paga
+# ADR-0001: <title>
+- Status: proposed | accepted | superseded by ADR-XXXX
+- Date: YYYY-MM-DD
+- Context: what problem/forces motivate the decision
+- Decision: what was decided
+- Consequences: what is gained and what it costs
 ```
 
-Opcional: **Alternativas consideradas** (qué se descartó y por qué).
-Un ADR aceptado no se reescribe para cambiar la decisión: se escribe uno nuevo que lo reemplaza.
+Optional: **Alternatives considered** (what was rejected and why).
+An accepted ADR is not rewritten to change the decision: a new one is written that supersedes it.
 
-## Índice
+## Index
 
-| ADR | Decisión | Estado |
+| ADR | Decision | Status |
 |---|---|---|
-| [0001](./0001-nucleo-y-adaptadores.md) | Núcleo puro con puertos y adaptadores (CLI + 3 GUIs + presenter) | aceptada |
-| [0002](./0002-sin-base-de-datos.md) | Sin base de datos; preferencias en TOML | aceptada |
-| [0003](./0003-pyside6-en-vez-de-pyqt6.md) | PySide6-Essentials en vez de PyQt6 (licencia) | aceptada |
-| [0004](./0004-motor-hibrido-con-markitdown.md) | Motor híbrido: markitdown detrás de un puerto + conversores propios | aceptada |
-| [0005](./0005-cien-por-ciento-local.md) | 100% local: los documentos nunca salen de la máquina | aceptada |
-| [0006](./0006-conversores-propios.md) | Conversores propios: .tex, .odt y HTML modo artículo | aceptada |
-| [0007](./0007-paquete-real-con-layout-src.md) | Paquete real con layout `src/` | aceptada |
-| [0008](./0008-contenedor-solo-para-desarrollo.md) | Contenedor para desarrollo; ejecutables desde CI | aceptada |
-| [0009](./0009-poda-de-la-plantilla.md) | Poda de la plantilla ClearNote_Dev | aceptada |
-| [0010](./0010-lote-autodeteccion-y-clearmd-output.md) | Lote, autodetección y carpeta `ClearMD_Output` | aceptada |
+| [0001](./0001-core-and-adapters.md) | Pure core with ports and adapters (CLI + 3 GUIs + presenter) | accepted |
+| [0002](./0002-no-database.md) | No database; preferences in TOML | accepted |
+| [0003](./0003-pyside6-over-pyqt6.md) | PySide6-Essentials instead of PyQt6 (license) | accepted |
+| [0004](./0004-hybrid-engine-with-markitdown.md) | Hybrid engine: markitdown behind a port + own converters | accepted |
+| [0005](./0005-fully-local.md) | 100% local: documents never leave the machine | accepted |
+| [0006](./0006-own-converters.md) | Own converters: .tex, .odt and HTML article mode | accepted |
+| [0007](./0007-real-package-src-layout.md) | Real package with `src/` layout | accepted |
+| [0008](./0008-dev-only-container.md) | Container for development; executables from CI | accepted |
+| [0009](./0009-template-pruning.md) | Pruning of the ClearNote_Dev template | accepted |
+| [0010](./0010-batch-detection-and-output-folder.md) | Batch, autodetection and the `ClearMD_Output` folder | accepted |
+| [0011](./0011-repository-language.md) | Repository language: English, with a Spanish README | accepted |
+| [0012](./0012-bilingual-app-and-shared-settings.md) | Bilingual app (TOML catalogs) and one shared settings file | accepted |
+| [0013](./0013-non-technical-users-first.md) | Designed for non-technical users first, with a shared UX contract | accepted |

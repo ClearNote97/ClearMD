@@ -1,13 +1,14 @@
-# spec/ — Lo que DEBE ser verdad (prescriptivo)
+# spec/ — What MUST be true (prescriptive)
 
-El **contrato del sistema**. Si el código no coincide con lo que aquí se declara, **el código está mal**.
-Sigue el flujo SDD: **Constitución → Spec → Plan → Tareas**.
+The **system contract**. If the code does not match what is declared here, **the code is wrong**.
+It follows the SDD flow: **Constitution → Spec → Plan → Tasks**.
 
-| Carpeta / archivo | Nivel SDD | Qué contiene |
+| Folder / file | SDD level | Contents |
 |---|---|---|
-| `constitution/` | 1 | Principios inmutables del proyecto (propósito, principios, alcance, stack). |
-| `roadmap.md` | — | Qué se construye y en qué orden (por-proyecto; **no** es constitución). |
-| `features/` | 2–4 | Una carpeta por feature: `spec.md` (qué), `plan.md` (cómo), `tasks.md` (pasos). |
-| `contracts/` | — | Contratos **transversales**: OpenAPI, esquemas compartidos, eventos. |
+| `constitution/` | 1 | Project-wide rules: purpose, principles, scope, stack. |
+| `roadmap.md` | — | What gets built and in which order (per project; **not** constitution). |
+| `features/` | 2–4 | One folder per feature: `spec.md` (what), `plan.md` (how), `tasks.md` (steps). |
+| `contracts/` | — | **Cross-feature** contracts, such as the UX contract shared by every GUI. |
 
-> `docs/` responde *cómo y por qué quedó así*; `spec/` responde *qué debe ser verdad*. **Fallan distinto.**
+> `docs/` answers *how and why it ended up this way*; `spec/` answers *what must be true*. **They fail
+> differently.**

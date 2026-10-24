@@ -1,8 +1,8 @@
 # =============================================================================
-# ClearMD - Entorno de desarrollo
-# Un solo servicio: el contenedor de desarrollo. ClearMD no usa base de datos
-# (ADR-0002) y el contenedor solo corre núcleo, CLI, tests y build Linux (ADR-0008).
-# APP_NAME (del .env) lo fija el initializeCommand con el nombre de la carpeta.
+# ClearMD - Development environment
+# A single service: the development container. ClearMD has no database (ADR-0002)
+# and the container only runs core, CLI, tests and the Linux build (ADR-0008).
+# APP_NAME (in .env) is set to the folder name by the devcontainer initializeCommand.
 # =============================================================================
 
 services:
@@ -11,14 +11,14 @@ services:
       context: .
       dockerfile: .devcontainer/Dockerfile
       args:
-        # Pasa APP_NAME del .env al Dockerfile para crear el WORKDIR
+        # Passes APP_NAME from .env to the Dockerfile to create the WORKDIR
         APP_NAME: ${APP_NAME:-clearmd}
     container_name: ${APP_NAME:-clearmd}_dev
     env_file: [.env]
     environment:
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
-    # El código se monta aquí (no en devcontainer.json) para que Docker mande sobre VS Code.
+    # The code is mounted here (not in devcontainer.json) so Docker, not VS Code, owns the mount.
     volumes:
       - .:/workspaces/${APP_NAME:-clearmd}:cached
     working_dir: /workspaces/${APP_NAME:-clearmd}

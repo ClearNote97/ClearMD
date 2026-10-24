@@ -1,11 +1,10 @@
-# tests/ — Verificación (el gate)
+# tests/ — Verification (the gate)
 
-Nada se da por bueno sin pasar por aquí. Todo bug corregido lleva primero un test que lo reproduce.
-Cubrir siempre: **happy path + edge cases + estado vacío**. Se corre dentro del contenedor:
-`uv run pytest`.
+Nothing counts as done until it passes here. Every fixed bug first gets a test that reproduces it.
+Always cover: **happy path + edge cases + empty state**. Run inside the container: `uv run pytest`.
 
-| Carpeta | Rol |
+| Folder | Role |
 |---|---|
-| `unit/` | Tests unitarios del paquete `clearmd` (núcleo, conversores, presenter, CLI). |
-| `acceptance/` | Tests de aceptación **por feature**, contra el `spec.md` correspondiente. |
-| `fixtures/` | Documentos de muestra pequeños (pdf, docx, tex, odt, html…) usados por los tests. |
+| `unit/` | Unit tests of the `clearmd` package (core, converters, presenter, CLI). |
+| `acceptance/` | Acceptance tests **per feature**, one per criterion of its `spec.md` (`AC-NN`). |
+| `fixtures/` | Small sample documents (pdf, docx, tex, odt, html…) used by the tests. |

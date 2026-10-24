@@ -1,4 +1,4 @@
-# tests/unit — Tests unitarios
+# tests/unit — Unit tests
 
-Un archivo por módulo de `src/clearmd/`. El núcleo se prueba sin GUI ni disco real cuando se puede
-(funciones puras, `tmp_path` para el sistema de archivos).
+One file per module of `src/clearmd/`. The core is tested without GUI, and without the real disk when
+possible (pure functions; `tmp_path` for the file system).

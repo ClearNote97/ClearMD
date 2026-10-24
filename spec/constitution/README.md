@@ -1,14 +1,14 @@
-# spec/constitution — Nivel 1: la constitución del proyecto
+# spec/constitution — Level 1: the project constitution
 
-Principios **inmutables** que rigen todo lo demás. Se tocan poco y con intención.
-Cuatro piezas (numeradas por orden de lectura):
+Rules that govern everything else. Touched rarely and on purpose. Four pieces, numbered in reading order:
 
-1. `00_purpose` — para qué existe el proyecto y qué problema resuelve. **(por-proyecto: scaffold guiado)**
-2. `01_principles` — reglas no negociables (incluye ⭐ la regla de **dos aprobadores** para RLS/audit). **(fijo)**
-3. `02_scope` — qué entra y qué NO entra (fronteras). **(por-proyecto: scaffold guiado)**
-4. `03_stack` — decisiones tecnológicas ya tomadas y su porqué. **(fijo)**
+1. `00_purpose` — why the project exists and which problem it solves. **(per project)**
+2. `01_principles` — non-negotiable rules. **(template doctrine, kept in Spanish — ADR-0011; ClearMD's
+   exceptions are recorded in ADR-0001 and ADR-0002)**
+3. `02_scope` — what is in and what is deliberately out. **(per project)**
+4. `03_stack` — technology decisions and their reasons. **(ClearMD section + template defaults)**
 
-**Orden de lectura y escritura:** `00 → 02 → 01 → 03` (propósito y fronteras fijan el terreno;
-principios y stack se justifican contra ellos).
+**Reading and writing order:** `00 → 02 → 01 → 03` (purpose and borders set the ground; principles and
+stack are justified against them).
 
-> El **roadmap** NO es constitución (cambia seguido) → vive en [`spec/roadmap.md`](../roadmap.md).
+> The **roadmap** is NOT constitution (it changes often) → it lives in [`spec/roadmap.md`](../roadmap.md).

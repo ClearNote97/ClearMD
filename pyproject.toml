@@ -1,25 +1,25 @@
 [project]
 name = "clearmd"
 version = "0.1.0"
-description = "Convierte documentos a Markdown. 100% local: tus archivos nunca salen de tu máquina."
+description = "Turn documents into Markdown. 100% local: your files never leave your machine."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Nicolás Enrique Valencia Santiago" }]
-# markitdown exige <3.15 (ADR-0004).
+# markitdown requires <3.15 (ADR-0004).
 requires-python = ">=3.14,<3.15"
 dependencies = [
-    # Pre-1.0: versión exacta, se actualiza a propósito y con tests (ADR-0004).
+    # Pre-1.0: exact version, upgraded on purpose and with tests (ADR-0004).
     "markitdown[pdf,docx,pptx,xlsx]==0.1.9",
-    # Conversor propio de .tex (ADR-0006).
+    # Own .tex converter (ADR-0006).
     "pylatexenc>=2.11",
-    # Estrategia "modo artículo" para HTML (ADR-0006).
+    # HTML article-mode strategy (ADR-0006).
     "trafilatura>=2.3.1",
-    # Rutas de configuración por sistema operativo (ADR-0002).
+    # Per-OS configuration paths (ADR-0002, ADR-0012).
     "platformdirs>=4.13",
 ]
-# Las GUIs (ttkbootstrap, PySide6-Essentials, flet) y el empaquetado (PyInstaller) entran
-# como extras / grupos en la fase de cada una, no antes (ADR-0009).
+# GUIs (ttkbootstrap, PySide6-Essentials, flet) and packaging (PyInstaller) arrive as
+# extras / groups in their own phase, not before (ADR-0009).
 
 [project.scripts]
 clearmd = "clearmd.cli:main"
@@ -38,7 +38,7 @@ build-backend = "uv_build"
 [tool.ruff]
 line-length = 100
 target-version = "py314"
-# El contrato agente ⇄ dev se copia idéntico entre repos: ruff no debe reformatear sus ejemplos.
+# The agent/developer contract is copied verbatim across repos: ruff must not reformat its examples.
 extend-exclude = ["README_AGENTS.md"]
 
 [tool.ruff.lint]

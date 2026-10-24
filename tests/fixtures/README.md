@@ -1,4 +1,5 @@
-# tests/fixtures — Documentos de muestra
+# tests/fixtures — Sample documents
 
-Archivos pequeños, creados a propósito para los tests (nunca documentos reales ni con datos personales).
-Se versionan: son parte de la evidencia de que los conversores funcionan.
+Small files created on purpose for the tests (never real documents, never personal data). They are committed:
+they are part of the evidence that the converters work. Feature 001 adds `build_fixtures.py`, which
+regenerates them reproducibly.

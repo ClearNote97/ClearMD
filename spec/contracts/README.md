@@ -1,5 +1,8 @@
-# spec/contracts — Contratos transversales del sistema
+# spec/contracts — Cross-feature contracts
 
-Contratos que **cruzan features**: especificación OpenAPI, esquemas compartidos (JSON Schema,
-tipos comunes), formatos de eventos. Aquí vive lo que varias partes del sistema deben respetar
-por igual. Los contratos de una sola feature van en su `spec/features/NNN_.../plan.md`.
+Contracts that **span features**: rules several parts of the system must honor alike. A contract of a single
+feature belongs in its `spec/features/NNN_…/plan.md`.
+
+| Contract | Binds |
+|---|---|
+| [`ux.md`](./ux.md) | Every GUI (and partly the CLI): state, progress, errors, help, layout, accessibility (ADR-0013). |

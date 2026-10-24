@@ -1,13 +1,15 @@
-# src/ — Implementación (núcleo + adaptadores)
+# src/ — Implementation (core + adapters)
 
-El paquete `clearmd` (layout `src/`, ADR-0007). Las dependencias apuntan **hacia el núcleo**, nunca al revés
-(ADR-0001). Cada subpaquete documenta su rol en el docstring de su `__init__.py`.
+The `clearmd` package (`src/` layout, ADR-0007). Dependencies point **toward the core**, never the other way
+around (ADR-0001). Each subpackage documents its role in the docstring of its `__init__.py`.
 
-| Carpeta | Rol |
+| Folder | Role |
 |---|---|
-| `clearmd/core/` | Dominio: puertos (`DocumentConverter`, `FormatDetector`), modelos y casos de uso. No importa ninguna GUI ni librería de conversión. |
-| `clearmd/converters/` | Adaptadores de conversión: el envoltorio de markitdown y los conversores propios (.tex, .odt, HTML modo artículo). |
-| `clearmd/presenter/` | Lógica de interacción compartida por todas las GUIs (patrón MVP). |
-| `clearmd/cli/` | Adaptador de línea de comandos: la primera interfaz y la que usan los tests de aceptación. |
+| `clearmd/core/` | Domain: ports (`DocumentConverter`, `FormatDetector`), models and use cases. Imports no GUI and no conversion library. |
+| `clearmd/converters/` | Conversion adapters: the markitdown wrapper and the own converters (.tex, .odt, HTML article mode). |
+| `clearmd/presenter/` | Interaction logic shared by every GUI (MVP pattern). |
+| `clearmd/cli/` | Command-line adapter: the first interface, and the one acceptance tests drive. |
 
-Las GUIs (`ttk`, `qt`, `flet`) se agregan como subpaquetes en su fase (ver `spec/roadmap.md`).
+Feature 001 adds `i18n/`, `detection/`, `config/` and `composition.py` (see its
+[plan](../spec/features/001_batch-conversion-core-cli/plan.md)). GUIs (`ttk`, `qt`, `flet`) arrive as
+subpackages in their phase (see `spec/roadmap.md`).

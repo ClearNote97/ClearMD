@@ -1,4 +1,4 @@
 # CLAUDE.md
 
-> Este proyecto sigue **[`AGENTS.md`](./AGENTS.md)** — léelo (y con él el contrato
-> **[`README_AGENTS.md`](./README_AGENTS.md)** que enlaza). No dupliques instrucciones aquí.
+> This project follows **[`AGENTS.md`](./AGENTS.md)** — read it (and the contract
+> **[`README_AGENTS.md`](./README_AGENTS.md)** it links to). Do not duplicate instructions here.

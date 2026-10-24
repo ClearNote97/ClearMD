@@ -2,7 +2,7 @@
 # ClearMD - .gitignore
 # =============================================================================
 
-# --- ENTORNO ---
+# --- ENVIRONMENT ---
 .env
 
 # --- PYTHON ---
@@ -16,20 +16,19 @@ dist/
 build/
 
 # --- UV ---
-# uv.lock SÍ se versiona (builds reproducibles) → NO se ignora, a propósito.
-# (En .gitignore los comentarios van en su propia línea; un "#" al final de un
-#  patrón se toma como parte del patrón y lo rompe.)
+# uv.lock IS committed (reproducible builds) -> deliberately not ignored.
+# (Comments in .gitignore go on their own line; a trailing "#" becomes part of the pattern.)
 
-# --- SALIDAS DE CLEARMD ---
-# Carpetas que la app genera al convertir (p. ej. al probar a mano sobre tests/fixtures).
+# --- CLEARMD OUTPUTS ---
+# Folders the app creates when converting (e.g. when trying it by hand on tests/fixtures).
 ClearMD_Output/
 
-# --- HERRAMIENTAS ---
+# --- TOOLS ---
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
 
-# --- SISTEMA OPERATIVO ---
+# --- OPERATING SYSTEM ---
 .DS_Store
 Thumbs.db
 

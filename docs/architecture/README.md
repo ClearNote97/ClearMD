@@ -1,37 +1,40 @@
-# docs/architecture — Diseño del sistema
+# docs/architecture — System design
 
-ClearMD sigue una arquitectura de **puertos y adaptadores** (ADR-0001): un núcleo que no conoce ni las GUIs
-ni las librerías de conversión, rodeado de adaptadores intercambiables.
+ClearMD follows a **ports and adapters** architecture (ADR-0001): a core that knows neither the GUIs
+nor the conversion libraries, surrounded by interchangeable adapters.
 
 ```
-            Adaptadores de entrada                               Adaptadores de conversión
+              Input adapters                                      Conversion adapters
    ┌──────────────────────────────────┐                   ┌──────────────────────────────────┐
    │ cli   ttk   qt   flet            │                   │ markitdown (pdf, docx, pptx,     │
-   │   (cada GUI es una vista)        │                   │   xlsx, html, csv, epub, ipynb)  │
+   │   (each GUI is a view)           │                   │   xlsx, html, csv, epub, ipynb)  │
    └───────────────┬──────────────────┘                   │ tex  (pylatexenc + visitor)      │
                    │                                      │ odt  (stdlib)                    │
-           ┌───────▼────────┐                             │ html modo artículo (trafilatura) │
-           │   presenter    │  lógica de interacción       └───────────────▲──────────────────┘
-           │     (MVP)      │  compartida por las GUIs                     │ implementan
+           ┌───────▼────────┐                             │ html article mode (trafilatura)  │
+           │   presenter    │  interaction logic          └────────────────▲─────────────────┘
+           │     (MVP)      │  shared by the GUIs                          │ implement
            └───────┬────────┘                                              │ DocumentConverter
                    │                                                       │
            ┌───────▼───────────────────────────────────────────────────────┴───┐
-           │ core: puertos (DocumentConverter, FormatDetector), modelos y      │
-           │ casos de uso (planear lote → confirmar → ejecutar, ADR-0010)      │
+           │ core: ports (DocumentConverter, FormatDetector), models and       │
+           │ use cases (plan batch → confirm → execute, ADR-0010)              │
            └───────────────────────────────────────────────────────────────────┘
 ```
 
-**Regla de dependencias:** todo apunta hacia `core`. `core` no importa nada de afuera.
+**Dependency rule:** everything points toward `core`. `core` imports only the standard library and
+`clearmd.i18n`; a test enforces it (feature 001). Feature 001's
+[plan](../../spec/features/001_batch-conversion-core-cli/plan.md) details the modules, including `i18n/`,
+`detection/`, `config/` and the composition root.
 
-## Flujo de una conversión por lote (ADR-0010)
+## Flow of a batch conversion (ADR-0010)
 
-1. El adaptador de entrada recibe archivos y/o carpetas.
-2. `core` escanea, detecta el formato de cada archivo y calcula los destinos en `ClearMD_Output`
-   (resolviendo colisiones) → **plan del lote**.
-3. El adaptador muestra el plan; si hay salidas existentes, el usuario decide.
-4. `core` ejecuta: por cada archivo elige el conversor, escribe el Markdown, informa progreso y respeta la
-   cancelación. Un fallo no detiene el lote.
-5. Se escribe el reporte del lote en `ClearMD_Output`.
+1. The input adapter receives files and/or folders.
+2. `core` scans, detects the format of each file and computes the destinations in `ClearMD_Output`
+   (resolving collisions) → **batch plan**.
+3. The adapter shows the plan; if there are existing outputs, the user decides.
+4. `core` executes: for each file it picks the converter, writes the Markdown, reports progress and honors
+   cancellation. A failure does not stop the batch.
+5. The batch report is written to `ClearMD_Output`.
 
-> Este documento describe la arquitectura objetivo de la Fase 0. Se actualiza a medida que cada feature la
-> construye.
+> This document describes the target architecture of Phase 0. It is updated as each feature
+> builds it.

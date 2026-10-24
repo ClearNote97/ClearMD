@@ -1,36 +1,36 @@
 {
-  // Nombre que aparece en la lista de Dev Containers. Se resuelve al abrir.
+  // Name shown in the Dev Containers list. Resolved when opening.
   "name": "${localWorkspaceFolderBasename}",
 
-  // Orquestación: usamos docker-compose que está en la carpeta raíz del repo
+  // Orchestration: the docker-compose.yml at the repo root
   "dockerComposeFile": "../docker-compose.yml",
   "service": "app-dev",
 
-  // initializeCommand (HOST, antes de levantar): vincula APP_NAME al nombre de la carpeta,
-  // para que el mount (${APP_NAME}) y workspaceFolder (${localWorkspaceFolderBasename}) NUNCA diverjan.
-  // Crea .env desde el ejemplo si falta. Requiere shell POSIX en el host (WSL/Linux/macOS).
+  // initializeCommand (HOST, before start-up): ties APP_NAME to the folder name so the mount
+  // (${APP_NAME}) and workspaceFolder (${localWorkspaceFolderBasename}) NEVER diverge.
+  // Creates .env from the example if missing. Needs a POSIX shell on the host (WSL/Linux/macOS).
   "initializeCommand": "bash -lc 'cp -n .env.example .env 2>/dev/null || true; d=$(basename \"$PWD\"); sed -i -E \"s|^APP_NAME=[^#]*|APP_NAME=$d  |\" .env 2>/dev/null || true'",
 
-  // runServices: único servicio de desarrollo (ClearMD no usa DB, ADR-0002).
+  // runServices: the only development service (ClearMD has no database, ADR-0002).
   "runServices": ["app-dev"],
 
-  // Al cerrar VS Code, paramos el compose (no lo eliminamos)
+  // When VS Code closes, stop the compose project (do not remove it)
   "shutdownAction": "stopCompose",
 
   // ------------------------------------------------------------
-  // IMPORTANT: NO incluimos "workspaceMount" aquí.
-  // - El montaje del código se gestiona desde docker-compose.yml (recomendado).
-  // - Tener workspaceMount + volumen en docker-compose provoca conflictos en Windows.
+  // IMPORTANT: no "workspaceMount" here.
+  // - The code mount is defined in docker-compose.yml (recommended).
+  // - workspaceMount plus a compose volume conflicts on Windows.
   // ------------------------------------------------------------
 
-  // Ruta dentro del contenedor donde VS Code abrirá la carpeta.
-  // Debe coincidir con el working_dir / volumen definido en docker-compose.
+  // Path inside the container where VS Code opens the folder.
+  // Must match the working_dir / volume defined in docker-compose.yml.
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 
   "customizations": {
     "vscode": {
       // ------------------------------------------------------------
-      // Configs de editor (ajusta según tu preferencia)
+      // Editor settings (adjust to taste)
       // ------------------------------------------------------------
       "settings": {
         "[python]": {
@@ -41,7 +41,7 @@
             "source.organizeImports.ruff": "explicit"
           }
         },
-        // Intérprete Python esperado dentro del workspace montado
+        // Python interpreter expected inside the mounted workspace
         "python.defaultInterpreterPath": "/workspaces/${localWorkspaceFolderBasename}/.venv/bin/python",
         "python.analysis.typeCheckingMode": "basic",
         "python.analysis.inlayHints.variableTypes": true,
@@ -51,12 +51,12 @@
       },
 
       // ------------------------------------------------------------
-      // Extensiones recomendadas / dependencias explícitas
+      // Recommended extensions / explicit dependencies
       // ------------------------------------------------------------
       "extensions": [
         "ms-python.python",
         "ms-python.vscode-pylance",
-        "ms-python.vscode-python-envs",            // requerida por ms-python
+        "ms-python.vscode-python-envs",            // required by ms-python
         "charliermarsh.ruff",
         "tamasfe.even-better-toml",
         "christian-kohler.path-intellisense",
@@ -66,12 +66,12 @@
     }
   },
 
-  // Usuario dentro del contenedor (root para simplicidad en dev)
+  // User inside the container (root, for simplicity in development)
   "remoteUser": "root",
 
   // ------------------------------------------------------------
-  // postCreateCommand: init.sh instala las dependencias con uv (uv.lock reproducible).
-  // Solo en dev (APP_ENV).
+  // postCreateCommand: init.sh installs the dependencies with uv (reproducible uv.lock).
+  // Development only (APP_ENV).
   // ------------------------------------------------------------
   "postCreateCommand": "bash init.sh"
 }

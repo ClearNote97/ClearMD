@@ -1,48 +1,49 @@
 <!--
 ====================================================================
- 00 — PROPÓSITO  ·  Nivel 1 (Constitución)
+ 00 — PURPOSE  ·  Level 1 (Constitution)
 --------------------------------------------------------------------
- POR-PROYECTO. Fija el terreno contra el que se justifican el alcance (02),
- los principios (01) y el stack (03).
- Estado: BORRADOR 2026-10-24, redactado a partir de la conversación de
- arranque. Pendiente de validación del autor (sobre todo "Para quién" y
- "Métricas de éxito").
+ Per-project. Sets the ground against which scope (02), principles (01)
+ and stack (03) are justified. Validated with the author on 2026-10-24.
 ====================================================================
 -->
 
-# 00 — Propósito
+# 00 — Purpose
 
-## Misión
+## Mission
 
-Que cualquier persona pueda convertir sus documentos a Markdown limpio **sin subirlos a ningún servicio**,
-con una app de escritorio que se descarga y funciona.
+Anyone can turn their documents into clean Markdown **without uploading them anywhere**, with a desktop app
+they download and simply use.
 
-## Problema
+## Problem
 
-- El contenido útil vive atrapado en formatos pesados (PDF, Word, PowerPoint, LaTeX, LibreOffice), y hoy se
-  necesita en Markdown: para notas (Obsidian, wikis), para documentación en GitHub y como contexto para LLMs.
-- Las herramientas existentes son librerías de línea de comandos (markitdown, pandoc), servicios web que piden
-  subir el documento, o conversores de un solo formato.
-- LaTeX en particular no tiene una conversión a Markdown en Python puro: la opción habitual es pandoc, un
-  binario externo.
+- Useful content is trapped in heavy formats (PDF, Word, PowerPoint, LaTeX, LibreOffice), while it is needed
+  in Markdown: for notes (Obsidian, wikis), for documentation on GitHub, and as context for LLMs.
+- Existing tools are command-line libraries (markitdown, pandoc), web services that require uploading the
+  document, or single-format converters. None of them is made for someone who never opens a terminal.
+- LaTeX in particular has no pure-Python path to Markdown: the usual answer is pandoc, an external binary.
 
-## Para quién
+## For whom
 
-- **Usa:** estudiantes y académicos (tesis y papers en LaTeX), profesionales que documentan en Markdown y
-  quienes preparan documentos como contexto para un LLM. Personas que no necesariamente usan la terminal.
-- **Decide y mantiene:** el autor (proyecto personal y de portafolio público).
-- **Paga:** nadie; es software libre (MIT).
+ClearMD is for everyone who needs Markdown from documents:
 
-Sin multi-tenancy ni cuentas de usuario.
+- students and academics (theses and papers in LaTeX or Word);
+- people preparing documents as context for LLMs;
+- developers, who use the CLI in scripts and pipelines;
+- **non-technical users — the primary persona.** Everything must be foolproof: if it works for someone who
+  has never opened a terminal, it works for everyone (ADR-0013).
 
-## Métricas de éxito
+The author decides and maintains it (personal, public portfolio project). Nobody pays: it is free software
+(MIT). No accounts, no multi-tenancy.
 
-- Convierte una carpeta mixta (pdf, docx, pptx, xlsx, tex, odt, html) en un solo paso y deja el resultado en
-  `ClearMD_Output`, con un reporte de lo convertido, lo omitido y lo fallido.
-- Ejecutables descargables para Windows y Linux, publicados desde CI en GitHub Releases.
-- La misma funcionalidad en CLI, ttkbootstrap, PySide6 y flet, sobre un único núcleo.
-- Cada decisión no trivial está registrada como ADR.
+## Success metrics
+
+- A mixed folder (pdf, docx, pptx, xlsx, tex, odt, html) converts in one step into `ClearMD_Output`, with a
+  report of what was converted, skipped and failed, and no unhandled error.
+- Executables for Windows and Linux, built by CI and published in GitHub Releases, run without installing
+  Python.
+- The same functionality in the CLI, ttkbootstrap, PySide6 and flet, on a single core.
+- The size of every executable is measured in CI and reported, so the toolkits can be compared.
 
 ---
 
-> `02_scope` traza las fronteras de este propósito, `01_principles` fija cómo se persigue y `03_stack` con qué.
+> `02_scope` draws the borders of this purpose, `01_principles` sets how it is pursued and `03_stack` with what.

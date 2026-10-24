@@ -1,4 +1,4 @@
-# Entornos virtuales
+# Virtual environments
 .venv/
 venv/
 env/
@@ -10,7 +10,7 @@ __pycache__/
 *.pyd
 .Python
 
-# Datos y credenciales (nunca al contenedor)
+# Data and credentials (never into the image)
 *.json
 *.csv
 *.parquet

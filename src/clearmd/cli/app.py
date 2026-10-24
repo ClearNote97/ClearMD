@@ -8,7 +8,7 @@ from importlib.metadata import version
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="clearmd",
-        description="Convierte documentos a Markdown. 100% local.",
+        description="Turn documents into Markdown. 100% local.",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {version('clearmd')}")
     return parser
