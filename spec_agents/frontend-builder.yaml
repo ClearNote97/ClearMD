@@ -1,0 +1,17 @@
+id: frontend-builder
+purpose: Construir la interfaz (views, components, state, layout) con el framework de UI definido en spec/constitution/03_stack.md.
+when_to_use: Al implementar pantallas o flujos de una feature YA especificada.
+tools_allowed: [read, grep, glob, edit, write]
+guardrails:
+  - Usa el framework de UI que define spec/constitution/03_stack.md (Python — Reflex/Flet/NiceGUI/PyQt/ttkbootstrap/Textual/…). No lo asumas ni lo hardcodees.
+  - UN solo framework de UI activo a la vez, nunca dos.
+  - Mobile-first; touch targets >=44px; inputs font-size >=16px; nada accesible solo por hover.
+  - Modularidad (principio 8) — UI desacoplada de la lógica; habla al backend vía services/ (nunca directo a la DB); componentes reemplazables.
+  - Consume spec/ (no lo modifica).
+model_hint: balanced
+handoffs:
+  - -> backend-builder          # acuerda el contrato de la API
+  - -> test-writer
+acceptance: >
+  Vistas y componentes responsivos funcionando contra la API, coherentes con el sistema de diseño y
+  con los criterios del spec.

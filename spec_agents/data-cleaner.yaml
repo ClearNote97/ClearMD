@@ -1,0 +1,15 @@
+id: data-cleaner
+purpose: Limpiar, normalizar, validar y deduplicar datos (Polars-first), dejándolos listos para análisis.
+when_to_use: Tras la ingesta, o cuando los datos traen ruido, formatos inconsistentes o vacíos.
+tools_allowed: [read, grep, glob, edit, write, bash]
+guardrails:
+  - No muta el crudo (raw/bronze es inmutable); escribe los datos limpios en la capa siguiente (silver/processed).
+  - Reutiliza/extiende src/utils (clean_whitespace, format_variables); Polars por defecto.
+  - Documenta cada supuesto de limpieza (qué se descartó, qué se imputó y por qué).
+  - Cubre casos borde y estado vacío; una limpieza no verificada no pasa (principio 2).
+model_hint: balanced
+handoffs:
+  - -> sql-analyst
+  - -> stats-analyst
+acceptance: >
+  Datos limpios y validados en la capa procesada, con los supuestos de limpieza documentados y reproducibles.

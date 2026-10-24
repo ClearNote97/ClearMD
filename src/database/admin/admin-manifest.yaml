@@ -1,0 +1,132 @@
+# admin-manifest.yaml — v2
+# Operational manifest for src/database/admin/.
+# Single source of truth for DB bootstrap and governance: documents WHAT each admin
+# SQL file does, the execution order, CI checks and security rules.
+# Design rationale (the "why"): docs/architecture/gobernanza-db.md + multi-tenancy.md
+
+meta:
+  name: "database-admin-manifest"
+  version: "2.0.0"
+  owner: "<project-owner>"        # fill on project init (never a real client in the template)
+  created_by: "template"
+  description: >
+    Governance bootstrap for a multi-schema PostgreSQL database: extensions, roles
+    (least-privilege, one break-glass owner per domain), schemas (app/admin + medallion),
+    grants + default privileges, hierarchical RLS (multi-tenancy), a three-part audit
+    (data changes, pipeline execution, governance-rule changes), and maintenance.
+
+# --- Governance principles (non-negotiable) ---
+principles:
+  - "Owner != runtime: the app connects with a NON-owner role so RLS actually applies."
+  - "Least privilege + one break-glass owner per domain (app_owner, data_owner, audit_owner). db_admin and owners are sealed."
+  - "No credentials in the repo: roles are created without passwords; provisioned at deploy via Docker secrets / vault."
+  - "Idempotent SQL: extensions IF NOT EXISTS, functions CREATE OR REPLACE, roles in DO-blocks (CREATE ROLE has no IF NOT EXISTS)."
+  - "admin/ = one-time bootstrap; migrations/ (Alembic) = ongoing table evolution, INCLUDING each table's RLS policy (born with its table)."
+  - "TWO human approvers for any change that DISABLES or ALTERS RLS or audit (enforced in the repo: branch protection + CODEOWNERS)."
+
+# --- SQL files, in execution order (00..06). All idempotent. ---
+files:
+  - filename: "00_create_extensions.sql"
+    exec_order: 0
+    purpose: >
+      Baseline extensions: pgcrypto (crypto/hash), pg_stat_statements (observability),
+      pg_cron (scheduler), pgaudit (statement-level audit to the server log).
+      Optional menu (commented): pg_trgm, ltree (tenant tree), pg_partman, postgres_fdw,
+      pg_graphql (DBaaB), timescaledb.
+    notes: "uuid-ossp is NOT used (gen_random_uuid() is native since PG13). pg_cron needs shared_preload_libraries='pg_cron' at the server (Dockerfile/compose)."
+
+  - filename: "01_create_roles.sql"
+    exec_order: 1
+    purpose: >
+      Nine roles, no passwords, DO-block idempotency:
+      db_admin (bootstrap, sealed), app_owner (owns app), app_user (runtime app),
+      data_owner (owns medallion, break-glass), data_engineer (app->bronze->silver),
+      data_analyst (silver->gold), read_external (gold, via API), read_internal (gold, direct),
+      audit_owner (owns audit; SECURITY DEFINER notary).
+    notes: "data_engineer/data_analyst are members of data_owner. NO BYPASSRLS: data_engineer sees all via root tenant position."
+
+  - filename: "02_create_schemas.sql"
+    exec_order: 2
+    purpose: >
+      Baseline schemas ACTIVE: app (OLTP), admin (governance), gold (analytical consumption).
+      Medallion refinement layers bronze/silver are COMMENTED (uncomment when the refinement
+      pipeline is built). Each schema owned by its domain owner (AUTHORIZATION).
+    notes: "Do NOT use the public schema for app tables. Full medallion documented in gobernanza-db.md / multi-tenancy.md."
+
+  - filename: "03_grants.sql"
+    exec_order: 3
+    purpose: >
+      REVOKE ALL ON SCHEMA public FROM PUBLIC; then per-role USAGE + table privileges
+      (grant matrix in gobernanza-db.md). ALTER DEFAULT PRIVILEGES so FUTURE tables inherit
+      permissions. Grants on sequences (else auto-increment INSERT fails) and functions
+      (REVOKE EXECUTE FROM PUBLIC, grant explicitly).
+    notes: "Renamed from 3_grants.sql -> 03_grants.sql so the runner executes it in the right order."
+
+  - filename: "04_rls_policies.sql"
+    exec_order: 4
+    purpose: >
+      Cross-cutting RLS: the tenant-context helper (admin.current_tenant) and subtree helper
+      (admin.subtree, via ltree), enable RLS and the SINGLE subtree policy on app + gold.
+      Per-table policies live in migrations (born with their table). Multi-tenancy is a MODULE:
+      mono-tenant projects can skip it. See multi-tenancy.md.
+    notes: "Owner bypasses RLS -> app runs as a NON-owner role. FORCE ROW LEVEL SECURITY documented as an extra-strict option."
+
+  - filename: "05_audit_triggers.sql"
+    exec_order: 5
+    purpose: >
+      The three-part audit (all in admin, append-only):
+      (a) admin.audit_log — DATA changes on app (row-level), old/new JSONB with PII redaction
+          via admin.pii_columns (omit/mask/hash, bitemporal). Trigger fn_audit is SECURITY DEFINER,
+          owned by audit_owner; the real user comes from app.current_user_id / app.current_tenant.
+      (b) admin.job_run + admin.job_step — analytics EXECUTION (run -> child SPs), to pinpoint the failed step.
+      (c) admin.governance_registry — BITEMPORAL ledger of RULE changes (policies/grants/roles),
+          auto-populated by a DDL event trigger; visibility only, NO enforcement.
+      Plus the view admin.v_execution_timeline (single pane).
+    notes: "audit_log is monotemporal (event log); governance_registry and pii_columns are bitemporal (state)."
+
+  - filename: "06_maintenance.sql"
+    exec_order: 6
+    purpose: >
+      pg_cron schedules (analytics refresh -> job_run/step; pg_partman maintenance; housekeeping/ANALYZE),
+      each job running as its role. pg_partman + retention (audit_log ~24m, job logs ~90d, configurable by compliance).
+      Autovacuum + explicit ANALYZE after full gold reloads.
+    notes: "Out-of-DB logs (server/app/container/nginx) are an OPS concern (rotation/retention/aggregation), not this file."
+
+# --- Runner ---
+run_script:
+  filename: "run-admin.sh"
+  purpose: >
+    Idempotent runner: executes admin/[0-9][0-9]_*.sql in numeric order with ON_ERROR_STOP=1.
+    Dev: reads DATABASE_URL from .env. Prod: build DATABASE_URL from a *_FILE secret (see the script header).
+  notes: "Never embed credentials. Do NOT run it inside this template; run it once a real project is initialized."
+
+# --- CI checks ---
+ci_checks:
+  - name: "sql_lint"
+    tool: "sqlfluff / pgformatter"
+  - name: "idempotency_heuristic"
+    tool: "custom (look for IF NOT EXISTS / CREATE OR REPLACE / DO-blocks)"
+  - name: "no_secrets"
+    tool: "gitleaks / git-secrets"
+  - name: "smoke_run"
+    tool: "ephemeral Postgres in CI: apply 00..06 and assert schemas/roles/policies exist"
+  - name: "two_approver_rule"
+    tool: "branch protection + CODEOWNERS"
+    purpose: "Changes to admin/, RLS or audit require TWO human approvers."
+
+# --- Secrets ---
+secrets_handling:
+  - "Roles created without passwords; passwords bound at deploy via Docker secrets / vault."
+  - "Dev: .env (gitignored). Prod: *_FILE secrets, never a plaintext DATABASE_URL."
+  - "Audit redacts PII (admin.pii_columns) -> long retention is safe."
+
+# --- Traceability (generic example of the pattern) ---
+related_spec_reference:
+  - spec_path: "spec/features/000_example/spec.md"
+    reason: "Example: a feature whose acceptance criteria map to an RLS policy / DB constraint."
+  - spec_path: "spec/contracts/openapi.yaml"
+    reason: "Example: the external API contract references DB constraints and error codes."
+
+design_docs:
+  - "docs/architecture/gobernanza-db.md"
+  - "docs/architecture/multi-tenancy.md"

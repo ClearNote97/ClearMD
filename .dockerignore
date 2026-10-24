@@ -1,0 +1,28 @@
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Datos y credenciales (nunca al contenedor)
+*.json
+*.csv
+*.parquet
+*.xlsx
+
+# VS Code
+.vscode/
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log
+logs/

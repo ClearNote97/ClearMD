@@ -1,0 +1,98 @@
+# =============================================================================
+# Plantilla ClearNote_Dev: Dependencias Python
+# =============================================================================
+# Reglas de uso:
+# 1. Polars es el motor de DataFrames por defecto.
+# 2. Activa el paquete Pandas solo si un cliente, una libreria o un flujo legacy
+#    lo exige. Evita usar Polars y Pandas como motor principal simultaneamente.
+# 3. No descomentes frameworks que compitan entre si (Flet vs Reflex).
+# 4. Comenta/Descomenta segun el tipo de solucion que vayas a construir.
+# 5. Ejecuta `uv lock && uv sync` despues de modificar.
+# =============================================================================
+
+# --- PAQUETE POLARS: DATOS, ARCHIVOS Y ANALITICA (DEFAULT) ---
+# Motor de DataFrames principal, rapido y eficiente en memoria.
+polars>=1.0.0
+
+# Interoperabilidad con Apache Arrow y archivos Parquet.
+# Recomendado para lagos de datos, ETL y transferencia eficiente de datos.
+pyarrow>=16.0.0
+
+# Lectura eficiente de archivos Excel, especialmente mediante Polars.
+fastexcel>=0.12.0
+
+# Escritura de archivos Excel y soporte para exportaciones formateadas.
+xlsxwriter>=3.2.0
+
+# Conectividad de alto rendimiento entre bases de datos SQL y Polars/Arrow.
+# Descomenta solo si el proyecto requiere ETL o integracion multi-DB.
+# connectorx>=0.4.0
+# arrow-odbc>=7.0.0
+# pyodbc>=5.0.0
+
+# --- PAQUETE PANDAS: COMPATIBILIDAD / LEGACY (OPCIONAL) ---
+# Activa este bloque solo si un cliente, fuente externa o libreria requiere Pandas.
+# No usar Pandas como motor principal mientras Polars sea el estandar del proyecto.
+# pandas>=2.2.0
+# numpy>=2.0.0
+
+# Lector legacy para archivos antiguos de Excel (.xls).
+# xlrd>=2.0.1
+
+# --- ORM, MIGRACIONES Y BASE DE DATOS ---
+# PostgreSQL es la base de datos por defecto. SQLModel es el ORM por defecto.
+# Alembic gestiona el historial de cambios estructurales de la base de datos.
+sqlmodel>=0.0.22
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0
+alembic>=1.13.0
+
+# --- SEGURIDAD Y CONFIGURACION ---
+cryptography>=42.0.0
+python-dotenv>=1.0.0
+
+# --- UTILIDADES ---
+python-dateutil>=2.9.0
+pytz>=2024.1
+
+# --- INTERACTIVIDAD Y NOTEBOOKS ---
+ipython>=8.25.0
+ipynbname>=2024.6.0.0
+ipykernel>=6.29.0
+
+# --- EXCEL: LECTURA / ESCRITURA BASICA COMPARTIDA ---
+# Util para interoperabilidad general con archivos .xlsx.
+openpyxl>=3.1.5
+
+# --- FRAMEWORKS DE INTERFAZ (ELEGIR SOLO UNO) ---
+# Flet = Apps desktop/mobile multiplataforma con Python.
+# Reflex = Aplicaciones web full-stack con Python.
+# flet>=0.25.0
+# reflex>=0.8.13
+
+# --- BACKEND API (OPCIONAL) ---
+# Activa si necesitas una API independiente para frontend, integraciones o terceros.
+# fastapi>=0.115.0
+# uvicorn[standard]>=0.30.0
+
+# --- GRAPHQL (OPCIONAL) ---
+# Activa si el proyecto requiere una API GraphQL en lugar de, o junto a, REST.
+# strawberry-graphql>=0.235.0
+
+# --- ANALYTICS & MACHINE LEARNING (OPCIONAL) ---
+# Descomenta segun la complejidad analitica y el caso de uso.
+# scikit-learn>=1.5.0     # Clasificacion, regresion, clustering y pipelines.
+# xgboost>=2.0.0          # Gradient Boosting de alto rendimiento.
+# statsmodels>=0.14.0     # Estadistica avanzada, econometria y series de tiempo.
+# mlflow>=2.14.0          # Tracking, registro y ciclo de vida de modelos.
+
+# --- HTTP / COMUNICACION EXTERNA (OPCIONAL) ---
+# Cliente HTTP moderno y asincrono; recomendado para APIs externas.
+# httpx>=0.27.0
+
+# Cliente HTTP tradicional para integraciones sencillas o legacy.
+# requests>=2.32.0
+
+# --- ORQUESTACION (OPCIONAL) ---
+# Para automatizar, monitorear y reintentar pipelines de datos.
+# prefect>=3.0.0

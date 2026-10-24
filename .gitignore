@@ -1,0 +1,58 @@
+# =============================================================================
+# ClearNote_Dev - .gitignore
+# =============================================================================
+
+# --- ENTORNO Y SECRETOS ---
+.env
+secrets/*
+!secrets/README.md
+
+# --- PYTHON ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+*.egg-info/
+dist/
+build/
+
+# --- UV ---
+# uv.lock SÍ se versiona (builds reproducibles) → NO se ignora, a propósito.
+# (En .gitignore los comentarios van en su propia línea; un "#" al final de un
+#  patrón se toma como parte del patrón y lo rompe.)
+
+# --- JUPYTER ---
+.ipynb_checkpoints/
+*.ipynb~
+
+# --- DATOS (Nunca versionar datos reales o pesados) ---
+# Ignora el CONTENIDO de storage pero conserva las carpetas y sus README
+# (para que la estructura viaje con la plantilla).
+data/storage/**
+!data/storage/**/
+!data/storage/**/README.md
+# Fixtures de tests: ignora datos pesados, conserva la carpeta y su README.
+data/tests/*.csv
+data/tests/*.xlsx
+data/tests/*.pdf
+
+# --- MLFLOW ---
+mlruns/
+
+# --- BASE DE DATOS LOCAL ---
+*.sqlite
+*.db
+
+# --- SISTEMA OPERATIVO ---
+.DS_Store
+Thumbs.db
+
+# --- IDEs ---
+.idea/
+*.swp
+*.swo
+
+# --- LOGS ---
+*.log
+logs/

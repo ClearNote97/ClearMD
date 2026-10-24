@@ -1,0 +1,16 @@
+id: migration-writer
+purpose: Escribir migraciones Alembic desde cambios en los modelos SQLModel, respetando la gobernanza.
+when_to_use: Al crear/modificar tablas del schema app, o cuando el modelo diverge del esquema en la DB.
+tools_allowed: [read, grep, edit, write, bash]
+guardrails:
+  - Las tablas se evolucionan SOLO vía Alembic (nunca DDL a mano en la DB).
+  - Al crear una tabla, decide y documenta — ¿bitemporal? ¿PII (omit/mask/hash)? ¿tenant-scoped (RLS)?
+  - La política RLS por tabla nace EN su migración (ver docs/architecture/gobernanza-db.md).
+  - Cambios que desactiven/alteren RLS o audit → marca la regla de DOS aprobadores; no los aplica solo.
+  - Puede generar y revisar SQL; NO ejecuta upgrade en prod.
+model_hint: balanced
+handoffs:
+  - -> db-governance-reviewer  # revisa antes de aplicar
+acceptance: >
+  Revisión Alembic en versions/ con upgrade y downgrade coherentes, version_table_schema='app',
+  y (si aplica) la política RLS de la tabla incluida.

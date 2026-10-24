@@ -1,0 +1,63 @@
+-- =============================================================================
+-- 06_maintenance.sql — Mantenimiento: particiones, agenda y salud (idempotente)
+-- =============================================================================
+-- Doc: docs/architecture/gobernanza-db.md (§ Paso 7)
+--
+-- Este archivo es un RECETARIO: muchos jobs dependen de objetos app-específicos (los SPs del
+-- pipeline) o de pg_partman (opcional), así que van como EJEMPLOS activables. Lo transversal:
+--   * pg_cron  -> agenda (baseline; requiere shared_preload_libraries + paquete, ver 00).
+--   * pg_partman -> particiones + retención (opcional; descomentar la extensión en 00).
+--   * autovacuum + ANALYZE -> salud y estadísticas.
+-- =============================================================================
+
+-- =============================================================================
+-- A) PARTICIONES + RETENCIÓN (pg_partman)  — requiere descomentar pg_partman en 00
+-- =============================================================================
+-- audit_log ya está particionada por occurred_at (05) con una partición DEFAULT.
+-- pg_partman crea las mensuales y purga las viejas (DROP de partición = purga barata).
+-- OJO: la API de pg_partman es sensible a la versión (v5 cambió firmas). Ejemplo (v5):
+--
+-- SELECT partman.create_parent(
+--   p_parent_table := 'admin.audit_log',
+--   p_control      := 'occurred_at',
+--   p_interval     := '1 month'
+-- );
+-- -- Retención: la fija COMPLIANCE. Como el audit ya redacta PII, retener largo es seguro.
+-- UPDATE partman.part_config
+--    SET retention = '24 months', retention_keep_table = false
+--  WHERE parent_table = 'admin.audit_log';
+--
+-- (Sin pg_partman, la partición DEFAULT sigue funcionando; solo no hay rotación/purga automática.)
+
+-- =============================================================================
+-- B) AGENDA (pg_cron)  — los jobs corren en la DB configurada; ver rol/SECURITY DEFINER abajo
+-- =============================================================================
+-- Mantenimiento de particiones (si usas pg_partman):
+-- SELECT cron.schedule('partman-maintenance', '30 3 * * *', $$CALL partman.run_maintenance_proc()$$);
+--
+-- Refresh de la analítica (app-específico): llama al SP orquestador que carga bronze->silver->gold
+-- y escribe en admin.job_run / admin.job_step. Se activa cuando exista ese SP (migración/app):
+-- SELECT cron.schedule('analytics-refresh', '0 2 * * *', $$CALL app.run_pipeline()$$);
+--
+-- Nota de rol: pg_cron corre el job como el usuario que lo agenda. Para que el refresh corra con
+-- los privilegios correctos, el SP orquestador puede ser SECURITY DEFINER (dueño data_analyst/
+-- data_engineer, miembros de data_owner). Así el job no necesita ser superusuario.
+
+-- =============================================================================
+-- C) AUTOVACUUM + ANALYZE
+-- =============================================================================
+-- El autovacuum hace el grueso solo. Dos afinaciones útiles:
+--
+-- 1) Tabla caliente (muchos INSERT), p. ej. la partición viva del audit -> vacuum más agresivo:
+-- ALTER TABLE admin.audit_log_default SET (autovacuum_vacuum_scale_factor = 0.02);
+--
+-- 2) ANALYZE tras recargas FULL de gold: NO va aquí, va DENTRO del SP de recarga, al final,
+--    para que el planificador quede con estadísticas frescas y el tablero vuele:
+--       TRUNCATE gold.<tabla>;  INSERT INTO gold.<tabla> SELECT ...;  ANALYZE gold.<tabla>;
+
+-- =============================================================================
+-- D) LOGS FUERA DE LA DB -> capa OPS (no es este archivo)
+-- =============================================================================
+-- Los logs del servidor Postgres (incl. pgaudit), de la app, de contenedores y de nginx se
+-- tratan con rotación + retención + (opcional) agregación en el docker-compose/despliegue.
+-- Ver docs/architecture/gobernanza-db.md (§ Recordatorio — logs).

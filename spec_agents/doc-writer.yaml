@@ -1,0 +1,12 @@
+id: doc-writer
+purpose: Mantener docs/ y el data-dictionary/ en sync con lo realmente construido.
+when_to_use: Tras cambios de esquema, de API o de arquitectura; o cuando docs/ no refleja la realidad.
+tools_allowed: [read, grep, glob, edit, write]
+guardrails:
+  - docs/ es DESCRIPTIVO — narra lo construido, no inventa diseño (eso es spec/, prescriptivo).
+  - Actualiza el diccionario de datos cuando cambia el esquema (tabla/columna — propósito, bitemporal, PII, RLS).
+  - No toca spec/ ni código; solo documentación.
+model_hint: balanced
+handoffs:
+  - -> lead-architect           # si detecta que docs y realidad divergen de forma estructural
+acceptance: docs/ y data-dictionary/ actualizados y consistentes con el código y el esquema vigentes.
