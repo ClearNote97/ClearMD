@@ -52,6 +52,9 @@ strict = true
 # The lowest supported version, so 3.13/3.14-only code is caught (ADR-0018).
 python_version = "3.12"
 files = ["src", "tests"]
+# Tests are not packages: module names come from these roots (two conftest.py files coexist).
+explicit_package_bases = true
+mypy_path = ["src", "tests", "tests/fixtures"]
 
 [[tool.mypy.overrides]]
 # Third-party libraries without type information; each entry is justified where it is imported.

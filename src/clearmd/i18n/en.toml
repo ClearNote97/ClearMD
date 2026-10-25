@@ -43,3 +43,21 @@ zip_archive = "ZIP archives are not supported — extract them first"
 unsafe_archive = "this file looks damaged or unsafe"
 unsupported_format = "unsupported format"
 existing_output = "output already exists (kept)"
+
+[cli.help]
+description = "Turn documents into Markdown. 100% local: ClearMD never uses the internet."
+paths = "files and/or folders to convert"
+overwrite = "replace outputs that already exist"
+skip = "keep outputs that already exist"
+quiet = "show only the summary and errors"
+
+[cli]
+progress = "[{index}/{total}] {name}"
+failed = "✗ {name} — {message}"
+skipped = "– {name} — {reason}"
+input_not_found = "Not found: {path}"
+no_valid_input = "Nothing to convert: none of the inputs exists."
+nothing_to_convert = "Nothing to convert."
+decision_required = "{count} output(s) already exist. Run again with --overwrite or --skip."
+summary = "{converted} converted · {skipped} skipped · {failed} failed"
+results = "Results: {path}"

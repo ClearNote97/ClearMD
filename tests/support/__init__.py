@@ -1,5 +1,6 @@
 """Helpers shared by every test: the network guard and the paths of the fixtures."""
 
+import shutil
 import socket
 from pathlib import Path
 from typing import Any
@@ -20,3 +21,11 @@ def install_network_guard() -> None:
     socket.socket.connect = blocked  # type: ignore[method-assign]
     socket.socket.connect_ex = blocked  # type: ignore[method-assign]
     socket.create_connection = blocked
+
+
+def put(folder: Path, name: str, as_name: str | None = None) -> Path:
+    """Copy fixture ``name`` into ``folder`` (as ``as_name``) and return the copy."""
+    target = folder / (as_name or name)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(DOCUMENTS_DIR / name, target)
+    return target

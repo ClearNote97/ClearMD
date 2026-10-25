@@ -43,3 +43,21 @@ zip_archive = "los archivos ZIP no se admiten — descomprímelos primero"
 unsafe_archive = "este archivo parece dañado o inseguro"
 unsupported_format = "formato no compatible"
 existing_output = "el resultado ya existe (se conserva)"
+
+[cli.help]
+description = "Convierte documentos a Markdown. 100% local: ClearMD nunca usa internet."
+paths = "archivos y/o carpetas para convertir"
+overwrite = "reemplazar los resultados que ya existen"
+skip = "conservar los resultados que ya existen"
+quiet = "mostrar solo el resumen y los errores"
+
+[cli]
+progress = "[{index}/{total}] {name}"
+failed = "✗ {name} — {message}"
+skipped = "– {name} — {reason}"
+input_not_found = "No existe: {path}"
+no_valid_input = "Nada que convertir: ninguna de las entradas existe."
+nothing_to_convert = "Nada que convertir."
+decision_required = "Ya existen {count} resultado(s). Vuelve a ejecutar con --overwrite o --skip."
+summary = "{converted} convertidos · {skipped} omitidos · {failed} con error"
+results = "Resultados: {path}"

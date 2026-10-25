@@ -21,7 +21,7 @@ brings the two riskiest parts (the worker and markitdown) to the front.
       the fixtures which exceptions mean "password" and "corrupt" before writing the mapping (AC-22).
 - [x] **T05 — Worker process.** `services/worker/` (protocol, child, supervisor): persistent worker, time
       and memory limits, cancellation, replacement after a kill or a crash (AC-19, AC-23 – AC-26 at unit level).
-- [ ] **T06 — Thin path to the CLI.** `use_cases/paths.py` for a single file, `use_cases/execution.py` with
+- [x] **T06 — Thin path to the CLI.** `use_cases/paths.py` for a single file, `use_cases/execution.py` with
       atomic writes, `api/` (`plan_batch`, `run_batch`, `composition.py`) and a minimal CLI with progress,
       summary line and exit codes 0/1/2 (acceptance: AC-01, AC-19, AC-21, AC-22).
 - [ ] **T07 — Benchmark.** `tests/benchmark/` (deselected from the default run with a `benchmark` marker):
