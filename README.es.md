@@ -4,7 +4,8 @@
 
 **Convierte tus documentos a Markdown — 100% local: ClearMD nunca usa internet.**
 
-_PDF, Word, PowerPoint, Excel, HTML, CSV, EPUB y notebooks → Markdown limpio, una carpeta entera de una vez,
+_PDF, Word, PowerPoint, Excel, HTML, CSV, EPUB, notebooks y LaTeX (con sus ecuaciones) → Markdown limpio, una
+carpeta entera de una vez,
 pensado primero para quienes nunca abren una terminal._
 
 ![Python](https://img.shields.io/badge/Python-3.12%E2%80%933.14-3776AB?logo=python&logoColor=white)
@@ -41,23 +42,30 @@ publicar) nunca deberían tener que salir de la máquina.
 El valor está en el método — un producto pequeño construido como uno serio:
 
 1. **Primero las decisiones, por escrito.** Cada decisión no trivial es un ADR en
-   [`docs/decisions/`](./docs/decisions/) (21 hasta hoy), con las alternativas descartadas y su costo: por qué
+   [`docs/decisions/`](./docs/decisions/) (23 hasta hoy), con las alternativas descartadas y su costo: por qué
    PySide6 y no PyQt6, por qué sin pandoc, por qué sin base de datos, por qué un proceso aparte.
 2. **La spec antes que el código.** Con **Spec-Driven Development**, [`spec/`](./spec/) dice lo que *debe* ser
-   verdad: la feature 001 tiene 44 criterios de aceptación, y un test falla si alguno queda sin su test.
+   verdad: la feature 001 tiene 44 criterios de aceptación y la 002 tiene 22, y un test falla si algún criterio de
+   cualquier feature queda sin su test.
 3. **Un núcleo que no sabe nada de afuera.** Arquitectura hexagonal organizada con las carpetas `backend/` y
    `frontend/` de mi plantilla: los casos de uso solo importan la librería estándar; markitdown y magika viven
    detrás de puertos y corren **solo en un proceso aparte**.
 4. **Archivos no confiables, tratados como tales.** Las bombas ZIP se detectan desde el índice antes de
    descomprimir nada; nunca se siguen enlaces; cada archivo corre con límite de tiempo y de memoria (con tope duro
    del sistema operativo); un enlace plantado en la carpeta de salida no puede desviar una escritura; Ctrl+C
-   detiene al instante.
-5. **Medido, no adivinado.** Un [benchmark](./docs/benchmarks/001-conversion-limits.md) fijó los límites y la
-   velocidad de cada formato: el PDF es el cuello de botella por tiempo (~10 páginas/s) y el xlsx por memoria. Los
+   detiene al instante. Una tesis en LaTeX se sigue solo dentro de su carpeta y sus macros se expanden con un
+   presupuesto (una bomba de macros se detiene), y el Markdown nunca trae HTML, una imagen remota ni un enlace
+   que el documento no escribió como LaTeX — lo comprueban en la suite un parser CommonMark y un fuzz.
+5. **Medido, no adivinado.** Los benchmarks ([001](./docs/benchmarks/001-conversion-limits.md),
+   [002](./docs/benchmarks/002-tex-converter.md)) fijaron los límites y la velocidad de cada formato: el PDF es el
+   cuello de botella por tiempo (~10 páginas/s), el xlsx por memoria, y una tesis de 300 páginas en LaTeX tarda
+   ~3 s. Los
    archivos se convierten del más liviano al más pesado, y el tiempo restante se estima con la velocidad real del
    lote.
 6. **Revisado por ojos independientes.** Una revisión de código, una auditoría de seguridad y una verificación
-   adversarial de los arreglos — que encontró huecos reales en la primera ronda, cerrados antes de publicar.
+   adversarial de los arreglos — que encontró huecos reales en la primera ronda, cerrados antes de publicar. Para el
+   conversor de LaTeX hicieron falta tres rondas: cada una está en el historial, con el test que reproduce cada
+   hallazgo.
 
 > 🤖 Trabajé esto con un agente de IA (**Claude Code**): yo dirijo — defino el problema, decido el diseño y
 > reviso cada paso; el agente ejecuta y deja todo trazado.
@@ -101,7 +109,7 @@ anteriores._
 | Feature | | |
 |---|---|---|
 | **001** Conversión por lotes — backend + CLI | ✅ lista | 512 tests · revisada |
-| **002** Conversor de `.tex` (con ecuaciones, sin pandoc) | ⏳ sigue | |
+| **002** Conversor de `.tex` (con ecuaciones, sin pandoc) | ✅ lista | 807 tests en total · revisada |
 | **003** Conversor de `.odt` (solo librería estándar) | ⏳ | |
 | **004** Modo artículo para HTML | ⏳ | |
 | **005** Primera app de escritorio (ttkbootstrap) | ⏳ | |
@@ -172,7 +180,7 @@ ClearMD_Output/          junto a lo que elegiste (o en --output-root)
 │   ├── frontend/cli/    # la línea de comandos (las GUIs llegan aquí, una carpeta cada una)
 │   └── i18n/            # catálogos de mensajes EN/ES
 ├── spec/                # ★ Spec-Driven Development: constitución, roadmap, specs, contrato de UX
-├── docs/                # arquitectura, 21 ADRs, benchmark
+├── docs/                # arquitectura, 23 ADRs, benchmarks
 ├── tests/               # unit (espejo de src) · aceptación (uno por criterio) · fixtures · benchmark
 └── .devcontainer/       # entorno reproducible (sin root, uv)
 ```

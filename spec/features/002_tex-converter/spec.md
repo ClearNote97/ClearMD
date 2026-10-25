@@ -55,70 +55,70 @@ Each criterion has an acceptance test named after its id (`tests/acceptance/test
 
 ### Through the pipeline
 
-- [ ] **AC-01** A `.tex` file converts through the CLI exactly like the formats of feature 001: into
+- [x] **AC-01** A `.tex` file converts through the CLI exactly like the formats of feature 001: into
   `ClearMD_Output/OutputMD/<name>.md`, listed in `Resumen_ClearMD.md` with format `TEX`, in cost order, under
   the worker's limits.
-- [ ] **AC-02** A LaTeX file without extension is detected by its content (magika `latex`) and converted.
-- [ ] **AC-03** The CLI process never imports `pylatexenc` (it runs in the worker, as markitdown does).
+- [x] **AC-02** A LaTeX file without extension is detected by its content (magika `latex`) and converted.
+- [x] **AC-03** The CLI process never imports `pylatexenc` (it runs in the worker, as markitdown does).
 
 ### Structure and text
 
-- [ ] **AC-04** Title, author and date from `\maketitle` become the `#` title and a line under it; sectioning
+- [x] **AC-04** Title, author and date from `\maketitle` become the `#` title and a line under it; sectioning
   commands become headings, the shallowest one present at `##`.
-- [ ] **AC-05** Emphasis, lists (nested), quotes, links, footnotes and code blocks follow the table above.
-- [ ] **AC-06** Accents and special characters become Unicode (`Nicol\'as` → `Nicolás`, `---` → `—`, `~` → a
+- [x] **AC-05** Emphasis, lists (nested), quotes, links, footnotes and code blocks follow the table above.
+- [x] **AC-06** Accents and special characters become Unicode (`Nicol\'as` → `Nicolás`, `---` → `—`, `~` → a
   non-breaking space); comments and layout-only commands disappear.
-- [ ] **AC-07** `\cite{a,b}` becomes `[@a; @b]`; `\ref{eq:1}` becomes `(eq:1)`.
-- [ ] **AC-08** The `abstract` environment gets a "Resumen" heading in a document with `\usepackage[spanish]{babel}`
+- [x] **AC-07** `\cite{a,b}` becomes `[@a; @b]`; `\ref{eq:1}` becomes `(eq:1)`.
+- [x] **AC-08** The `abstract` environment gets a "Resumen" heading in a document with `\usepackage[spanish]{babel}`
   and "Abstract" otherwise.
 
 ### Math
 
-- [ ] **AC-09** Inline and display math are kept as written (`$…$`, `$$…$$`); `\[…\]` and `equation` become
+- [x] **AC-09** Inline and display math are kept as written (`$…$`, `$$…$$`); `\[…\]` and `equation` become
   `$$…$$`; `align`-like environments become `aligned` inside `$$…$$`.
-- [ ] **AC-10** Text inside math is never altered by text rules (no Unicode conversion, no escaping), except a
+- [x] **AC-10** Text inside math is never altered by text rules (no Unicode conversion, no escaping), except a
   backtick (it would pair with a code span of ClearMD's) and an HTML-looking `<tag` (ADR-0023).
 
 ### Tables and figures
 
-- [ ] **AC-11** A simple `tabular` becomes a Markdown table, its caption an italic line under it.
-- [ ] **AC-12** A table with `\multicolumn` or `\multirow` is kept as a LaTeX code block and reported as a note.
-- [ ] **AC-13** `\includegraphics{img/plot}` inside a figure becomes `![caption](…/img/plot.png)` with a path that
+- [x] **AC-11** A simple `tabular` becomes a Markdown table, its caption an italic line under it.
+- [x] **AC-12** A table with `\multicolumn` or `\multirow` is kept as a LaTeX code block and reported as a note.
+- [x] **AC-13** `\includegraphics{img/plot}` inside a figure becomes `![caption](…/img/plot.png)` with a path that
   works from the output `.md` (an existing file with a common image extension is looked up when the extension is
   omitted); a missing image keeps the path as written.
 
 ### Includes (ADR-0022)
 
-- [ ] **AC-14** `\input{chapters/ch1}` and `\include{…}` are replaced by the converted content of
+- [x] **AC-14** `\input{chapters/ch1}` and `\include{…}` are replaced by the converted content of
   `chapters/ch1.tex`, recursively: a thesis converts into one Markdown file.
-- [ ] **AC-15** An include with an absolute path, a `..` segment, a link on the way, a non-`.tex` file, a missing
+- [x] **AC-15** An include with an absolute path, a `..` segment, a link on the way, a non-`.tex` file, a missing
   file, a cycle, more than 8 levels or more than 200 files is not followed: a visible placeholder stays in the
   Markdown and a note names it with the reason. Nothing outside the document folder is ever read.
 
 ### Macros (ADR-0022)
 
-- [ ] **AC-16** The author's `\newcommand`/`\renewcommand`/`\providecommand` (up to 9 arguments, an optional
+- [x] **AC-16** The author's `\newcommand`/`\renewcommand`/`\providecommand` (up to 9 arguments, an optional
   first one with its default), `\DeclareMathOperator` and parameterless `\def` are expanded, in text and in math,
   including definitions made in an included file.
-- [ ] **AC-17** Expansion stops at 10,000 expansions (or 10 per KiB of source, when that is more), a nesting
+- [x] **AC-17** Expansion stops at 10,000 expansions (or 10 per KiB of source, when that is more), a nesting
   depth of 64, or an expanded text larger than 4×
   the source plus 1 MiB; what remains is left as written and a note says which limit was reached. A recursive or
   exponential macro never hangs or exhausts the worker.
 
 ### Honesty
 
-- [ ] **AC-18** Unknown commands and environments are left as written; the summary lists the file under
+- [x] **AC-18** Unknown commands and environments are left as written; the summary lists the file under
   "Converted with notes" with the distinct names (at most 20, then "and N more"), and the CLI prints one line for
   it. The exit code stays 0.
-- [ ] **AC-19** Notes are shown in the user's language (EN/ES) and are language-neutral data in the report.
-- [ ] **AC-20** A document in `latin1` (declared with `inputenc`, or not declared) converts with its accents; a
+- [x] **AC-19** Notes are shown in the user's language (EN/ES) and are language-neutral data in the report.
+- [x] **AC-20** A document in `latin1` (declared with `inputenc`, or not declared) converts with its accents; a
   guessed encoding is a note.
 
 ### Robustness
 
-- [ ] **AC-21** Malformed LaTeX (an unclosed group or environment, a stray `\end`) still produces Markdown for
+- [x] **AC-21** Malformed LaTeX (an unclosed group or environment, a stray `\end`) still produces Markdown for
   what could be parsed, with a note; it is never a crash.
-- [ ] **AC-22** The benchmark measures `.tex` (speed and memory per MiB) and `schemas/limits.py` uses the
+- [x] **AC-22** The benchmark measures `.tex` (speed and memory per MiB) and `schemas/limits.py` uses the
   measured values.
 
 ## Actors and data

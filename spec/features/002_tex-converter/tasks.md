@@ -35,7 +35,7 @@ Goal: `clearmd paper.tex` writes a faithful `paper.md` through the worker, with 
       meta-test covers every feature folder.
 - [x] **T10 — Benchmark.** A `.tex` case in `run_benchmark.py`; measured `SECONDS_PER_MIB[TEX]` and
       `MEMORY_PER_MIB[TEX]`; `docs/benchmarks/` updated (AC-22).
-- [ ] **T11 — Close the feature.**
+- [x] **T11 — Close the feature.**
   - `docs/architecture/README.md` and both READMEs (formats, status table).
   - Tick the roadmap and the spec.
   - Gate (pytest, ruff, mypy strict).

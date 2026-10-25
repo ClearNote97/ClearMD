@@ -63,7 +63,7 @@ class ConversionResult:
 
 # services/conversion/registry.py
 class DocumentConverter(Protocol):
-    def convert(self, source: Path, detection: Detection) -> ConversionResult: ...
+    def convert(self, source: Path, detection: Detection, target: Path) -> ConversionResult: ...
 ```
 
 - `ConversionRunner.convert` returns the same `ConversionResult`; `execute_plan` keeps the notes in
@@ -73,59 +73,69 @@ class DocumentConverter(Protocol):
 - Reasons are `NoteReason` codes, translated by the catalog (`note.reason.<code>`); the summary lists at most 20
   items per note, then "and N more".
 
-## The pipeline inside `TexConverter`
+## The pipeline inside `TexConverter` (as built, after the review: ADR-0023)
 
 1. **Read** (`source.py`): bytes → text. UTF-8 first; if it fails, the encoding named in
-   `\usepackage[…]{inputenc}` (latin1/latin9/cp1252 map to Python codecs); else `charset_normalizer` (already
-   installed with markitdown) and an `encoding_guessed` note.
-2. **Collect macros, first pass** (`macros.py`): parse with pylatexenc's default context; walk the tree for
-   `\newcommand`-family, `\DeclareMathOperator` and parameterless `\def`, in document order; build a
-   `LatexContextDb` that declares each user macro's argument spec (so that their arguments parse).
-3. **Parse again** with that context. **Resolve includes** while rendering (step 4): an `\input` node asks
-   `includes.py` for the file; if allowed, that file goes through steps 1–3 with the same macro table and
-   budget (definitions made there apply from that point on).
+   `\usepackage[…]{inputenc}` (latin1 is read as cp1252, latin9/cp1252 map to Python codecs); else
+   `charset_normalizer` (already installed with markitdown) and an `encoding_guessed` note.
+2. **Splice includes** (`document.py`): in TeX an `\input` inserts text, so each allowed include (outside
+   comments and code) is read once, on one budget, decoded and spliced in place, recursively; a refused one stays
+   in the text. A map of the pieces turns a parse position back into `file, line N`.
+3. **Parse once** (`context.py`): a tolerant walker with ClearMD's specs keeps the first error it recovered from.
+   **Collect macros** (`macros.py`) in document order; parse again with the author's argument specs only when a
+   definition has arguments or a name pylatexenc already knows.
 4. **Render** (`render.py`): a visitor over the nodes, writing Markdown. Text-mode nodes follow the subset table;
    a user macro is expanded (budget charged) and its result parsed and rendered in place; math nodes are
-   re-serialized from their nodes with user macros expanded and nothing else touched (AC-10). Unknown macros and
-   environments are written back verbatim (`node.latex_verbatim()`) and recorded for the note.
-5. **Assemble**: title block, body, footnotes at the end; collapse runs of blank lines.
+   re-serialized from their nodes with user macros expanded, comments dropped and nothing else touched (AC-10).
+   Unknown macros and environments are written back verbatim (`node.latex_verbatim()`) and recorded for the
+   note. If pylatexenc cannot read the source at all, it is kept whole as a LaTeX block with a note.
+5. **Assemble**: title block, body, footnotes at the end; collapse runs of blank lines outside code blocks.
 
 ## Includes (`includes.py`)
 
 ```python
-def resolve(argument: str, *, document_folder: Path, current: Path, state: IncludeState) -> Path | IncludeRefusal
+def resolve_include(argument: str, state: IncludeState) -> Path | NoteReason
+def enter(argument: str, state: IncludeState) -> tuple[Path, bytes] | NoteReason  # cycles, limits, read
 ```
 
-- Rejected before touching the disk: absolute paths, drive letters, `..` segments, empty names.
+- Paths resolve against the main file's folder, as in LaTeX.
+- Rejected before touching the disk: absolute paths, drive letters, any `:` (a scheme), `~`, `..` segments,
+  NUL, empty names.
 - `.tex` appended when there is no suffix; only `.tex` accepted.
 - Every component from the document folder down is checked with `lstat` (no links, no junctions), the target must
   be a regular file, and its resolved path must stay inside the resolved document folder.
-- `IncludeState` tracks the stack (cycles), depth (≤ 8), the count (≤ 200) and the bytes read (≤ 250 MiB).
+- `IncludeState` tracks the stack (cycles), depth (≤ 8), the count (≤ 200) and the bytes read (≤ 250 MiB, the
+  main file included). The read walks the folders by descriptor with `O_NOFOLLOW` (`read_inside`).
 - The relative directory for `\includegraphics` stays the one of the **document folder** (LaTeX resolves
   graphics from the main file's folder), with `\graphicspath{{img/}}` honored when present.
 
 ## Macros (`macros.py`)
 
 - `MacroDefinition(name, n_args, default_first, body)`; `\renewcommand` replaces; `\providecommand` keeps the first.
-- Expansion substitutes `#1…#9` in the body textually and re-parses the result.
-- `ExpansionBudget`: counts expansions (≤ 10,000), the current nesting depth (≤ 64) and the bytes produced
-  (≤ 4 × source + 1 MiB). When exceeded, it raises `BudgetExceeded`; the renderer catches it, writes the rest of
-  that node verbatim, stops expanding for the rest of the document, and records a `macro_limit_reached` note.
+- Expansion substitutes `#1…#9` in the body in one pass (`##` is `#`) and re-parses the result.
+- `MacroExpander` counts expansions (≤ 10,000), the current nesting depth (≤ 64) and the size produced
+  (≤ 4 × source + 1 MiB, charged before the text is built). When exceeded, it raises `BudgetExceeded`; the
+  renderer writes that top-level use as written, stops expanding for the rest of the document, and records a
+  `macro_limit_reached` note naming the macro and the limit.
 
 ## Rendering rules worth fixing now
 
 - Heading levels: the shallowest sectioning command present maps to `##` (the title is `#`); deeper levels follow,
   capped at `######`.
-- Lists: two spaces of indentation per level; `enumerate` restarts per list; `description` items become
-  `- **term** text`.
+- Lists: continuation lines are indented by the width of their marker (CommonMark); `enumerate` restarts per
+  list; `description` items become `- **term** text`; text before the first `\item` stays before the list.
 - Code: `lstlisting [language=Python]` and `minted{python}` give the fence language.
 - Tables: a cell may contain inline formatting and math; `|` inside a cell is escaped; rows end at `\\`; the first
   row is the header; `\multicolumn`/`\multirow` → the whole `tabular` verbatim in a ```` ```latex ```` block and a
   `table_kept_as_latex` note.
 - Images: the target is `os.path.relpath(image, start=output_md.parent)` with `/` separators; the converter
-  receives the output path through the request (a new `ConvertRequest.target` field).
-- Abstract heading: `spanish`/`spanish,mexico`… in `babel` options → "Resumen"; anything else → "Abstract". This
-  is the document's language, not the app's.
+  receives the output path through the request (a new `ConvertRequest.target` field). Only image files are
+  looked up; a name outside the folder or remote is shown as code, never as a link (ADR-0023).
+- Floats: everything inside is rendered in order; the caption becomes the alt text of a single image, otherwise
+  an italic line under the float (each `subfigure` has its own).
+- Abstract heading: babel's main language (its last option, else the class's language option, or polyglossia's
+  `\setmainlanguage`) Spanish → "Resumen"; anything else → "Abstract". This is the document's language, not the
+  app's.
 
 ## Detection and limits
 

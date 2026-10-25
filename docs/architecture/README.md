@@ -1,4 +1,4 @@
-# docs/architecture — System design (as built, feature 001)
+# docs/architecture — System design (as built, features 001–002)
 
 ClearMD follows a **ports and adapters** architecture (ADR-0001), laid out with the ClearNote_Dev template's
 `backend/` and `frontend/` folders inside the package (ADR-0014). The use cases know neither the interfaces nor
@@ -18,7 +18,7 @@ the conversion libraries; heavy and untrusted work runs in a separate worker pro
                                     └───────────────────────────────────────────────────────┼───┘
                                                                                             │ pipe
                                                        ┌────────────────────────────────────▼──┐
-                                                       │ worker process: markitdown + magika   │
+                                                       │ worker: markitdown + magika + .tex    │
                                                        │ convert and detect, one file at a time │
                                                        └────────────────────────────────────────┘
 ```
@@ -26,16 +26,18 @@ the conversion libraries; heavy and untrusted work runs in a separate worker pro
 **Dependency rule** (enforced by `tests/unit/test_architecture.py`): `backend/schemas`, `backend/use_cases`
 and `i18n` import only the standard library; `backend/services` implements the ports and is the only place with
 third-party imports; `frontend/` talks only to `backend/api`, `backend/schemas` and `i18n`. The CLI process
-never imports markitdown or magika: only the worker does (AC-19, tested in a fresh process).
+never imports markitdown, magika or pylatexenc: only the worker does (001 AC-19 and 002 AC-03, each tested in
+a fresh process).
 
 ## Modules
 
 | Package | Module | Role |
 |---|---|---|
 | `schemas` | `formats` | `FormatId`, the extension table, ZIP-based formats, the fixed names (`ClearMD_Output`, `OutputMD`, `Resumen_ClearMD.md`). |
-| | `limits` | `Limits` and the speeds and memory factors per format measured in [benchmark 001](../benchmarks/001-conversion-limits.md). |
+| | `limits` | `Limits` and the speeds and memory factors per format measured in benchmarks [001](../benchmarks/001-conversion-limits.md) and [002](../benchmarks/002-tex-converter.md). |
 | | `errors` | `ErrorCode`, `SkipReason` (each with its catalog keys), `ConversionError`, `Cancelled`. |
-| | `models` | Frozen `BatchPlan`, `PlannedConversion`, `SkippedItem`, `PlanWarning`, `ConversionOutcome`, `BatchReport`, `OutputRootReport`. |
+| | `notes` | `ConversionNote` (a `NoteKind` and its `NoteItem`s with a `NoteReason`): language-neutral data that the catalogs put into words (ADR-0022). |
+| | `models` | Frozen `ConversionResult` (Markdown + notes), `BatchPlan`, `PlannedConversion`, `SkippedItem`, `PlanWarning`, `ConversionOutcome`, `BatchReport`, `OutputRootReport`. |
 | | `events` | `ScanProgress`, `PlanReady`, `ConversionStarted` (with the time left), `ConversionFinished`, `BatchFinished`. |
 | | `settings` | `Settings` and its allowed values (ADR-0012, ADR-0017). |
 | `use_cases` | `ports` | `FormatDetector`, `ConversionRunner`, `Clock`. |
@@ -47,9 +49,10 @@ never imports markitdown or magika: only the worker does (AC-19, tested in a fre
 | | `execution` | Warm-up, one file at a time, atomic UTF-8/LF writes, failure isolation, stopped files, unwritable roots, cancellation. |
 | | `reporting`, `settings`, `cancel` | One report per output root; settings parse/serialize; the cancel token. |
 | `services` | `worker/` | `WorkerRunner` (supervisor: `Ready` handshake, time and memory limits with psutil, cancellation, replacement) and the child process. |
-| | `conversion/` | The markitdown adapter (exception mapping verified on fixtures) and the registry. |
+| | `conversion/` | The registry (`convert(source, detection, target)`), the markitdown adapter (exception mapping verified on fixtures), `safe_files` (no links, size cap). |
+| | `conversion/tex/` | ClearMD's own LaTeX converter (feature 002, ADR-0006/0022): `source` (real encoding), `context` (pylatexenc specs), `includes` (inside the folder only), `macros` (budgeted expansion), `render` + `tables` (the subset and the output guarantee of ADR-0023: escaped copies, marked block lines, a final `neutralize` pass), `nodes` (iterative walks), `images` (links from the output file), `document` (includes spliced in place, then one render). |
 | | `detection/` | Extension (CLI process), magika by content (worker), only for files without an extension. |
-| | `summary/` | `Resumen_ClearMD.md`: name table, sections, history, escaping of untrusted names. |
+| | `summary/` | `Resumen_ClearMD.md`: name table, sections (including “Converted with notes”), history, escaping of untrusted names. |
 | | `settings_store`, `clock` | `settings.toml` on each OS (platformdirs); the system clock. |
 | `frontend` | `cli/app.py` | Arguments, settings and language, prompt, dry run, progress, Ctrl+C, summary, `--open`, exit codes. |
 | `i18n` | | EN/ES catalogs, plain-word durations, stopwatch time, gigabytes per language. |

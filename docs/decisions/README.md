@@ -39,4 +39,5 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 | [0019](./0019-outputmd-and-v2-tools.md) | `OutputMD/` for results; room for the v2 tools (merge, split) | accepted |
 | [0020](./0020-non-root-dev-container.md) | The dev container runs as a non-root user with the host's UID | accepted |
 | [0021](./0021-content-detection-only-without-extension.md) | Content detection only for files without an extension | accepted |
-| [0022](./0022-latex-includes-macros-and-notes.md) | LaTeX: includes, the author's macros and conversion notes | accepted |
+| [0022](./0022-latex-includes-macros-and-notes.md) | LaTeX: includes, the author's macros and conversion notes | accepted; refined by 0023 |
+| [0023](./0023-latex-hardening-after-review.md) | LaTeX: includes as inserted text, images never fetched, a file never fails whole | accepted |
