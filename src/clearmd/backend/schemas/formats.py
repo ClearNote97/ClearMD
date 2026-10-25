@@ -17,6 +17,7 @@ class FormatId(StrEnum):
     EPUB = "epub"
     IPYNB = "ipynb"
     TXT = "txt"
+    TEX = "tex"  # ClearMD's own converter (feature 002)
 
 
 EXTENSIONS: Mapping[str, FormatId] = MappingProxyType(
@@ -31,6 +32,7 @@ EXTENSIONS: Mapping[str, FormatId] = MappingProxyType(
         ".epub": FormatId.EPUB,
         ".ipynb": FormatId.IPYNB,
         ".txt": FormatId.TXT,
+        ".tex": FormatId.TEX,
     }
 )
 

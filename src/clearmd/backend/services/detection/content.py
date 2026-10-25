@@ -25,6 +25,7 @@ LABELS: Mapping[str, FormatId] = MappingProxyType(
         "epub": FormatId.EPUB,
         "ipynb": FormatId.IPYNB,
         "txt": FormatId.TXT,
+        "latex": FormatId.TEX,
     }
 )
 

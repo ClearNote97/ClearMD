@@ -13,7 +13,7 @@ Goal: `clearmd paper.tex` writes a faithful `paper.md` through the worker, with 
 - [x] **T02 — Notes through the pipeline.** `schemas/notes.py`; `ConversionResult`; `ConversionOutcome.notes`;
       the worker protocol; markitdown returns no notes; summary section and CLI line; EN/ES catalog keys
       (AC-18 – AC-19 at unit level).
-- [ ] **T03 — Detection and the format.** `FormatId.TEX`, `.tex`, magika `latex`; provisional limits; the
+- [x] **T03 — Detection and the format.** `FormatId.TEX`, `.tex`, magika `latex`; provisional limits; the
       registry routes TEX to a converter skeleton (AC-01 – AC-03).
 - [ ] **T04 — Reading.** `source.py`: UTF-8, `inputenc`, detected encoding with a note (AC-20).
 - [ ] **T05 — Rendering the subset.** `render.py` + `tables.py`: structure, emphasis, lists, quotes, links,

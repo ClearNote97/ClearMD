@@ -13,7 +13,8 @@ def test_extensions_are_lowercase_and_dotted() -> None:
 def test_format_for_extension_ignores_case_and_rejects_unknown() -> None:
     assert formats.format_for_extension(".PDF") is FormatId.PDF
     assert formats.format_for_extension(".htm") is FormatId.HTML
-    assert formats.format_for_extension(".tex") is None
+    assert formats.format_for_extension(".tex") is FormatId.TEX
+    assert formats.format_for_extension(".bib") is None
     assert formats.format_for_extension("") is None
 
 

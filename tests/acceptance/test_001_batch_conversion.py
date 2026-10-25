@@ -84,9 +84,7 @@ def test_ac_02_a_folder_mirrors_its_structure(workdir: Path) -> None:
     put(project, "sample.docx", "sub/b.docx")
     put(project, "sample.txt", "sub/deeper/c.txt")
     (project / "only_unsupported").mkdir()
-    (project / "only_unsupported" / "x.tex").write_text(
-        "\\documentclass{article}", encoding="utf-8"
-    )
+    (project / "only_unsupported" / "refs.bib").write_text("@book{a, title={x}}", encoding="utf-8")
     assert main([str(project), "--quiet"]) == 0
     output = workdir / "ClearMD_Output" / "OutputMD"
     assert _tree(output) == [

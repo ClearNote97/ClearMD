@@ -25,6 +25,7 @@ SECONDS_PER_MIB: Mapping[FormatId, float] = MappingProxyType(
         FormatId.EPUB: 0.15,
         FormatId.IPYNB: 0.03,
         FormatId.TXT: 0.03,
+        FormatId.TEX: 0.5,  # provisional until the benchmark of feature 002 (T10)
     }
 )
 
@@ -41,6 +42,7 @@ MEMORY_PER_MIB: Mapping[FormatId, float] = MappingProxyType(
         FormatId.TXT: 3.9,
         FormatId.IPYNB: 3.7,
         FormatId.EPUB: 3.2,
+        FormatId.TEX: 8.0,  # provisional until the benchmark of feature 002 (T10)
     }
 )
 

@@ -13,5 +13,5 @@ def test_known_extension_is_detected_without_reading_the_file() -> None:
 
 
 def test_unknown_or_missing_extension_is_not_detected() -> None:
-    assert ExtensionDetector().detect(Path("notes.tex")) is None
+    assert ExtensionDetector().detect(Path("refs.bib")) is None
     assert ExtensionDetector().detect(Path("scan")) is None

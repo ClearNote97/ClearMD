@@ -48,3 +48,10 @@ def test_unrecognized_content_is_not_detected(detector: MagikaDetector, tmp_path
     script = tmp_path / "tool"
     script.write_text("import sys\n\ndef main():\n    print(sys.argv)\n", encoding="utf-8")
     assert detector.detect(script) is None
+
+
+def test_latex_without_extension_is_detected_by_content(detector: MagikaDetector) -> None:
+    from support import TEX_DIR
+
+    detection = detector.detect(TEX_DIR / "no_extension_latex")
+    assert detection is not None and detection.format is FormatId.TEX

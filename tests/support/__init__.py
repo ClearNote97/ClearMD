@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 DOCUMENTS_DIR = Path(__file__).parent.parent / "fixtures" / "documents"
+TEX_DIR = Path(__file__).parent.parent / "fixtures" / "tex"
 
 
 class NetworkBlockedError(RuntimeError):

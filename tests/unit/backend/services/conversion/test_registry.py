@@ -7,8 +7,12 @@ from clearmd.backend.services.conversion.registry import ConverterRegistry, buil
 
 
 def test_every_supported_format_has_a_converter() -> None:
+    from clearmd.backend.services.conversion.tex import TexConverter
+
     registry = build_registry()
-    assert all(isinstance(registry.for_format(fmt), MarkItDownConverter) for fmt in FormatId)
+    assert isinstance(registry.for_format(FormatId.TEX), TexConverter)
+    others = set(FormatId) - {FormatId.TEX}
+    assert all(isinstance(registry.for_format(fmt), MarkItDownConverter) for fmt in others)
 
 
 def test_all_formats_share_one_markitdown_instance() -> None:

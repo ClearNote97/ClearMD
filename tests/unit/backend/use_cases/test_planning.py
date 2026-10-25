@@ -48,7 +48,7 @@ def test_a_missing_input_is_an_input_error(tmp_path: Path) -> None:
 
 
 def test_an_unsupported_file_is_skipped(tmp_path: Path) -> None:
-    source = tmp_path / "notes.tex"
+    source = tmp_path / "notes.bib"
     source.write_text("x", encoding="utf-8")
     plan = build_plan([source], detector=TableDetector(), limits=Limits())
     assert [item.reason for item in plan.skipped] == [SkipReason.UNSUPPORTED_FORMAT]
