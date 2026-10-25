@@ -1,0 +1,53 @@
+\documentclass{article}
+\usepackage[spanish]{babel}
+\usepackage{graphicx,hyperref,listings,amsmath}
+\title{Un art\'iculo de prueba}
+\author{Ana P\'erez}
+\date{2026}
+\begin{document}
+\maketitle
+\begin{abstract}
+Resumen breve con $x^2$.
+\end{abstract}
+\section{Introducci\'on}
+Texto con \textbf{negrita}, \textit{it\'alica}, \emph{\'enfasis}, \texttt{c\'odigo} y
+\underline{subrayado}. Marcador: fixture-tex-paper.
+Ver \cite{knuth84,lamport94} y la ecuaci\'on~\eqref{eq:pit}.\footnote{Una nota al pie.}
+\subsection{Listas}
+\begin{itemize}
+  \item uno
+  \item dos
+  \begin{enumerate}
+    \item anidado
+  \end{enumerate}
+\end{itemize}
+\begin{description}
+  \item[T\'ermino] Su definici\'on.
+\end{description}
+\subsection{Matem\'aticas}
+En l\'inea $E=mc^2$ y \(a+b\) y $\alpha_{i}~\text{texto}$.
+\[ \int_0^1 x\,dx \]
+\begin{equation}\label{eq:pit} a^2+b^2=c^2 \end{equation}
+\begin{align} x &= 1 \\ y &= 2 \end{align}
+\subsection{C\'odigo y citas}
+\begin{lstlisting}[language=Python]
+print("hola $no math$ \section{no}")
+\end{lstlisting}
+El comando \verb|\foo| en l\'inea.
+\begin{quote}Una cita.\end{quote}
+\href{https://example.org}{un enlace} y \url{https://example.org/b} -- rango --- raya ``comillas''.
+\subsection{Tablas y figuras}
+\begin{table}\centering
+\begin{tabular}{|l|c|}\hline
+A & B \\ \hline
+1 & $x$ \\ \hline
+\end{tabular}
+\caption{Una tabla}
+\end{table}
+\begin{figure}\centering
+\includegraphics[width=0.5\textwidth]{img/plot}
+\caption{Un gr\'afico}
+\end{figure}
+\newpage
+% un comentario que desaparece
+\end{document}

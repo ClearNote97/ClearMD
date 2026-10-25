@@ -15,9 +15,11 @@ dependencies = [
     "platformdirs>=4.13",
     # Memory of the worker process on every OS (ADR-0015).
     "psutil>=7.0",
+    # Own .tex converter (ADR-0006, feature 002).
+    "pylatexenc>=2.11,<3",
 ]
-# Only what is used: pylatexenc (.tex, 002), trafilatura (article mode, 004), the GUIs and
-# PyInstaller arrive in their own feature, not before (ADR-0009).
+# Only what is used: trafilatura (article mode, 004), the GUIs and PyInstaller arrive in their
+# own feature, not before (ADR-0009).
 
 [project.scripts]
 clearmd = "clearmd.frontend.cli:main"

@@ -12,7 +12,9 @@ from build_fixtures import (
     MARKERS,
     NON_DETERMINISTIC,
     PDF_PASSWORD,
+    TEX_DIR,
     build,
+    build_tex,
 )
 from pypdf import PdfReader
 
@@ -93,3 +95,23 @@ def test_epub_starts_with_a_stored_mimetype() -> None:
         first = archive.infolist()[0]
         assert first.filename == "mimetype"
         assert first.compress_type == zipfile.ZIP_STORED
+
+
+def test_the_latex_fixtures_are_committed_and_reproducible(tmp_path: Path) -> None:
+    rebuilt = build_tex(tmp_path)
+    changed = [
+        name for name, path in rebuilt.items() if path.read_bytes() != (TEX_DIR / name).read_bytes()
+    ]
+    assert changed == []
+
+
+def test_the_latin1_fixtures_are_not_utf8() -> None:
+    for name in ("latin1.tex", "latin1_undeclared.tex"):
+        with pytest.raises(UnicodeDecodeError):
+            (TEX_DIR / name).read_bytes().decode("utf-8")
+
+
+def test_the_exponential_macro_fixture_doubles_forty_times() -> None:
+    text = (TEX_DIR / "hostile" / "exponential_macro.tex").read_text(encoding="utf-8")
+    assert text.count("\\def") == 41
+    assert "\\def\\bombaa{\\bombab\\bombab}" in text
