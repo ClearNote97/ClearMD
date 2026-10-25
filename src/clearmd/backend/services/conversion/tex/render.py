@@ -6,6 +6,7 @@ knows is written back as is and listed in a note. A source pylatexenc cannot rea
 nesting) is kept whole as a LaTeX code block, with a note: a file never fails as a whole (AC-21).
 """
 
+import bisect
 import re
 from collections.abc import Callable
 from typing import Any
@@ -29,13 +30,17 @@ from clearmd.backend.services.conversion.tex.context import (
     REFERENCE_MACROS,
     Unparseable,
     make_context,
+    mask,
     parse,
 )
 from clearmd.backend.services.conversion.tex.macros import (
     BudgetExceeded,
+    MacroDefinition,
     MacroExpander,
     collect_definitions,
+    definition_spans,
     is_parametrized_def,
+    opens_or_closes_an_environment,
 )
 from clearmd.backend.services.conversion.tex.nodes import argument, children, is_macro, raw, walk
 from clearmd.backend.services.conversion.tex.tables import tabular_to_markdown
@@ -51,7 +56,11 @@ SECTION_LEVELS = {
 }
 _CONTROL_WORD_AT_END = re.compile(r"\\[A-Za-z]+$")
 _INDENTATION = re.compile(r"\n[ \t]+")
-_FENCED = re.compile(r"(?ms)^[ \t]*(`{3,}|~{3,})[^\n]*\n.*?^[ \t]*\1[ \t]*$")
+_FENCE_LINE = re.compile(r"[ \t]*(`{3,}|~{3,})(.*)")
+_SECTIONING_IN_BODY = re.compile(r"\\(" + "|".join(SECTION_LEVELS) + r")(?![A-Za-z@])")
+_ENTITY = re.compile(r"&[#A-Za-z]")
+# At the start of a line, what Markdown would read as a heading, a quote or a list item.
+_BLOCK_START = re.compile(r"(^|\n)([ \t]*)(#|>|[-+*](?=[ \t])|\d+(?=[.)][ \t]))")
 _SAFE_LINK = re.compile(r"^(?:https?|ftp|mailto):|^[^:]*$", re.IGNORECASE)
 
 INLINE = {
@@ -146,14 +155,45 @@ def _indent(text: str, width: int) -> str:
 
 
 def outside_code(text: str, fix: Callable[[str], str]) -> str:
-    """``fix`` applied to the text between fenced code blocks; the blocks stay as they are."""
-    parts, cursor = [], 0
-    for match in _FENCED.finditer(text):
-        parts.append(fix(text[cursor : match.start()]))
-        parts.append(match.group(0))
-        cursor = match.end()
-    parts.append(fix(text[cursor:]))
-    return "".join(parts)
+    """``fix`` applied to the text between fenced code blocks; the blocks stay as they are.
+
+    A line scanner (linear): a fence closes on a line of the same character, at least as long,
+    with nothing else on it (CommonMark); an unclosed fence runs to the end.
+    """
+    pieces: list[tuple[bool, list[str]]] = [(False, [])]
+    fence: str | None = None
+    for line in text.split("\n"):
+        found = _FENCE_LINE.fullmatch(line)
+        if (
+            fence is None
+            and found is not None
+            and not (found.group(1)[0] == "`" and "`" in found.group(2))
+        ):
+            fence = found.group(1)
+            pieces.append((True, [line]))
+        elif fence is not None:
+            pieces[-1][1].append(line)
+            run = found.group(1) if found is not None and not found.group(2).strip() else ""
+            if run and run[0] == fence[0] and len(run) >= len(fence):
+                fence = None
+                pieces.append((False, []))
+        else:
+            pieces[-1][1].append(line)
+    return "\n".join(
+        "\n".join(lines) if is_code else fix("\n".join(lines)) for is_code, lines in pieces
+    )
+
+
+def escape_text(text: str) -> str:
+    """Text from the document never becomes Markdown structure, a link or raw HTML."""
+    text = text.replace("<", "&lt;").replace("[", "&#91;").replace("]", "&#93;")
+
+    def protect(found: re.Match[str]) -> str:
+        marker = found.group(3)
+        marked = marker + "\\" if marker[0].isdigit() else "\\" + marker
+        return found.group(1) + found.group(2) + marked
+
+    return _BLOCK_START.sub(protect, text)
 
 
 def link_target(path: str) -> str:
@@ -191,14 +231,23 @@ def _body(nodes: list[Any]) -> tuple[list[Any], list[Any]]:
     return nodes, nodes
 
 
-def top_level(nodes: list[Any]) -> int:
-    """The shallowest sectioning command really used (comments and code are separate nodes)."""
+def top_level(nodes: list[Any], definitions: dict[str, MacroDefinition] | None = None) -> int:
+    """The shallowest sectioning command really used (comments and code are separate nodes),
+    also inside the author's macros that are used (``\\mychap`` → ``\\chapter``)."""
     _, body = _body(nodes)
-    present = [
-        SECTION_LEVELS[node.macroname]
-        for node in walk(body)
-        if isinstance(node, LatexMacroNode) and node.macroname in SECTION_LEVELS
-    ]
+    used: set[str] = set()
+    present = []
+    for node in walk(body):
+        if isinstance(node, LatexMacroNode):
+            if node.macroname in SECTION_LEVELS:
+                present.append(SECTION_LEVELS[node.macroname])
+            elif definitions and node.macroname in definitions:
+                used.add(node.macroname)
+    for name in used:
+        assert definitions is not None
+        present.extend(
+            SECTION_LEVELS[n] for n in _SECTIONING_IN_BODY.findall(definitions[name].body)
+        )
     return min(present, default=SECTION_LEVELS["section"])
 
 
@@ -215,9 +264,11 @@ def is_spanish(nodes: list[Any]) -> bool:
     for node in walk(preamble):
         if is_macro(node, "usepackage") and "babel" in _options(node, 1):
             babel = _options(node, 0) or babel
+            chosen = [o.split("=", 1)[1] for o in babel if o.replace(" ", "").startswith("main=")]
+            main = chosen[-1].strip() if chosen else main
         elif is_macro(node, "documentclass"):
             global_options = _options(node, 0)
-        elif is_macro(node, "setmainlanguage"):
+        elif is_macro(node, "setmainlanguage") or is_macro(node, "setdefaultlanguage"):
             main = raw(argument(node, -1)).strip()
     if not main and babel:
         main = babel[-1]
@@ -235,6 +286,8 @@ class Renderer:
         spanish: bool = False,
         image: ImageHandler | None = None,
         macros: MacroExpander | None = None,
+        known_refused: frozenset[str] = frozenset(),
+        listed: int = 0,
     ) -> None:
         self._top_level = level
         self._spanish = spanish
@@ -247,6 +300,9 @@ class Renderer:
         self.metadata: dict[str, list[Any]] = {}
         self._consumed: set[int] = set()  # captions already shown by their float
         self._alt: list[str] = []  # the caption of the float whose only image is being drawn
+        self._known_refused = known_refused  # includes already noted while reading
+        self._listed = listed  # how many of them: the note lists at most MAX_UNKNOWN
+        self._in_code = 0  # inside \\texttt: text as written, no escaping, no ligatures
 
     # --- Entry points -------------------------------------------------------------------------
 
@@ -263,16 +319,26 @@ class Renderer:
         return _tidy(text)
 
     def render(self, nodes: list[Any]) -> str:
-        parts = []
+        parts: list[str] = []
         after_unknown = False
+        skipping = False  # between \\iffalse and \\fi: commented out
         for node in nodes:
             if node is None:
+                continue
+            if skipping:
+                skipping = not is_macro(node, "fi")
+                continue
+            if is_macro(node, "iffalse"):
+                skipping = True
                 continue
             if after_unknown and isinstance(node, LatexGroupNode):
                 parts.append(node.latex_verbatim())  # its arguments, as written
                 continue
             before = len(self.unknown)
-            parts.append(self._node(node))
+            piece = self._node(node)
+            if isinstance(node, LatexCharsNode) and _ends_a_line(parts):
+                piece = piece.lstrip(" \t")  # "\\section{A}    Text" is not a code block
+            parts.append(piece)
             after_unknown = isinstance(node, LatexMacroNode) and len(self.unknown) > before
         return "".join(parts)
 
@@ -283,12 +349,15 @@ class Renderer:
 
     def _node(self, node: Any) -> str:
         if isinstance(node, LatexCharsNode):
-            return _INDENTATION.sub("\n", str(node.chars))  # never an indented code block
+            if self._in_code:
+                return str(node.chars)
+            text = _INDENTATION.sub("\n", str(node.chars))  # never an indented code block
+            return escape_text(text)
         if isinstance(node, LatexCommentNode):
             return ""
         if isinstance(node, LatexSpecialsNode):
             chars = str(node.specials_chars)
-            return SPECIALS.get(chars, chars)
+            return chars if self._in_code else SPECIALS.get(chars, chars)
         if isinstance(node, LatexGroupNode):
             return self.render(node.nodelist or [])
         if isinstance(node, LatexMathNode):
@@ -321,7 +390,11 @@ class Renderer:
             content = self.inline(self._last_arg(node))
             return INLINE[name].format(content) if content else ""
         if name == "texttt":
-            content = self.inline(self._last_arg(node))
+            self._in_code += 1
+            try:
+                content = self.inline(self._last_arg(node))
+            finally:
+                self._in_code -= 1
             return _inline_code(content) if content else ""
         if name in PLAIN:
             return self.render(self._last_arg(node))
@@ -368,6 +441,8 @@ class Renderer:
 
     def _environment(self, node: Any) -> str:
         name: str = node.environmentname
+        if name == "comment":
+            return ""
         if name in CONTAINERS or (name == "minipage" and not _is_float(node)):
             return self.render(node.nodelist or [])
         if name == "abstract":
@@ -414,7 +489,8 @@ class Renderer:
     def _link(self, node: Any) -> str:
         url = raw(argument(node, 0)).strip()
         text = self.inline(self._arg_nodes(node, 1)) if node.macroname == "href" else ""
-        safe = bool(_SAFE_LINK.match(url))
+        # "javascript&#58;" is "javascript:" once a viewer decodes it.
+        safe = bool(_SAFE_LINK.match(url)) and not _ENTITY.search(url)
         if node.macroname == "url":
             return f"<{url}>" if safe and not re.search(r"[\s<>]", url) else _inline_code(url)
         if not safe:  # javascript: and friends never become links
@@ -422,7 +498,10 @@ class Renderer:
         return f"[{text or url}]({link_target(url)})"
 
     def _citation(self, node: Any) -> str:
-        keys = [key.strip() for key in raw(argument(node, 3)).split(",") if key.strip()]
+        written = raw(argument(node, 3)).replace("[", "").replace("]", "")
+        keys = [key.strip() for key in written.split(",") if key.strip()]
+        if not keys:
+            return ""
         first, second = raw(argument(node, 1)).strip(), raw(argument(node, 2)).strip()
         before, after = (first, second) if argument(node, 2) is not None else ("", first)
         cited = "; ".join(f"@{key}" for key in keys)
@@ -579,9 +658,12 @@ class Renderer:
 
     def _include_left(self, node: Any) -> str:
         """An include still in the text: refused while reading (noted there) or made by a macro."""
-        if self._macros is not None and self._macros.depth > 0:
-            subject = raw(argument(node, 0)).strip()
-            self.refused[NoteItem(subject, NoteReason.MADE_BY_MACRO.value)] = None
+        subject = raw(argument(node, 0)).strip()
+        if self._listed + len(self.refused) < MAX_UNKNOWN:
+            if self._macros is not None and self._macros.depth > 0:
+                self.refused[NoteItem(subject, NoteReason.MADE_BY_MACRO.value)] = None
+            elif subject not in self._known_refused:  # "\\input{{ch}}": no file has that name
+                self.refused[NoteItem(subject, NoteReason.MISSING.value)] = None
         return _inline_code(node.latex_verbatim().strip())
 
     def notes(self) -> tuple[ConversionNote, ...]:
@@ -597,6 +679,13 @@ class Renderer:
                 ConversionNote(NoteKind.TABLE_KEPT_AS_LATEX, (NoteItem(str(self.tables_kept)),))
             )
         return tuple(found)
+
+
+def _ends_a_line(parts: list[str]) -> bool:
+    for part in reversed(parts):
+        if part:
+            return part.endswith("\n")
+    return False
 
 
 def _tidy(text: str) -> str:
@@ -624,6 +713,52 @@ def _expander(nodes: list[Any], source_size: int) -> tuple[MacroExpander | None,
     return MacroExpander(definitions, source_size), again
 
 
+def _substitute_structural(text: str, nodes: list[Any], macros: MacroExpander) -> str:
+    r"""Uses of ``\beq`` → ``\begin{equation}`` in the text itself, as TeX does, so that the
+    environment they open takes the text up to the macro that closes it. Never inside a
+    definition, a comment or code; charged to the budget like any expansion."""
+    structural = {
+        name: definition
+        for name, definition in macros.definitions.items()
+        if opens_or_closes_an_environment(definition)
+    }
+    if not structural:
+        return text
+    names = "|".join(re.escape(name) for name in sorted(structural, key=len, reverse=True))
+    use = re.compile(r"\\(" + names + r")(?![A-Za-z@])")
+    spans = definition_spans(nodes)
+    starts = [start for start, _ in spans]
+    masked = mask(text)
+    pieces, cursor = [], 0
+    for found in use.finditer(masked):
+        index = bisect.bisect_right(starts, found.start()) - 1
+        if index >= 0 and found.start() < spans[index][1]:
+            continue  # inside a definition
+        body = structural[found.group(1)].body
+        try:
+            macros.charge(found.group(1), len(body))
+        except BudgetExceeded:
+            break
+        pieces.append(text[cursor : found.start()])
+        pieces.append(body + " ")
+        cursor = found.end()
+    pieces.append(text[cursor:])
+    for name in structural:  # their uses are in the text now
+        del macros.definitions[name]
+    return "".join(pieces)
+
+
+def _kept_as_latex(text: str, cause: str, refused: tuple[NoteItem, ...]) -> ConversionResult:
+    fence = _fence(text)
+    markdown = f"{fence}latex\n{text.strip(chr(10))}\n{fence}\n"
+    notes = [
+        ConversionNote(NoteKind.PARSE_RECOVERED, (NoteItem(cause, NoteReason.KEPT_AS_LATEX.value),))
+    ]
+    if refused:
+        notes.insert(0, ConversionNote(NoteKind.INCLUDE_NOT_FOLLOWED, refused))
+    return ConversionResult(markdown, tuple(notes))
+
+
 def render_source(
     text: str,
     *,
@@ -631,25 +766,37 @@ def render_source(
     locate: Locator | None = None,
     refused: tuple[NoteItem, ...] = (),
 ) -> ConversionResult:
-    """Markdown and notes for a whole LaTeX source (its includes already in place)."""
+    """Markdown and notes for a whole LaTeX source (its includes already in place).
+
+    Whatever happens inside, the file is converted: at worst kept whole as LaTeX (AC-21).
+    """
     try:
         nodes, error = parse(text, make_context())
         macros, again = _expander(nodes, len(text))
-        if macros is not None and again:
-            nodes, error = parse(text, macros.context)
+        if macros is not None:
+            substituted = _substitute_structural(text, nodes, macros)
+            if substituted is not text:
+                # Positions moved: a parse error is reported without a file and line.
+                text, locate, again = substituted, None, True
+            if again:
+                nodes, error = parse(text, macros.context)
+        definitions = macros.definitions if macros is not None else None
         renderer = Renderer(
-            level=top_level(nodes), spanish=is_spanish(nodes), image=image, macros=macros
+            level=top_level(nodes, definitions),
+            spanish=is_spanish(nodes),
+            image=image,
+            macros=macros,
+            known_refused=frozenset(item.subject for item in refused),
+            listed=len(refused),
         )
         markdown = renderer.document(nodes)
+    except MemoryError:
+        raise  # the worker reports it as out of memory
     except (Unparseable, RecursionError) as problem:
-        fence = _fence(text)
-        markdown = f"{fence}latex\n{text.strip(chr(10))}\n{fence}\n"
         cause = str(problem) if isinstance(problem, Unparseable) else type(problem).__name__
-        kept = NoteItem(cause, NoteReason.KEPT_AS_LATEX.value)
-        notes = [ConversionNote(NoteKind.PARSE_RECOVERED, (kept,))]
-        if refused:
-            notes.insert(0, ConversionNote(NoteKind.INCLUDE_NOT_FOLLOWED, refused))
-        return ConversionResult(markdown, tuple(notes))
+        return _kept_as_latex(text, cause, refused)
+    except Exception as problem:  # a converter bug must not lose a thesis (AC-21)
+        return _kept_as_latex(text, type(problem).__name__, refused)
     notes = list(renderer.notes())
     not_followed = (*refused, *renderer.refused)
     if not_followed:

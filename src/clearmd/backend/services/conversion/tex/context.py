@@ -7,6 +7,7 @@ code would become math), reads ``\url`` as LaTeX (a ``%`` would start a comment)
 first one is kept for the ``parse_recovered`` note.
 """
 
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -44,14 +45,21 @@ def _chars(w: Any, parsing_state: Any, start: int, end: int) -> Any:
     )
 
 
-def _balanced_end(text: str, start: int) -> int:
-    """The index of the ``}`` closing the ``{`` at ``start`` (escaped braces skipped), or -1."""
+def _balanced_end(text: str, start: int, *, comments: bool = True) -> int:
+    """The index of the ``}`` closing the ``{`` at ``start`` (escaped braces and comments
+    skipped), or -1."""
     depth = 0
     index = start
     while index < len(text):
         char = text[index]
         if char == "\\":
             index += 2
+            continue
+        if char == "%" and comments:
+            line_end = text.find("\n", index)
+            if line_end == -1:
+                return -1
+            index = line_end + 1
             continue
         if char == "{":
             depth += 1
@@ -128,7 +136,8 @@ class UrlArgsParser(MacroStandardArgsParser):  # type: ignore[misc]
         start = pos
         while start < len(w.s) and w.s[start] in _SPACE:
             start += 1
-        end = _balanced_end(w.s, start) if w.s.startswith("{", start) else -1
+        found = w.s.startswith("{", start)
+        end = _balanced_end(w.s, start, comments=False) if found else -1
         if end == -1:
             _report(w, pos, "URL without its closing brace")
             return ParsedMacroArgs(argspec="", argnlist=[]), pos, 0
@@ -162,7 +171,7 @@ class DefParser(MacroStandardArgsParser):  # type: ignore[misc]
         while start < len(w.s) and w.s[start] in _SPACE:
             start += 1
         name_end = start + 1
-        while name_end < len(w.s) and w.s[name_end].isalpha():
+        while name_end < len(w.s) and (w.s[name_end].isalpha() or w.s[name_end] == "@"):
             name_end += 1
         if not w.s.startswith("\\", start) or name_end == start + 1:
             _report(w, pos, "\\def without a command name")
@@ -178,6 +187,31 @@ class DefParser(MacroStandardArgsParser):  # type: ignore[misc]
         return args, pos, end + 1 - pos
 
 
+class RawBodyParser(MacroStandardArgsParser):  # type: ignore[misc]
+    r"""``head`` arguments, then a ``{body}`` kept as written: a body like ``\begin{equation}``
+    must not open an environment in the definition and swallow the rest of the document."""
+
+    def __init__(self, head: str) -> None:
+        super().__init__(argspec=head + "{")
+        self.head = head
+
+    def parse_args(self, w: Any, pos: int, parsing_state: Any = None) -> tuple[Any, int, int]:
+        first, first_pos, first_len = MacroStandardArgsParser(argspec=self.head).parse_args(
+            w, pos, parsing_state=parsing_state
+        )
+        start = first_pos + first_len
+        while start < len(w.s) and w.s[start] in _SPACE:
+            start += 1
+        end = _balanced_end(w.s, start) if w.s.startswith("{", start) else -1
+        if end == -1:
+            _report(w, pos, "definition without its body")
+            arguments = [*first.argnlist, None]
+            return ParsedMacroArgs(argspec=self.argspec, argnlist=arguments), pos, start - pos
+        body = _chars(w, parsing_state, start + 1, end)
+        arguments = [*first.argnlist, body]
+        return ParsedMacroArgs(argspec=self.argspec, argnlist=arguments), pos, end + 1 - pos
+
+
 _MACROS = [
     MacroSpec("verb", args_parser=VerbParser()),
     MacroSpec("def", args_parser=DefParser()),
@@ -191,10 +225,10 @@ _MACROS = [
     MacroSpec("subfile", "{"),
     MacroSpec("underline", "{"),
     MacroSpec("includegraphics", "*[[{"),
-    MacroSpec("DeclareMathOperator", "*{{"),
-    MacroSpec("newcommand", "*{[[{"),
-    MacroSpec("renewcommand", "*{[[{"),
-    MacroSpec("providecommand", "*{[[{"),
+    MacroSpec("DeclareMathOperator", args_parser=RawBodyParser("*{")),
+    MacroSpec("newcommand", args_parser=RawBodyParser("*{[[")),
+    MacroSpec("renewcommand", args_parser=RawBodyParser("*{[[")),
+    MacroSpec("providecommand", args_parser=RawBodyParser("*{[[")),
     # Dropped commands: their arguments go with them.
     MacroSpec("index", "[{"),
     MacroSpec("thanks", "{"),
@@ -207,6 +241,7 @@ _MACROS = [
     MacroSpec("printbibliography", "["),
     MacroSpec("nocite", "{"),
     MacroSpec("setmainlanguage", "[{"),
+    MacroSpec("setdefaultlanguage", "[{"),
     MacroSpec("cline", "{"),
     MacroSpec("cmidrule", args_parser=CmidruleParser()),
     *(MacroSpec(name, "*[[{") for name in CITATION_MACROS),
@@ -217,6 +252,7 @@ _ENVIRONMENTS = [
         EnvironmentSpec(name, args_parser=VerbatimEnvironmentParser(name))
         for name in CODE_ENVIRONMENTS
     ),
+    EnvironmentSpec("comment", args_parser=VerbatimEnvironmentParser("comment")),
     EnvironmentSpec("longtable", "[{"),
     EnvironmentSpec("subfigure", "[{"),
     EnvironmentSpec("minipage", "[[[{"),
@@ -264,3 +300,45 @@ def parse(text: str, context: LatexContextDb) -> tuple[list[Any], ParseError | N
         return list(nodes), None
     message = str(getattr(found, "msg", None) or found).splitlines()[0]
     return list(nodes), ParseError(int(getattr(found, "pos", 0) or 0), message)
+
+
+# What is not LaTeX to look into for includes: comments (a "%" after an even run of backslashes),
+# code environments, the comment environment, \verb, \iffalse … \fi and URL arguments.
+_NOT_SOURCE = re.compile(
+    r"(?<!\\)(?:\\\\)*%"
+    r"|\\begin\s*\{(verbatim\*?|lstlisting|minted|comment)\}"
+    r"|\\verb\*?([^\sA-Za-z*])"
+    r"|\\iffalse(?![A-Za-z@])"
+    r"|\\(?:url|href)\s*(?=\{)"
+)
+_FI = re.compile(r"\\fi(?![A-Za-z@])")
+
+
+def mask(text: str) -> str:
+    """``text`` with what is not source replaced by spaces (same length, newlines kept)."""
+    pieces, cursor = [], 0
+    while (found := _NOT_SOURCE.search(text, cursor)) is not None:
+        start, token = found.start(), found.group(0)
+        if token.endswith("%"):
+            start = found.end() - 1
+            line_end = text.find("\n", start)
+            end = len(text) if line_end == -1 else line_end
+        elif found.group(1):
+            close = text.find(f"\\end{{{found.group(1)}}}", found.end())
+            end = len(text) if close == -1 else close
+        elif found.group(2):
+            line_end = text.find("\n", found.end())
+            limit = len(text) if line_end == -1 else line_end
+            close = text.find(found.group(2), found.end(), limit)
+            end = found.end() if close == -1 else close + 1
+        elif token.startswith("\\iffalse"):
+            fi = _FI.search(text, found.end())
+            end = len(text) if fi is None else fi.end()
+        else:  # \url{…} or \href{…}: read as written by UrlArgsParser
+            close = _balanced_end(text, found.end(), comments=False)
+            end = found.end() if close == -1 else close + 1
+        pieces.append(text[cursor:start])
+        pieces.append(re.sub(r"[^\n]", " ", text[start:end]))
+        cursor = max(end, found.end())
+    pieces.append(text[cursor:])
+    return "".join(pieces)

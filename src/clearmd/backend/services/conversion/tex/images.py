@@ -15,9 +15,11 @@ from clearmd.backend.services.conversion.tex.includes import is_outside_by_name,
 
 IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".pdf", ".svg", ".gif", ".webp", ".eps")
 MAX_GRAPHICS_PATHS = 64
+MAX_LOOKUPS = 1000  # distinct names looked up on disk; past that, kept as written
+_ENTITY = re.compile(r"&[#A-Za-z]")  # "https&#58;//" is "https://" to a Markdown viewer
 _GRAPHICSPATH = re.compile(r"\\graphicspath\s*\{((?:\s*\{[^{}\n]{0,512}\}){1,64})\s*\}")
 _ENTRY = re.compile(r"\{([^{}\n]{0,512})\}")
-_COMMENT = re.compile(r"(?<!\\)%[^\n]*")
+_COMMENT = re.compile(r"(?<!\\)(?:\\\\)*%[^\n]*")
 
 
 def graphics_paths(source: str) -> list[str]:
@@ -48,7 +50,7 @@ def _find(name: str, folder: Path, prefixes: list[str]) -> Path | None:
 def image_link(argument: str, folder: Path, prefixes: list[str], target: Path) -> str | None:
     """The link to ``argument`` seen from ``target``'s folder; ``None`` if it must not be a link."""
     name = argument.strip().replace("\\", "/")
-    if not name or is_outside_by_name(name) is not None:
+    if not name or is_outside_by_name(name) is not None or _ENTITY.search(name):
         return None
     found = _find(name, folder, prefixes)
     if found is None:
@@ -67,6 +69,11 @@ class ImageFinder:
         self._seen: dict[str, str | None] = {}
 
     def link(self, argument: str) -> str | None:
-        if argument not in self._seen:
-            self._seen[argument] = image_link(argument, self._folder, self._prefixes, self._target)
+        if argument in self._seen:
+            return self._seen[argument]
+        if len(self._seen) >= MAX_LOOKUPS:
+            name = argument.strip().replace("\\", "/")
+            refused = not name or is_outside_by_name(name) is not None or _ENTITY.search(name)
+            return None if refused else argument.strip()
+        self._seen[argument] = image_link(argument, self._folder, self._prefixes, self._target)
         return self._seen[argument]

@@ -36,9 +36,22 @@ class IncludeState:
     """Shared by every file of one document: the stack (cycles, depth) and the totals read."""
 
     folder: Path
-    stack: list[Path] = field(default_factory=list)
+    stack: list[tuple[int, int]] = field(default_factory=list)  # (device, inode): no name tricks
     files: int = 0
     bytes_read: int = 0
+
+
+@dataclass(frozen=True)
+class Entered:
+    path: Path
+    data: bytes
+    identity: tuple[int, int]
+
+
+def identity(path: Path) -> tuple[int, int]:
+    """The file itself, whatever name reached it (case, ``./``, hard links)."""
+    status = os.stat(path)
+    return status.st_dev, status.st_ino
 
 
 def _is_link(status: os.stat_result) -> bool:
@@ -135,13 +148,16 @@ def resolve_include(argument: str, state: IncludeState) -> Path | NoteReason:
     return NoteReason.NOT_TEX
 
 
-def enter(argument: str, state: IncludeState) -> tuple[Path, bytes] | NoteReason:
+def enter(argument: str, state: IncludeState) -> Entered | NoteReason:
     """Resolve, check cycles and limits, and read the included file (once, on the budget)."""
     found = resolve_include(argument, state)
     if not isinstance(found, Path):
         return found
-    real = found.resolve()
-    if real in state.stack:
+    try:
+        found_identity = identity(found)
+    except (OSError, ValueError):
+        return NoteReason.MISSING
+    if found_identity in state.stack:
         return NoteReason.CYCLE
     if len(state.stack) > MAX_DEPTH:
         return NoteReason.TOO_DEEP
@@ -156,4 +172,4 @@ def enter(argument: str, state: IncludeState) -> tuple[Path, bytes] | NoteReason
         return NoteReason.MISSING
     state.files += 1
     state.bytes_read += len(data)
-    return real, data
+    return Entered(found.resolve(), data, found_identity)

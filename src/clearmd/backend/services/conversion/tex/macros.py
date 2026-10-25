@@ -117,7 +117,7 @@ def _definition(node: Any, found: dict[str, MacroDefinition]) -> None:
         if name is None:
             return
         count_text = _inner(arguments[2]).strip()
-        count = int(count_text) if count_text.isdigit() and 0 < int(count_text) <= 9 else 0
+        count = int(count_text) if re.fullmatch("[1-9]", count_text) else 0  # never "²"
         default = _inner(arguments[3]) if arguments[3] is not None else None
         definition = MacroDefinition(name, count, default if count else None, _inner(arguments[4]))
         if node.macroname == "providecommand" and name in found:
@@ -133,6 +133,31 @@ def _definition(node: Any, found: dict[str, MacroDefinition]) -> None:
         parsed = getattr(node.nodeargd, "clearmd_def", None)
         if parsed is not None and not parsed.parameters.strip():
             found[parsed.name] = MacroDefinition(parsed.name, 0, None, parsed.body.chars)
+
+
+DEFINITIONS = DEFINING | {"DeclareMathOperator", "def"}
+_BEGIN_OR_END = re.compile(r"\\(begin|end)\s*\{")
+
+
+def opens_or_closes_an_environment(definition: MacroDefinition) -> bool:
+    r"""``\newcommand{\beq}{\begin{equation}}``: only text substitution keeps the document whole."""
+    found = _BEGIN_OR_END.findall(definition.body)
+    return definition.arguments == 0 and found.count("begin") != found.count("end")
+
+
+def definition_spans(nodes: list[Any]) -> list[tuple[int, int]]:
+    """Where the definitions are written: a use is never substituted inside its own definition."""
+    spans = []
+    pending = list(reversed(nodes))
+    while pending:
+        node = pending.pop()
+        if node is None:
+            continue
+        if isinstance(node, LatexMacroNode) and node.macroname in DEFINITIONS:
+            spans.append((node.pos, node.pos + node.len))
+            continue
+        pending.extend(reversed(_children(node)))
+    return spans
 
 
 def is_parametrized_def(node: Any) -> bool:
@@ -170,6 +195,19 @@ class MacroExpander:
             yield
         finally:
             self.depth -= 1
+
+    def charge(self, name: str, size: int) -> None:
+        """One expansion of ``size`` characters done outside the node tree (text substitution)."""
+        if self.exhausted is not None:
+            raise BudgetExceeded(self.exhausted)
+        self.expansions += 1
+        self.produced += size
+        if self.expansions > MAX_EXPANSIONS:
+            self.limited = self.limited or f"\\{name}"
+            self._exceed(NoteReason.EXPANSIONS)
+        if self.produced > self.limit_growth:
+            self.limited = self.limited or f"\\{name}"
+            self._exceed(NoteReason.GROWTH)
 
     def expand(self, node: Any) -> list[Any]:
         """The nodes a use of an author's macro stands for (charged to the budget first)."""
