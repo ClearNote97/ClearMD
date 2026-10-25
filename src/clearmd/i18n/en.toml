@@ -1,0 +1,45 @@
+# English catalog. Same keys and placeholders as es.toml (a test enforces it).
+
+[error.unsupported_format]
+message = "ClearMD cannot convert this kind of file."
+action = "Check the supported formats in the help."
+
+[error.password_protected]
+message = "This PDF is password-protected."
+action = "Remove the password and try again."
+
+[error.corrupt_file]
+message = "This file seems to be damaged."
+action = "Open it in its original program; if it opens, save a new copy and try again."
+
+[error.conversion_failed]
+message = "This file could not be converted."
+action = "See the technical detail in the summary."
+
+[error.permission_denied]
+message = "ClearMD cannot write in this folder."
+action = "Choose another output folder."
+
+[error.timed_out]
+message = "Converting this file took too long, so it was stopped."
+action = "Try splitting it into smaller files."
+
+[error.out_of_memory]
+message = "This file needs more memory than ClearMD allows."
+action = "Try splitting it into smaller files, or close other programs."
+
+[error.worker_crashed]
+message = "The converter stopped unexpectedly on this file."
+action = "Try again; if it happens again, the file may be damaged."
+
+[skip]
+output_folder = "ClearMD output folder"
+symlink = "symbolic link (not followed)"
+hidden = "hidden"
+lock_file = "Office lock file"
+too_large = "too large"
+already_markdown = "already Markdown"
+zip_archive = "ZIP archives are not supported — extract them first"
+unsafe_archive = "this file looks damaged or unsafe"
+unsupported_format = "unsupported format"
+existing_output = "output already exists (kept)"

@@ -1,0 +1,45 @@
+# Catálogo en español. Mismas claves y placeholders que en.toml (un test lo verifica).
+
+[error.unsupported_format]
+message = "ClearMD no puede convertir este tipo de archivo."
+action = "Revisa los formatos compatibles en la ayuda."
+
+[error.password_protected]
+message = "Este PDF está protegido con contraseña."
+action = "Quítale la contraseña e inténtalo de nuevo."
+
+[error.corrupt_file]
+message = "Este archivo parece estar dañado."
+action = "Ábrelo en su programa original; si abre, guarda una copia nueva e inténtalo otra vez."
+
+[error.conversion_failed]
+message = "No se pudo convertir este archivo."
+action = "Revisa el detalle técnico en el resumen."
+
+[error.permission_denied]
+message = "ClearMD no puede escribir en esta carpeta."
+action = "Elige otra carpeta de salida."
+
+[error.timed_out]
+message = "La conversión de este archivo tardó demasiado y se detuvo."
+action = "Prueba dividiéndolo en archivos más pequeños."
+
+[error.out_of_memory]
+message = "Este archivo necesita más memoria de la que ClearMD permite."
+action = "Prueba dividiéndolo en archivos más pequeños o cierra otros programas."
+
+[error.worker_crashed]
+message = "El conversor se detuvo de forma inesperada con este archivo."
+action = "Inténtalo de nuevo; si vuelve a pasar, puede que el archivo esté dañado."
+
+[skip]
+output_folder = "carpeta de resultados de ClearMD"
+symlink = "enlace simbólico (no se sigue)"
+hidden = "oculto"
+lock_file = "archivo de bloqueo de Office"
+too_large = "demasiado grande"
+already_markdown = "ya es Markdown"
+zip_archive = "los archivos ZIP no se admiten — descomprímelos primero"
+unsafe_archive = "este archivo parece dañado o inseguro"
+unsupported_format = "formato no compatible"
+existing_output = "el resultado ya existe (se conserva)"

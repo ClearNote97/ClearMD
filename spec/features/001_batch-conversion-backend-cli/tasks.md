@@ -14,7 +14,7 @@ brings the two riskiest parts (the worker and markitdown) to the front.
       Add `pypdf` to the `dev` group. Document in `tests/fixtures/README.md` how to regenerate them.
 - [x] **T02 — Test harness.** `tests/conftest.py` with the no-network autouse fixture (AC-39) and the
       architecture test of ADR-0014 (imports per package).
-- [ ] **T03 — Schemas and i18n basics.** `schemas/formats.py`, `limits.py`, `errors.py`, `models.py`,
+- [x] **T03 — Schemas and i18n basics.** `schemas/formats.py`, `limits.py`, `errors.py`, `models.py`,
       `events.py`; `use_cases/ports.py`, `cancel.py`; `i18n/` with `Catalog`, `resolve_language()` and the
       keys this slice needs; parity test (AC-31, AC-32).
 - [ ] **T04 — markitdown adapter.** `services/conversion/markitdown_adapter.py` + `registry.py`. Confirm with
