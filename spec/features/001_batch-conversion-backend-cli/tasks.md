@@ -47,9 +47,10 @@ brings the two riskiest parts (the worker and markitdown) to the front.
       (AC-04, AC-12 – AC-15).
 - [ ] **T12 — Planning, scheduling and time left.** `use_cases/planning.py` + `scheduling.py` +
       `estimation.py` + `ScanProgress` / `PlanReady` events; the plan is identical for shuffled inputs and
-      ordered by cost; the estimate corrects itself with the measured speed (AC-20, AC-40).
+      ordered by cost; the estimate corrects itself with the measured speed; memory skip and time warning
+      (AC-20, AC-40, AC-42, AC-43).
 - [ ] **T13 — Execution complete.** Existing outputs (re-checked before writing), failure isolation,
-      cancellation, permission errors per output root (AC-16, AC-21, AC-26, AC-27).
+      cancellation, permission errors per output root, stopped files (AC-16, AC-21, AC-26, AC-27, AC-44).
 - [ ] **T14 — Summary.** `services/summary/writer.py`: name table with the time per file, skipped, failed,
       cancelled, history merge, both languages; snapshot tests with a fixed clock (AC-28, AC-29, AC-41).
 
@@ -61,7 +62,7 @@ brings the two riskiest parts (the worker and markitdown) to the front.
 - [ ] **T16 — CLI complete.** Prompt, `--overwrite`/`--skip`, `--dry-run`, `--open`, `--output-root`,
       `--lang`, `--quiet`, `--no-recursive`, time left in the progress line, exit codes 3 and 130 (AC-17,
       AC-18, AC-30, AC-31, AC-34 – AC-38, AC-40).
-- [ ] **T17 — Acceptance sweep.** `tests/acceptance/test_001_batch_conversion.py` covers AC-01 … AC-41, one
+- [ ] **T17 — Acceptance sweep.** `tests/acceptance/test_001_batch_conversion.py` covers AC-01 … AC-44, one
       test per criterion; add the ones not written in earlier slices.
 - [ ] **T18 — Close the feature.**
   - Update `docs/architecture/README.md` to the as-built design.

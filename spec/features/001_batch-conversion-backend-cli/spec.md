@@ -105,10 +105,10 @@ Each criterion has an acceptance test named after its id (`tests/acceptance/test
   and the technical detail; the exit code is 1.
 - [ ] **AC-22** A password-protected PDF fails with the code `password_protected` and the message "This PDF is
   password-protected. Remove the password and try again."; a corrupt file fails with `corrupt_file`.
-- [ ] **AC-23** A file that exceeds the time limit fails with `timed_out`; the worker is replaced and the
-  batch continues.
-- [ ] **AC-24** A worker that exceeds the memory limit is stopped; the file fails with `out_of_memory` and the
-  batch continues with a new worker.
+- [ ] **AC-23** A file that exceeds the time limit is stopped with `timed_out` (AC-44); the worker is replaced
+  and the batch continues.
+- [ ] **AC-24** A worker that exceeds the memory limit is stopped; the file is stopped with `out_of_memory`
+  (AC-44) and the batch continues with a new worker.
 - [ ] **AC-25** If the worker dies (e.g. a crash in native code), the file fails with `worker_crashed` and the
   batch continues with a new worker.
 - [ ] **AC-26** Cancelling (Ctrl+C) stops the current file **at once** by stopping the worker. No partial `.md`
@@ -141,7 +141,7 @@ Each criterion has an acceptance test named after its id (`tests/acceptance/test
 ### CLI contract
 
 - [ ] **AC-35** Exit codes: `0` every planned conversion succeeded (skips are not failures) · `1` at least one
-  conversion failed · `2` usage error or no valid input · `3` a decision is required but there is no
+  conversion failed or was stopped · `2` usage error or no valid input · `3` a decision is required but there is no
   interactive terminal · `130` cancelled. If a batch is cancelled after some failures, 130 wins.
 - [ ] **AC-36** `--open` opens the output folder(s) in the system file browser when the batch ends. The CLI
   never does it by default.
@@ -160,6 +160,19 @@ Each criterion has an acceptance test named after its id (`tests/acceptance/test
   (`[12/37] report.pdf · about 3 min left`). The estimate starts from the benchmark's speeds and is corrected
   after every file with the ratio between measured and estimated time of the files already converted.
 - [ ] **AC-41** The name table of `Resumen_ClearMD.md` shows how long each file took to convert.
+
+### Warnings in the plan and stopped files
+
+- [ ] **AC-42** A file whose **estimated memory** (the worker's base memory + its size × the format's memory
+  per MiB measured by the benchmark) exceeds the worker memory limit is skipped while planning, before anything
+  is converted, as "too big to convert (it would need about 6.9 GB of memory; the limit is 4 GB)".
+- [ ] **AC-43** A file whose **estimated time** exceeds the time limit is **not** skipped: the plan carries a
+  warning, shown before converting ("may take more than 10 minutes (about 15 min) and be stopped"), and the
+  file is converted — last, because of the cost order.
+- [ ] **AC-44** A file stopped by the time or memory limit is reported as **stopped**, not as failed: the CLI
+  line and the summary's "Stopped" section say how long it ran and roughly how far it got by the estimate
+  ("stopped after 10:00, about 65% by the estimate"), and suggest splitting it into smaller files. The exit
+  code is 1.
 
 ## Actors and data
 

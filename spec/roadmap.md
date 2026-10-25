@@ -49,6 +49,9 @@ already tested (ADR-0001).
       **Merge** `.md` files into one (`OutputUnif/`; the last batch by default, or any `.md` the user picks);
       **Split** a large source document into N similar parts in its own format (`OutputSep/`; PDF by pages
       first, then csv/txt and xlsx).
+      From the plan review, a file marked too big or too slow (AC-42/43 of feature 001) offers **"Split it"**:
+      Tools opens with a recommended number of parts (from the estimates, so each part fits the limits), and
+      the parts replace the file in the batch when the user comes back.
 
 ## Out for now
 
