@@ -1,6 +1,6 @@
 # ADR-0007: Real package with `src/` layout instead of a `--no-package` project
 
-- **Status:** accepted
+- **Status:** accepted; the README-per-folder rule superseded by ADR-0014
 - **Date:** 2026-10-24
 
 ## Context

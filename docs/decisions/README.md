@@ -18,16 +18,21 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 
 | ADR | Decision | Status |
 |---|---|---|
-| [0001](./0001-core-and-adapters.md) | Pure core with ports and adapters (CLI + 3 GUIs + presenter) | accepted |
+| [0001](./0001-core-and-adapters.md) | Pure core with ports and adapters (CLI + 3 GUIs + presenter) | accepted; module names superseded by 0014 |
 | [0002](./0002-no-database.md) | No database; preferences in TOML | accepted |
 | [0003](./0003-pyside6-over-pyqt6.md) | PySide6-Essentials instead of PyQt6 (license) | accepted |
 | [0004](./0004-hybrid-engine-with-markitdown.md) | Hybrid engine: markitdown behind a port + own converters | accepted |
 | [0005](./0005-fully-local.md) | 100% local: documents never leave the machine | accepted |
 | [0006](./0006-own-converters.md) | Own converters: .tex, .odt and HTML article mode | accepted |
-| [0007](./0007-real-package-src-layout.md) | Real package with `src/` layout | accepted |
+| [0007](./0007-real-package-src-layout.md) | Real package with `src/` layout | accepted; README rule superseded by 0014 |
 | [0008](./0008-dev-only-container.md) | Container for development; executables from CI | accepted |
 | [0009](./0009-template-pruning.md) | Pruning of the ClearNote_Dev template | accepted |
-| [0010](./0010-batch-detection-and-output-folder.md) | Batch, autodetection and the `ClearMD_Output` folder | accepted |
-| [0011](./0011-repository-language.md) | Repository language: English, with a Spanish README | accepted |
-| [0012](./0012-bilingual-app-and-shared-settings.md) | Bilingual app (TOML catalogs) and one shared settings file | accepted |
+| [0010](./0010-batch-detection-and-output-folder.md) | Batch, autodetection and the `ClearMD_Output` folder | accepted; outputs superseded by 0016, extended by 0015 |
+| [0011](./0011-repository-language.md) | Repository language: English, with a Spanish README | accepted; corrected by 0014 |
+| [0012](./0012-bilingual-app-and-shared-settings.md) | Bilingual app (TOML catalogs) and one shared settings file | accepted; language resolution superseded by 0017 |
 | [0013](./0013-non-technical-users-first.md) | Designed for non-technical users first, with a shared UX contract | accepted |
+| [0014](./0014-template-aligned-src-layout.md) | `src/` layout aligned with the ClearNote_Dev template | accepted |
+| [0015](./0015-conversion-worker-process.md) | Worker process, resource limits and a cost-ordered queue | accepted |
+| [0016](./0016-output-layout-and-summary.md) | Output layout, chosen output folder and `Resumen_ClearMD.md` | accepted |
+| [0017](./0017-english-default-language.md) | English by default, no OS language detection | accepted |
+| [0018](./0018-python-range-and-installation.md) | Python 3.12–3.14 and ways to install | accepted |

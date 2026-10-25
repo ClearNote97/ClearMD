@@ -1,6 +1,6 @@
 # ADR-0001: Pure core with ports and adapters
 
-- **Status:** accepted
+- **Status:** accepted; module names superseded by ADR-0014
 - **Date:** 2026-10-24
 
 ## Context

@@ -1,6 +1,6 @@
 # ADR-0010: Batch conversion, format autodetection and the `ClearMD_Output` folder
 
-- **Status:** accepted (the fine-grained rules are set in the spec of feature 001)
+- **Status:** accepted; output names and layout superseded by ADR-0016, cancellation and limits extended by ADR-0015
 - **Date:** 2026-10-24
 
 ## Context

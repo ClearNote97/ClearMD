@@ -1,6 +1,6 @@
 # ADR-0012: Bilingual app with TOML message catalogs and one shared settings file
 
-- **Status:** accepted
+- **Status:** accepted; language resolution superseded by ADR-0017
 - **Date:** 2026-10-24
 
 ## Context

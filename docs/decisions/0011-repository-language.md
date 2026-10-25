@@ -1,6 +1,6 @@
 # ADR-0011: Repository language — English, with a Spanish README
 
-- **Status:** accepted
+- **Status:** accepted; the list of verbatim template files corrected by ADR-0014 (`spec_agents/`)
 - **Date:** 2026-10-24
 
 ## Context
