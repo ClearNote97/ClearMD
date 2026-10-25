@@ -7,9 +7,9 @@
 > Si guardas los resultados en una carpeta de OneDrive, Google Drive o Dropbox, esa aplicación sí puede
 > subirlos a la nube — eso lo hace la app de sincronización, no ClearMD.
 
-> 🚧 **Estado: feature 001 en curso.** La CLI ya convierte archivos a través del proceso worker
-> (`clearmd informe.pdf notas.docx` → `ClearMD_Output/OutputMD/`); faltan carpetas, el resumen y el resto de la
-> CLI (ver el [roadmap](./spec/roadmap.md)).
+> 🚧 **Estado: la línea de comandos funciona (feature 001).** Convierte archivos y carpetas a través de un
+> proceso aparte, con límites, un resumen y mensajes en inglés y español. Las apps de escritorio vienen después
+> (ver el [roadmap](./spec/roadmap.md)).
 
 ## Qué hará
 
@@ -54,9 +54,47 @@ alternativas descartadas y consecuencias. Algunas:
 - [Pensada primero para usuarios no técnicos](./docs/decisions/0013-non-technical-users-first.md)
 - [Conversiones en un proceso aparte, primero los archivos livianos](./docs/decisions/0015-conversion-worker-process.md)
 
+## Uso (línea de comandos)
+
+```bash
+clearmd informe.pdf notas.docx               # archivos
+clearmd ~/Documentos/proyecto                # una carpeta completa, con subcarpetas
+clearmd tesis/ --output-root ~/Escritorio    # resultados en ~/Escritorio/ClearMD_Output
+clearmd proyecto/ --dry-run                  # ver el plan sin escribir nada
+clearmd informe.pdf --lang es                # mensajes en español
+```
+
+Los resultados quedan en una carpeta `ClearMD_Output` junto a lo que elegiste:
+
+```
+ClearMD_Output/
+  Resumen_ClearMD.md   qué se convirtió (nombre original → nuevo, tiempo), omitió, detuvo o falló, y el historial
+  OutputMD/            los Markdown, con la misma estructura de tus carpetas
+```
+
+| Opción | Qué hace |
+|---|---|
+| `--overwrite` / `--skip` | Qué hacer con resultados que ya existen. Sin ninguna, ClearMD pregunta una vez. |
+| `--recursive` / `--no-recursive` | Incluir subcarpetas o no (por defecto: sí). |
+| `--output-root DIR` | Crear `ClearMD_Output` dentro de `DIR`. |
+| `--dry-run` | Mostrar qué pasaría, sin escribir nada. |
+| `--open` | Abrir la carpeta de resultados al terminar. |
+| `--lang {en,es}` | Idioma de esta ejecución. |
+| `-q`, `--quiet` | Solo el resumen y los errores. |
+
+- **Seguro con cualquier archivo:** nunca sigue enlaces simbólicos; omite ocultos, archivos de bloqueo de Office y
+  ZIP; los archivos dañados o sospechosos (bombas ZIP) se reportan sin abrirlos a ciegas; cada archivo tiene
+  límite de tiempo y de memoria, y **Ctrl+C** detiene al instante.
+- **Códigos de salida:** `0` todo convertido · `1` algún archivo falló o se detuvo · `2` error de uso o ninguna
+  entrada válida · `3` hay resultados existentes y nadie puede responder (usa `--overwrite` o `--skip`) ·
+  `130` cancelado.
+- **Configuración:** un `settings.toml` opcional en tu carpeta de configuración de usuario (en Linux
+  `~/.config/ClearMD/settings.toml`) guarda `language = "es"`, `on_existing_output = "skip"`, `recursive = false`…
+  Los flags mandan sobre él en una ejecución.
+
 ## Instalación
 
-> Aún no hay versión publicada: estos comandos funcionarán cuando llegue la feature 001.
+> Aún no está publicada en PyPI: se instala desde el repositorio.
 
 1. **Ejecutables (sin instalar Python)** — para Windows y Linux, desde
    [GitHub Releases](https://github.com/ClearNote97/ClearMD/releases) (feature 006). Lo recomendado para la

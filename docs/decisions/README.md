@@ -27,7 +27,7 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 | [0007](./0007-real-package-src-layout.md) | Real package with `src/` layout | accepted; README rule superseded by 0014 |
 | [0008](./0008-dev-only-container.md) | Container for development; executables from CI | accepted |
 | [0009](./0009-template-pruning.md) | Pruning of the ClearNote_Dev template | accepted |
-| [0010](./0010-batch-detection-and-output-folder.md) | Batch, autodetection and the `ClearMD_Output` folder | accepted; outputs superseded by 0016, extended by 0015 |
+| [0010](./0010-batch-detection-and-output-folder.md) | Batch, autodetection and the `ClearMD_Output` folder | accepted; outputs superseded by 0016, extended by 0015, detection narrowed by 0021 |
 | [0011](./0011-repository-language.md) | Repository language: English, with a Spanish README | accepted; corrected by 0014 |
 | [0012](./0012-bilingual-app-and-shared-settings.md) | Bilingual app (TOML catalogs) and one shared settings file | accepted; language resolution superseded by 0017 |
 | [0013](./0013-non-technical-users-first.md) | Designed for non-technical users first, with a shared UX contract | accepted |
@@ -38,3 +38,4 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 | [0018](./0018-python-range-and-installation.md) | Python 3.12–3.14 and ways to install | accepted |
 | [0019](./0019-outputmd-and-v2-tools.md) | `OutputMD/` for results; room for the v2 tools (merge, split) | accepted |
 | [0020](./0020-non-root-dev-container.md) | The dev container runs as a non-root user with the host's UID | accepted |
+| [0021](./0021-content-detection-only-without-extension.md) | Content detection only for files without an extension | accepted |

@@ -16,7 +16,7 @@ already tested (ADR-0001).
 
 - [x] **Phase 0:** template pruning, `clearmd` package in the template layout, ADRs 0001–0018, UX contract,
       clean dev container.
-- [ ] **001 — Batch conversion: backend + CLI** ([spec](./features/001_batch-conversion-backend-cli/spec.md)):
+- [x] **001 — Batch conversion: backend + CLI** ([spec](./features/001_batch-conversion-backend-cli/spec.md)):
       worker process with limits, cost-ordered queue, detection, plan → confirm → execute,
       `ClearMD_Output/OutputMD/` + `Resumen_ClearMD.md` with history, markitdown adapter, i18n EN/ES, settings
       (read), complete CLI, benchmark.

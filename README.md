@@ -7,9 +7,9 @@
 > If you save the results in a folder synced by OneDrive, Google Drive or Dropbox, that app may upload them to
 > the cloud — that is the sync app, not ClearMD.
 
-> 🚧 **Status: feature 001 in progress.** The CLI already converts files through the worker process
-> (`clearmd report.pdf notes.docx` → `ClearMD_Output/OutputMD/`); folders, the summary and the rest of the
-> CLI follow (see the [roadmap](./spec/roadmap.md)).
+> 🚧 **Status: the command line works (feature 001).** It converts files and folders through a worker
+> process, with limits, a summary and English/Spanish messages. The desktop apps come next (see the
+> [roadmap](./spec/roadmap.md)).
 
 ## What it will do
 
@@ -54,9 +54,45 @@ alternatives and consequences. Some of them:
 - [Designed for non-technical users first](./docs/decisions/0013-non-technical-users-first.md)
 - [Conversions in a worker process, lightest files first](./docs/decisions/0015-conversion-worker-process.md)
 
+## Usage (command line)
+
+```bash
+clearmd report.pdf notes.docx            # files
+clearmd ~/Documents/project              # a whole folder, subfolders included
+clearmd thesis/ --output-root ~/Desktop  # results in ~/Desktop/ClearMD_Output
+clearmd project/ --dry-run               # see the plan, write nothing
+```
+
+Results go to a `ClearMD_Output` folder next to what you chose:
+
+```
+ClearMD_Output/
+  Resumen_ClearMD.md   what was converted (old name → new name, time), skipped, stopped or failed, and the history
+  OutputMD/            the Markdown files, mirroring your folders
+```
+
+| Option | What it does |
+|---|---|
+| `--overwrite` / `--skip` | What to do with outputs that already exist. Without either, ClearMD asks once. |
+| `--recursive` / `--no-recursive` | Include subfolders or not (default: yes). |
+| `--output-root DIR` | Create `ClearMD_Output` inside `DIR`. |
+| `--dry-run` | Show what would happen; write nothing. |
+| `--open` | Open the results folder when done. |
+| `--lang {en,es}` | Language for this run. |
+| `-q`, `--quiet` | Only the summary and errors. |
+
+- **Safe with any file:** symbolic links are never followed; hidden files, Office lock files and ZIP archives
+  are skipped; damaged or suspicious files (zip bombs) are reported, never opened blindly; each file has a time
+  and a memory limit, and **Ctrl+C** stops at once.
+- **Exit codes:** `0` all converted · `1` some file failed or was stopped · `2` usage error or no valid input ·
+  `3` outputs exist and nobody can answer (use `--overwrite` or `--skip`) · `130` cancelled.
+- **Settings:** an optional `settings.toml` in your user configuration folder (on Linux
+  `~/.config/ClearMD/settings.toml`) holds `language = "es"`, `on_existing_output = "skip"`, `recursive = false`…
+  Flags win over it for one run.
+
 ## Installation
 
-> Not released yet: the commands below will work once feature 001 lands.
+> Not released on PyPI yet: install from the repository.
 
 1. **Executables (no Python needed)** — for Windows and Linux, from
    [GitHub Releases](https://github.com/ClearNote97/ClearMD/releases) (feature 006). Recommended for most people.

@@ -1,4 +1,4 @@
-# docs/architecture — System design
+# docs/architecture — System design (as built, feature 001)
 
 ClearMD follows a **ports and adapters** architecture (ADR-0001), laid out with the ClearNote_Dev template's
 `backend/` and `frontend/` folders inside the package (ADR-0014). The use cases know neither the interfaces nor
@@ -7,39 +7,67 @@ the conversion libraries; heavy and untrusted work runs in a separate worker pro
 ```
   frontend/                          backend/
  ┌──────────────────────────┐       ┌──────────────────────────────────────────────────────────┐
- │ cli   ttk   qt   flet    │       │ api/        facade (plan_batch, run_batch) + composition  │
- │        │                 │ ───►  │   │                                                       │
- │    presenter (MVP)       │       │   ▼                                                       │
- └──────────────────────────┘       │ use_cases/  scan → plan → schedule → execute, ports       │
-          only api + schemas        │   ▲  (stdlib only)        schemas/ (data, stdlib only)    │
+ │ cli  (ttk, qt, flet      │       │ api/        plan_batch · run_batch · load_settings        │
+ │       in their phase)    │ ───►  │             composition.py builds every service           │
+ │    presenter (005)       │       │   │                                                       │
+ └──────────────────────────┘       │   ▼                                                       │
+     only api + schemas + i18n      │ use_cases/  scan → plan → order → execute → report        │
+                                    │   ▲  ports.py · stdlib only     schemas/ (data, stdlib)   │
                                     │   │ implement                                             │
-                                    │ services/   detection · summary · settings · worker ──┐   │
+                                    │ services/   detection · summary · settings_store · worker ┤
                                     └───────────────────────────────────────────────────────┼───┘
                                                                                             │ pipe
-                                                          ┌─────────────────────────────────▼───┐
-                                                          │ worker process: markitdown + magika │
-                                                          │ (later .tex, .odt, article mode)    │
-                                                          └─────────────────────────────────────┘
+                                                       ┌────────────────────────────────────▼──┐
+                                                       │ worker process: markitdown + magika   │
+                                                       │ convert and detect, one file at a time │
+                                                       └────────────────────────────────────────┘
 ```
 
-**Dependency rule** (an architecture test enforces it): `backend/schemas`, `backend/use_cases` and `i18n` import
-only the standard library; `backend/services` implements the ports and is the only place with third-party
-imports; `frontend/` talks only to `backend/api`, `backend/schemas` and `i18n`. The CLI process never imports
-markitdown or magika: only the worker does.
+**Dependency rule** (enforced by `tests/unit/test_architecture.py`): `backend/schemas`, `backend/use_cases`
+and `i18n` import only the standard library; `backend/services` implements the ports and is the only place with
+third-party imports; `frontend/` talks only to `backend/api`, `backend/schemas` and `i18n`. The CLI process
+never imports markitdown or magika: only the worker does (AC-19, tested in a fresh process).
 
-Feature 001's [plan](../../spec/features/001_batch-conversion-backend-cli/plan.md) details every module.
+## Modules
 
-## Flow of a batch conversion (ADR-0010, ADR-0015, ADR-0016)
+| Package | Module | Role |
+|---|---|---|
+| `schemas` | `formats` | `FormatId`, the extension table, ZIP-based formats, the fixed names (`ClearMD_Output`, `OutputMD`, `Resumen_ClearMD.md`). |
+| | `limits` | `Limits` and the speeds and memory factors per format measured in [benchmark 001](../benchmarks/001-conversion-limits.md). |
+| | `errors` | `ErrorCode`, `SkipReason` (each with its catalog keys), `ConversionError`, `Cancelled`. |
+| | `models` | Frozen `BatchPlan`, `PlannedConversion`, `SkippedItem`, `PlanWarning`, `ConversionOutcome`, `BatchReport`, `OutputRootReport`. |
+| | `events` | `ScanProgress`, `PlanReady`, `ConversionStarted` (with the time left), `ConversionFinished`, `BatchFinished`. |
+| | `settings` | `Settings` and its allowed values (ADR-0012, ADR-0017). |
+| `use_cases` | `ports` | `FormatDetector`, `ConversionRunner`, `Clock`. |
+| | `scanning` | Walks the inputs; never follows symlinks, never enters `ClearMD_Output`; skips hidden, lock, `.md`, `.zip`, oversized files. |
+| | `archive` | Reads a ZIP's central directory only: uncompressed size, whole-file ratio, size of the text parts. |
+| | `paths` | Output parent (root/home rule), targets, collision-free names. |
+| | `planning` | Detection, archive check, memory skip, names, cost order, slow-file warnings → `BatchPlan`. |
+| | `scheduling`, `estimation` | Cheapest first; time left corrected with the measured speed. |
+| | `execution` | Warm-up, one file at a time, atomic UTF-8/LF writes, failure isolation, stopped files, unwritable roots, cancellation. |
+| | `reporting`, `settings`, `cancel` | One report per output root; settings parse/serialize; the cancel token. |
+| `services` | `worker/` | `WorkerRunner` (supervisor: `Ready` handshake, time and memory limits with psutil, cancellation, replacement) and the child process. |
+| | `conversion/` | The markitdown adapter (exception mapping verified on fixtures) and the registry. |
+| | `detection/` | Extension (CLI process), magika by content (worker), only for files without an extension. |
+| | `summary/` | `Resumen_ClearMD.md`: name table, sections, history, escaping of untrusted names. |
+| | `settings_store`, `clock` | `settings.toml` on each OS (platformdirs); the system clock. |
+| `frontend` | `cli/app.py` | Arguments, settings and language, prompt, dry run, progress, Ctrl+C, summary, `--open`, exit codes. |
+| `i18n` | | EN/ES catalogs, plain-word durations, stopwatch time, gigabytes per language. |
 
-1. The interface receives files and/or folders, and optionally an output folder.
-2. `use_cases` scans the inputs (skipping hidden files, symlinks, oversized files and suspicious archives),
-   detects the format of each file (by extension; by content in the worker) and computes the destinations in
-   `ClearMD_Output/OutputMD/` (resolving collisions) → **batch plan**, ordered from the cheapest to the most
-   expensive file.
-3. The interface shows the plan; if there are existing outputs, the user decides.
-4. `use_cases` executes: the worker converts one file at a time; the supervisor enforces the time and memory
-   limits and cancels at once when asked. The Markdown is written atomically. A failure does not stop the
-   batch.
-5. `Resumen_ClearMD.md` is written in each output root: the name table, skips, failures and the history.
+## Flow of a batch (ADR-0010, ADR-0015, ADR-0016)
 
-> This document describes the target design. It is updated to the as-built design when feature 001 closes.
+1. **Plan** (`plan_batch`, nothing written): scan the inputs; detect each format (extension, or magika in the
+   worker for files without one); check ZIP-based documents from their index; skip what would not fit in the
+   worker's memory; compute collision-free targets in `ClearMD_Output/OutputMD/`; order by estimated time;
+   warn about files that may exceed the time limit.
+2. **Decide**: existing outputs are overwritten, kept, or asked about once (CLI flags, settings or prompt).
+3. **Execute** (`run_batch`): warm the worker up; convert one file at a time; the supervisor stops a file over
+   the time or memory limit and replaces the worker; Markdown is written atomically; Ctrl+C or Cancel stops the
+   current file at once.
+4. **Report**: one `Resumen_ClearMD.md` per output folder, with the name table, times, problems and history.
+
+## The worker protocol
+
+`ConvertRequest` / `DetectRequest` go down the pipe; `Converted`, `Detected` or `Failed` come back. The worker
+sends `Ready` once its converters are loaded: time limits count from the moment a file is sent, never during
+start-up. A `None` request asks it to exit.
