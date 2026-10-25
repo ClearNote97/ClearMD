@@ -15,8 +15,15 @@
 Dockerfile    text eol=lf
 *.json        text eol=lf
 
-# Binaries (leave untouched)
+# Binaries (leave untouched). Documents too: a hand-written PDF can be pure ASCII, and
+# normalizing its CRLF would break the byte offsets of its xref table.
 *.png binary
 *.jpg binary
 *.parquet binary
+*.pdf binary
+*.docx binary
+*.pptx binary
 *.xlsx binary
+*.epub binary
+*.odt binary
+*.zip binary

@@ -2,7 +2,7 @@ from importlib.metadata import version
 
 import pytest
 
-from clearmd.cli import main
+from clearmd.frontend.cli import main
 
 
 def test_version_flag_prints_package_version(capsys: pytest.CaptureFixture[str]) -> None:

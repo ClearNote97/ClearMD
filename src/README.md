@@ -1,15 +1,19 @@
-# src/ — Implementation (core + adapters)
+# src/ — Implementation (the `clearmd` package)
 
-The `clearmd` package (`src/` layout, ADR-0007). Dependencies point **toward the core**, never the other way
-around (ADR-0001). Each subpackage documents its role in the docstring of its `__init__.py`.
+`src/` layout with a real package (ADR-0007), organized like the ClearNote_Dev template **inside** the package
+(ADR-0014): `backend/` and `frontend/`, with a `README.md` in every folder (excluded from the wheel).
 
 | Folder | Role |
 |---|---|
-| `clearmd/core/` | Domain: ports (`DocumentConverter`, `FormatDetector`), models and use cases. Imports no GUI and no conversion library. |
-| `clearmd/converters/` | Conversion adapters: the markitdown wrapper and the own converters (.tex, .odt, HTML article mode). |
-| `clearmd/presenter/` | Interaction logic shared by every GUI (MVP pattern). |
-| `clearmd/cli/` | Command-line adapter: the first interface, and the one acceptance tests drive. |
+| `clearmd/backend/api/` | Facade every interface calls (`plan_batch`, `run_batch`) + composition root. In-process, no HTTP. |
+| `clearmd/backend/schemas/` | Immutable data crossing the facade: plans, reports, events, settings, error codes. |
+| `clearmd/backend/use_cases/` | Scan → plan → schedule → execute, pure rules and the ports. Standard library only. |
+| `clearmd/backend/services/` | The ports' implementations: markitdown and own converters, detection, worker process. |
+| `clearmd/frontend/cli/` | Command-line interface: the first one, and the one acceptance tests drive. |
+| `clearmd/frontend/presenter/` | Interaction logic shared by the GUIs (MVP, feature 005). |
+| `clearmd/i18n/` | EN/ES message catalogs (feature 001, ADR-0012). |
 
-Feature 001 adds `i18n/`, `detection/`, `config/` and `composition.py` (see its
-[plan](../spec/features/001_batch-conversion-core-cli/plan.md)). GUIs (`ttk`, `qt`, `flet`) arrive as
-subpackages in their phase (see `spec/roadmap.md`).
+**Dependency rule** (an architecture test enforces it, ADR-0014): `schemas/` and `use_cases/` import only the
+standard library; `services/` implements the ports and is the only place with third-party imports; `frontend/`
+talks only to `backend/api`, `backend/schemas` and `i18n`. GUIs (`ttk/`, `qt/`, `flet/`) arrive in
+`frontend/` in their phase (see `spec/roadmap.md`).
