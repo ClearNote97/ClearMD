@@ -109,3 +109,42 @@ def test_the_cost_of_a_zip_document_counts_its_text_not_its_images(tmp_path: Pat
     limits = Limits()
     (item,) = build_plan([path], detector=TableDetector(), limits=limits).conversions
     assert item.cost == pytest.approx(limits.estimated_seconds(FormatId.DOCX, MIB))
+
+
+def test_collisions_are_resolved_before_marking_existing_outputs(tmp_path: Path) -> None:
+    (tmp_path / "report.pdf").write_bytes(b"%PDF")
+    (tmp_path / "Report.txt").write_text("x", encoding="utf-8")
+    existing = tmp_path / "ClearMD_Output" / "OutputMD" / "report (pdf).md"
+    existing.parent.mkdir(parents=True)
+    existing.write_text("old", encoding="utf-8")
+    plan = build_plan(
+        [tmp_path / "report.pdf", tmp_path / "Report.txt"],
+        detector=TableDetector(),
+        limits=Limits(),
+    )
+    by_name = {item.source.name: item for item in plan.conversions}
+    assert by_name["report.pdf"].target.name == "report (pdf).md"
+    assert by_name["report.pdf"].exists
+    assert by_name["Report.txt"].target.name == "Report (txt).md"
+    assert not by_name["Report.txt"].exists
+
+
+def test_the_home_folder_writes_its_contents_directly_into_outputmd(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: tmp_path))
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "a.pdf").write_bytes(b"%PDF")
+    (item,) = build_plan([tmp_path], detector=TableDetector(), limits=Limits()).conversions
+    assert item.target == tmp_path / "ClearMD_Output" / "OutputMD" / "docs" / "a.md"
+
+
+def test_an_output_folder_override_keeps_the_layout(tmp_path: Path) -> None:
+    project = tmp_path / "in" / "project"
+    project.mkdir(parents=True)
+    (project / "a.pdf").write_bytes(b"%PDF")
+    out = tmp_path / "out"
+    (item,) = build_plan(
+        [project], detector=TableDetector(), limits=Limits(), output_root=out
+    ).conversions
+    assert item.target == out / "ClearMD_Output" / "OutputMD" / "project" / "a.md"

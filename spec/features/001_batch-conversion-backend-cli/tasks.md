@@ -42,7 +42,7 @@ brings the two riskiest parts (the worker and markitdown) to the front.
 
 ## Slice C — Plan, names, order and the summary
 
-- [ ] **T11 — Output paths and names.** `use_cases/paths.py` complete: output parents, root/home, layout,
+- [x] **T11 — Output paths and names.** `use_cases/paths.py` complete: output parents, root/home, layout,
       `--output-root`, case-insensitive collisions with extension and counter, determinism
       (AC-04, AC-12 – AC-15).
 - [ ] **T12 — Planning, scheduling and time left.** `use_cases/planning.py` + `scheduling.py` +

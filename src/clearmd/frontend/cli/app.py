@@ -1,7 +1,7 @@
 """CLI entry point. Thin path of slice A: files in, Markdown out, progress and exit codes (T06).
 
 The prompt, --dry-run, --open, --output-root, --lang and exit codes 3/130 in full arrive in T16;
---no-recursive came with scanning (T08).
+--no-recursive came with scanning (T08), --output-root with the output paths (T11).
 """
 
 import argparse
@@ -36,6 +36,9 @@ def build_parser(catalog: Catalog) -> argparse.ArgumentParser:
     existing.add_argument("--skip", action="store_true", help=catalog.text("cli.help.skip"))
     parser.add_argument(
         "--no-recursive", action="store_true", help=catalog.text("cli.help.no_recursive")
+    )
+    parser.add_argument(
+        "--output-root", type=Path, metavar="DIR", help=catalog.text("cli.help.output_root")
     )
     parser.add_argument("-q", "--quiet", action="store_true", help=catalog.text("cli.help.quiet"))
     parser.add_argument("--version", action="version", version=f"%(prog)s {version('clearmd')}")
@@ -84,7 +87,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser(catalog).parse_args(argv)
     err = sys.stderr
 
-    plan = plan_batch([path.expanduser() for path in args.paths], recursive=not args.no_recursive)
+    plan = plan_batch(args.paths, recursive=not args.no_recursive, output_root=args.output_root)
     for problem in plan.input_errors:
         print(catalog.text("cli.input_not_found", path=problem.path), file=err)
     if not args.quiet:

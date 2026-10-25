@@ -196,3 +196,43 @@ def test_ac_11_an_unsupported_file_is_skipped_and_the_batch_continues(
     assert main([str(script), str(good)]) == 0
     assert "tool.py — unsupported format" in capsys.readouterr().err
     assert (workdir / "ClearMD_Output" / "OutputMD" / "good.md").is_file()
+
+
+def test_ac_12_the_home_folder_keeps_its_output_inside(
+    workdir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    home = workdir / "ana"
+    put(home, "sample.txt", "notes.txt")
+    put(home, "sample.txt", "work/plan.txt")
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
+    assert main([str(home), "--quiet"]) == 0
+    assert _tree(home / "ClearMD_Output" / "OutputMD") == ["notes.md", "work", "work/plan.md"]
+
+
+def test_ac_13_output_root_writes_into_the_chosen_folder(workdir: Path) -> None:
+    single = put(workdir / "in", "sample.txt", "notes.txt")
+    project = workdir / "in" / "project"
+    put(project, "sample.txt", "a.txt")
+    chosen = workdir / "chosen"
+    assert main([str(single), str(project), "--output-root", str(chosen), "--quiet"]) == 0
+    assert _tree(chosen / "ClearMD_Output" / "OutputMD") == ["notes.md", "project", "project/a.md"]
+    assert not (workdir / "in" / "ClearMD_Output").exists()
+
+
+def test_ac_14_colliding_outputs_get_the_extension_and_a_counter(workdir: Path) -> None:
+    put(workdir, "sample.pdf", "report.pdf")
+    put(workdir, "sample.docx", "Report.docx")
+    other = put(workdir / "elsewhere", "sample.pdf", "report.pdf")
+    chosen = workdir / "chosen"
+    arguments = [str(workdir / "report.pdf"), str(workdir / "Report.docx"), str(other)]
+    assert main([*arguments, "--output-root", str(chosen), "--quiet"]) == 0
+    names = sorted(p.name for p in (chosen / "ClearMD_Output" / "OutputMD").iterdir())
+    assert names == ["Report (docx).md", "report (pdf 2).md", "report (pdf).md"]
+
+
+def test_ac_15_full_stems_and_unicode_names_are_kept(workdir: Path) -> None:
+    first = put(workdir, "sample.txt", "report.v2.final.txt")
+    second = put(workdir, "sample.docx", "informe_año_ñ.docx")
+    assert main([str(first), str(second), "--quiet"]) == 0
+    output = workdir / "ClearMD_Output" / "OutputMD"
+    assert sorted(p.name for p in output.iterdir()) == ["informe_año_ñ.md", "report.v2.final.md"]

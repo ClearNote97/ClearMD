@@ -1,5 +1,6 @@
 """The facade every interface calls (ADR-0014): plan a batch, then run it."""
 
+import os
 from collections.abc import Callable, Sequence
 from pathlib import Path
 
@@ -32,11 +33,12 @@ def plan_batch(
     worker = composition.build_runner(limits)
     try:
         return build_plan(
-            inputs,
+            # Absolute, without resolving symlinks: a link given as input must stay a link.
+            [Path(os.path.abspath(path.expanduser())) for path in inputs],
             detector=composition.build_detector(worker),
             limits=limits,
             recursive=recursive,
-            output_root=output_root,
+            output_root=Path(os.path.abspath(output_root.expanduser())) if output_root else None,
             on_event=on_event,
         )
     finally:
