@@ -62,7 +62,7 @@ mypy_path = ["src", "tests", "tests/fixtures", "tests/benchmark"]
 
 [[tool.mypy.overrides]]
 # Third-party libraries without type information; each entry is justified where it is imported.
-module = ["openpyxl", "openpyxl.*", "psutil"]
+module = ["openpyxl", "openpyxl.*", "psutil", "pylatexenc", "pylatexenc.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
