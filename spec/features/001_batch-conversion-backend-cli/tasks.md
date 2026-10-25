@@ -49,7 +49,7 @@ brings the two riskiest parts (the worker and markitdown) to the front.
       `estimation.py` + `ScanProgress` / `PlanReady` events; the plan is identical for shuffled inputs and
       ordered by cost; the estimate corrects itself with the measured speed; memory skip and time warning
       (AC-20, AC-40, AC-42, AC-43).
-- [ ] **T13 — Execution complete.** Existing outputs (re-checked before writing), failure isolation,
+- [x] **T13 — Execution complete.** Existing outputs (re-checked before writing), failure isolation,
       cancellation, permission errors per output root, stopped files (AC-16, AC-21, AC-26, AC-27, AC-44).
 - [ ] **T14 — Summary.** `services/summary/writer.py`: name table with the time per file, skipped, failed,
       cancelled, history merge, both languages; snapshot tests with a fixed clock (AC-28, AC-29, AC-41).

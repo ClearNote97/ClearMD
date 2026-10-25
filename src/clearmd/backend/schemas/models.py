@@ -90,6 +90,8 @@ class BatchPlan:
 class OutcomeStatus(StrEnum):
     CONVERTED = "converted"
     FAILED = "failed"
+    # Stopped by the time or memory limit: the file is not damaged, just too big (AC-44).
+    STOPPED = "stopped"
     KEPT = "kept"
     CANCELLED = "cancelled"
 

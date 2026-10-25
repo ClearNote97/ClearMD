@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import TextIO
 
 from clearmd.backend.api import plan_batch, run_batch
+from clearmd.backend.schemas.errors import ErrorCode
 from clearmd.backend.schemas.events import BatchEvent, ConversionFinished, ConversionStarted
 from clearmd.backend.schemas.models import (
     BatchPlan,
@@ -51,9 +52,17 @@ def build_parser(catalog: Catalog) -> argparse.ArgumentParser:
     return parser
 
 
+def share_done(seconds: float, estimated: float) -> int:
+    """How far a stopped file probably got, by the estimate; never claims 100 % (AC-44)."""
+    if estimated <= 0:
+        return 99
+    return max(1, min(99, round(100 * seconds / estimated)))
+
+
 class _Progress:
     def __init__(self, catalog: Catalog, *, quiet: bool, stream: TextIO) -> None:
         self._catalog, self._quiet, self._stream = catalog, quiet, stream
+        self._hinted = False
 
     def __call__(self, event: BatchEvent) -> None:
         if isinstance(event, ConversionStarted) and not self._quiet:
@@ -65,9 +74,24 @@ class _Progress:
                 line = f"{line} · {self._catalog.text('cli.time_left', duration=duration)}"
             print(line, file=self._stream)
         elif isinstance(event, ConversionFinished) and event.outcome.error is not None:
-            message = self._catalog.error(event.outcome.error)
-            name = event.outcome.item.source.name
-            print(self._catalog.text("cli.failed", name=name, message=message), file=self._stream)
+            outcome = event.outcome
+            assert outcome.error is not None
+            name = outcome.item.source.name
+            if outcome.status is OutcomeStatus.STOPPED:
+                line = self._catalog.text(
+                    "cli.stopped",
+                    name=name,
+                    elapsed=self._catalog.clock(outcome.seconds),
+                    percent=share_done(outcome.seconds, outcome.item.cost),
+                    action=self._catalog.text(outcome.error.action_key),
+                )
+            else:
+                message = self._catalog.error(outcome.error)
+                line = self._catalog.text("cli.failed", name=name, message=message)
+            print(line, file=self._stream)
+            if outcome.error is ErrorCode.PERMISSION_DENIED and not self._hinted:
+                self._hinted = True
+                print(self._catalog.text("cli.hint_output_root"), file=self._stream)
 
 
 def _print_summary(catalog: Catalog, report: BatchReport) -> None:
@@ -75,14 +99,15 @@ def _print_summary(catalog: Catalog, report: BatchReport) -> None:
     for outcome in report.outcomes:
         count[outcome.status] += 1
     skipped = len(report.skipped) + count[OutcomeStatus.KEPT]
-    print(
-        catalog.text(
-            "cli.summary",
-            converted=count[OutcomeStatus.CONVERTED],
-            skipped=skipped,
-            failed=count[OutcomeStatus.FAILED],
-        )
+    line = catalog.text(
+        "cli.summary",
+        converted=count[OutcomeStatus.CONVERTED],
+        skipped=skipped,
+        failed=count[OutcomeStatus.FAILED],
     )
+    if count[OutcomeStatus.STOPPED]:
+        line += catalog.text("cli.summary_stopped", stopped=count[OutcomeStatus.STOPPED])
+    print(line)
     for root in dict.fromkeys(outcome.item.output_root for outcome in report.outcomes):
         print(catalog.text("cli.results", path=root))
 
@@ -145,5 +170,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         plan, overwrite=overwrite, on_event=_Progress(catalog, quiet=args.quiet, stream=err)
     )
     _print_summary(catalog, report)
-    failed = any(outcome.status is OutcomeStatus.FAILED for outcome in report.outcomes)
+    unfinished = {OutcomeStatus.FAILED, OutcomeStatus.STOPPED}
+    failed = any(outcome.status in unfinished for outcome in report.outcomes)
     return EXIT_FAILED if failed else EXIT_OK

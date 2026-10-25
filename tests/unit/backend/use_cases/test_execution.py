@@ -196,3 +196,57 @@ def test_outcomes_carry_their_time_and_events_carry_the_time_left(tmp_path: Path
     started = [event for event in events if isinstance(event, ConversionStarted)]
     assert started[0].seconds_left is None  # nothing measured yet
     assert all(event.seconds_left is not None for event in started[1:])
+
+
+class StoppingRunner(FakeRunner):
+    def convert(self, item: PlannedConversion, cancel: CancelToken) -> str:
+        if item.source.stem == "slow":
+            raise ConversionError(ErrorCode.TIMED_OUT, "stopped after 600 s")
+        if item.source.stem == "huge":
+            raise ConversionError(ErrorCode.OUT_OF_MEMORY, "worker used 4100 MiB, limit 4096 MiB")
+        return super().convert(item, cancel)
+
+
+def test_time_and_memory_limits_give_a_stopped_outcome(tmp_path: Path) -> None:
+    items = (_item(tmp_path, "slow.pdf"), _item(tmp_path, "huge.pdf"), _item(tmp_path, "ok.pdf"))
+    _, report = _run(_plan(*items), StoppingRunner())
+    statuses = [(o.status, o.error) for o in report.outcomes]
+    assert statuses == [
+        (OutcomeStatus.STOPPED, ErrorCode.TIMED_OUT),
+        (OutcomeStatus.STOPPED, ErrorCode.OUT_OF_MEMORY),
+        (OutcomeStatus.CONVERTED, None),
+    ]
+
+
+def test_an_output_that_appeared_after_planning_is_not_overwritten_silently(tmp_path: Path) -> None:
+    item = _item(tmp_path, "report.pdf")  # planned as not existing
+    item.target.parent.mkdir(parents=True)
+    item.target.write_text("written meanwhile", encoding="utf-8")
+    asked: list[Path] = []
+
+    def overwrite(planned: PlannedConversion) -> bool:
+        asked.append(planned.target)
+        return False
+
+    _, report = _run(_plan(item), FakeRunner(), overwrite=overwrite)
+    assert asked == [item.target]
+    assert item.target.read_text(encoding="utf-8") == "written meanwhile"
+    assert [o.status for o in report.outcomes] == [OutcomeStatus.KEPT]
+
+
+def test_an_unwritable_output_root_fails_its_files_without_converting_them(tmp_path: Path) -> None:
+    locked = tmp_path / "locked"
+    locked.mkdir()
+    free = tmp_path / "free"
+    free.mkdir()
+    items = (_item(locked, "a.pdf"), _item(locked, "b.pdf"), _item(free, "c.pdf"))
+    runner = FakeRunner()
+    locked.chmod(0o555)
+    try:
+        _, report = _run(_plan(*items), runner)
+    finally:
+        locked.chmod(0o755)
+    outcomes = report.outcomes
+    assert [o.error for o in outcomes[:2]] == [ErrorCode.PERMISSION_DENIED] * 2
+    assert outcomes[2].status is OutcomeStatus.CONVERTED
+    assert runner.seen == ["c.pdf"]  # nothing was converted for the locked root

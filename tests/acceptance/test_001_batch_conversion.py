@@ -2,6 +2,7 @@
 
 import json
 import os
+import random
 import subprocess
 import sys
 from dataclasses import replace
@@ -9,6 +10,7 @@ from pathlib import Path
 
 import pytest
 from build_fixtures import MARKERS
+from run_benchmark import SEED, make_pdf
 from support import put
 
 from clearmd.backend.api import composition
@@ -293,3 +295,37 @@ def test_ac_43_a_file_that_may_take_too_long_is_warned_about_and_still_tried(
     err = capsys.readouterr().err
     assert "⚠ manual.pdf — may take more than" in err
     assert _progress_names(err)[-1] == "manual.pdf"
+
+
+def test_ac_23_and_ac_44_a_file_over_the_time_limit_is_stopped_not_failed(
+    workdir: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    put(workdir, "sample.txt", "quick.txt")
+    # ~30 text pages: ~3 s for pdfminer, well over a 0.5 s limit (the supervisor polls every 0.1 s).
+    make_pdf(workdir / "manual.pdf", 100 * 1024, random.Random(SEED))
+    limits = replace(composition.default_limits(), time_per_file=0.5)
+    monkeypatch.setattr(composition, "default_limits", lambda: limits)
+    assert main([str(workdir / "quick.txt"), str(workdir / "manual.pdf")]) == 1
+    captured = capsys.readouterr()
+    assert "⏹ manual.pdf — stopped after 0:00 (about" in captured.err
+    assert not (workdir / "ClearMD_Output" / "OutputMD" / "manual.md").exists()
+    assert (workdir / "ClearMD_Output" / "OutputMD" / "quick.md").is_file()
+    assert "Try splitting it into smaller files." in captured.err
+    assert "stopped" in captured.out
+
+
+def test_ac_27_an_unwritable_output_root_fails_its_files_and_others_continue(
+    workdir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    locked = workdir / "locked"
+    source = put(locked, "sample.txt", "a.txt")
+    other = put(workdir / "free", "sample.txt", "b.txt")
+    locked.chmod(0o555)
+    try:
+        assert main([str(source), str(other)]) == 1
+    finally:
+        locked.chmod(0o755)
+    err = capsys.readouterr().err
+    assert "ClearMD cannot write in this folder. Choose another output folder." in err
+    assert "--output-root" in err
+    assert (workdir / "free" / "ClearMD_Output" / "OutputMD" / "b.md").is_file()
