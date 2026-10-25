@@ -22,7 +22,7 @@ Goal: `clearmd paper.tex` writes a faithful `paper.md` through the worker, with 
 
 ## Slice B — A thesis
 
-- [ ] **T06 — Includes.** `includes.py` with every refusal and limit; rendering follows allowed includes with the
+- [x] **T06 — Includes.** `includes.py` with every refusal and limit; rendering follows allowed includes with the
       shared state (AC-14, AC-15).
 - [ ] **T07 — Macros.** `macros.py`: first-pass collection, the context with user specs, expansion in text and
       math, definitions from included files, the budget and its note (AC-16, AC-17).

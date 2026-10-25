@@ -466,7 +466,7 @@ Marcador: fixture-tex-ch1.
 """
 THESIS_CH2 = r"""\chapter{Segundo cap\'itulo}
 $\argmax_{\theta} f(\theta)$. Marcador: fixture-tex-ch2.
-\input{sections/deeper}
+\input{chapters/sections/deeper}
 """
 THESIS_DEEPER = r"""\section{M\'as hondo}
 Marcador: fixture-tex-deeper.

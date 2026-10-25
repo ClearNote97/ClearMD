@@ -157,3 +157,35 @@ def test_ac_21_malformed_latex_converts_with_a_note(workdir: Path) -> None:
     assert main([str(source), "--quiet"]) == 0
     assert "fixture-tex-malformed" in output(workdir, "malformed.md")
     assert "the LaTeX has errors" in summary(workdir)
+
+
+def test_ac_14_a_thesis_converts_into_one_markdown_file(workdir: Path) -> None:
+    (thesis,) = copy_tex(workdir, "thesis")
+    assert main([str(thesis / "main.tex"), "--quiet"]) == 0
+    text = (thesis / "ClearMD_Output" / "OutputMD" / "main.md").read_text(encoding="utf-8")
+    assert (
+        text.index("fixture-tex-ch1")
+        < text.index("fixture-tex-ch2")
+        < text.index("fixture-tex-deeper")
+    )
+    assert "## Primer capítulo" in text
+
+
+def test_ac_15_includes_outside_the_folder_are_never_read(workdir: Path) -> None:
+    (hostile,) = copy_tex(workdir, "hostile")
+    sources = [
+        hostile / name for name in ("absolute.tex", "parent.tex", "not_tex.tex", "cycle_a.tex")
+    ]
+    assert main([*map(str, sources), "--quiet"]) == 0
+    converted = (hostile / "ClearMD_Output" / "OutputMD" / "absolute.md").read_text(
+        encoding="utf-8"
+    )
+    assert "root:" not in converted and "`\\input{/etc/passwd}`" in converted
+    notes = (hostile / "ClearMD_Output" / "Resumen_ClearMD.md").read_text(encoding="utf-8")
+    for expected in (
+        "`/etc/passwd` (an absolute path)",
+        "`../paper` (a path with “..”)",
+        "`data.csv` (not a .tex file)",
+        "`cycle_a` (it includes itself)",
+    ):
+        assert expected in notes, expected
