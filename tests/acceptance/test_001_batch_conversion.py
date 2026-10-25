@@ -670,16 +670,6 @@ def test_ac_39_a_converter_that_tries_the_network_is_stopped(
     assert "NetworkBlockedError" in _summary(workdir)
 
 
-def test_every_acceptance_criterion_of_the_spec_has_a_test() -> None:
-    import re
-
-    spec = Path(__file__).parents[2] / "spec" / "features" / "001_batch-conversion-backend-cli"
-    ids = {int(n) for n in re.findall(r"\*\*AC-(\d+)\*\*", (spec / "spec.md").read_text("utf-8"))}
-    names = [name for name in globals() if name.startswith("test_ac_")]
-    covered = {int(n) for name in names for n in re.findall(r"ac_(\d+)", name)}
-    assert sorted(ids - covered) == []
-
-
 def test_ac_26_ctrl_c_at_the_question_exits_130_and_writes_nothing_new(
     workdir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -1,10 +1,13 @@
-"""Benchmark of feature 001 (T07): conversion time and peak memory per format and size.
+"""Benchmarks of features 001 (T07) and 002 (T10): conversion time and peak memory per format.
 
 Run inside the container (takes several minutes; results to a JSON file):
 
     uv run python tests/benchmark/run_benchmark.py --out docs/benchmarks/001-results.json
+    uv run python tests/benchmark/run_benchmark.py --only tex tex_macros \
+        --out docs/benchmarks/002-results.json
 
-Every measurement runs markitdown in a fresh *spawn* process, like the worker of ADR-0015. The
+Every measurement runs its converter (markitdown, or ClearMD's own for ``.tex``) in a fresh *spawn*
+process, like the worker of ADR-0015. The
 parent samples that process's memory and stops it above ``--memory-cap-mib`` so the benchmark never
 exhausts the machine. Generated documents are pseudo-random text with a fixed seed: reproducible,
 and compressing like real prose (about 3-4:1) instead of like repeated filler.
@@ -268,6 +271,93 @@ def make_ipynb(path: Path, size: int, rng: random.Random) -> None:
     path.write_text(json.dumps(notebook), encoding="utf-8")
 
 
+_TEX_PREAMBLE = (
+    "\\documentclass{article}\n\\usepackage[spanish]{babel}\n"
+    "\\title{Benchmark}\\author{ClearMD}\\date{2026}\n\\begin{document}\n\\maketitle\n"
+)
+_TEX_MACROS = (
+    "\\newcommand{\\R}{\\mathbb{R}}\n"
+    "\\newcommand{\\norm}[1]{\\left\\lVert #1 \\right\\rVert}\n"
+    "\\newcommand{\\pair}[2][0]{(#1, #2)}\n"
+    "\\newcommand{\\term}[1]{\\textbf{#1}}\n"
+    "\\newcommand{\\vecx}{\\mathbf{x}}\n"
+    "\\DeclareMathOperator{\\argmax}{arg\\,max}\n"
+    "\\def\\tool{ClearMD}\n"
+)
+
+
+def _tex_paragraph(rng: random.Random, macros: bool) -> str:
+    words = _words(rng, rng.randint(40, 70)).split()
+    for _ in range(4):
+        at = rng.randrange(len(words))
+        words[at] = rng.choice(
+            [
+                f"\\textbf{{{words[at]}}}",
+                f"\\emph{{{words[at]}}}",
+                f"\\texttt{{{words[at]}}}",
+                f"\\cite{{{words[at]}{rng.randint(1, 99)}}}",
+                f"$x_{{{rng.randint(1, 9)}}}^2 + y$",
+                "Nicol\\'as --- ``cita''",
+            ]
+        )
+    if macros:
+        for _ in range(4):
+            at = rng.randrange(len(words))
+            words[at] = rng.choice(
+                [
+                    "$\\vecx \\in \\R^n$",
+                    f"$\\norm{{\\vecx_{rng.randint(1, 9)}}}$",
+                    f"$\\pair[{rng.randint(1, 9)}]{{b}}$",
+                    f"\\term{{{words[at]}}}",
+                    "$\\argmax_{\\theta} f$",
+                    "\\tool{}",
+                ]
+            )
+    text = " ".join(words) + "."
+    if rng.random() < 0.3:
+        text += f"\\footnote{{{_words(rng, 8)}.}}"
+    return text
+
+
+def _tex_block(rng: random.Random, number: int) -> str:
+    choice = number % 4
+    if choice == 0:
+        items = "".join(f"\\item {_line(rng)}\n" for _ in range(3))
+        return f"\\begin{{itemize}}\n{items}\\end{{itemize}}"
+    if choice == 1:
+        body = f"\\label{{eq:{number}}}\na_{number}^2 + b^2 = c^2"
+        return f"\\begin{{equation}}{body}\n\\end{{equation}}"
+    if choice == 2:
+        rows = "".join(f"{_words(rng, 1)} & {rng.randint(1, 999)} \\\\\n" for _ in range(4))
+        return (
+            "\\begin{table}\\centering\n\\begin{tabular}{lr}\n\\hline\n"
+            f"{rows}\\hline\n\\end{{tabular}}\n\\caption{{{_words(rng, 3)}}}\n\\end{{table}}"
+        )
+    return f"\\begin{{quote}}{_line(rng)}\\end{{quote}}"
+
+
+def _tex(path: Path, size: int, rng: random.Random, *, macros: bool) -> None:
+    with path.open("w", encoding="utf-8") as out:
+        out.write(_TEX_MACROS if macros else "")
+        out.write(_TEX_PREAMBLE)
+        number = 0
+        while out.tell() < size:
+            number += 1
+            out.write(f"\\section{{{_words(rng, 3)}}}\n")
+            for _ in range(3):
+                out.write(_tex_paragraph(rng, macros) + "\n\n")
+            out.write(_tex_block(rng, number) + "\n\n")
+        out.write("\\end{document}\n")
+
+
+def make_tex(path: Path, size: int, rng: random.Random) -> None:
+    _tex(path, size, rng, macros=False)
+
+
+def make_tex_macros(path: Path, size: int, rng: random.Random) -> None:
+    _tex(path, size, rng, macros=True)
+
+
 def _calibrated(
     build: Callable[[Path, int, random.Random], None],
     probe_units: int,
@@ -318,6 +408,7 @@ class Case:
     extension: str
     build: Callable[[Path, int, random.Random], None]
     sizes_mib: tuple[float, ...]
+    engine: str = "markitdown"  # or "tex": ClearMD's own converter (feature 002)
 
 
 CASES = [
@@ -331,6 +422,8 @@ CASES = [
     Case("epub", ".epub", make_epub, (1, 10, 50)),
     Case("pptx", ".pptx", make_pptx, (1, 10)),
     Case("xlsx", ".xlsx", make_xlsx, (1, 10, 50)),
+    Case("tex", ".tex", make_tex, (1, 5, 10, 25), "tex"),
+    Case("tex_macros", ".tex", make_tex_macros, (1, 5, 10, 25), "tex"),
 ]
 
 
@@ -342,17 +435,40 @@ def _peak_rss_mib() -> float:
     return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
 
 
-def _measure_child(connection: Connection, path: str, extension: str) -> None:
-    started = time.perf_counter()
+def _convert_with(engine: str, extension: str) -> Callable[[str], dict[str, Any]]:
+    if engine == "tex":
+        from clearmd.backend.schemas.formats import FormatId
+        from clearmd.backend.schemas.models import Detection, DetectionMethod
+        from clearmd.backend.services.conversion.tex import TexConverter
+
+        tex = TexConverter()
+        detection = Detection(FormatId.TEX, DetectionMethod.EXTENSION)
+
+        def convert_tex(path: str) -> dict[str, Any]:
+            result = tex.convert(Path(path), detection, Path(path).with_suffix(".md"))
+            notes = [note.kind.value for note in result.notes]
+            return {"ok": True, "markdown_mib": len(result.markdown) / MIB, "notes": notes}
+
+        return convert_tex
     from markitdown import MarkItDown, StreamInfo
 
-    converter = MarkItDown(enable_plugins=False)
+    markitdown = MarkItDown(enable_plugins=False)
+
+    def convert_markitdown(path: str) -> dict[str, Any]:
+        result = markitdown.convert_local(path, stream_info=StreamInfo(extension=extension))
+        return {"ok": True, "markdown_mib": len(result.markdown) / MIB}
+
+    return convert_markitdown
+
+
+def _measure_child(connection: Connection, path: str, extension: str, engine: str) -> None:
+    started = time.perf_counter()
+    convert = _convert_with(engine, extension)
     ready = time.perf_counter() - started
     baseline = psutil.Process().memory_info().rss / MIB
     began = time.perf_counter()
     try:
-        result = converter.convert_local(path, stream_info=StreamInfo(extension=extension))
-        outcome: dict[str, Any] = {"ok": True, "markdown_mib": len(result.markdown) / MIB}
+        outcome = convert(path)
     except Exception as error:
         outcome = {"ok": False, "error": f"{type(error).__name__}: {str(error)[:200]}"}
     outcome.update(
@@ -461,7 +577,10 @@ def run(
             path = workdir / f"{case.kind}_{size_mib:g}{case.extension}"
             case.build(path, int(size_mib * MIB), rng)
             result = _run_child(
-                _measure_child, (str(path), case.extension), memory_cap=memory_cap, timeout=timeout
+                _measure_child,
+                (str(path), case.extension, case.engine),
+                memory_cap=memory_cap,
+                timeout=timeout,
             )
             row = Row(case.kind, size_mib, path.stat().st_size / MIB, result, zip_stats(path))
             rows.append(row)
@@ -482,7 +601,7 @@ def startup(repetitions: int, *, memory_cap: int, timeout: float) -> dict[str, f
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="ClearMD benchmark of feature 001 (T07)")
+    parser = argparse.ArgumentParser(description="ClearMD benchmarks (features 001 and 002)")
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--memory-cap-mib", type=int, default=2048)
     parser.add_argument("--timeout", type=float, default=900)

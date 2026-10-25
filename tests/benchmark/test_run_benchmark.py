@@ -31,3 +31,23 @@ def test_one_measurement_end_to_end(tmp_path: Path) -> None:
     assert row.result["ok"], row.result
     assert row.result["peak_mib"] > row.result["baseline_mib"] > 0
     assert row.archive is not None and row.archive["total_ratio"] > 1
+
+
+@pytest.mark.parametrize("kind", ["tex", "tex_macros"])
+def test_the_tex_cases_measure_clearmds_converter_on_the_supported_subset(
+    kind: str, tmp_path: Path
+) -> None:
+    case = next(case for case in bench.CASES if case.kind == kind)
+    assert case.engine == "tex"
+    tiny = bench.Case(case.kind, case.extension, case.build, (0.05,), case.engine)
+    (row,) = bench.run(
+        [tiny],
+        tmp_path,
+        memory_cap=2048 * bench.MIB,
+        timeout=120,
+        slow_after=60,
+        log=lambda _: None,
+    )
+    assert row.result["ok"], row.result
+    assert row.result["notes"] == []  # all of it is real work: nothing left as written
+    assert row.result["markdown_mib"] > 0

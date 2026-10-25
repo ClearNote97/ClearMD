@@ -31,9 +31,9 @@ Goal: `clearmd paper.tex` writes a faithful `paper.md` through the worker, with 
 
 ## Slice C — Measured and closed
 
-- [ ] **T09 — Acceptance sweep.** `tests/acceptance/test_002_tex_converter.py`, one test per AC-01 … AC-22; the
+- [x] **T09 — Acceptance sweep.** `tests/acceptance/test_002_tex_converter.py`, one test per AC-01 … AC-22; the
       meta-test covers every feature folder.
-- [ ] **T10 — Benchmark.** A `.tex` case in `run_benchmark.py`; measured `SECONDS_PER_MIB[TEX]` and
+- [x] **T10 — Benchmark.** A `.tex` case in `run_benchmark.py`; measured `SECONDS_PER_MIB[TEX]` and
       `MEMORY_PER_MIB[TEX]`; `docs/benchmarks/` updated (AC-22).
 - [ ] **T11 — Close the feature.**
   - `docs/architecture/README.md` and both READMEs (formats, status table).

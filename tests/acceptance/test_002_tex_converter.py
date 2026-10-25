@@ -183,7 +183,15 @@ def test_ac_14_a_thesis_converts_into_one_markdown_file(workdir: Path) -> None:
 def test_ac_15_includes_outside_the_folder_are_never_read(workdir: Path) -> None:
     (hostile,) = copy_tex(workdir, "hostile")
     sources = [
-        hostile / name for name in ("absolute.tex", "parent.tex", "not_tex.tex", "cycle_a.tex")
+        hostile / name
+        for name in (
+            "absolute.tex",
+            "parent.tex",
+            "not_tex.tex",
+            "missing.tex",
+            "cycle_a.tex",
+            "deep0.tex",
+        )
     ]
     assert main([*map(str, sources), "--quiet"]) == 0
     converted = (hostile / "ClearMD_Output" / "OutputMD" / "absolute.md").read_text(
@@ -195,7 +203,9 @@ def test_ac_15_includes_outside_the_folder_are_never_read(workdir: Path) -> None
         "`/etc/passwd` (an absolute path)",
         "`../paper` (a path with “..”)",
         "`data.csv` (not a .tex file)",
+        "(not found)",
         "`cycle_a` (it includes itself)",
+        "`deep9` (more than 8 levels deep)",
     ):
         assert expected in notes, expected
 
@@ -218,4 +228,21 @@ def test_ac_17_macro_bombs_stop_at_the_limit_with_a_note(workdir: Path) -> None:
     assert "$\\bombaa$" in converted
     notes = (hostile / "ClearMD_Output" / "Resumen_ClearMD.md").read_text(encoding="utf-8")
     assert "`\\loop` (64 levels of nesting)" in notes
-    assert "`\\bombaa` (10,000 expansions)" in notes
+    assert "`\\bombaa` (the expansion limit (10,000, or 10 per KiB of source))" in notes
+
+
+def test_ac_22_the_tex_speed_and_memory_are_the_measured_ones() -> None:
+    from clearmd.backend.schemas.formats import FormatId
+    from clearmd.backend.schemas.limits import MEMORY_PER_MIB, SECONDS_PER_MIB
+
+    results = Path(__file__).parents[2] / "docs" / "benchmarks" / "002-results.json"
+    rows = [row for row in json.loads(results.read_text("utf-8"))["rows"] if row["result"]["ok"]]
+    plain = [row for row in rows if row["kind"] == "tex"]
+    speed = max(row["result"]["seconds"] / row["file_mib"] for row in plain)
+    memory = max(
+        (row["result"]["peak_mib"] - row["result"]["baseline_mib"]) / row["file_mib"]
+        for row in rows
+        if row["file_mib"] >= 5
+    )
+    assert speed <= SECONDS_PER_MIB[FormatId.TEX] <= 1.25 * speed
+    assert memory <= MEMORY_PER_MIB[FormatId.TEX] <= 1.25 * memory
