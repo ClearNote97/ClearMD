@@ -51,7 +51,7 @@ description = "Turn documents into Markdown. 100% local: ClearMD never uses the 
 paths = "files and/or folders to convert"
 overwrite = "replace outputs that already exist"
 skip = "keep outputs that already exist"
-no_recursive = "only the top level of input folders"
+recursive = "include subfolders (default: the recursive setting, on)"
 output_root = "create ClearMD_Output inside DIR instead of next to each input"
 quiet = "show only the summary and errors"
 
@@ -100,3 +100,8 @@ by_content = "{format}, detected by content"
 technical_detail = "Technical detail"
 stopped_line = "stopped after {elapsed} (about {percent}% by the estimate). {action}"
 batch_cancelled = "cancelled"
+
+[settings]
+unknown_key = "Settings: unknown setting “{setting}” ignored."
+invalid_value = "Settings: invalid value for “{setting}”; using its default."
+unreadable = "Settings: {setting} could not be read; using the defaults."

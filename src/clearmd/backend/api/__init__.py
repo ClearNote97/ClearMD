@@ -7,12 +7,23 @@ from pathlib import Path
 from clearmd.backend.api import composition
 from clearmd.backend.schemas.events import BatchEvent
 from clearmd.backend.schemas.models import BatchPlan, BatchReport, PlannedConversion
+from clearmd.backend.schemas.settings import Settings, SettingsWarning
+from clearmd.backend.services import settings_store
 from clearmd.backend.use_cases.cancel import CancelToken
 from clearmd.backend.use_cases.execution import execute_plan
 from clearmd.backend.use_cases.planning import build_plan
 from clearmd.backend.use_cases.reporting import by_output_root
 
-__all__ = ["CancelToken", "plan_batch", "run_batch"]
+__all__ = ["CancelToken", "load_settings", "plan_batch", "run_batch", "settings_path"]
+
+
+def load_settings() -> tuple[Settings, tuple[SettingsWarning, ...]]:
+    """The shared settings.toml; defaults (and warnings) when missing or invalid (AC-33)."""
+    return settings_store.load_settings()
+
+
+def settings_path() -> Path:
+    return settings_store.settings_path()
 
 
 def _ignore(event: BatchEvent) -> None:

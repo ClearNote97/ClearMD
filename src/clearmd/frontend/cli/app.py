@@ -1,7 +1,7 @@
 """CLI entry point. Thin path of slice A: files in, Markdown out, progress and exit codes (T06).
 
 The prompt, --dry-run, --open, --output-root, --lang and exit codes 3/130 in full arrive in T16;
---no-recursive came with scanning (T08), --output-root with the output paths (T11).
+--recursive/--no-recursive and the shared settings came with T08/T15, --output-root with T11.
 """
 
 import argparse
@@ -11,7 +11,7 @@ from importlib.metadata import version
 from pathlib import Path
 from typing import TextIO
 
-from clearmd.backend.api import plan_batch, run_batch
+from clearmd.backend.api import load_settings, plan_batch, run_batch
 from clearmd.backend.schemas.errors import ErrorCode
 from clearmd.backend.schemas.events import BatchEvent, ConversionFinished, ConversionStarted
 from clearmd.backend.schemas.models import (
@@ -21,6 +21,7 @@ from clearmd.backend.schemas.models import (
     PlannedConversion,
     SkippedItem,
 )
+from clearmd.backend.schemas.settings import SettingsWarning
 from clearmd.i18n import Catalog, load_catalog, resolve_language
 
 EXIT_OK = 0
@@ -42,7 +43,10 @@ def build_parser(catalog: Catalog) -> argparse.ArgumentParser:
     )
     existing.add_argument("--skip", action="store_true", help=catalog.text("cli.help.skip"))
     parser.add_argument(
-        "--no-recursive", action="store_true", help=catalog.text("cli.help.no_recursive")
+        "--recursive",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help=catalog.text("cli.help.recursive"),
     )
     parser.add_argument(
         "--output-root", type=Path, metavar="DIR", help=catalog.text("cli.help.output_root")
@@ -139,12 +143,26 @@ def _print_plan_notes(catalog: Catalog, plan: BatchPlan, *, quiet: bool, stream:
         print(line, file=stream)
 
 
+def _print_settings_warnings(
+    catalog: Catalog, warnings: Sequence[SettingsWarning], stream: TextIO
+) -> None:
+    for warning in warnings:
+        print(catalog.text(f"settings.{warning.problem.value}", setting=warning.key), file=stream)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
-    catalog = load_catalog(resolve_language(None, None))
+    settings, settings_warnings = load_settings()
+    catalog = load_catalog(resolve_language(None, settings.language))
     args = build_parser(catalog).parse_args(argv)
     err = sys.stderr
+    _print_settings_warnings(catalog, settings_warnings, err)
 
-    plan = plan_batch(args.paths, recursive=not args.no_recursive, output_root=args.output_root)
+    # A flag decides for this run only; without one, the shared settings do (AC-34).
+    recursive = settings.recursive if args.recursive is None else args.recursive
+    on_existing = (
+        "overwrite" if args.overwrite else "skip" if args.skip else settings.on_existing_output
+    )
+    plan = plan_batch(args.paths, recursive=recursive, output_root=args.output_root)
     _print_plan_notes(catalog, plan, quiet=args.quiet, stream=err)
     if plan.is_empty:
         if plan.input_errors and not plan.skipped:
@@ -152,12 +170,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             return EXIT_USAGE
         print(catalog.text("cli.nothing_to_convert"))
         return EXIT_OK
-    if plan.existing and not (args.overwrite or args.skip):
+    if plan.existing and on_existing == "ask":
         print(catalog.text("cli.decision_required", count=len(plan.existing)), file=err)
         return EXIT_DECISION_REQUIRED
 
     def overwrite(item: PlannedConversion) -> bool:
-        return bool(args.overwrite)
+        return on_existing == "overwrite"
 
     report = run_batch(
         plan,

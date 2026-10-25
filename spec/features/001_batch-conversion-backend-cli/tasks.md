@@ -56,7 +56,7 @@ brings the two riskiest parts (the worker and markitdown) to the front.
 
 ## Slice D — Language, settings and the complete CLI
 
-- [ ] **T15 — Settings.** `schemas/settings.py`, `use_cases/settings.py` (defaults, validation,
+- [x] **T15 — Settings.** `schemas/settings.py`, `use_cases/settings.py` (defaults, validation,
       serialization) + `services/settings_store.py` (platformdirs path, load); tests for missing, corrupt and
       invalid files (AC-33, AC-34).
 - [ ] **T16 — CLI complete.** Prompt, `--overwrite`/`--skip`, `--dry-run`, `--open`, `--output-root`,
