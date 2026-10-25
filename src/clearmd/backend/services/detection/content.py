@@ -26,6 +26,7 @@ LABELS: Mapping[str, FormatId] = MappingProxyType(
         "ipynb": FormatId.IPYNB,
         "txt": FormatId.TXT,
         "latex": FormatId.TEX,
+        "odt": FormatId.ODT,
     }
 )
 

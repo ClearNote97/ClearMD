@@ -50,6 +50,13 @@ def test_unrecognized_content_is_not_detected(detector: MagikaDetector, tmp_path
     assert detector.detect(script) is None
 
 
+def test_odt_without_extension_is_detected_by_content(detector: MagikaDetector) -> None:
+    from support import ODT_DIR
+
+    detection = detector.detect(ODT_DIR / "no_extension_odt")
+    assert detection is not None and detection.format is FormatId.ODT
+
+
 def test_latex_without_extension_is_detected_by_content(detector: MagikaDetector) -> None:
     from support import TEX_DIR
 

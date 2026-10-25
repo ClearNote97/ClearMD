@@ -91,7 +91,7 @@ def test_no_image_audio_or_zip_converter_is_ever_registered() -> None:
     assert names.isdisjoint(
         {"ZipConverter", "ImageConverter", "AudioConverter", "OutlookMsgConverter"}
     )
-    assert set(MarkItDownConverter().converters) == set(FormatId) - {FormatId.TEX}
+    assert set(MarkItDownConverter().converters) == set(FormatId) - {FormatId.TEX, FormatId.ODT}
 
 
 def test_a_source_replaced_by_a_symlink_is_not_followed(tmp_path: Path) -> None:

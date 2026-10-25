@@ -14,7 +14,7 @@ Goal: `clearmd report.odt` writes a faithful `report.md` through the worker, saf
       (DOCTYPE, entities, depth, element count, huge text, `../` objects, a zip bomb); reproducible.
 - [x] **T02 — The shared output module.** `markdown_out.py` out of `tex/render.py`, no behaviour change: the
       `.tex` suite, the golden paper and the output-guarantee test pass untouched.
-- [ ] **T03 — The format.** `FormatId.ODT`, `.odt`, magika `odt`, `ZIP_BASED`, provisional limits; registry →
+- [x] **T03 — The format.** `FormatId.ODT`, `.odt`, magika `odt`, `ZIP_BASED`, provisional limits; registry →
       `OdtConverter` skeleton; the architecture test forbids non-stdlib imports in `odt/` (AC-01 – AC-03).
 - [ ] **T04 — Reading safely.** `package.py` + `xmltree.py`: mimetype, encryption, size caps, the pyexpat tree
       with DOCTYPE refused and its limits (AC-04, AC-16, AC-17).

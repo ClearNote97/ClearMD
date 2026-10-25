@@ -18,6 +18,7 @@ class FormatId(StrEnum):
     IPYNB = "ipynb"
     TXT = "txt"
     TEX = "tex"  # ClearMD's own converter (feature 002)
+    ODT = "odt"  # ClearMD's own converter, standard library only (feature 003)
 
 
 EXTENSIONS: Mapping[str, FormatId] = MappingProxyType(
@@ -33,12 +34,13 @@ EXTENSIONS: Mapping[str, FormatId] = MappingProxyType(
         ".ipynb": FormatId.IPYNB,
         ".txt": FormatId.TXT,
         ".tex": FormatId.TEX,
+        ".odt": FormatId.ODT,
     }
 )
 
 # ZIP containers: checked from their central directory before converting (ADR-0015).
 ZIP_BASED: frozenset[FormatId] = frozenset(
-    {FormatId.DOCX, FormatId.PPTX, FormatId.XLSX, FormatId.EPUB}
+    {FormatId.DOCX, FormatId.PPTX, FormatId.XLSX, FormatId.EPUB, FormatId.ODT}
 )
 
 # Recognized only to be skipped with a clear reason (AC-08).

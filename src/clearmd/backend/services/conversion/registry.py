@@ -48,10 +48,12 @@ class ConverterRegistry:
 def build_registry() -> ConverterRegistry:
     """The real registry: markitdown, ClearMD's own converters, and magika for content."""
     from clearmd.backend.services.conversion.markitdown_adapter import MarkItDownConverter
+    from clearmd.backend.services.conversion.odt import OdtConverter
     from clearmd.backend.services.conversion.tex import TexConverter
     from clearmd.backend.services.detection.content import MagikaDetector
 
     markitdown = MarkItDownConverter()
     converters: dict[FormatId, DocumentConverter] = dict.fromkeys(markitdown.converters, markitdown)
     converters[FormatId.TEX] = TexConverter()
+    converters[FormatId.ODT] = OdtConverter()
     return ConverterRegistry(converters, content_detector=MagikaDetector())

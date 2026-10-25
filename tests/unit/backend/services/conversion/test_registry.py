@@ -7,11 +7,13 @@ from clearmd.backend.services.conversion.registry import ConverterRegistry, buil
 
 
 def test_every_supported_format_has_a_converter() -> None:
+    from clearmd.backend.services.conversion.odt import OdtConverter
     from clearmd.backend.services.conversion.tex import TexConverter
 
     registry = build_registry()
     assert isinstance(registry.for_format(FormatId.TEX), TexConverter)
-    others = set(FormatId) - {FormatId.TEX}
+    assert isinstance(registry.for_format(FormatId.ODT), OdtConverter)
+    others = set(FormatId) - {FormatId.TEX, FormatId.ODT}
     assert all(isinstance(registry.for_format(fmt), MarkItDownConverter) for fmt in others)
 
 

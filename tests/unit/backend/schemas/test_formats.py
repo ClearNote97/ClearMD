@@ -14,12 +14,20 @@ def test_format_for_extension_ignores_case_and_rejects_unknown() -> None:
     assert formats.format_for_extension(".PDF") is FormatId.PDF
     assert formats.format_for_extension(".htm") is FormatId.HTML
     assert formats.format_for_extension(".tex") is FormatId.TEX
+    assert formats.format_for_extension(".ODT") is FormatId.ODT
+    assert formats.format_for_extension(".ods") is None
     assert formats.format_for_extension(".bib") is None
     assert formats.format_for_extension("") is None
 
 
 def test_zip_based_formats() -> None:
-    assert formats.ZIP_BASED == {FormatId.DOCX, FormatId.PPTX, FormatId.XLSX, FormatId.EPUB}
+    assert formats.ZIP_BASED == {
+        FormatId.DOCX,
+        FormatId.PPTX,
+        FormatId.XLSX,
+        FormatId.EPUB,
+        FormatId.ODT,
+    }
 
 
 def test_skip_only_extensions_are_not_convertible() -> None:

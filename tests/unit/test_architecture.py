@@ -6,6 +6,8 @@
 | clearmd.backend.use_cases               | clearmd.backend.schemas, clearmd.backend.use_cases   |
 | clearmd.i18n                            | clearmd.i18n                                         |
 | clearmd.backend.services                | third-party; clearmd.backend (not api), clearmd.i18n |
+| …services.conversion.odt, .markdown_out | standard library only (ADR-0006, ADR-0024); odt also |
+|                                         | schemas, markdown_out, safe_files and itself         |
 | clearmd.backend.api                     | third-party; clearmd.backend, clearmd.i18n           |
 | clearmd.frontend                        | third-party; clearmd.backend.api, .schemas, i18n,    |
 |                                         | clearmd.frontend                                     |
@@ -44,6 +46,17 @@ RULES: dict[str, Rule] = {
             "clearmd.i18n",
         ),
     ),
+    # ClearMD's own .odt converter and the output guarantee: the standard library only.
+    "clearmd.backend.services.conversion.odt": Rule(
+        False,
+        (
+            "clearmd.backend.schemas",
+            "clearmd.backend.services.conversion.markdown_out",
+            "clearmd.backend.services.conversion.safe_files",
+            "clearmd.backend.services.conversion.odt",
+        ),
+    ),
+    "clearmd.backend.services.conversion.markdown_out": Rule(False, ()),
     "clearmd.backend.api": Rule(True, ("clearmd.backend", "clearmd.i18n")),
     "clearmd.frontend": Rule(
         True, ("clearmd.backend.api", "clearmd.backend.schemas", "clearmd.i18n", "clearmd.frontend")
@@ -127,6 +140,12 @@ def test_module_respects_the_dependency_rule(module: str, path: Path) -> None:
         ("clearmd.frontend.cli.app", "from clearmd.backend.use_cases import planning"),
         ("clearmd.frontend.cli.app", "from clearmd.backend.services.worker import supervisor"),
         ("clearmd.i18n", "import tomli"),
+        ("clearmd.backend.services.conversion.odt.render", "import lxml.etree"),
+        (
+            "clearmd.backend.services.conversion.odt",
+            "from clearmd.backend.services.worker import child",
+        ),
+        ("clearmd.backend.services.conversion.markdown_out", "import markdown_it"),
     ],
 )
 def test_checker_reports_forbidden_imports(module: str, source: str) -> None:
@@ -145,6 +164,10 @@ def test_checker_reports_forbidden_imports(module: str, source: str) -> None:
         ("clearmd.backend.api", "from clearmd.backend.services.worker import supervisor"),
         ("clearmd.frontend.cli.app", "from clearmd.backend.api import plan_batch"),
         ("clearmd.frontend.cli.app", "from clearmd.backend.schemas.models import BatchPlan"),
+        (
+            "clearmd.backend.services.conversion.odt.render",
+            "import pyexpat\nfrom clearmd.backend.services.conversion.markdown_out import MARK",
+        ),
     ],
 )
 def test_checker_accepts_allowed_imports(module: str, source: str) -> None:
