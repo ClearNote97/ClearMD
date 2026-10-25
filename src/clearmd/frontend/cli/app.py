@@ -52,13 +52,6 @@ def build_parser(catalog: Catalog) -> argparse.ArgumentParser:
     return parser
 
 
-def share_done(seconds: float, estimated: float) -> int:
-    """How far a stopped file probably got, by the estimate; never claims 100 % (AC-44)."""
-    if estimated <= 0:
-        return 99
-    return max(1, min(99, round(100 * seconds / estimated)))
-
-
 class _Progress:
     def __init__(self, catalog: Catalog, *, quiet: bool, stream: TextIO) -> None:
         self._catalog, self._quiet, self._stream = catalog, quiet, stream
@@ -82,7 +75,7 @@ class _Progress:
                     "cli.stopped",
                     name=name,
                     elapsed=self._catalog.clock(outcome.seconds),
-                    percent=share_done(outcome.seconds, outcome.item.cost),
+                    percent=outcome.share_done,
                     action=self._catalog.text(outcome.error.action_key),
                 )
             else:
@@ -167,7 +160,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return bool(args.overwrite)
 
     report = run_batch(
-        plan, overwrite=overwrite, on_event=_Progress(catalog, quiet=args.quiet, stream=err)
+        plan,
+        overwrite=overwrite,
+        on_event=_Progress(catalog, quiet=args.quiet, stream=err),
+        language=catalog.language,
     )
     _print_summary(catalog, report)
     unfinished = {OutcomeStatus.FAILED, OutcomeStatus.STOPPED}

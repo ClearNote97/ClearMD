@@ -74,8 +74,29 @@ warning_slow = "⚠ {name} — podría tardar más de {limit} ({estimate}) y det
 [time]
 under_a_minute = "menos de un minuto"
 exact_minutes = "{minutes} min"
+under_a_second = "<1 s"
+seconds = "{seconds} s"
 minutes = "unos {minutes} min"
 hours = "unas {hours} h {minutes} min"
 
 [number]
 decimal_mark = ","
+
+[summary]
+title = "Resumen de ClearMD"
+converted = "Convertidos"
+stopped = "Detenidos"
+failed = "Con error"
+skipped = "Omitidos"
+kept = "Conservados (el resultado ya existía)"
+cancelled = "Cancelados"
+history = "Historial"
+history_restarted = "El historial anterior no se pudo leer, así que empieza de nuevo aquí."
+col_source = "Origen"
+col_output = "Resultado"
+col_format = "Formato"
+col_time = "Tiempo"
+by_content = "{format}, detectado por su contenido"
+technical_detail = "Detalle técnico"
+stopped_line = "se detuvo a los {elapsed} (iba aprox. en el {percent} % según la estimación). {action}"
+batch_cancelled = "cancelado"

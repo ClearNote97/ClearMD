@@ -10,6 +10,7 @@ from clearmd.backend.schemas.models import BatchPlan, BatchReport, PlannedConver
 from clearmd.backend.use_cases.cancel import CancelToken
 from clearmd.backend.use_cases.execution import execute_plan
 from clearmd.backend.use_cases.planning import build_plan
+from clearmd.backend.use_cases.reporting import by_output_root
 
 __all__ = ["CancelToken", "plan_batch", "run_batch"]
 
@@ -51,11 +52,13 @@ def run_batch(
     overwrite: Callable[[PlannedConversion], bool],
     on_event: Callable[[BatchEvent], None] | None = None,
     cancel: CancelToken | None = None,
+    language: str = "en",
 ) -> BatchReport:
-    """Convert every planned file in the worker process and write the results."""
+    """Convert every planned file in the worker process, write the results and, in each
+    ClearMD_Output folder, its Resumen_ClearMD.md (also when the batch was cancelled)."""
     runner = composition.build_runner(composition.default_limits())
     try:
-        return execute_plan(
+        report = execute_plan(
             plan,
             overwrite=overwrite,
             runner=runner,
@@ -66,3 +69,10 @@ def run_batch(
         )
     finally:
         runner.close()
+    writer = composition.build_summary_writer(language)
+    for root_report in by_output_root(report):
+        try:
+            writer.write(root_report)
+        except OSError:
+            pass  # an unwritable root: its files already failed with permission_denied
+    return report

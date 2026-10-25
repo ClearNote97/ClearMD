@@ -329,3 +329,52 @@ def test_ac_27_an_unwritable_output_root_fails_its_files_and_others_continue(
     assert "ClearMD cannot write in this folder. Choose another output folder." in err
     assert "--output-root" in err
     assert (workdir / "free" / "ClearMD_Output" / "OutputMD" / "b.md").is_file()
+
+
+def _summary(folder: Path) -> str:
+    return (folder / "ClearMD_Output" / "Resumen_ClearMD.md").read_text(encoding="utf-8")
+
+
+def test_ac_22_and_ac_28_each_output_root_gets_its_summary(workdir: Path) -> None:
+    good = put(workdir / "one", "sample.txt", "notes.txt")
+    broken = put(workdir / "one", "corrupt.docx", "broken.docx")
+    scan = put(workdir / "one", "docx_without_extension", "scan")
+    other = put(workdir / "two", "sample.txt", "other.txt")
+    (workdir / "one" / "old.md").write_text("# hi", encoding="utf-8")
+    arguments = [str(good), str(broken), str(scan), str(other), str(workdir / "one" / "old.md")]
+    assert main([*arguments, "--quiet"]) == 1
+    one = _summary(workdir / "one")
+    assert "| `notes.txt` | `OutputMD/notes.md` | TXT |" in one
+    assert "| `scan` | `OutputMD/scan.md` | DOCX, detected by content |" in one
+    assert "- `broken.docx` — This file seems to be damaged." in one
+    assert "<details><summary>Technical detail</summary>BadZipFile" in one
+    assert "- `old.md` — already Markdown" in one
+    assert "other.txt" not in one
+    assert "`other.txt`" in _summary(workdir / "two")
+
+
+def test_ac_29_the_history_keeps_earlier_batches(workdir: Path) -> None:
+    source = put(workdir, "sample.txt", "notes.txt")
+    assert main([str(source), "--quiet"]) == 0
+    first_header = _summary(workdir).splitlines()[1]
+    assert main([str(source), "--overwrite", "--quiet"]) == 0
+    history = _summary(workdir).split("## History", 1)[1]
+    assert f"- {first_header}" in history
+
+
+def test_ac_41_the_summary_shows_the_time_of_each_file(workdir: Path) -> None:
+    source = put(workdir, "sample.pdf", "report.pdf")
+    assert main([str(source), "--quiet"]) == 0
+    row = next(line for line in _summary(workdir).splitlines() if "`report.pdf`" in line)
+    assert row.endswith(" s |")  # "<1 s" or "N s"
+
+
+def test_ac_28_the_summary_speaks_spanish_when_asked(workdir: Path) -> None:
+    from clearmd.backend.api import plan_batch, run_batch
+
+    source = put(workdir, "sample.txt", "notas.txt")
+    plan = plan_batch([source])
+    run_batch(plan, overwrite=lambda item: True, language="es")
+    text = _summary(workdir)
+    assert text.startswith("# Resumen de ClearMD")
+    assert "| Origen | Resultado | Formato | Tiempo |" in text

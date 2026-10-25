@@ -44,6 +44,10 @@ class SkippedItem:
     # Only for SkipReason.TOO_MUCH_MEMORY (AC-42): bytes the file would need, and the limit.
     needed_memory: int | None = None
     memory_limit: int | None = None
+    # The input it was found under, and the output root whose summary lists it (set by planning).
+    input: Path | None = None
+    input_is_dir: bool = False
+    output_root: Path | None = None
 
 
 class InputProblem(StrEnum):
@@ -103,6 +107,25 @@ class ConversionOutcome:
     error: ErrorCode | None = None
     detail: str = ""
     seconds: float = 0.0
+
+    @property
+    def share_done(self) -> int:
+        """How far a stopped file probably got, by the estimate: 1-99 %, never 100 (AC-44)."""
+        if self.item.cost <= 0:
+            return 99
+        return max(1, min(99, round(100 * self.seconds / self.item.cost)))
+
+
+@dataclass(frozen=True)
+class OutputRootReport:
+    """What one ClearMD_Output folder's summary describes."""
+
+    root: Path
+    started_at: datetime
+    finished_at: datetime
+    outcomes: tuple[ConversionOutcome, ...]
+    skipped: tuple[SkippedItem, ...]
+    cancelled: bool
 
 
 @dataclass(frozen=True)

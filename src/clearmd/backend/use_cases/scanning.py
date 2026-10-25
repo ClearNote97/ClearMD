@@ -77,14 +77,19 @@ class _Scanner:
         self.skipped: list[SkippedItem] = []
         self.errors: list[InputError] = []
 
+    def _skip(self, path: Path, reason: SkipReason, origin: Path, *, is_dir: bool = False) -> None:
+        self.skipped.append(
+            SkippedItem(path, reason, is_dir=is_dir, input=origin, input_is_dir=origin.is_dir())
+        )
+
     def add_input(self, source: Path) -> None:
         if source.is_symlink():
-            self.skipped.append(SkippedItem(source, SkipReason.SYMLINK))
+            self.skipped.append(SkippedItem(source, SkipReason.SYMLINK, input=source))
         elif not source.exists():
             self.errors.append(InputError(source, InputProblem.NOT_FOUND))
         elif source.is_dir():
             if source.name.casefold() == OUTPUT_DIR_NAME.casefold():
-                self.skipped.append(SkippedItem(source, SkipReason.OUTPUT_FOLDER, is_dir=True))
+                self._skip(source, SkipReason.OUTPUT_FOLDER, source, is_dir=True)
             else:
                 self._walk(source, source, Path())
         else:
@@ -95,7 +100,7 @@ class _Scanner:
     ) -> None:
         reason = _file_rule(path, size, self.limits)
         if reason is not None:
-            self.skipped.append(SkippedItem(path, reason))
+            self._skip(path, reason, origin)
         else:
             self.candidates.append(Candidate(path, origin, relative, input_is_dir, size))
 
@@ -105,24 +110,24 @@ class _Scanner:
         try:
             entries = _sorted_entries(folder)
         except PermissionError:
-            self.skipped.append(SkippedItem(folder, SkipReason.UNREADABLE, is_dir=True))
+            self._skip(folder, SkipReason.UNREADABLE, origin, is_dir=True)
             return
         subfolders: list[tuple[Path, Path]] = []
         for entry in entries:
             path = Path(entry.path)
             if entry.is_symlink():
-                self.skipped.append(SkippedItem(path, SkipReason.SYMLINK))
+                self._skip(path, SkipReason.SYMLINK, origin)
                 continue
             status = entry.stat(follow_symlinks=False)
             if entry.is_dir(follow_symlinks=False):
                 if entry.name.casefold() == OUTPUT_DIR_NAME.casefold():
-                    self.skipped.append(SkippedItem(path, SkipReason.OUTPUT_FOLDER, is_dir=True))
+                    self._skip(path, SkipReason.OUTPUT_FOLDER, origin, is_dir=True)
                 elif is_hidden(entry.name, status):
-                    self.skipped.append(SkippedItem(path, SkipReason.HIDDEN, is_dir=True))
+                    self._skip(path, SkipReason.HIDDEN, origin, is_dir=True)
                 elif self.recursive:
                     subfolders.append((path, relative / entry.name))
             elif is_hidden(entry.name, status):
-                self.skipped.append(SkippedItem(path, SkipReason.HIDDEN))
+                self._skip(path, SkipReason.HIDDEN, origin)
             elif entry.is_file(follow_symlinks=False):
                 self._add_file(path, origin, relative, status.st_size, input_is_dir=True)
         for path, sub_relative in subfolders:

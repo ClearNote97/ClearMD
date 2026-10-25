@@ -74,8 +74,29 @@ warning_slow = "⚠ {name} — may take more than {limit} ({estimate}) and be st
 [time]
 under_a_minute = "less than a minute"
 exact_minutes = "{minutes} min"
+under_a_second = "<1 s"
+seconds = "{seconds} s"
 minutes = "about {minutes} min"
 hours = "about {hours} h {minutes} min"
 
 [number]
 decimal_mark = "."
+
+[summary]
+title = "ClearMD summary"
+converted = "Converted"
+stopped = "Stopped"
+failed = "Failed"
+skipped = "Skipped"
+kept = "Kept (the output already existed)"
+cancelled = "Cancelled"
+history = "History"
+history_restarted = "The previous history could not be read, so it starts again here."
+col_source = "Source"
+col_output = "Output"
+col_format = "Format"
+col_time = "Time"
+by_content = "{format}, detected by content"
+technical_detail = "Technical detail"
+stopped_line = "stopped after {elapsed} (about {percent}% by the estimate). {action}"
+batch_cancelled = "cancelled"

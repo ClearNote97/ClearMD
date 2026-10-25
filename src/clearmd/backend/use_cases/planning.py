@@ -6,6 +6,7 @@ the plan is put in cost order (T12).
 """
 
 from collections.abc import Callable, Sequence
+from dataclasses import replace
 from pathlib import Path
 
 from clearmd.backend.schemas.errors import SkipReason
@@ -58,18 +59,31 @@ def build_plan(
     scanned = scan(inputs, recursive=recursive, limits=limits, on_progress=on_event)
     drafts: list[tuple[Candidate, Detection, Path, float]] = []
     requests: list[NameRequest] = []
-    skipped: list[SkippedItem] = list(scanned.skipped)
+    skipped: list[SkippedItem] = [
+        replace(
+            item,
+            output_root=output_root_for(item.input, is_dir=item.input_is_dir, override=output_root)
+            if item.input is not None
+            else None,
+        )
+        for item in scanned.skipped
+    ]
     for candidate in scanned.candidates:
+        root = output_root_for(candidate.input, is_dir=candidate.input_is_dir, override=output_root)
         detection = detector.detect(candidate.path)
         if detection is None:
-            skipped.append(SkippedItem(candidate.path, SkipReason.UNSUPPORTED_FORMAT))
+            skipped.append(
+                SkippedItem(candidate.path, SkipReason.UNSUPPORTED_FORMAT, output_root=root)
+            )
             continue
         size = candidate.size
         if detection.format in ZIP_BASED:
             archive = inspect_archive(candidate.path)
             if archive is not None:
                 if is_unsafe(archive, limits):
-                    skipped.append(SkippedItem(candidate.path, SkipReason.UNSAFE_ARCHIVE))
+                    skipped.append(
+                        SkippedItem(candidate.path, SkipReason.UNSAFE_ARCHIVE, output_root=root)
+                    )
                     continue
                 size = archive.text_bytes
         needed = limits.estimated_memory(detection.format, size)
@@ -80,10 +94,10 @@ def build_plan(
                     SkipReason.TOO_MUCH_MEMORY,
                     needed_memory=needed,
                     memory_limit=limits.worker_memory,
+                    output_root=root,
                 )
             )
             continue
-        root = output_root_for(candidate.input, is_dir=candidate.input_is_dir, override=output_root)
         target = target_for(candidate.path, root, _relative_dir(candidate))
         drafts.append(
             (candidate, detection, root, limits.estimated_seconds(detection.format, size))

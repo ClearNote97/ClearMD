@@ -51,7 +51,7 @@ brings the two riskiest parts (the worker and markitdown) to the front.
       (AC-20, AC-40, AC-42, AC-43).
 - [x] **T13 — Execution complete.** Existing outputs (re-checked before writing), failure isolation,
       cancellation, permission errors per output root, stopped files (AC-16, AC-21, AC-26, AC-27, AC-44).
-- [ ] **T14 — Summary.** `services/summary/writer.py`: name table with the time per file, skipped, failed,
+- [x] **T14 — Summary.** `services/summary/writer.py`: name table with the time per file, skipped, failed,
       cancelled, history merge, both languages; snapshot tests with a fixed clock (AC-28, AC-29, AC-41).
 
 ## Slice D — Language, settings and the complete CLI
