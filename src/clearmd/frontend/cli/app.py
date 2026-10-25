@@ -6,6 +6,7 @@ and cancels it (AC-26).
 """
 
 import argparse
+import multiprocessing
 import os
 import subprocess
 import sys
@@ -26,7 +27,14 @@ from clearmd.backend.schemas.models import (
     SkippedItem,
 )
 from clearmd.backend.schemas.settings import SettingsWarning
-from clearmd.i18n import SUPPORTED_LANGUAGES, Catalog, load_catalog, resolve_language
+from clearmd.i18n import (
+    DEFAULT_LANGUAGE,
+    SUPPORTED_LANGUAGES,
+    Catalog,
+    load_catalog,
+    printable,
+    resolve_language,
+)
 
 EXIT_OK = 0
 EXIT_FAILED = 1
@@ -105,7 +113,10 @@ class _Progress:
     def __call__(self, event: BatchEvent) -> None:
         if isinstance(event, ConversionStarted) and not self._quiet:
             line = self._catalog.text(
-                "cli.progress", index=event.index, total=event.total, name=event.item.source.name
+                "cli.progress",
+                index=event.index,
+                total=event.total,
+                name=_p(event.item.source.name),
             )
             if event.seconds_left is not None:
                 duration = self._catalog.duration(event.seconds_left)
@@ -114,7 +125,7 @@ class _Progress:
         elif isinstance(event, ConversionFinished) and event.outcome.error is not None:
             outcome = event.outcome
             assert outcome.error is not None
-            name = outcome.item.source.name
+            name = _p(outcome.item.source.name)
             if outcome.status is OutcomeStatus.STOPPED:
                 line = self._catalog.text(
                     "cli.stopped",
@@ -147,15 +158,22 @@ def _print_summary(catalog: Catalog, report: BatchReport) -> None:
         line += catalog.text("cli.summary_stopped", stopped=count[OutcomeStatus.STOPPED])
     print(line)
     for root in _output_roots(report):
-        print(catalog.text("cli.results", path=root))
+        print(catalog.text("cli.results", path=_p(root)))
+    for root in report.unwritten_summaries:
+        print(catalog.text("cli.summary_not_written", path=_p(root)), file=sys.stderr)
 
 
 def _output_roots(report: BatchReport) -> list[Path]:
     return list(dict.fromkeys(outcome.item.output_root for outcome in report.outcomes))
 
 
+def _p(value: object) -> str:
+    """A name or path as it may be printed: control characters escaped (security review)."""
+    return printable(str(value))
+
+
 def _shown(path: Path, is_dir: bool) -> str:
-    return f"{path.name}/" if is_dir else path.name
+    return _p(f"{path.name}/" if is_dir else path.name)
 
 
 def _skip_reason(catalog: Catalog, item: SkippedItem) -> str:
@@ -170,7 +188,7 @@ def _skip_reason(catalog: Catalog, item: SkippedItem) -> str:
 
 def _print_plan_notes(catalog: Catalog, plan: BatchPlan, *, quiet: bool, stream: TextIO) -> None:
     for problem in plan.input_errors:
-        print(catalog.text("cli.input_not_found", path=problem.path), file=stream)
+        print(catalog.text("cli.input_not_found", path=_p(problem.path)), file=stream)
     if not quiet:
         for item in plan.skipped:
             name = _shown(item.path, item.is_dir)
@@ -179,7 +197,7 @@ def _print_plan_notes(catalog: Catalog, plan: BatchPlan, *, quiet: bool, stream:
     for warning in plan.warnings:
         line = catalog.text(
             "cli.warning_slow",
-            name=warning.item.source.name,
+            name=_p(warning.item.source.name),
             limit=catalog.text("time.exact_minutes", minutes=round(warning.limit_seconds / 60)),
             estimate=catalog.duration(warning.estimated_seconds),
         )
@@ -196,7 +214,7 @@ def _print_settings_warnings(
 def _print_dry_run(catalog: Catalog, plan: BatchPlan) -> None:
     for item in plan.conversions:
         target = item.target.relative_to(item.output_root.parent)
-        line = catalog.text("cli.dry_run_item", source=item.source, target=target)
+        line = catalog.text("cli.dry_run_item", source=_p(item.source), target=_p(target))
         if item.exists:
             line += catalog.text("cli.dry_run_exists")
         print(line)
@@ -222,7 +240,7 @@ def _ask_once(catalog: Catalog, plan: BatchPlan) -> Decision:
             chosen = set()
             for item in plan.existing:
                 target = item.target.relative_to(item.output_root.parent)
-                reply = _ask(catalog.text("cli.ask_one", target=target))
+                reply = _ask(catalog.text("cli.ask_one", target=_p(target)))
                 if reply is not None and reply.casefold().startswith(yes):
                     chosen.add(item.target)
             return lambda item: item.target in chosen
@@ -292,6 +310,19 @@ def _exit_code(report: BatchReport) -> int:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    multiprocessing.freeze_support()  # a no-op unless running as a packaged executable
+    try:
+        return _main(argv)
+    except (SystemExit, KeyboardInterrupt):
+        raise
+    except Exception as error:  # the last net: a message, never a traceback (UX contract)
+        catalog = load_catalog(resolve_language(_requested_language(argv), DEFAULT_LANGUAGE))
+        detail = _p(f"{type(error).__name__}: {error}")
+        print(catalog.text("cli.unexpected_error", detail=detail), file=sys.stderr)
+        return EXIT_FAILED
+
+
+def _main(argv: Sequence[str] | None) -> int:
     settings, settings_warnings = load_settings()
     catalog = load_catalog(resolve_language(_requested_language(argv), settings.language))
     args = build_parser(catalog).parse_args(argv)
@@ -319,7 +350,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         _print_dry_run(catalog, plan)
         return EXIT_OK
 
-    decision = _decision(catalog, plan, on_existing, err)
+    try:
+        decision = _decision(catalog, plan, on_existing, err)
+    except KeyboardInterrupt:
+        print(catalog.text("cli.cancelled_before_start"), file=err)
+        return EXIT_CANCELLED
     if decision is None:
         return EXIT_DECISION_REQUIRED
     progress = _Progress(catalog, quiet=args.quiet, stream=err)

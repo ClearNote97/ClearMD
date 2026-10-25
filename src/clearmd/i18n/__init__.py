@@ -1,5 +1,6 @@
 """EN/ES message catalogs shared by backend and frontend (ADR-0012, ADR-0017). Stdlib only."""
 
+import re
 import tomllib
 from collections.abc import Mapping
 from importlib import resources
@@ -7,6 +8,15 @@ from typing import Any, Protocol
 
 SUPPORTED_LANGUAGES = ("en", "es")
 DEFAULT_LANGUAGE = "en"
+
+# C0/C1 controls, DEL and the bidi overrides/isolates: invisible, and able to drive a terminal
+# (escape sequences) or to reorder what the user reads (security review of feature 001).
+_CONTROL = re.compile("[\x00-\x1f\x7f-\x9f\u202a-\u202e\u2066-\u2069]")
+
+
+def printable(text: str) -> str:
+    """``text`` with every control character shown as an escape (``\\x1b``, ``\\n``)."""
+    return _CONTROL.sub(lambda match: match.group().encode("unicode_escape").decode("ascii"), text)
 
 
 class _HasCatalogKeys(Protocol):

@@ -2,11 +2,18 @@
 
 import os
 from collections.abc import Callable, Sequence
+from dataclasses import replace
 from pathlib import Path
 
 from clearmd.backend.api import composition
+from clearmd.backend.schemas.errors import ErrorCode
 from clearmd.backend.schemas.events import BatchEvent
-from clearmd.backend.schemas.models import BatchPlan, BatchReport, PlannedConversion
+from clearmd.backend.schemas.models import (
+    BatchPlan,
+    BatchReport,
+    OutputRootReport,
+    PlannedConversion,
+)
 from clearmd.backend.schemas.settings import Settings, SettingsWarning
 from clearmd.backend.services import settings_store
 from clearmd.backend.use_cases.cancel import CancelToken
@@ -81,9 +88,16 @@ def run_batch(
     finally:
         runner.close()
     writer = composition.build_summary_writer(language)
+    unwritten: list[Path] = []
     for root_report in by_output_root(report):
         try:
             writer.write(root_report)
         except OSError:
-            pass  # an unwritable root: its files already failed with permission_denied
-    return report
+            if not _root_was_refused(root_report):  # those already say why, file by file
+                unwritten.append(root_report.root)
+    return replace(report, unwritten_summaries=tuple(unwritten))
+
+
+def _root_was_refused(root_report: OutputRootReport) -> bool:
+    refused = {ErrorCode.PERMISSION_DENIED, ErrorCode.WRITE_FAILED}
+    return all(outcome.error in refused for outcome in root_report.outcomes)

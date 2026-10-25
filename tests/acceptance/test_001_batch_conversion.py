@@ -680,3 +680,60 @@ def test_every_acceptance_criterion_of_the_spec_has_a_test() -> None:
     names = [name for name in globals() if name.startswith("test_ac_")]
     covered = {int(n) for name in names for n in re.findall(r"ac_(\d+)", name)}
     assert sorted(ids - covered) == []
+
+
+def test_ac_26_ctrl_c_at_the_question_exits_130_and_writes_nothing_new(
+    workdir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from clearmd.frontend.cli import app
+
+    first, second = _with_existing_outputs(workdir)
+
+    def interrupted(prompt: str) -> str:
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(app, "_is_interactive", lambda: True)
+    monkeypatch.setattr(app, "_ask", interrupted)
+    assert main([str(first), str(second), "--quiet"]) == 130
+    assert _outputs(workdir) == {"a": "old", "b": "old"}
+
+
+def test_ac_38_control_characters_in_names_cannot_drive_the_terminal(
+    workdir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    name = "\x1b]0;owned\x07evil\u202e.txt"
+    source = put(workdir, "sample.txt", name)
+    assert main([str(source)]) == 0
+    err = capsys.readouterr().err
+    assert "\x1b" not in err and "\x07" not in err and "\u202e" not in err
+    assert "\\x1b]0;owned\\x07evil\\u202e.txt" in err
+
+
+def test_ac_28_a_summary_that_cannot_be_written_is_reported(
+    workdir: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from clearmd.backend.services.summary.writer import MarkdownSummaryWriter
+
+    def full_disk(self: object, report: object) -> None:
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(MarkdownSummaryWriter, "write", full_disk)
+    source = put(workdir, "sample.txt", "a.txt")
+    assert main([str(source)]) == 0
+    assert "could not be written" in capsys.readouterr().err
+
+
+def test_ac_35_an_unexpected_error_is_a_message_not_a_traceback(
+    workdir: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from clearmd.frontend.cli import app
+
+    def broken(*args: object, **kwargs: object) -> None:
+        raise RuntimeError("something nobody expected")
+
+    monkeypatch.setattr(app, "plan_batch", broken)
+    source = put(workdir, "sample.txt", "a.txt")
+    assert main([str(source)]) == 1
+    err = capsys.readouterr().err
+    assert "Traceback" not in err
+    assert "RuntimeError: something nobody expected" in err

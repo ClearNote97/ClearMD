@@ -88,6 +88,8 @@ ask_one = "Overwrite {target}? [y/N]: "
 yes_letter = "y"
 cancelling = "Cancelling… the summary is being written."
 cancelled_before_start = "Cancelled before anything was written."
+summary_not_written = "⚠ The summary in {path} could not be written (is the disk full?)."
+unexpected_error = "Something unexpected went wrong and ClearMD stopped: {detail}. Your files were not changed; please report this."
 time_left = "{duration} left"
 warning_slow = "⚠ {name} — may take more than {limit} ({estimate}) and be stopped"
 

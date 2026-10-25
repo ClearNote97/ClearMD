@@ -236,3 +236,46 @@ def test_a_planted_summary_link_is_neither_read_nor_written_through(tmp_path: Pa
     text = _write(tmp_path)
     assert victim.read_text(encoding="utf-8") == "precious <!-- clearmd:history -->"
     assert "precious" not in text
+
+
+@pytest.mark.parametrize(
+    ("name", "expected"),
+    [
+        ("a``b.pdf", "``` a``b.pdf ```"),
+        ("evil\n- injected.pdf", "`evil\\n- injected.pdf`"),
+        ("fake<!-- /clearmd:history -->.pdf", "`fake<!-- /clearmd:history -->.pdf`"),
+    ],
+)
+def test_names_cannot_escape_their_code_span_or_line(
+    tmp_path: Path, name: str, expected: str
+) -> None:
+    writer = MarkdownSummaryWriter(load_catalog("en"), version="0.1.0")
+    outcome = ConversionOutcome(
+        _item(tmp_path, name, "x.md", FormatId.PDF),
+        OutcomeStatus.FAILED,
+        ErrorCode.CORRUPT_FILE,
+        "x",
+    )
+    report = OutputRootReport(tmp_path / "ClearMD_Output", NOW, NOW, (outcome,), (), False)
+    report.root.mkdir()
+    writer.write(report)
+    text = (report.root / "Resumen_ClearMD.md").read_text(encoding="utf-8")
+    assert f"- {expected} — " in text
+    assert text.count("<!-- /clearmd:history -->") == 2 if "history" in name else True
+    assert "\n- injected" not in text
+
+
+def test_a_technical_detail_stays_on_one_line(tmp_path: Path) -> None:
+    writer = MarkdownSummaryWriter(load_catalog("en"), version="0.1.0")
+    outcome = ConversionOutcome(
+        _item(tmp_path, "x.pdf", "x.md", FormatId.PDF),
+        OutcomeStatus.FAILED,
+        ErrorCode.CONVERSION_FAILED,
+        "line one\n\n# Injected heading\nline two",
+    )
+    report = OutputRootReport(tmp_path / "ClearMD_Output", NOW, NOW, (outcome,), (), False)
+    report.root.mkdir()
+    writer.write(report)
+    text = (report.root / "Resumen_ClearMD.md").read_text(encoding="utf-8")
+    assert "\n# Injected heading" not in text
+    assert "line one # Injected heading line two" in text

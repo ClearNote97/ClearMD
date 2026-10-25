@@ -138,3 +138,5 @@ class BatchReport:
     skipped: tuple[SkippedItem, ...]
     input_errors: tuple[InputError, ...]
     cancelled: bool
+    # Output roots whose Resumen_ClearMD.md could not be written (disk full, ...).
+    unwritten_summaries: tuple[Path, ...] = ()

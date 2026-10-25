@@ -88,6 +88,8 @@ ask_one = "¿Sobrescribir {target}? [s/N]: "
 yes_letter = "s"
 cancelling = "Cancelando… se está escribiendo el resumen."
 cancelled_before_start = "Cancelado antes de escribir nada."
+summary_not_written = "⚠ No se pudo escribir el resumen en {path} (¿el disco está lleno?)."
+unexpected_error = "Ocurrió algo inesperado y ClearMD se detuvo: {detail}. Tus archivos no se modificaron; por favor repórtalo."
 time_left = "faltan {duration}"
 warning_slow = "⚠ {name} — podría tardar más de {limit} ({estimate}) y detenerse"
 

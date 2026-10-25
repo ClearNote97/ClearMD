@@ -1,6 +1,7 @@
 """Write Resumen_ClearMD.md for one output folder (ADR-0016; AC-22, AC-28, AC-29, AC-41)."""
 
 import html
+import re
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -12,7 +13,7 @@ from clearmd.backend.schemas.models import (
     SkippedItem,
 )
 from clearmd.backend.use_cases.output_files import UnsafeOutput, atomic_write, read_regular_file
-from clearmd.i18n import Catalog
+from clearmd.i18n import Catalog, printable
 
 HISTORY_START = "<!-- clearmd:history -->"
 HISTORY_END = "<!-- /clearmd:history -->"
@@ -21,8 +22,11 @@ DATE_FORMAT = "%Y-%m-%d %H:%M"
 
 
 def _code(text: str) -> str:
-    """A code span that a backtick in a (untrusted) file name cannot close."""
-    return f"`` {text} ``" if "`" in text else f"`{text}`"
+    """A one-line code span that an untrusted file name cannot close or break."""
+    shown = printable(text)
+    longest = max((len(run) for run in re.findall("`+", shown)), default=0)
+    fence = "`" * (longest + 1)
+    return f"{fence} {shown} {fence}" if longest else f"`{shown}`"
 
 
 def _cell(text: str) -> str:
@@ -155,7 +159,8 @@ class MarkdownSummaryWriter:
             message = self._catalog.error(outcome.error)
             yield f"- {_code(_relative(outcome.item.source, base))} — {message}"
             if outcome.detail:
-                detail = html.escape(outcome.detail, quote=False)
+                # One line, so blank lines in an exception cannot end the HTML block.
+                detail = html.escape(printable(" ".join(outcome.detail.split())), quote=False)
                 yield f"  <details><summary>{summary}</summary>{detail}</details>"
 
     def _skipped(self, item: SkippedItem, base: Path) -> str:
