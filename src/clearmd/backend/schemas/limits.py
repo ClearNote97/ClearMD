@@ -57,6 +57,8 @@ class Limits:
     # The composition root lowers it to half of the machine's RAM when that is smaller.
     worker_memory: int = 4 * GIB
     worker_startup_seconds: float = 0.7
+    # Characters of Markdown a worker may send back (a 250 MiB CSV gives ~290 M).
+    max_result_chars: int = 512 * 1024**2
     # Python + markitdown + magika, resident before any file (benchmark 001).
     worker_base_memory: int = 160 * MIB
     weights: Mapping[FormatId, float] = field(default_factory=lambda: SECONDS_PER_MIB)

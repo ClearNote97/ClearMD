@@ -105,3 +105,22 @@ def test_gigabytes_follow_the_language(language: str, expected: str) -> None:
 @pytest.mark.parametrize(("seconds", "expected"), [(600, "10:00"), (84, "1:24"), (3725, "1:02:05")])
 def test_clock_style_elapsed_time(seconds: float, expected: str) -> None:
     assert load_catalog("en").clock(seconds) == expected
+
+
+@pytest.mark.parametrize(
+    ("raw", "shown"),
+    [
+        ("a\x1bb", "a\\x1bb"),
+        ("a\u2028b", "a\\u2028b"),  # line separator: str.splitlines() splits on it
+        ("a\u2029b", "a\\u2029b"),
+        ("a\u200bb", "a\\u200bb"),  # zero-width space (format character)
+        ("a\u061cb", "a\\u061cb"),  # Arabic letter mark
+        ("a\udcffb", "a\\udcffb"),  # a surrogate from an undecodable file name
+        ("año ñ 文字", "año ñ 文字"),
+    ],
+)
+def test_printable_escapes_every_invisible_or_line_breaking_character(raw: str, shown: str) -> None:
+    from clearmd.i18n import printable
+
+    assert printable(raw) == shown
+    printable(raw).encode("utf-8")  # always encodable

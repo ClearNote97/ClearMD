@@ -30,7 +30,8 @@ already tested (ADR-0001).
       settings window, progress, splash, output folder choice (remembered).
 - [ ] **006 — CI:** tests on Linux and Windows (Python 3.12 and 3.14) + executables in GitHub Releases;
       executable size as a metric; **code signing** of the Windows executables (SignPath, free for open
-      source) so SmartScreen does not scare non-technical users.
+      source) so SmartScreen does not scare non-technical users; a Windows Job Object as the worker's hard
+      memory cap; an advisory check of `uv.lock` and hash-pinned builds (known limitations of 001).
 
 ## Later
 

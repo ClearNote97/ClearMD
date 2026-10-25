@@ -92,7 +92,7 @@ def run_batch(
     for root_report in by_output_root(report):
         try:
             writer.write(root_report)
-        except OSError:
+        except (OSError, ValueError):  # ValueError: e.g. text that cannot be encoded
             if not _root_was_refused(root_report):  # those already say why, file by file
                 unwritten.append(root_report.root)
     return replace(report, unwritten_summaries=tuple(unwritten))

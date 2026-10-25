@@ -225,3 +225,29 @@ def test_a_worker_that_died_while_idle_is_reported_not_raised(runner: WorkerRunn
 
     runner._connection.send = broken_pipe  # type: ignore[method-assign, union-attr]
     _fails_with(runner, "notes.txt", ErrorCode.WORKER_CRASHED)
+
+
+def test_a_worker_is_replaced_after_a_memory_error(runner: WorkerRunner) -> None:
+    before = runner.convert(_item("pid.txt"), CancelToken())
+    _fails_with(runner, "memoryerror.txt", ErrorCode.OUT_OF_MEMORY)
+    assert runner.convert(_item("pid.txt"), CancelToken()) != before
+
+
+def test_the_memory_cap_respects_a_lower_inherited_limit(monkeypatch: pytest.MonkeyPatch) -> None:
+    resource = pytest.importorskip("resource")
+    from clearmd.backend.services.worker.child import apply_memory_cap
+
+    calls: list[tuple[int, int]] = []
+    monkeypatch.setattr(resource, "getrlimit", lambda kind: (1024**3, 1024**3))
+    monkeypatch.setattr(resource, "setrlimit", lambda kind, limits: calls.append(limits))
+    apply_memory_cap(8 * 1024**3)
+    assert calls == [(1024**3, 1024**3)]
+
+
+def test_a_huge_result_is_refused_in_the_worker() -> None:
+    worker = WorkerRunner(FAKE, Limits(time_per_file=10, max_result_chars=1000))
+    try:
+        error = _fails_with(worker, "huge_result.txt", ErrorCode.CONVERSION_FAILED)
+        assert "too large" in error.detail
+    finally:
+        worker.close()

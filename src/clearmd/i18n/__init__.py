@@ -1,7 +1,7 @@
 """EN/ES message catalogs shared by backend and frontend (ADR-0012, ADR-0017). Stdlib only."""
 
-import re
 import tomllib
+import unicodedata
 from collections.abc import Mapping
 from importlib import resources
 from typing import Any, Protocol
@@ -9,14 +9,22 @@ from typing import Any, Protocol
 SUPPORTED_LANGUAGES = ("en", "es")
 DEFAULT_LANGUAGE = "en"
 
-# C0/C1 controls, DEL and the bidi overrides/isolates: invisible, and able to drive a terminal
-# (escape sequences) or to reorder what the user reads (security review of feature 001).
-_CONTROL = re.compile("[\x00-\x1f\x7f-\x9f\u202a-\u202e\u2066-\u2069]")
+# Controls (Cc), format characters (Cf: bidi overrides, zero-width), line and paragraph separators
+# (Zl, Zp) and surrogates (Cs, from undecodable file names): invisible, able to drive a terminal,
+# to reorder what the user reads, or to split a line where str.splitlines() does (reviews of 001).
+_HIDDEN_CATEGORIES = frozenset({"Cc", "Cf", "Cs", "Zl", "Zp"})
+
+
+def _escape(character: str) -> str:
+    code = ord(character)
+    return f"\\x{code:02x}" if code < 0x100 else f"\\u{code:04x}"
 
 
 def printable(text: str) -> str:
-    """``text`` with every control character shown as an escape (``\\x1b``, ``\\n``)."""
-    return _CONTROL.sub(lambda match: match.group().encode("unicode_escape").decode("ascii"), text)
+    """``text`` with every invisible or line-breaking character shown as an escape (``\\x1b``)."""
+    return "".join(
+        _escape(char) if unicodedata.category(char) in _HIDDEN_CATEGORIES else char for char in text
+    )
 
 
 class _HasCatalogKeys(Protocol):

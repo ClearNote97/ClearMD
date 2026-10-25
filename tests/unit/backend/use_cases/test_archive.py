@@ -86,3 +86,46 @@ def test_a_zip64_archive_is_unsafe(tmp_path: Path) -> None:
 def test_a_normal_archive_reports_its_entries() -> None:
     info = inspect_archive(DOCUMENTS_DIR / "sample.docx")
     assert info is not None and 1 <= info.entries < 50
+
+
+def _patched_counts(source: Path, target: Path, on_disk: int, total: int) -> Path:
+    import struct
+
+    data = bytearray(source.read_bytes())
+    end = data.rfind(b"PK\x05\x06")
+    struct.pack_into("<HH", data, end + 8, on_disk, total)
+    target.write_bytes(bytes(data))
+    return target
+
+
+def test_a_fake_signature_inside_the_end_record_cannot_switch_the_check_off(tmp_path: Path) -> None:
+    # Counts 0x4B50 / 0x0605 spell "PK\x05\x06" inside the real end record (adversarial review).
+    bomb = _patched_counts(DOCUMENTS_DIR / "zip_bomb.docx", tmp_path / "bomb.docx", 0x4B50, 0x0605)
+    with zipfile.ZipFile(bomb) as archive:  # zipfile ignores those counts and opens it
+        assert archive.infolist()
+    info = inspect_archive(bomb)
+    assert info is not None
+    assert is_unsafe(info, Limits())
+
+
+def test_a_huge_central_directory_is_unsafe_whatever_the_count_says(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import struct
+
+    path = tmp_path / "many.docx"
+    directory = 240 * 1024**2
+    end_record = b"PK\x05\x06" + struct.pack("<HHHHIIH", 0, 0, 1, 1, directory, 0, 0)
+    path.write_bytes(b"\x00" * 64 + end_record)
+
+    def forbidden(*args: object, **kwargs: object) -> None:
+        raise AssertionError("the central directory must not be loaded")
+
+    monkeypatch.setattr(zipfile, "ZipFile", forbidden)
+    info = inspect_archive(path)
+    assert info is not None
+    assert is_unsafe(info, Limits())
+
+
+def test_the_end_record_is_read_by_the_same_function_zipfile_uses() -> None:
+    assert callable(getattr(zipfile, "_EndRecData", None))  # stdlib, private: guarded here

@@ -11,7 +11,7 @@ from pathlib import Path
 
 from clearmd.backend.schemas.errors import SkipReason
 from clearmd.backend.schemas.events import BatchEvent, PlanReady
-from clearmd.backend.schemas.formats import ZIP_BASED
+from clearmd.backend.schemas.formats import ZIP_BASED, FormatId
 from clearmd.backend.schemas.limits import Limits
 from clearmd.backend.schemas.models import (
     BatchPlan,
@@ -77,7 +77,7 @@ def build_plan(
                 SkippedItem(candidate.path, SkipReason.UNSUPPORTED_FORMAT, output_root=root)
             )
             continue
-        size = candidate.size
+        size = memory_size = candidate.size
         if detection.format in ZIP_BASED:
             archive = inspect_archive(candidate.path, limits.max_zip_entries)
             if archive is not None:
@@ -87,7 +87,10 @@ def build_plan(
                     )
                     continue
                 size = archive.text_bytes
-        needed = limits.estimated_memory(detection.format, size)
+                # markitdown's docx pre-processing reads every entry into memory (review of 001).
+                if detection.format is FormatId.DOCX:
+                    memory_size = archive.uncompressed
+        needed = limits.estimated_memory(detection.format, memory_size)
         if needed > limits.worker_memory:
             skipped.append(
                 SkippedItem(

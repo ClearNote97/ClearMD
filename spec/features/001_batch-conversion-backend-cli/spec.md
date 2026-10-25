@@ -199,3 +199,18 @@ Each criterion has an acceptance test named after its id (`tests/acceptance/test
 - **Windows specifics** (hidden attribute, long paths, case-insensitive file system, spawn start method) are
   tested on Linux by simulation here and on a real Windows machine and runner in feature 006.
 - **Conversion quality** (PDF tables, layout) comes from markitdown and pdfminer, not from ClearMD.
+
+### Known limitations after the reviews of feature 001
+
+Accepted for now, each with where it is addressed:
+
+- **Windows has no hard memory cap yet.** POSIX workers run under `RLIMIT_AS`; on Windows a single huge
+  allocation is caught only by the 0.1 s sampling. A Job Object with `ProcessMemoryLimit` comes in feature 006,
+  with the Windows runner.
+- **The worker is resource isolation, not a sandbox.** A parser exploit runs with the user's rights. Dependency
+  hygiene (advisory check of `uv.lock`, hash-pinned PyInstaller builds) is part of feature 006.
+- **Memory estimate of OOXML files with renamed parts.** The pre-check counts `.xml`-like entries; a file that
+  names its main part otherwise gets a low estimate and is caught by the runtime limits instead.
+- **No cap on the size of a converted Markdown.** Bounded in practice by the 250 MiB input limit.
+- **Absolute paths can appear in a summary** (with `--output-root`, and inside technical details). Local file;
+  worth knowing before sharing it.

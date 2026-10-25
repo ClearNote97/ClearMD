@@ -101,7 +101,9 @@ class WorkerRunner:
         parent_end, child_end = self._context.Pipe()
         memory_cap = self._limits.worker_memory + VIRTUAL_HEADROOM
         process = self._context.Process(
-            target=worker_main, args=(child_end, self._factory_path, memory_cap), daemon=True
+            target=worker_main,
+            args=(child_end, self._factory_path, memory_cap, self._limits.max_result_chars),
+            daemon=True,
         )
         process.start()
         child_end.close()
@@ -142,6 +144,8 @@ class WorkerRunner:
                 except EOFError:
                     raise self._crashed(process) from None
                 if isinstance(response, Failed):
+                    if response.code == ErrorCode.OUT_OF_MEMORY.value:
+                        self._stop()  # after a MemoryError the worker's heap is not trusted
                     raise ConversionError(ErrorCode(response.code), response.detail)
                 return response
             if cancel.is_set():

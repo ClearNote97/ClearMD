@@ -47,10 +47,15 @@ def apply_memory_cap(limit: int) -> None:
         import resource
     except ImportError:
         return
+    _, hard = resource.getrlimit(resource.RLIMIT_AS)
+    if hard != resource.RLIM_INFINITY:
+        limit = min(limit, hard)  # a lower limit inherited from the system wins
     resource.setrlimit(resource.RLIMIT_AS, (limit, limit))
 
 
-def handle(registry: _Registry, request: ConvertRequest | DetectRequest) -> Response:
+def handle(
+    registry: _Registry, request: ConvertRequest | DetectRequest, max_result_chars: int
+) -> Response:
     if isinstance(request, DetectRequest):
         try:
             detection = registry.detect_content(Path(request.source))
@@ -67,10 +72,20 @@ def handle(registry: _Registry, request: ConvertRequest | DetectRequest) -> Resp
         return Failed(ErrorCode.OUT_OF_MEMORY.value, "MemoryError: over the hard memory cap")
     except Exception as error:
         return Failed(ErrorCode.CONVERSION_FAILED.value, f"{type(error).__name__}: {error}")
+    if len(markdown) > max_result_chars:  # never ship gigabytes back to the interface
+        return Failed(
+            ErrorCode.CONVERSION_FAILED.value,
+            f"result too large: {len(markdown)} characters, limit {max_result_chars}",
+        )
     return Converted(markdown)
 
 
-def worker_main(connection: Connection, factory_path: str, memory_cap: int | None = None) -> None:
+def worker_main(
+    connection: Connection,
+    factory_path: str,
+    memory_cap: int | None = None,
+    max_result_chars: int = 512 * 1024**2,
+) -> None:
     # Ctrl+C reaches the whole process group; only the supervisor decides what to stop.
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     if memory_cap is not None:
@@ -84,4 +99,4 @@ def worker_main(connection: Connection, factory_path: str, memory_cap: int | Non
             return
         if request is None:
             return
-        connection.send(handle(registry, request))
+        connection.send(handle(registry, request, max_result_chars))

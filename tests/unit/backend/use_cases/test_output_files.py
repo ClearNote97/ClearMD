@@ -101,3 +101,22 @@ def test_a_failed_write_removes_its_temp_file(
     with pytest.raises(OSError):
         atomic_write(root / "OutputMD" / "a.md", "x", inside=root)
     assert list((root / "OutputMD").iterdir()) == []
+
+
+def test_the_sweep_never_follows_a_link_out_of_the_tree(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    victim = outside / "keep.clearmd-tmp"
+    victim.write_text("not ours", encoding="utf-8")
+    root = _root(tmp_path)
+    (root / "OutputMD").mkdir(parents=True)
+    (root / "OutputMD" / "link").symlink_to(outside, target_is_directory=True)
+    sweep_temporary_files(root)
+    assert victim.exists()
+
+
+def test_text_that_cannot_be_encoded_is_still_written(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    target = root / "OutputMD" / "a.md"
+    atomic_write(target, "ok \udcff end", inside=root)
+    assert target.read_bytes().startswith(b"ok ")

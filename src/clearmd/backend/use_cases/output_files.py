@@ -61,7 +61,8 @@ def atomic_write(target: Path, text: str, *, inside: Path) -> None:
     descriptor, temporary = tempfile.mkstemp(prefix=".", suffix=TEMP_SUFFIX, dir=target.parent)
     try:
         with os.fdopen(descriptor, "wb") as stream:
-            stream.write(text.replace("\r\n", "\n").encode("utf-8"))
+            # A lone surrogate (from a broken source) is replaced rather than failing the file.
+            stream.write(text.replace("\r\n", "\n").encode("utf-8", errors="replace"))
         os.chmod(temporary, 0o666 & ~_UMASK)  # mkstemp creates 0600; results are normal files
         os.replace(temporary, target)
     except BaseException:
@@ -70,22 +71,31 @@ def atomic_write(target: Path, text: str, *, inside: Path) -> None:
 
 
 def sweep_temporary_files(root: Path) -> None:
-    """Remove temporary files left by a power cut or a forced stop (never follows links)."""
-    results = root / RESULTS_DIR_NAME
-    for folder in (root, results):
-        if not folder.is_dir() or folder.is_symlink():
-            return
-    for path in [*root.glob(f"*{TEMP_SUFFIX}"), *results.rglob(f"*{TEMP_SUFFIX}")]:
-        if not path.is_symlink() and path.is_file():
-            path.unlink(missing_ok=True)
+    """Remove temporary files left by a power cut or a forced stop.
+
+    Walks with ``lstat`` only: a link or junction planted in the tree is never entered.
+    """
+    pending = [root]
+    while pending:
+        folder = pending.pop()
+        with os.scandir(folder) as entries:
+            for entry in entries:
+                status = entry.stat(follow_symlinks=False)
+                if _is_link(status):
+                    continue
+                if stat.S_ISDIR(status.st_mode):
+                    if folder != root or entry.name == RESULTS_DIR_NAME:
+                        pending.append(Path(entry.path))
+                elif stat.S_ISREG(status.st_mode) and entry.name.endswith(TEMP_SUFFIX):
+                    Path(entry.path).unlink(missing_ok=True)
 
 
-def read_regular_file(path: Path) -> str | None:
-    """The text of ``path`` if it is a regular file (not a link); ``None`` if it does not exist."""
+def read_regular_file(path: Path, max_bytes: int = 16 * 1024**2) -> str | None:
+    """The text of ``path`` if it is a small regular file (not a link); ``None`` if absent."""
     try:
         status = os.lstat(path)
     except FileNotFoundError:
         return None
-    if _is_link(status) or not stat.S_ISREG(status.st_mode):
-        raise UnsafeOutput(f"not a regular file: {path}")
+    if _is_link(status) or not stat.S_ISREG(status.st_mode) or status.st_size > max_bytes:
+        raise UnsafeOutput(f"not a small regular file: {path}")
     return path.read_text(encoding="utf-8")

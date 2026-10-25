@@ -19,6 +19,8 @@ HISTORY_START = "<!-- clearmd:history -->"
 HISTORY_END = "<!-- /clearmd:history -->"
 HISTORY_LIMIT = 200
 DATE_FORMAT = "%Y-%m-%d %H:%M"
+# Only lines ClearMD itself wrote survive into the history: date · ClearMD version · totals.
+_HISTORY_LINE = re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2} · ClearMD [0-9A-Za-z.+-]+ · [\w ·]+")
 
 
 def _code(text: str) -> str:
@@ -45,13 +47,13 @@ def _previous_history(summary: Path) -> tuple[list[str], bool]:
         return [], True
     if text is None:
         return [], False
-    if HISTORY_START not in text or HISTORY_END not in text:
+    lines = text.split("\n")  # never splitlines(): it also breaks on U+2028 and friends
+    if HISTORY_START not in lines or HISTORY_END not in lines:
         return [], True
-    lines = text.splitlines()
-    header = next((line for line in lines[1:] if line.strip()), "")
-    inside = text.split(HISTORY_START, 1)[1].split(HISTORY_END, 1)[0]
-    earlier = [line for line in inside.splitlines() if line.startswith("- ")]
-    return [f"- {header}", *earlier], False
+    inside = lines[lines.index(HISTORY_START) + 1 : lines.index(HISTORY_END)]
+    header = lines[1] if len(lines) > 1 else ""
+    candidates = [header, *(line.removeprefix("- ") for line in inside if line.startswith("- "))]
+    return [f"- {line}" for line in candidates if _HISTORY_LINE.fullmatch(line)], False
 
 
 class MarkdownSummaryWriter:

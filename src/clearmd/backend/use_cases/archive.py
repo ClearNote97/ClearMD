@@ -13,11 +13,12 @@ from clearmd.backend.schemas.limits import Limits
 
 # Entries that hold the document's text; images and other media are not processed by the converters.
 TEXT_SUFFIXES = (".xml", ".xhtml", ".html", ".htm", ".rels")
+# Indices of zipfile's end-of-central-directory record (``zipfile._ECD_*``).
+_ENTRIES_TOTAL = 4
+_DIRECTORY_SIZE = 5
 
-_END_SIGNATURE = b"PK\x05\x06"
-_END_SIZE = 22
-_MAX_COMMENT = 0xFFFF
-_ZIP64_MARK = 0xFFFF
+# Real documents have a central directory of a few KB; 50,000 entries of ~1 KB each fit in this.
+MAX_DIRECTORY_BYTES = 64 * 1024**2
 
 
 @dataclass(frozen=True)
@@ -33,36 +34,37 @@ class ArchiveInfo:
         return self.uncompressed / self.file_size if self.file_size else 0.0
 
 
-def declared_entries(path: Path) -> int | None:
-    """The entry count the end record declares, read from the file's tail only.
+def _end_record(path: Path) -> tuple[int, int] | None:
+    """(entries, central directory size) exactly as ``zipfile`` will read them, or ``None``.
 
-    Loading the central directory builds one object per entry, so an archive of millions of tiny
-    entries is refused before ``zipfile`` reads it (security review of feature 001).
+    Uses the stdlib's own locator (private, guarded by a test), ZIP64 included: a hand-written
+    parser can be fooled into a different answer than the one ``zipfile`` acts on (adversarial
+    review of feature 001). Nothing but the file's tail is read.
     """
     with path.open("rb") as stream:
-        size = stream.seek(0, 2)
-        tail_size = min(size, _END_SIZE + _MAX_COMMENT)
-        stream.seek(size - tail_size)
-        tail = stream.read(tail_size)
-    position = tail.rfind(_END_SIGNATURE)
-    if position < 0 or len(tail) - position < _END_SIZE:
+        record = zipfile._EndRecData(stream)  # type: ignore[attr-defined]  # guarded by a test
+    if record is None:
         return None
-    entries: int = struct.unpack_from("<H", tail, position + 10)[0]
-    return entries
+    return int(record[_ENTRIES_TOTAL]), int(record[_DIRECTORY_SIZE])
 
 
 def inspect_archive(path: Path, max_entries: int = 50_000) -> ArchiveInfo | None:
-    """Sizes from the archive's index, or ``None`` when it is not a readable ZIP."""
+    """Sizes from the archive's index, or ``None`` when it is not a ZIP at all.
+
+    The entry count and the central directory size are checked before ``zipfile`` loads the index
+    (one object per entry, in the interface's process).
+    """
     try:
         file_size = path.stat().st_size
-        declared = declared_entries(path)
-        if declared is None:
-            return None
-        if declared > max_entries or declared == _ZIP64_MARK:
-            return ArchiveInfo(0, 0, file_size, entries=declared)
+        end = _end_record(path)
+        if end is None:
+            return None  # zipfile cannot open it either: the converter fails it as corrupt
+        entries, directory = end
+        if entries > max_entries or directory > MAX_DIRECTORY_BYTES:
+            return ArchiveInfo(0, 0, file_size, entries=max(entries, max_entries + 1))
         with zipfile.ZipFile(path) as archive:
             infos = archive.infolist()
-    except (zipfile.BadZipFile, OSError):
+    except (zipfile.BadZipFile, OSError, ValueError, struct.error):
         return None
     return ArchiveInfo(
         uncompressed=sum(entry.file_size for entry in infos),
@@ -77,7 +79,6 @@ def inspect_archive(path: Path, max_entries: int = 50_000) -> ArchiveInfo | None
 def is_unsafe(info: ArchiveInfo, limits: Limits) -> bool:
     return (
         info.entries > limits.max_zip_entries
-        or info.entries == _ZIP64_MARK
         or info.uncompressed > limits.max_uncompressed
         or info.ratio > limits.max_ratio
     )

@@ -53,6 +53,8 @@ class FakeConverter:
             time.sleep(60)
         elif behavior == "memoryerror":
             raise MemoryError
+        elif behavior == "huge_result":
+            return "x" * 5000
         return f"# converted {source.name}"
 
 
