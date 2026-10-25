@@ -15,7 +15,7 @@ Goal: `clearmd paper.tex` writes a faithful `paper.md` through the worker, with 
       (AC-18 – AC-19 at unit level).
 - [x] **T03 — Detection and the format.** `FormatId.TEX`, `.tex`, magika `latex`; provisional limits; the
       registry routes TEX to a converter skeleton (AC-01 – AC-03).
-- [ ] **T04 — Reading.** `source.py`: UTF-8, `inputenc`, detected encoding with a note (AC-20).
+- [x] **T04 — Reading.** `source.py`: UTF-8, `inputenc`, detected encoding with a note (AC-20).
 - [ ] **T05 — Rendering the subset.** `render.py` + `tables.py`: structure, emphasis, lists, quotes, links,
       footnotes, code, math, citations, references, accents, layout-only commands, unknown commands kept and
       recorded, malformed input recovered (AC-04 – AC-13, AC-18, AC-21).

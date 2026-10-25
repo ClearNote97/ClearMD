@@ -10,8 +10,6 @@ The exception mapping was confirmed against the fixtures (T04): pdfminer raises
 docx raises ``BadZipFile``.
 """
 
-import os
-import stat
 import zipfile
 from collections.abc import Mapping
 from pathlib import Path
@@ -38,6 +36,7 @@ from pdfminer.psexceptions import PSException
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.schemas.formats import FormatId
 from clearmd.backend.schemas.models import ConversionResult, Detection
+from clearmd.backend.services.conversion.safe_files import open_regular_file
 
 _CORRUPT: tuple[type[BaseException], ...] = (
     zipfile.BadZipFile,
@@ -47,8 +46,6 @@ _CORRUPT: tuple[type[BaseException], ...] = (
 )
 # lxml (used by python-pptx) is matched by name: it ships no type information.
 _CORRUPT_BY_NAME = frozenset({"XMLSyntaxError"})
-_NO_FOLLOW = getattr(os, "O_NOFOLLOW", 0)
-_BINARY = getattr(os, "O_BINARY", 0)
 
 
 def _describe(error: BaseException) -> str:
@@ -85,15 +82,10 @@ def map_exception(error: Exception) -> ConversionError:
 
 
 def _open_regular_file(source: Path) -> BinaryIO:
-    """Open without following a symlink (where the OS allows it) and only if it is a file."""
     try:
-        descriptor = os.open(source, os.O_RDONLY | _NO_FOLLOW | _BINARY)
+        return open_regular_file(source)
     except OSError as error:
         raise ConversionError(ErrorCode.SOURCE_UNREADABLE, _describe(error)) from error
-    if not stat.S_ISREG(os.fstat(descriptor).st_mode) or source.is_symlink():
-        os.close(descriptor)
-        raise ConversionError(ErrorCode.SOURCE_UNREADABLE, "not a regular file")
-    return os.fdopen(descriptor, "rb")
 
 
 def _converters() -> Mapping[FormatId, DocumentConverter]:

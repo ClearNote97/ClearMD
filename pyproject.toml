@@ -9,6 +9,8 @@ authors = [{ name = "Nicolás Enrique Valencia Santiago" }]
 # 3.12 floor for developers; the ceiling comes from markitdown (ADR-0004, ADR-0018).
 requires-python = ">=3.12,<3.15"
 dependencies = [
+    # Encoding of .tex files that declare none (feature 002); markitdown pulls it in too.
+    "charset-normalizer>=3.4",
     # Pre-1.0: exact version, upgraded on purpose and with tests (ADR-0004).
     "markitdown[pdf,docx,pptx,xlsx]==0.1.9",
     # Per-OS configuration paths (ADR-0002, ADR-0012).
