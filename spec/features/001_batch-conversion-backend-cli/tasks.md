@@ -19,7 +19,7 @@ brings the two riskiest parts (the worker and markitdown) to the front.
       keys this slice needs; parity test (AC-31, AC-32).
 - [x] **T04 — markitdown adapter.** `services/conversion/markitdown_adapter.py` + `registry.py`. Confirm with
       the fixtures which exceptions mean "password" and "corrupt" before writing the mapping (AC-22).
-- [ ] **T05 — Worker process.** `services/worker/` (protocol, child, supervisor): persistent worker, time
+- [x] **T05 — Worker process.** `services/worker/` (protocol, child, supervisor): persistent worker, time
       and memory limits, cancellation, replacement after a kill or a crash (AC-19, AC-23 – AC-26 at unit level).
 - [ ] **T06 — Thin path to the CLI.** `use_cases/paths.py` for a single file, `use_cases/execution.py` with
       atomic writes, `api/` (`plan_batch`, `run_batch`, `composition.py`) and a minimal CLI with progress,

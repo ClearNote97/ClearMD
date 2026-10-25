@@ -55,7 +55,7 @@ files = ["src", "tests"]
 
 [[tool.mypy.overrides]]
 # Third-party libraries without type information; each entry is justified where it is imported.
-module = ["openpyxl", "openpyxl.*"]
+module = ["openpyxl", "openpyxl.*", "psutil"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
