@@ -50,7 +50,8 @@ a fresh process).
 | | `reporting`, `settings`, `cancel` | One report per output root; settings parse/serialize; the cancel token. |
 | `services` | `worker/` | `WorkerRunner` (supervisor: `Ready` handshake, time and memory limits with psutil, cancellation, replacement) and the child process. |
 | | `conversion/` | The registry (`convert(source, detection, target)`), the markitdown adapter (exception mapping verified on fixtures), `safe_files` (no links, size cap). |
-| | `conversion/tex/` | ClearMD's own LaTeX converter (feature 002, ADR-0006/0022): `source` (real encoding), `context` (pylatexenc specs), `includes` (inside the folder only), `macros` (budgeted expansion), `render` + `tables` (the subset and the output guarantee of ADR-0023: escaped copies, marked block lines, a final `neutralize` pass), `nodes` (iterative walks), `images` (links from the output file), `document` (includes spliced in place, then one render). |
+| | `conversion/markdown_out.py` | The output guarantee shared by ClearMD's own converters (ADR-0023, ADR-0024): escaped copies, marked block lines, the final `neutralize` pass, joining rules, link targets. |
+| | `conversion/tex/` | ClearMD's own LaTeX converter (feature 002, ADR-0006/0022): `source` (real encoding), `context` (pylatexenc specs), `includes` (inside the folder only), `macros` (budgeted expansion), `render` + `tables` (the subset, written through `markdown_out`), `nodes` (iterative walks), `images` (links from the output file), `document` (includes spliced in place, then one render). |
 | | `detection/` | Extension (CLI process), magika by content (worker), only for files without an extension. |
 | | `summary/` | `Resumen_ClearMD.md`: name table, sections (including “Converted with notes”), history, escaping of untrusted names. |
 | | `settings_store`, `clock` | `settings.toml` on each OS (platformdirs); the system clock. |

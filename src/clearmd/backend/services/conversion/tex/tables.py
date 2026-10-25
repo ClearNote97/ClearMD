@@ -5,7 +5,8 @@ from typing import Any
 
 from pylatexenc.latexwalker import LatexMacroNode, LatexSpecialsNode
 
-from clearmd.backend.services.conversion.tex.nodes import MARK, walk
+from clearmd.backend.services.conversion.markdown_out import MARK
+from clearmd.backend.services.conversion.tex.nodes import walk
 
 MERGED_CELLS = frozenset({"multicolumn", "multirow"})
 # Rules and longtable's header/footer markers: nothing to show in a Markdown table.

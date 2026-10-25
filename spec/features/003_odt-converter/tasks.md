@@ -12,7 +12,7 @@ Goal: `clearmd report.odt` writes a faithful `report.md` through the worker, saf
       `report.odt` (the whole text subset), `merged.odt`, `revisions.odt`, `unknown.odt`, `spreadsheet.odt`
       (an `.ods` renamed), `encrypted.odt`, `damaged.odt`, `no_extension_odt`, and the `hostile/` set
       (DOCTYPE, entities, depth, element count, huge text, `../` objects, a zip bomb); reproducible.
-- [ ] **T02 — The shared output module.** `markdown_out.py` out of `tex/render.py`, no behaviour change: the
+- [x] **T02 — The shared output module.** `markdown_out.py` out of `tex/render.py`, no behaviour change: the
       `.tex` suite, the golden paper and the output-guarantee test pass untouched.
 - [ ] **T03 — The format.** `FormatId.ODT`, `.odt`, magika `odt`, `ZIP_BASED`, provisional limits; registry →
       `OdtConverter` skeleton; the architecture test forbids non-stdlib imports in `odt/` (AC-01 – AC-03).

@@ -25,6 +25,24 @@ from pylatexenc.latexwalker import (
 
 from clearmd.backend.schemas.models import ConversionResult
 from clearmd.backend.schemas.notes import ConversionNote, NoteItem, NoteKind, NoteReason
+from clearmd.backend.services.conversion.markdown_out import (
+    ENTITY,
+    MARK,
+    SAFE_LINK,
+    block,
+    ends_a_line,
+    escape_math,
+    escape_text,
+    fence_for,
+    indent,
+    inline_code,
+    join_pieces,
+    link_target,
+    math_line,
+    neutralize,
+    outside_code,
+    tidy,
+)
 from clearmd.backend.services.conversion.tex.context import (
     CITATION_MACROS,
     CODE_ENVIRONMENTS,
@@ -46,7 +64,6 @@ from clearmd.backend.services.conversion.tex.macros import (
     opens_or_closes_an_environment,
 )
 from clearmd.backend.services.conversion.tex.nodes import (
-    MARK,
     argument,
     children,
     is_macro,
@@ -66,24 +83,7 @@ SECTION_LEVELS = {
 }
 _CONTROL_WORD_AT_END = re.compile(r"\\[A-Za-z]+$")
 _INDENTATION = re.compile(r"\n[ \t]+")
-# ClearMD marks the start of every block line it writes itself (headings, list markers, quotes,
-# fences, math, table rows, footnotes); a final pass neutralizes any other line that Markdown
-# would read as a block, and removes the marks. The mark is stripped from the input first, so a
-# document cannot forge it (ADR-0023).
-_FENCE_LINE = re.compile(r"[ \t]*" + MARK + r"(`{3,}|~{3,})(.*)")
-_OWN_FENCE = re.compile(r"(`{3,}|~{3,})(.*)")
 _SECTIONING_IN_BODY = re.compile(r"\\(" + "|".join(SECTION_LEVELS) + r")(?![A-Za-z@])")
-_ENTITY = re.compile(r"&[#A-Za-z]")
-# What Markdown reads as a block at the start of a line written by the document.
-_BLOCK_LINE = re.compile(
-    r"(?P<mark>#{1,6}(?=\s|$)|>|[-+*](?=\s|$)|(?P<number>\d{1,9})(?=[.)](?:\s|$))"
-    r"|`{3,}|~{3,}|\||\[[^\]\n]*\]:|[=]+[ \t]*$|-{2,}[ \t]*$"
-    r"|(?P<rule>[-*_])(?:[ \t]*(?P=rule)){2,}[ \t]*$)"
-)
-_TABLE_RULE = re.compile(r"\|?[ \t]*:?-+:?[ \t]*(\|[ \t]*:?-+:?[ \t]*)*\|?[ \t]*")
-_MATH_TAG = re.compile(r"<(?=[A-Za-z/!?])")
-# http, https, ftp, mailto, or a relative path (never "//host": that is remote).
-_SAFE_LINK = re.compile(r"^(?:https?|ftp|mailto):|^(?![/\\]{2})[^:]*$", re.IGNORECASE)
 
 INLINE = {
     "textbf": "**{}**",
@@ -154,163 +154,6 @@ _LATEX2TEXT_DB = get_default_latex_context_db()
 ImageHandler = Callable[[str], str | None]
 # "file, line N" for a position of the source (documents made of several files).
 Locator = Callable[[int], str]
-
-
-def _block(text: str) -> str:
-    return f"\n\n{text.strip(chr(10))}\n\n"
-
-
-def _fence(code: str) -> str:
-    longest = max((len(run) for run in re.findall("`+", code)), default=0)
-    return "`" * max(3, longest + 1)
-
-
-def _inline_code(code: str) -> str:
-    # One line: a code span cannot cross a blank line (it would stay open and its content live),
-    # and CommonMark shows its line breaks as spaces anyway.
-    code = re.sub(r"[ \t]*\n\s*", " ", code)
-    if "`" not in code:
-        return f"`{code}`"
-    ticks = "`" * (max(len(run) for run in re.findall("`+", code)) + 1)
-    return f"{ticks} {code} {ticks}"
-
-
-def _indent(text: str, width: int) -> str:
-    lines = text.split("\n")
-    return "\n".join([lines[0], *[(" " * width + line) if line else "" for line in lines[1:]]])
-
-
-def outside_code(text: str, fix: Callable[[str], str], *, blank_around: bool = False) -> str:
-    """``fix`` applied to the text between fenced code blocks; the blocks stay as they are.
-
-    A line scanner (linear): a fence closes on a line of the same character, at least as long,
-    with nothing else on it (CommonMark); an unclosed fence runs to the end.
-    """
-    pieces: list[tuple[bool, list[str]]] = [(False, [])]
-    fence: str | None = None
-    for line in text.split("\n"):
-        found = _FENCE_LINE.fullmatch(line)
-        if (
-            fence is None
-            and found is not None
-            and not (found.group(1)[0] == "`" and "`" in found.group(2))
-        ):
-            fence = found.group(1)
-            pieces.append((True, [line]))
-        elif fence is not None:
-            pieces[-1][1].append(line)
-            run = found.group(1) if found is not None and not found.group(2).strip() else ""
-            if run and run[0] == fence[0] and len(run) >= len(fence):
-                fence = None
-                pieces.append((False, []))
-        else:
-            pieces[-1][1].append(line)
-    if not blank_around:
-        return "\n".join(
-            "\n".join(lines) if is_code else fix("\n".join(lines)) for is_code, lines in pieces
-        )
-    # Exactly one blank line between a code block and the text around it.
-    parts = [
-        "\n".join(lines) if is_code else fix("\n".join(lines)).strip("\n")
-        for is_code, lines in pieces
-    ]
-    return "\n\n".join(part for part in parts if part)
-
-
-def escape_text(text: str) -> str:
-    """Text from the document never becomes a link, an image, a code span or raw HTML (blocks:
-    neutralize; neighbours: ``_join``)."""
-    text = text.replace(MARK, "").replace("`", "\\`")
-    return text.replace("<", "&lt;").replace("[", "&#91;").replace("]", "&#93;")
-
-
-def escape_math(text: str) -> str:
-    """Math is Markdown text to a viewer without math support. TeX ignores spaces in math, so
-    ``< img``, ``! [`` and ``] (`` are the same formula and no HTML, image or link. A backtick
-    would pair with one of ClearMD's code spans: it is escaped (rare in math)."""
-    text = _MATH_TAG.sub("< ", text.replace(MARK, ""))
-    text = text.replace("![", "! [").replace("](", "] (")
-    return text.replace("`", "\\`")
-
-
-def _join(parts: list[str]) -> str:
-    """Pieces written next to each other never form a construct none of them wrote: a ``!``
-    before ClearMD's ``[`` (an image), a ``]`` before ``(``, ``[`` or ``:`` (a link, a
-    reference, a definition), two backtick runs glued into one (code spans that never close)."""
-    pieces = [part for part in parts if part]
-    for index in range(1, len(pieces)):
-        left, right = pieces[index - 1], pieces[index]
-        if left.endswith("!") and right.startswith("[") and not left.endswith("\\!"):
-            pieces[index - 1] = left[:-1] + "\\!"
-        elif left.endswith("]") and right.startswith(("(", "[", ":")):
-            pieces[index] = "\\" + right
-        elif left.endswith("`") and right.startswith("`"):  # two code spans, never one run
-            pieces[index] = " " + right
-    return "".join(pieces)
-
-
-def _math_line(line: str) -> str:
-    """A display-math line a viewer without math would read as a block gets a ``{}`` (no-op)."""
-    return "{}" + line if _neutral_line(line, after_blank=True) != line else line
-
-
-def _marked(text: str) -> str:
-    """``text``'s lines, each marked as written by ClearMD."""
-    return "\n".join(MARK + line for line in text.split("\n"))
-
-
-def _neutral_line(line: str, after_blank: bool) -> str:
-    indent = len(line) - len(line.lstrip(" \t"))
-    content = line[indent:]
-    columns = len(line[:indent].expandtabs(4))  # a tab is up to 4 columns to CommonMark
-    if after_blank and columns >= 4:  # an indented code block
-        indent, columns, line = 0, 0, content
-    if columns >= 4 or not content:
-        return line
-    if _TABLE_RULE.fullmatch(content) and "|" in content:
-        return line[:indent] + "\\" + content
-    found = _BLOCK_LINE.match(content)
-    if found is None:
-        return line
-    if found.group("number") is not None:
-        digits = found.group("number")
-        return line[:indent] + digits + "\\" + content[len(digits) :]
-    if content[0] == "<":
-        return line[:indent] + "&lt;" + content[1:]
-    return line[:indent] + "\\" + content
-
-
-def neutralize(text: str, *, keep_marks: bool = False) -> str:
-    """Every line the document wrote that Markdown would read as a block becomes plain text;
-    ClearMD's own marked lines (and the code inside its fences) stay; the marks go (or stay,
-    for a part that is marked again as a whole: a list item, a quote)."""
-    out: list[str] = []
-    fence: str | None = None
-    after_blank = True
-    for line in text.split("\n"):
-        stripped = line.lstrip(" \t")
-        if stripped.startswith(MARK):
-            own = _OWN_FENCE.match(stripped[1:])
-            if fence is None and own is not None:
-                fence = own.group(1)
-            elif fence is not None and own is not None and not own.group(2).strip():
-                if own.group(1)[0] == fence[0] and len(own.group(1)) >= len(fence):
-                    fence = None
-            out.append(line if keep_marks else line.replace(MARK, ""))
-        elif fence is not None:
-            out.append(line)  # code, as written
-        else:
-            out.append(_neutral_line(line, after_blank))
-        after_blank = not line.strip()
-    joined = "\n".join(out)
-    return joined if keep_marks else joined.replace(MARK, "")
-
-
-def link_target(path: str) -> str:
-    """A Markdown link destination that stays one destination whatever ``path`` holds."""
-    if not re.search(r"[\s()<>]", path):
-        return path
-    return "<" + path.replace("<", "%3C").replace(">", "%3E") + ">"
 
 
 def _is_label(node: Any) -> bool:
@@ -428,8 +271,8 @@ class Renderer:
             notes = "\n".join(
                 f"{MARK}[^{n}]: {note}" for n, note in enumerate(self.footnotes, start=1)
             )
-            text += _block(notes)
-        return _tidy(text)
+            text += block(notes)
+        return tidy(text)
 
     def render(self, nodes: list[Any]) -> str:
         parts: list[str] = []
@@ -442,11 +285,11 @@ class Renderer:
                 continue
             before = len(self.unknown)
             piece = self._node(node)
-            if isinstance(node, LatexCharsNode) and _ends_a_line(parts):
+            if isinstance(node, LatexCharsNode) and ends_a_line(parts):
                 piece = piece.lstrip(" \t")  # "\\section{A}    Text" is not a code block
             parts.append(piece)
             after_unknown = isinstance(node, LatexMacroNode) and len(self.unknown) > before
-        return _join(parts)
+        return join_pieces(parts)
 
     def _without_false(self, nodes: list[Any]) -> list[Any]:
         """``nodes`` without what ``\\iffalse … \\fi`` comments out (nested conditionals
@@ -515,7 +358,7 @@ class Renderer:
             return self._expanded(node, self.render)
         if name in SECTION_LEVELS:
             level = 2 + max(0, SECTION_LEVELS[name] - self._top_level)
-            return _block(MARK + "#" * min(6, level) + " " + self.inline(self._last_arg(node)))
+            return block(MARK + "#" * min(6, level) + " " + self.inline(self._last_arg(node)))
         if name in INLINE:
             content = self.inline(self._last_arg(node))
             return INLINE[name].format(content) if content else ""
@@ -525,7 +368,7 @@ class Renderer:
                 content = self.inline(self._last_arg(node))
             finally:
                 self._in_code -= 1
-            return _inline_code(content) if content else ""
+            return inline_code(content) if content else ""
         if name in PLAIN:
             return self.render(self._last_arg(node))
         if name in METADATA:
@@ -537,7 +380,7 @@ class Renderer:
             return self._link(node)
         if name == "verb":
             code = getattr(node.nodeargd, "verbatim_text", None)
-            return _inline_code(code) if code is not None else self._unknown("\\verb", node)
+            return inline_code(code) if code is not None else self._unknown("\\verb", node)
         if name == "footnote":
             with self._text_mode():
                 self.footnotes.append(self.inline(self._last_arg(node)))
@@ -551,7 +394,7 @@ class Renderer:
         if name == "caption":
             if id(node) in self._consumed:
                 return ""
-            return _block(f"*{self.inline(self._last_arg(node))}*")
+            return block(f"*{self.inline(self._last_arg(node))}*")
         if name in INCLUDES:
             return self._include_left(node)
         if name == "def":
@@ -578,21 +421,21 @@ class Renderer:
             return self.render(node.nodelist or [])
         if name == "abstract":
             heading = "Resumen" if self._spanish else "Abstract"
-            return _block(f"{MARK}## {heading}") + _block(self.render(node.nodelist or []))
+            return block(f"{MARK}## {heading}") + block(self.render(node.nodelist or []))
         if name in LISTS:
-            return _block(self._list(node))
+            return block(self._list(node))
         if name in QUOTES:
             body = neutralize(self.render(node.nodelist or []).strip(), keep_marks=True)
             quoted = (f"{MARK}> {line}" if line else f"{MARK}>" for line in body.split("\n"))
-            return _block("\n".join(quoted))
+            return block("\n".join(quoted))
         if name in CODE:
-            return _block(self._code(node))
+            return block(self._code(node))
         if name in DISPLAY_MATH:
-            return _block(self._display(self._math_body(node.nodelist)))
+            return block(self._display(self._math_body(node.nodelist)))
         if name in ALIGNED:
             inner = ALIGNED[name]
             body = self._math_body(node.nodelist)
-            return _block(self._display(f"\\begin{{{inner}}}\n{body}\n\\end{{{inner}}}"))
+            return block(self._display(f"\\begin{{{inner}}}\n{body}\n\\end{{{inner}}}"))
         if _is_float(node):
             return self._float(node)
         if name in TABULARS:
@@ -633,13 +476,13 @@ class Renderer:
             for part in (self.inline(self.metadata.get(k, [])) for k in ("author", "date"))
             if part
         )
-        return _block(f"{MARK}# {title}" + (f"\n\n{MARK}*{byline}*" if byline else ""))
+        return block(f"{MARK}# {title}" + (f"\n\n{MARK}*{byline}*" if byline else ""))
 
     def _link(self, node: Any) -> str:
         url = raw(argument(node, 0)).strip()
         text = self.inline(self._arg_nodes(node, 1)) if node.macroname == "href" else ""
         # "javascript&#58;" is "javascript:" once a viewer decodes it.
-        safe = bool(_SAFE_LINK.match(url)) and not _ENTITY.search(url)
+        safe = bool(SAFE_LINK.match(url)) and not ENTITY.search(url)
         if node.macroname == "url":
             if not url:
                 return ""
@@ -648,11 +491,11 @@ class Renderer:
             absolute = re.match(r"(?:https?|ftp|mailto):", url, re.IGNORECASE)
             if safe and absolute and not re.search(r"[\s<>]", url):
                 return f"<{url}>"
-            return _inline_code(url)
+            return inline_code(url)
         if not url:
             return text
         if not safe:  # javascript: and friends never become links
-            return f"{text} ({_inline_code(url)})" if text else _inline_code(url)
+            return f"{text} ({inline_code(url)})" if text else inline_code(url)
         return f"[{text or url}]({link_target(url)})"
 
     def _citation(self, node: Any) -> str:
@@ -671,12 +514,12 @@ class Renderer:
     def _math(self, node: Any) -> str:
         body = self._math_body(node.nodelist)
         if node.displaytype == "display":
-            return _block(self._display(body))
+            return block(self._display(body))
         return f"${body}$"
 
     def _display(self, body: str) -> str:
         """``$$`` lines are ClearMD's; the math between them is never read as Markdown blocks."""
-        lines = "\n".join(_math_line(line) for line in body.split("\n"))
+        lines = "\n".join(math_line(line) for line in body.split("\n"))
         return f"{MARK}$$\n{lines}\n{MARK}$$"
 
     def _math_body(self, nodes: list[Any] | None) -> str:
@@ -759,7 +602,7 @@ class Renderer:
             # Tight items, nested lists included; code inside an item keeps its blank lines.
             text = outside_code(text, lambda part: re.sub(r"\n[ \t]*\n+", "\n", part))
             text = neutralize(text, keep_marks=True)  # "\\item # x" is not a heading in an item
-            lines.append(MARK + marker + _indent(text, len(marker)))
+            lines.append(MARK + marker + indent(text, len(marker)))
         intro = self.render(before).strip()
         listed = "\n".join(lines)
         return f"{intro}\n\n{listed}" if intro else listed
@@ -780,14 +623,14 @@ class Renderer:
                 code_text = code_text[declared.end() :]
                 language = declared.group(1).strip().lower()
         code = code_text.strip("\n")
-        fence = _fence(code)
+        fence = fence_for(code)
         return f"{MARK}{fence}{language}\n{code}\n{MARK}{fence}"
 
     def _picture(self, node: Any) -> str:
         path = raw(argument(node, -1)).strip()
         target = self._image(path)
         if target is None:  # outside the folder or remote: shown, never fetched by a viewer
-            return _inline_code(node.latex_verbatim().strip())
+            return inline_code(node.latex_verbatim().strip())
         alt = self._alt[-1] if self._alt else ""
         return f"![{alt}]({link_target(target)})"
 
@@ -802,7 +645,7 @@ class Renderer:
         if len(images) == 1 and caption:
             self._alt.append(caption)
             try:
-                return _block(self.render(node.nodelist or []))
+                return block(self.render(node.nodelist or []))
             finally:
                 self._alt.pop()
         self._alt.append("")
@@ -810,7 +653,7 @@ class Renderer:
             body = self.render(node.nodelist or [])
         finally:
             self._alt.pop()
-        return _block(body) + (_block(f"*{caption}*") if caption else "")
+        return block(body) + (block(f"*{caption}*") if caption else "")
 
     def _tabular(self, node: Any) -> str:
         captions = [child for child in node.nodelist or [] if is_macro(child, "caption")]
@@ -820,9 +663,9 @@ class Renderer:
         if table is None:
             self.tables_kept += 1
             source = node.latex_verbatim()
-            fence = _fence(source)
+            fence = fence_for(source)
             table = f"{MARK}{fence}latex\n{source}\n{MARK}{fence}"
-        return _block(table) + (_block(f"*{caption}*") if caption else "")
+        return block(table) + (block(f"*{caption}*") if caption else "")
 
     def _include_left(self, node: Any) -> str:
         """An include still in the text: refused while reading (noted there) or made by a macro."""
@@ -832,7 +675,7 @@ class Renderer:
                 self.refused[NoteItem(subject, NoteReason.MADE_BY_MACRO.value)] = None
             elif subject not in self._known_refused:  # "\\input{{ch}}": no file has that name
                 self.refused[NoteItem(subject, NoteReason.MISSING.value)] = None
-        return _inline_code(node.latex_verbatim().strip())
+        return inline_code(node.latex_verbatim().strip())
 
     def notes(self) -> tuple[ConversionNote, ...]:
         found: list[ConversionNote] = []
@@ -865,25 +708,6 @@ def _matching_fi(nodes: list[Any], start: int) -> int | None:
             elif _CONDITIONAL_NAME.fullmatch(node.macroname):
                 depth += 1
     return None
-
-
-def _ends_a_line(parts: list[str]) -> bool:
-    for part in reversed(parts):
-        if part:
-            return part.endswith("\n")
-    return False
-
-
-def _tidy(text: str) -> str:
-    def tidy(part: str) -> str:
-        # Trailing spaces go, except a hard line break ("  ") after real text.
-        lines = [
-            line if line.endswith("  ") and line.strip() else line.rstrip()
-            for line in part.split("\n")
-        ]
-        return re.sub(r"\n{3,}", "\n\n", "\n".join(lines))
-
-    return outside_code(text, tidy, blank_around=True).strip() + "\n"
 
 
 def _expander(nodes: list[Any], source_size: int) -> tuple[MacroExpander | None, bool]:
@@ -980,7 +804,7 @@ def _substitute_structural(
 
 
 def _kept_as_latex(text: str, cause: str, refused: tuple[NoteItem, ...]) -> ConversionResult:
-    fence = _fence(text)
+    fence = fence_for(text)
     markdown = f"{fence}latex\n{text.strip(chr(10))}\n{fence}\n"
     notes = [
         ConversionNote(NoteKind.PARSE_RECOVERED, (NoteItem(cause, NoteReason.KEPT_AS_LATEX.value),))
@@ -1063,6 +887,6 @@ def render_latex(text: str) -> ConversionResult:
 def _name_only_image(path: str) -> str | None:
     """Without a folder to look in: a path that names something outside or remote is no link."""
     name = path.strip().replace("\\", "/")
-    if not name or is_outside_by_name(name) is not None or _ENTITY.search(name):
+    if not name or is_outside_by_name(name) is not None or ENTITY.search(name):
         return None
     return path.strip()
