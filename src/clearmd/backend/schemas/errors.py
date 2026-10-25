@@ -10,7 +10,12 @@ class ErrorCode(StrEnum):
     PASSWORD_PROTECTED = "password_protected"
     CORRUPT_FILE = "corrupt_file"
     CONVERSION_FAILED = "conversion_failed"
+    # The output folder cannot be written: every file of that ClearMD_Output fails.
     PERMISSION_DENIED = "permission_denied"
+    # This one source cannot be opened (locked by another program, no permission, not a file).
+    SOURCE_UNREADABLE = "source_unreadable"
+    # This one result could not be saved (disk full, name too long, a folder in the way...).
+    WRITE_FAILED = "write_failed"
     TIMED_OUT = "timed_out"
     OUT_OF_MEMORY = "out_of_memory"
     WORKER_CRASHED = "worker_crashed"

@@ -14,7 +14,6 @@ from support import DOCUMENTS_DIR
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.schemas.formats import FormatId, format_for_extension
 from clearmd.backend.schemas.models import Detection, DetectionMethod
-from clearmd.backend.services.conversion import markitdown_adapter
 from clearmd.backend.services.conversion.markitdown_adapter import (
     MarkItDownConverter,
     map_exception,
@@ -61,22 +60,56 @@ def test_hard_fixtures_fail_with_their_code(
     assert raised.value.detail  # the technical detail is kept for the summary
 
 
-def test_markitdown_is_created_once_and_without_plugins(monkeypatch: pytest.MonkeyPatch) -> None:
-    created: list[dict[str, Any]] = []
+def test_only_the_converter_of_the_detected_format_runs(tmp_path: Path) -> None:
+    """A zip renamed .pdf must fail as a PDF, never fall back to markitdown's ZipConverter."""
+    import markitdown.converters._zip_converter as zip_module
 
-    class FakeMarkItDown:
-        def __init__(self, **kwargs: Any) -> None:
-            created.append(kwargs)
+    def forbidden(*args: Any, **kwargs: Any) -> Any:
+        raise AssertionError("ZipConverter must never run")
 
-        def convert_local(self, path: str, **kwargs: Any) -> Any:
-            return type("Result", (), {"markdown": "# ok"})()
+    original = zip_module.ZipConverter.convert
+    zip_module.ZipConverter.convert = forbidden  # type: ignore[method-assign]
+    try:
+        fake = tmp_path / "invoice.pdf"
+        with zipfile.ZipFile(fake, "w") as archive:
+            archive.writestr("inner.txt", "x" * 1000)
+        with pytest.raises(ConversionError) as raised:
+            MarkItDownConverter().convert(fake, Detection(FormatId.PDF, DetectionMethod.EXTENSION))
+        assert raised.value.code is ErrorCode.CORRUPT_FILE
+    finally:
+        zip_module.ZipConverter.convert = original  # type: ignore[method-assign]
 
-    monkeypatch.setattr(markitdown_adapter, "MarkItDown", FakeMarkItDown)
-    converter = MarkItDownConverter()
-    detection = Detection(FormatId.TXT, DetectionMethod.EXTENSION)
-    assert converter.convert(DOCUMENTS_DIR / "sample.txt", detection) == "# ok"
-    converter.convert(DOCUMENTS_DIR / "sample.txt", detection)
-    assert created == [{"enable_plugins": False}]
+
+def test_no_image_audio_or_zip_converter_is_ever_registered() -> None:
+    names = {type(c).__name__ for c in MarkItDownConverter().converters.values()}
+    assert names.isdisjoint(
+        {"ZipConverter", "ImageConverter", "AudioConverter", "OutlookMsgConverter"}
+    )
+    assert set(MarkItDownConverter().converters) == set(FormatId)
+
+
+def test_a_source_replaced_by_a_symlink_is_not_followed(tmp_path: Path) -> None:
+    secret = tmp_path / "secret.txt"
+    secret.write_text("private key", encoding="utf-8")
+    link = tmp_path / "notes.txt"
+    link.symlink_to(secret)
+    with pytest.raises(ConversionError) as raised:
+        MarkItDownConverter().convert(link, Detection(FormatId.TXT, DetectionMethod.EXTENSION))
+    assert raised.value.code is ErrorCode.SOURCE_UNREADABLE
+
+
+def test_a_source_that_cannot_be_read_is_source_unreadable(tmp_path: Path) -> None:
+    locked = tmp_path / "locked.txt"
+    locked.write_text("x", encoding="utf-8")
+    locked.chmod(0)
+    try:
+        with pytest.raises(ConversionError) as raised:
+            MarkItDownConverter().convert(
+                locked, Detection(FormatId.TXT, DetectionMethod.EXTENSION)
+            )
+    finally:
+        locked.chmod(0o644)
+    assert raised.value.code is ErrorCode.SOURCE_UNREADABLE
 
 
 def _fce(error: BaseException) -> FileConversionException:
@@ -88,7 +121,7 @@ def _fce(error: BaseException) -> FileConversionException:
     ("error", "code"),
     [
         (UnsupportedFormatException("no converter"), ErrorCode.UNSUPPORTED_FORMAT),
-        (PermissionError(13, "Permission denied"), ErrorCode.PERMISSION_DENIED),
+        (PermissionError(13, "Permission denied"), ErrorCode.SOURCE_UNREADABLE),
         (_fce(zipfile.BadZipFile("File is not a zip file")), ErrorCode.CORRUPT_FILE),
         (_fce(RuntimeError("something else")), ErrorCode.CONVERSION_FAILED),
         (FileConversionException(), ErrorCode.CONVERSION_FAILED),
@@ -109,3 +142,11 @@ def test_detail_names_the_underlying_exception() -> None:
 def test_importing_the_adapter_is_what_loads_markitdown() -> None:
     # The CLI process must never import this module (AC-19); the worker does.
     assert "markitdown" in sys.modules
+
+
+def test_detail_of_a_raw_converter_error() -> None:
+    mapped = map_exception(zipfile.BadZipFile("File is not a zip file"))
+    assert (mapped.code, mapped.detail) == (
+        ErrorCode.CORRUPT_FILE,
+        "BadZipFile: File is not a zip file",
+    )

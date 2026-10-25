@@ -20,6 +20,14 @@ action = "See the technical detail in the summary."
 message = "ClearMD cannot write in this folder."
 action = "Choose another output folder."
 
+[error.source_unreadable]
+message = "ClearMD cannot open this file."
+action = "Close it in any program that has it open (for example Excel) and check that you can open it, then try again."
+
+[error.write_failed]
+message = "ClearMD could not save the result of this file."
+action = "Check that the disk has free space and that the file and folder names are not too long, or choose another output folder."
+
 [error.timed_out]
 message = "Converting this file took too long, so it was stopped."
 action = "Try splitting it into smaller files."

@@ -20,6 +20,14 @@ action = "Revisa el detalle técnico en el resumen."
 message = "ClearMD no puede escribir en esta carpeta."
 action = "Elige otra carpeta de salida."
 
+[error.source_unreadable]
+message = "ClearMD no puede abrir este archivo."
+action = "Ciérralo en cualquier programa que lo tenga abierto (por ejemplo Excel) y comprueba que puedes abrirlo; luego inténtalo de nuevo."
+
+[error.write_failed]
+message = "ClearMD no pudo guardar el resultado de este archivo."
+action = "Comprueba que el disco tenga espacio libre y que los nombres de archivo y carpeta no sean demasiado largos, o elige otra carpeta de salida."
+
 [error.timed_out]
 message = "La conversión de este archivo tardó demasiado y se detuvo."
 action = "Prueba dividiéndolo en archivos más pequeños."
