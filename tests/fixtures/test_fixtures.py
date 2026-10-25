@@ -11,9 +11,12 @@ from build_fixtures import (
     FIXED_ZIP_TIME,
     MARKERS,
     NON_DETERMINISTIC,
+    ODT_DIR,
+    ODT_MIME,
     PDF_PASSWORD,
     TEX_DIR,
     build,
+    build_odt,
     build_tex,
 )
 from pypdf import PdfReader
@@ -115,3 +118,47 @@ def test_the_exponential_macro_fixture_doubles_forty_times() -> None:
     text = (TEX_DIR / "hostile" / "exponential_macro.tex").read_text(encoding="utf-8")
     assert text.count("\\def") == 41
     assert "\\def\\bombaa{\\bombab\\bombab}" in text
+
+
+@pytest.fixture(scope="module")
+def rebuilt_odt(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
+    return build_odt(tmp_path_factory.mktemp("odt"))
+
+
+def test_the_odt_fixtures_are_committed_and_reproducible(rebuilt_odt: dict[str, Path]) -> None:
+    changed = [
+        name
+        for name, path in rebuilt_odt.items()
+        if not (ODT_DIR / name).is_file() or path.read_bytes() != (ODT_DIR / name).read_bytes()
+    ]
+    assert changed == []
+
+
+@pytest.mark.parametrize("name", ["report.odt", "formulas.odt", "images.odt", "real/report.odt"])
+def test_an_odt_starts_with_its_stored_mimetype(name: str) -> None:
+    with zipfile.ZipFile(ODT_DIR / name) as archive:
+        first = archive.infolist()[0]
+        assert first.filename == "mimetype" and first.compress_type == zipfile.ZIP_STORED
+        assert archive.read(first) == ODT_MIME.encode()
+
+
+def test_the_real_odt_was_written_by_libreoffice() -> None:
+    with zipfile.ZipFile(ODT_DIR / "real" / "report.odt") as archive:
+        meta = archive.read("meta.xml").decode("utf-8")
+        formulas = [name for name in archive.namelist() if name.endswith("/content.xml")]
+        pictures = [name for name in archive.namelist() if name.startswith("Pictures/")]
+    assert "LibreOffice" in meta
+    assert len(formulas) == 5 and len(pictures) == 1
+
+
+def test_the_hostile_odt_fixtures_are_what_they_claim() -> None:
+    def content(name: str) -> bytes:
+        with zipfile.ZipFile(ODT_DIR / "hostile" / name) as archive:
+            return archive.read("content.xml")
+
+    assert b"<!DOCTYPE" in content("doctype.odt")
+    assert content("entities.odt").count(b"<!ENTITY") == 10
+    assert content("deep.odt").count(b"<text:span>") == 20_000
+    with zipfile.ZipFile(ODT_DIR / "hostile" / "bomb.odt") as archive:
+        info = archive.getinfo("content.xml")
+        assert info.file_size / info.compress_size > 100

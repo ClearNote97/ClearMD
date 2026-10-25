@@ -555,7 +555,369 @@ def build_tex(destination: Path) -> dict[str, Path]:
     return written
 
 
+# --- OpenDocument text (feature 003) -------------------------------------------------------------
+
+ODT_DIR = Path(__file__).parent / "odt"
+ODT_MIME = "application/vnd.oasis.opendocument.text"
+ODS_MIME = "application/vnd.oasis.opendocument.spreadsheet"
+ODF_NAMESPACES = (
+    'xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" '
+    'xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0" '
+    'xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" '
+    'xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0" '
+    'xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" '
+    'xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0" '
+    'xmlns:xlink="http://www.w3.org/1999/xlink" '
+    'xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0" '
+    'xmlns:dc="http://purl.org/dc/elements/1.1/" '
+    'xmlns:math="http://www.w3.org/1998/Math/MathML" '
+    'office:version="1.3"'
+)
+_MANIFEST_NS = 'xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0"'
+
+ODT_FONTS = (
+    "<office:font-face-decls>"
+    '<style:font-face style:name="Liberation Mono" svg:font-family="&apos;Liberation Mono&apos;" '
+    'style:font-pitch="fixed"/>'
+    '<style:font-face style:name="Liberation Serif" svg:font-family="&apos;Liberation Serif&apos;" '
+    'style:font-pitch="variable"/>'
+    "</office:font-face-decls>"
+)
+# Named styles as LibreOffice writes them (styles.xml), parents included.
+ODT_NAMED_STYLES = (
+    "<office:styles>"
+    '<style:style style:name="Standard" style:family="paragraph"/>'
+    '<style:style style:name="Heading" style:family="paragraph" '
+    'style:parent-style-name="Standard"/>'
+    '<style:style style:name="Title" style:family="paragraph" style:parent-style-name="Heading"/>'
+    '<style:style style:name="Subtitle" style:family="paragraph" '
+    'style:parent-style-name="Heading"/>'
+    '<style:style style:name="Quotations" style:family="paragraph" '
+    'style:parent-style-name="Standard"/>'
+    '<style:style style:name="Preformatted_20_Text" style:display-name="Preformatted Text" '
+    'style:family="paragraph" style:parent-style-name="Standard"/>'
+    '<style:style style:name="Emphasis" style:family="text">'
+    '<style:text-properties fo:font-style="italic"/></style:style>'
+    '<style:style style:name="Strong_20_Emphasis" style:display-name="Strong Emphasis" '
+    'style:family="text"><style:text-properties fo:font-weight="bold"/></style:style>'
+    '<style:style style:name="Source_20_Text" style:display-name="Source Text" style:family="text">'
+    '<style:text-properties style:font-name="Liberation Mono"/></style:style>'
+    "</office:styles>"
+)
+ODT_AUTOMATIC_STYLES = (
+    "<office:automatic-styles>"
+    '<style:style style:name="T1" style:family="text">'
+    '<style:text-properties fo:font-weight="bold"/></style:style>'
+    '<style:style style:name="T2" style:family="text">'
+    '<style:text-properties fo:font-style="italic"/></style:style>'
+    '<style:style style:name="T3" style:family="text">'
+    '<style:text-properties style:text-underline-style="solid"/></style:style>'
+    '<style:style style:name="T4" style:family="text">'
+    '<style:text-properties style:text-line-through-style="solid"/></style:style>'
+    '<style:style style:name="T5" style:family="text">'
+    '<style:text-properties style:text-position="super 58%"/></style:style>'
+    '<style:style style:name="T6" style:family="text">'
+    '<style:text-properties style:text-position="sub 58%"/></style:style>'
+    '<style:style style:name="T7" style:family="text">'
+    '<style:text-properties style:font-name="Liberation Mono"/></style:style>'
+    '<style:style style:name="T8" style:family="text" style:parent-style-name="Strong_20_Emphasis">'
+    '<style:text-properties fo:font-style="italic"/></style:style>'
+    '<style:style style:name="P1" style:family="paragraph" style:parent-style-name="Quotations"/>'
+    '<style:style style:name="P2" style:family="paragraph" '
+    'style:parent-style-name="Preformatted_20_Text"/>'
+    '<text:list-style style:name="L1">'
+    '<text:list-level-style-bullet text:level="1" text:bullet-char="•"/>'
+    '<text:list-level-style-number text:level="2" style:num-format="1"/>'
+    "</text:list-style>"
+    '<text:list-style style:name="L2">'
+    '<text:list-level-style-number text:level="1" style:num-format="1" text:start-value="3"/>'
+    "</text:list-style>"
+    "</office:automatic-styles>"
+)
+
+ODT_REPORT_BODY = (
+    '<text:p text:style-name="Title">Informe de prueba</text:p>'
+    '<text:p text:style-name="Subtitle">Un subtítulo</text:p>'
+    '<text:h text:outline-level="1">Introducción</text:h>'
+    "<text:p>Texto con "
+    '<text:span text:style-name="T1">negrita</text:span>, '
+    '<text:span text:style-name="T2">itálica</text:span>, '
+    '<text:span text:style-name="T3">subrayado</text:span>, '
+    '<text:span text:style-name="T4">tachado</text:span>, '
+    'm<text:span text:style-name="T5">2</text:span>, '
+    'H<text:span text:style-name="T6">2</text:span>O, '
+    '<text:span text:style-name="T7">código</text:span>, '
+    '<text:span text:style-name="Emphasis">énfasis</text:span>, '
+    '<text:span text:style-name="Strong_20_Emphasis">fuerte</text:span> y '
+    '<text:span text:style-name="T8">ambos</text:span>. Marcador: fixture-odt-report.</text:p>'
+    '<text:h text:outline-level="2">Listas y enlaces</text:h>'
+    '<text:list text:style-name="L1">'
+    "<text:list-item><text:p>uno</text:p></text:list-item>"
+    "<text:list-item><text:p>dos</text:p>"
+    "<text:list><text:list-item><text:p>anidado</text:p></text:list-item></text:list>"
+    "</text:list-item>"
+    "</text:list>"
+    '<text:list text:style-name="L2">'
+    "<text:list-item><text:p>tres</text:p></text:list-item>"
+    "<text:list-item><text:p>cuatro</text:p></text:list-item>"
+    "</text:list>"
+    '<text:p>Un <text:a xlink:type="simple" xlink:href="https://example.org">enlace</text:a>'
+    ' y una nota.<text:note text:id="ftn1" text:note-class="footnote">'
+    "<text:note-citation>1</text:note-citation>"
+    "<text:note-body><text:p>Una nota al pie.</text:p></text:note-body></text:note>"
+    ' Y otra al final.<text:note text:id="edn1" text:note-class="endnote">'
+    "<text:note-citation>i</text:note-citation>"
+    "<text:note-body><text:p>Una nota final.</text:p></text:note-body></text:note></text:p>"
+    '<text:h text:outline-level="2">Citas, código y espacios</text:h>'
+    '<text:p text:style-name="P1">Una cita.</text:p>'
+    '<text:p text:style-name="P2">def f(x):</text:p>'
+    '<text:p text:style-name="P2"><text:s text:c="4"/>return x</text:p>'
+    '<text:p>a<text:s text:c="3"/>b<text:tab/>c<text:line-break/>d</text:p>'
+    '<text:p>Página <text:page-number text:select-page="current">7</text:page-number>'
+    ' del <text:date text:date-value="2026-10-25">25/10/2026</text:date>.'
+    '<text:hidden-text text:condition="" text:string-value="oculto" text:is-hidden="true"/>'
+    '<text:bookmark text:name="b1"/><text:soft-page-break/></text:p>'
+    '<text:hidden-paragraph text:condition="" text:is-hidden="true"/>'
+    '<text:table-of-content text:name="Indice"><text:index-body>'
+    "<text:p>Introducción ..... 1</text:p></text:index-body></text:table-of-content>"
+    '<text:h text:outline-level="3">Tabla</text:h>'
+    '<table:table table:name="T"><table:table-column table:number-columns-repeated="2"/>'
+    "<table:table-header-rows><table:table-row>"
+    "<table:table-cell><text:p>A</text:p></table:table-cell>"
+    "<table:table-cell><text:p>B</text:p></table:table-cell>"
+    "</table:table-row></table:table-header-rows>"
+    "<table:table-row><table:table-cell><text:p>1</text:p></table:table-cell>"
+    '<table:table-cell><text:p><text:span text:style-name="T1">2</text:span></text:p>'
+    "</table:table-cell></table:table-row>"
+    "</table:table>"
+)
+ODT_MERGED_BODY = (
+    "<text:p>Antes. Marcador: fixture-odt-merged.</text:p>"
+    "<table:table>"
+    "<table:table-row>"
+    '<table:table-cell table:number-columns-spanned="2"><text:p>Junta</text:p></table:table-cell>'
+    "<table:covered-table-cell/>"
+    "</table:table-row>"
+    "<table:table-row><table:table-cell><text:p>a</text:p></table:table-cell>"
+    "<table:table-cell><text:p>b</text:p></table:table-cell></table:table-row>"
+    "</table:table>"
+)
+ODT_REVISIONS_BODY = (
+    "<text:tracked-changes>"
+    '<text:changed-region text:id="c1"><text:deletion><office:change-info>'
+    "<dc:creator>Ana</dc:creator><dc:date>2026-10-25T10:00:00</dc:date></office:change-info>"
+    "<text:p>borrado</text:p></text:deletion></text:changed-region>"
+    "</text:tracked-changes>"
+    '<text:p>Texto final<text:change text:change-id="c1"/>. Marcador: fixture-odt-revisions.'
+    "<office:annotation><dc:creator>Luis</dc:creator><text:p>Un comentario</text:p>"
+    "</office:annotation></text:p>"
+)
+ODT_UNKNOWN_BODY = (
+    "<text:p>Antes. Marcador: fixture-odt-unknown.</text:p>"
+    '<draw:custom-shape draw:name="Forma"><text:p>texto en forma</text:p></draw:custom-shape>'
+    "<text:p><text:ruby><text:ruby-base>漢字</text:ruby-base></text:ruby> fin</text:p>"
+)
+ODT_IMAGES_BODY = (
+    "<text:p>Marcador: fixture-odt-images.</text:p>"
+    '<text:p><draw:frame draw:name="Imagen1" text:anchor-type="paragraph" svg:width="2cm" '
+    'svg:height="2cm"><draw:image xlink:href="Pictures/map.png" xlink:type="simple"/>'
+    "<svg:title>Mapa de la región</svg:title></draw:frame></text:p>"
+    '<text:p><draw:frame draw:name="Imagen2"><draw:image xlink:href="Pictures/map.png"/>'
+    "<svg:desc>Una descripción</svg:desc></draw:frame></text:p>"
+    '<text:p><draw:frame draw:name="Logo"><draw:image xlink:href="Pictures/map.png"/>'
+    "</draw:frame></text:p>"
+)
+MATHML_SUBSET = (
+    '<math:math xmlns:math="http://www.w3.org/1998/Math/MathML" display="block"><math:semantics>'
+    "<math:mrow><math:mfrac><math:mi>a</math:mi><math:mi>b</math:mi></math:mfrac>"
+    "<math:mo>+</math:mo><math:msup><math:mi>x</math:mi><math:mn>2</math:mn></math:msup>"
+    "<math:mo>+</math:mo><math:msqrt><math:mi>y</math:mi></math:msqrt>"
+    "<math:mo>+</math:mo><math:mi>α</math:mi></math:mrow>"
+    '<math:annotation encoding="StarMath 5.0">{a over b} + x^2 + sqrt{y} + %alpha</math:annotation>'
+    "</math:semantics></math:math>"
+)
+MATHML_SUM = (
+    '<math:math xmlns:math="http://www.w3.org/1998/Math/MathML"><math:semantics>'
+    "<math:mrow><math:munderover><math:mo>∑</math:mo>"
+    "<math:mrow><math:mi>i</math:mi><math:mo>=</math:mo><math:mn>1</math:mn></math:mrow>"
+    "<math:mi>n</math:mi></math:munderover><math:mi>i</math:mi></math:mrow>"
+    '<math:annotation encoding="StarMath 5.0">sum from{i=1} to{n} i</math:annotation>'
+    "</math:semantics></math:math>"
+)
+MATHML_OUTSIDE = (
+    '<math:math xmlns:math="http://www.w3.org/1998/Math/MathML"><math:semantics>'
+    '<math:mrow><math:menclose notation="box"><math:mi>z</math:mi></math:menclose></math:mrow>'
+    '<math:annotation encoding="StarMath 5.0">boxed z</math:annotation>'
+    "</math:semantics></math:math>"
+)
+ODT_FORMULAS_BODY = (
+    "<text:p>Marcador: fixture-odt-formulas.</text:p>"
+    '<text:p><draw:frame draw:name="F1" text:anchor-type="as-char">'
+    '<draw:object xlink:href="./Object 1" xlink:type="simple"/></draw:frame></text:p>'
+    '<text:p>En línea <draw:frame draw:name="F2" text:anchor-type="as-char">'
+    '<draw:object xlink:href="./Object 2"/></draw:frame> y fin.</text:p>'
+    '<text:p>Fuera: <draw:frame draw:name="F3" text:anchor-type="as-char">'
+    '<draw:object xlink:href="./Object 3"/></draw:frame>.</text:p>'
+    '<text:p>Afuera: <draw:frame draw:name="F4" text:anchor-type="as-char">'
+    '<draw:object xlink:href="../escape"/></draw:frame>.</text:p>'
+)
+
+
+def _odt_xml(root: str, body: str, *, automatic: str = ODT_AUTOMATIC_STYLES) -> bytes:
+    return (
+        f'<?xml version="1.0" encoding="UTF-8"?><office:{root} {ODF_NAMESPACES}>'
+        f"{ODT_FONTS}{automatic}<office:body><office:text>{body}</office:text></office:body>"
+        f"</office:{root}>"
+    ).encode()
+
+
+def _odt_styles() -> bytes:
+    return (
+        f'<?xml version="1.0" encoding="UTF-8"?><office:document-styles {ODF_NAMESPACES}>'
+        f"{ODT_FONTS}{ODT_NAMED_STYLES}</office:document-styles>"
+    ).encode()
+
+
+def _odt_manifest(entries: list[str], *, encrypted: bool = False, mime: str = ODT_MIME) -> bytes:
+    encryption = (
+        '<manifest:encryption-data manifest:checksum-type="SHA1/1K" manifest:checksum="AAAA">'
+        '<manifest:algorithm manifest:algorithm-name="Blowfish CFB" '
+        'manifest:initialisation-vector="AA"/>'
+        '<manifest:key-derivation manifest:key-derivation-name="PBKDF2" '
+        'manifest:iteration-count="1024" '
+        'manifest:salt="AA"/></manifest:encryption-data>'
+    )
+    files = "".join(
+        f'<manifest:file-entry manifest:full-path="{name}" manifest:media-type="text/xml">'
+        f"{encryption if encrypted and name == 'content.xml' else ''}</manifest:file-entry>"
+        for name in entries
+    )
+    return (
+        f'<?xml version="1.0" encoding="UTF-8"?><manifest:manifest {_MANIFEST_NS} '
+        f'manifest:version="1.3"><manifest:file-entry manifest:full-path="/" '
+        f'manifest:media-type="{mime}"/>{files}</manifest:manifest>'
+    ).encode()
+
+
+def odt_package(
+    content: bytes,
+    *,
+    extra: dict[str, bytes] | None = None,
+    mime: str = ODT_MIME,
+    encrypted: bool = False,
+) -> bytes:
+    """An OpenDocument package as the standard says: ``mimetype`` first and stored."""
+    parts = {"content.xml": content, "styles.xml": _odt_styles(), **(extra or {})}
+    entries = [
+        ("mimetype", mime.encode()),
+        ("META-INF/manifest.xml", _odt_manifest(list(parts), encrypted=encrypted, mime=mime)),
+        *parts.items(),
+    ]
+    return _write_zip(entries, stored=frozenset({"mimetype"}))
+
+
+def _odt(body: str) -> bytes:
+    return odt_package(_odt_xml("document-content", body))
+
+
+def _math_object(mathml: str) -> bytes:
+    return f'<?xml version="1.0" encoding="UTF-8"?>{mathml}'.encode()
+
+
+def _hostile_odt() -> dict[str, bytes]:
+    doctype = (
+        b'<?xml version="1.0"?><!DOCTYPE office:document-content [<!ENTITY a "aaaa">]>'
+        + _odt_xml("document-content", "<text:p>&a;</text:p>")[
+            len(b'<?xml version="1.0" encoding="UTF-8"?>') :
+        ]
+    )
+    entities = (
+        '<?xml version="1.0"?><!DOCTYPE d ['
+        + '<!ENTITY l0 "ha">'
+        + "".join(f'<!ENTITY l{n} "{("&l" + str(n - 1) + ";") * 10}">' for n in range(1, 10))
+        + "]>"
+    ).encode() + _odt_xml("document-content", "<text:p>&l9;</text:p>")[
+        len(b'<?xml version="1.0" encoding="UTF-8"?>') :
+    ]
+    deep = "<text:span>" * 20_000 + "hondo" + "</text:span>" * 20_000
+    many = "<text:p>x</text:p>" * 300_000
+    bomb_body = "<text:p>ClearMD odt bomb fixture</text:p>"
+    return {
+        "doctype.odt": odt_package(doctype),
+        "entities.odt": odt_package(entities),
+        "deep.odt": _odt(f"<text:p>{deep}</text:p>"),
+        "many_elements.odt": _odt(many),
+        "object_outside.odt": odt_package(
+            _odt_xml("document-content", ODT_FORMULAS_BODY),
+            extra={"Object 1/content.xml": _math_object(MATHML_SUBSET)},
+        ),
+        "bomb.odt": _odt_zip_bomb(bomb_body),
+    }
+
+
+def _odt_zip_bomb(paragraph: str) -> bytes:
+    """An .odt whose content.xml expands ~1000:1, like the docx zip bomb of feature 001."""
+    head = _odt_xml("document-content", "")
+    open_body, close_body = head.split(b"</office:text>")
+    buffer = io.BytesIO()
+    repeat = paragraph.encode()
+    count = (BOMB_UNCOMPRESSED_BYTES - len(head)) // len(repeat)
+    with zipfile.ZipFile(buffer, "w", compresslevel=9) as archive:
+        archive.writestr(_zip_info("mimetype", zipfile.ZIP_STORED), ODT_MIME.encode())
+        archive.writestr(
+            _zip_info("META-INF/manifest.xml", zipfile.ZIP_DEFLATED), _odt_manifest(["content.xml"])
+        )
+        with archive.open(_zip_info("content.xml", zipfile.ZIP_DEFLATED), "w") as entry:
+            entry.write(open_body)
+            chunk = repeat * 4096
+            for _ in range(count // 4096):
+                entry.write(chunk)
+            entry.write(b"</office:text>" + close_body)
+    return buffer.getvalue()
+
+
+def build_odt(destination: Path) -> dict[str, Path]:
+    """Write the OpenDocument fixtures (generated; ``odt/real/`` holds LibreOffice's own files)."""
+    report = _odt(ODT_REPORT_BODY)
+    files: dict[str, bytes] = {
+        "report.odt": report,
+        "no_extension_odt": report,
+        "merged.odt": _odt(ODT_MERGED_BODY),
+        "revisions.odt": _odt(ODT_REVISIONS_BODY),
+        "unknown.odt": _odt(ODT_UNKNOWN_BODY),
+        "images.odt": odt_package(
+            _odt_xml("document-content", ODT_IMAGES_BODY), extra={"Pictures/map.png": tiny_png()}
+        ),
+        "formulas.odt": odt_package(
+            _odt_xml("document-content", ODT_FORMULAS_BODY),
+            extra={
+                "Object 1/content.xml": _math_object(MATHML_SUBSET),
+                "Object 2/content.xml": _math_object(MATHML_SUM),
+                "Object 3/content.xml": _math_object(MATHML_OUTSIDE),
+            },
+        ),
+        "spreadsheet.odt": odt_package(_odt_xml("document-content", ""), mime=ODS_MIME),
+        "encrypted.odt": odt_package(
+            _odt_xml("document-content", "<text:p>x</text:p>"), encrypted=True
+        ),
+        "damaged.odt": report[: len(report) // 2],
+        **{f"hostile/{name}": data for name, data in _hostile_odt().items()},
+    }
+    written = {}
+    for name, data in files.items():
+        path = destination / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+        written[name] = path
+    return written
+
+
 if __name__ == "__main__":
-    for path in [*build(DOCUMENTS_DIR).values(), *build_tex(TEX_DIR).values()]:
+    built = [
+        *build(DOCUMENTS_DIR).values(),
+        *build_tex(TEX_DIR).values(),
+        *build_odt(ODT_DIR).values(),
+    ]
+    for path in built:
         shown = path.relative_to(Path.cwd()) if path.is_relative_to(Path.cwd()) else path
         print(f"{path.stat().st_size:>8}  {shown}")

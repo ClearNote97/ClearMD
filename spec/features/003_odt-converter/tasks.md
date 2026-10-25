@@ -8,7 +8,7 @@
 
 Goal: `clearmd report.odt` writes a faithful `report.md` through the worker, safely, with its notes.
 
-- [ ] **T01 — Fixtures.** `tests/fixtures/odt/` from `build_fixtures.py` (stdlib `zipfile`, ODF 1.3):
+- [x] **T01 — Fixtures.** `tests/fixtures/odt/` from `build_fixtures.py` (stdlib `zipfile`, ODF 1.3):
       `report.odt` (the whole text subset), `merged.odt`, `revisions.odt`, `unknown.odt`, `spreadsheet.odt`
       (an `.ods` renamed), `encrypted.odt`, `damaged.odt`, `no_extension_odt`, and the `hostile/` set
       (DOCTYPE, entities, depth, element count, huge text, `../` objects, a zip bomb); reproducible.
@@ -35,7 +35,8 @@ Goal: `clearmd report.odt` writes a faithful `report.md` through the worker, saf
 - [ ] **T09 — Benchmark.** An `.odt` case in `run_benchmark.py`; measured factors in `limits.py`;
       `docs/benchmarks/003-odt-converter.md` (AC-20).
 - [ ] **T10 — Close the feature.**
-  - A real `.odt` exported by LibreOffice (no private content), provided by the author, converts as expected.
+  - Real `.odt` files exported by LibreOffice (installed provisionally in the dev container, by the author's
+    decision) convert as expected; they stay committed as fixtures. **Uninstall LibreOffice from the container.**
   - `docs/architecture/README.md` and both READMEs (formats, status table); roadmap and spec ticked.
   - Gate (pytest, ruff, mypy strict).
   - Review by `code-reviewer` and `security-auditor`, then an adversarial verification of the fixes with the

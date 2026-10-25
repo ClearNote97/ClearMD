@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<office:document xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0" xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:math="http://www.w3.org/1998/Math/MathML" office:version="1.3" office:mimetype="application/vnd.oasis.opendocument.text">
+<office:font-face-decls><style:font-face style:name="Liberation Mono" svg:font-family="'Liberation Mono'" style:font-pitch="fixed"/></office:font-face-decls>
+<office:automatic-styles>
+<style:style style:name="Neg" style:family="text"><style:text-properties fo:font-weight="bold"/></style:style>
+<style:style style:name="Ita" style:family="text"><style:text-properties fo:font-style="italic"/></style:style>
+<style:style style:name="Sub" style:family="text"><style:text-properties style:text-underline-style="solid" style:text-underline-width="auto" style:text-underline-color="font-color"/></style:style>
+<style:style style:name="Mono" style:family="text"><style:text-properties style:font-name="Liberation Mono"/></style:style>
+<style:style style:name="Sup" style:family="text"><style:text-properties style:text-position="super 58%"/></style:style>
+<text:list-style style:name="Lnum"><text:list-level-style-number text:level="1" style:num-format="1" text:start-value="1"/></text:list-style>
+</office:automatic-styles>
+<office:body><office:text>
+<text:p text:style-name="Title">Informe real de LibreOffice</text:p>
+<text:p text:style-name="Subtitle">Exportado por LibreOffice 7.4</text:p>
+<text:h text:style-name="Heading_20_1" text:outline-level="1">Resumen</text:h>
+<text:p text:style-name="Text_20_body">Un texto con <text:span text:style-name="Neg">negrita</text:span>, <text:span text:style-name="Ita">itálica</text:span>, <text:span text:style-name="Sub">subrayado</text:span>, <text:span text:style-name="Mono">monoespacio</text:span> y E = mc<text:span text:style-name="Sup">2</text:span>. Marcador: fixture-odt-real.<text:note text:id="ftn0" text:note-class="footnote"><text:note-citation>1</text:note-citation><text:note-body><text:p text:style-name="Footnote">Nota al pie real.</text:p></text:note-body></text:note></text:p>
+<text:h text:style-name="Heading_20_2" text:outline-level="2">Lista y enlace</text:h>
+<text:list text:style-name="List_20_1"><text:list-item><text:p>primero</text:p></text:list-item><text:list-item><text:p>segundo</text:p></text:list-item></text:list>
+<text:list text:style-name="Lnum"><text:list-item><text:p>paso uno</text:p></text:list-item><text:list-item><text:p>paso dos</text:p></text:list-item></text:list>
+<text:p text:style-name="Text_20_body">Ver <text:a xlink:type="simple" xlink:href="https://www.libreoffice.org/">LibreOffice</text:a>.</text:p>
+<text:p text:style-name="Quotations">Una cita de prueba.</text:p>
+<text:p text:style-name="Preformatted_20_Text">print("hola")</text:p>
+<text:h text:style-name="Heading_20_2" text:outline-level="2">Fórmulas</text:h>
+<text:p><draw:frame svg:width="4cm" svg:height="1cm" text:anchor-type="as-char"><draw:object><math:math><math:semantics><math:mrow/><math:annotation encoding="StarMath 5.0">{a over b} + x^2 + sqrt{y} + %alpha</math:annotation></math:semantics></math:math></draw:object></draw:frame></text:p>
+<text:p>En línea <draw:frame svg:width="4cm" svg:height="1cm" text:anchor-type="as-char"><draw:object><math:math><math:semantics><math:mrow/><math:annotation encoding="StarMath 5.0">sum from{i=1} to{n} i</math:annotation></math:semantics></math:math></draw:object></draw:frame> y <draw:frame svg:width="4cm" svg:height="1cm" text:anchor-type="as-char"><draw:object><math:math><math:semantics><math:mrow/><math:annotation encoding="StarMath 5.0">int from 0 to 1 x^2 dx</math:annotation></math:semantics></math:math></draw:object></draw:frame>.</text:p>
+<text:p><draw:frame svg:width="4cm" svg:height="1cm" text:anchor-type="as-char"><draw:object><math:math><math:semantics><math:mrow/><math:annotation encoding="StarMath 5.0">left( %alpha + %beta right) + matrix{ a # b ## c # d } + hat x + lim from {n toward infinity} 1 over n</math:annotation></math:semantics></math:math></draw:object></draw:frame></text:p>
+<text:p>Fuera del subconjunto: <draw:frame svg:width="4cm" svg:height="1cm" text:anchor-type="as-char"><draw:object><math:math><math:semantics><math:mrow/><math:annotation encoding="StarMath 5.0">a lsup b</math:annotation></math:semantics></math:math></draw:object></draw:frame>.</text:p>
+<text:h text:style-name="Heading_20_2" text:outline-level="2">Tabla e imagen</text:h>
+<table:table table:name="Tabla1"><table:table-column table:number-columns-repeated="2"/>
+<table:table-header-rows><table:table-row><table:table-cell office:value-type="string"><text:p>Columna A</text:p></table:table-cell><table:table-cell office:value-type="string"><text:p>Columna B</text:p></table:table-cell></table:table-row></table:table-header-rows>
+<table:table-row><table:table-cell table:number-columns-spanned="2" office:value-type="string"><text:p>Combinada</text:p></table:table-cell><table:covered-table-cell/></table:table-row>
+<table:table-row><table:table-cell office:value-type="string"><text:p>1</text:p></table:table-cell><table:table-cell office:value-type="string"><text:p>2</text:p></table:table-cell></table:table-row>
+</table:table>
+<text:p><draw:frame draw:name="Imagen1" text:anchor-type="paragraph" svg:width="1cm" svg:height="1cm"><draw:image><office:binary-data>iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC</office:binary-data></draw:image><svg:title>Un punto verde</svg:title></draw:frame></text:p>
+<text:p>Con un comentario<office:annotation><dc:creator>Revisora</dc:creator><dc:date>2026-10-25T10:00:00</dc:date><text:p>Revisar esto</text:p></office:annotation> al lado.</text:p>
+</office:text></office:body></office:document>
