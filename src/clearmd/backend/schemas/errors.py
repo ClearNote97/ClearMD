@@ -37,6 +37,7 @@ class SkipReason(StrEnum):
     UNSAFE_ARCHIVE = "unsafe_archive"
     UNSUPPORTED_FORMAT = "unsupported_format"
     EXISTING_OUTPUT = "existing_output"
+    UNREADABLE = "unreadable"
 
     @property
     def key(self) -> str:

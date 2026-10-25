@@ -1,6 +1,7 @@
 """CLI entry point. Thin path of slice A: files in, Markdown out, progress and exit codes (T06).
 
-The prompt, --dry-run, --open, --output-root, --lang and exit codes 3/130 in full arrive in T16.
+The prompt, --dry-run, --open, --output-root, --lang and exit codes 3/130 in full arrive in T16;
+--no-recursive came with scanning (T08).
 """
 
 import argparse
@@ -33,6 +34,9 @@ def build_parser(catalog: Catalog) -> argparse.ArgumentParser:
         "--overwrite", action="store_true", help=catalog.text("cli.help.overwrite")
     )
     existing.add_argument("--skip", action="store_true", help=catalog.text("cli.help.skip"))
+    parser.add_argument(
+        "--no-recursive", action="store_true", help=catalog.text("cli.help.no_recursive")
+    )
     parser.add_argument("-q", "--quiet", action="store_true", help=catalog.text("cli.help.quiet"))
     parser.add_argument("--version", action="version", version=f"%(prog)s {version('clearmd')}")
     return parser
@@ -71,18 +75,25 @@ def _print_summary(catalog: Catalog, report: BatchReport) -> None:
         print(catalog.text("cli.results", path=root))
 
 
+def _shown(path: Path, is_dir: bool) -> str:
+    return f"{path.name}/" if is_dir else path.name
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     catalog = load_catalog(resolve_language(None, None))
     args = build_parser(catalog).parse_args(argv)
     err = sys.stderr
 
-    plan = plan_batch([path.expanduser() for path in args.paths])
+    plan = plan_batch([path.expanduser() for path in args.paths], recursive=not args.no_recursive)
     for problem in plan.input_errors:
         print(catalog.text("cli.input_not_found", path=problem.path), file=err)
     if not args.quiet:
         for item in plan.skipped:
             reason = catalog.text(item.reason.key)
-            print(catalog.text("cli.skipped", name=item.path.name, reason=reason), file=err)
+            print(
+                catalog.text("cli.skipped", name=_shown(item.path, item.is_dir), reason=reason),
+                file=err,
+            )
     if plan.is_empty:
         if plan.input_errors and not plan.skipped:
             print(catalog.text("cli.no_valid_input"), file=err)

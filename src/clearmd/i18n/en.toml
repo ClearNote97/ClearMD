@@ -43,12 +43,14 @@ zip_archive = "ZIP archives are not supported — extract them first"
 unsafe_archive = "this file looks damaged or unsafe"
 unsupported_format = "unsupported format"
 existing_output = "output already exists (kept)"
+unreadable = "cannot be read (permission denied)"
 
 [cli.help]
 description = "Turn documents into Markdown. 100% local: ClearMD never uses the internet."
 paths = "files and/or folders to convert"
 overwrite = "replace outputs that already exist"
 skip = "keep outputs that already exist"
+no_recursive = "only the top level of input folders"
 quiet = "show only the summary and errors"
 
 [cli]

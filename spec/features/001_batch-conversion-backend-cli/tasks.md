@@ -31,7 +31,7 @@ brings the two riskiest parts (the worker and markitdown) to the front.
 
 ## Slice B — Folders and untrusted input
 
-- [ ] **T08 — Scanning.** `use_cases/scanning.py`: recursion, `ClearMD_Output`, symlinks, hidden, `~$`, size
+- [x] **T08 — Scanning.** `use_cases/scanning.py`: recursion, `ClearMD_Output`, symlinks, hidden, `~$`, size
       limit, `.md`/`.zip`, missing inputs, empty inputs (AC-02, AC-03, AC-05 – AC-08).
 - [ ] **T09 — Archive check.** `use_cases/archive.py`: uncompressed size and whole-file ratio from the
       central directory, plus the size of the text entries for the cost; the zip-bomb fixture is skipped

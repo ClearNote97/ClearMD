@@ -1,6 +1,7 @@
 """Feature 001 — one test per acceptance criterion (spec/features/001_*/spec.md)."""
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -61,3 +62,99 @@ def test_ac_22_password_protected_pdf_has_a_human_message(
     assert main([str(source)]) == 1
     message = "This PDF is password-protected. Remove the password and try again."
     assert message in capsys.readouterr().err
+
+
+def _tree(root: Path) -> list[str]:
+    return sorted(str(path.relative_to(root)) for path in root.rglob("*"))
+
+
+def test_ac_02_a_folder_mirrors_its_structure(workdir: Path) -> None:
+    project = workdir / "project"
+    put(project, "sample.pdf", "a.pdf")
+    put(project, "sample.docx", "sub/b.docx")
+    put(project, "sample.txt", "sub/deeper/c.txt")
+    (project / "only_unsupported").mkdir()
+    (project / "only_unsupported" / "x.tex").write_text(
+        "\\documentclass{article}", encoding="utf-8"
+    )
+    assert main([str(project), "--quiet"]) == 0
+    output = workdir / "ClearMD_Output" / "OutputMD"
+    assert _tree(output) == [
+        "project",
+        "project/a.md",
+        "project/sub",
+        "project/sub/b.md",
+        "project/sub/deeper",
+        "project/sub/deeper/c.md",
+    ]
+
+
+def test_ac_03_no_recursive_converts_only_the_top_level(workdir: Path) -> None:
+    project = workdir / "project"
+    put(project, "sample.txt", "top.txt")
+    put(project, "sample.txt", "sub/inner.txt")
+    assert main([str(project), "--no-recursive", "--quiet"]) == 0
+    assert _tree(workdir / "ClearMD_Output" / "OutputMD") == ["project", "project/top.md"]
+
+
+def test_ac_04_each_input_goes_to_its_own_output_root(workdir: Path) -> None:
+    first = put(workdir / "one", "sample.txt", "a.txt")
+    second = put(workdir / "two", "sample.txt", "b.txt")
+    assert main([str(first), str(second), "--quiet"]) == 0
+    assert (workdir / "one" / "ClearMD_Output" / "OutputMD" / "a.md").is_file()
+    assert (workdir / "two" / "ClearMD_Output" / "OutputMD" / "b.md").is_file()
+
+
+def test_ac_05_scanning_skips_output_folders_links_hidden_and_lock_files(
+    workdir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    project = workdir / "project"
+    put(project, "sample.txt", "keep.txt")
+    put(project, "sample.txt", "ClearMD_Output/OutputMD/old.txt")
+    put(project, "sample.txt", ".hidden/a.txt")
+    put(project, "sample.txt", ".hidden/b.txt")
+    put(project, "sample.txt", ".dotfile.txt")
+    put(project, "sample.docx", "~$lock.docx")
+    os.symlink(project / "keep.txt", project / "link.txt")
+    assert main([str(project)]) == 0
+    assert _tree(workdir / "ClearMD_Output" / "OutputMD") == ["project", "project/keep.md"]
+    err = capsys.readouterr().err
+    assert err.count(".hidden") == 1  # a skipped folder is reported once
+    for name in ("ClearMD_Output", ".dotfile.txt", "~$lock.docx", "link.txt"):
+        assert name in err
+
+
+def test_ac_06_missing_input_and_nothing_to_convert(
+    workdir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    present = put(workdir, "sample.txt", "a.txt")
+    assert main([str(workdir / "missing.pdf"), str(present), "--quiet"]) == 0
+    assert "missing.pdf" in capsys.readouterr().err
+    empty = workdir / "empty"
+    empty.mkdir()
+    assert main([str(empty)]) == 0
+    assert "Nothing to convert." in capsys.readouterr().out
+    assert not (empty / "ClearMD_Output").exists()
+    assert not (workdir / "ClearMD_Output" / "OutputMD" / "empty").exists()
+
+
+def test_ac_07_files_over_250_mib_are_skipped(
+    workdir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    big = workdir / "huge.pdf"
+    with big.open("wb") as handle:
+        handle.truncate(251 * 1024**2)
+    assert main([str(big)]) == 0
+    assert "too large" in capsys.readouterr().err
+    assert not (workdir / "ClearMD_Output").exists()
+
+
+def test_ac_08_markdown_and_zip_are_skipped_with_their_reason(
+    workdir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (workdir / "notes.md").write_text("# hi", encoding="utf-8")
+    (workdir / "bundle.zip").write_bytes(b"PK\x05\x06" + b"\x00" * 18)
+    assert main([str(workdir / "notes.md"), str(workdir / "bundle.zip")]) == 0
+    err = capsys.readouterr().err
+    assert "already Markdown" in err
+    assert "ZIP archives are not supported — extract them first" in err

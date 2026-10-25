@@ -1,7 +1,6 @@
 """Build the batch plan before writing anything (ADR-0010).
 
-Thin path of slice A: input files only. Folders and the safety skips arrive in T08, the
-archive check in T09, names and order in T11-T12.
+Scanning (T08) feeds it; the archive check (T09), names and order (T11-T12) complete it.
 """
 
 from collections.abc import Callable, Sequence
@@ -10,15 +9,17 @@ from pathlib import Path
 from clearmd.backend.schemas.errors import SkipReason
 from clearmd.backend.schemas.events import BatchEvent, PlanReady
 from clearmd.backend.schemas.limits import Limits
-from clearmd.backend.schemas.models import (
-    BatchPlan,
-    InputError,
-    InputProblem,
-    PlannedConversion,
-    SkippedItem,
-)
+from clearmd.backend.schemas.models import BatchPlan, PlannedConversion, SkippedItem
 from clearmd.backend.use_cases.paths import output_root_for, target_for
 from clearmd.backend.use_cases.ports import FormatDetector
+from clearmd.backend.use_cases.scanning import Candidate, scan
+
+
+def _relative_dir(candidate: Candidate) -> Path:
+    """A folder input keeps its own name: ``P/project/sub/a.pdf`` → ``project/sub``."""
+    if not candidate.input_is_dir:
+        return Path()
+    return Path(candidate.input.name) / candidate.relative_dir
 
 
 def build_plan(
@@ -26,33 +27,31 @@ def build_plan(
     *,
     detector: FormatDetector,
     limits: Limits,
+    recursive: bool = True,
     output_root: Path | None = None,
     on_event: Callable[[BatchEvent], None] | None = None,
 ) -> BatchPlan:
+    scanned = scan(inputs, recursive=recursive, limits=limits, on_progress=on_event)
     conversions: list[PlannedConversion] = []
-    skipped: list[SkippedItem] = []
-    errors: list[InputError] = []
-    for source in inputs:
-        if not source.exists():
-            errors.append(InputError(source, InputProblem.NOT_FOUND))
-            continue
-        detection = detector.detect(source)
+    skipped: list[SkippedItem] = list(scanned.skipped)
+    for candidate in scanned.candidates:
+        detection = detector.detect(candidate.path)
         if detection is None:
-            skipped.append(SkippedItem(source, SkipReason.UNSUPPORTED_FORMAT))
+            skipped.append(SkippedItem(candidate.path, SkipReason.UNSUPPORTED_FORMAT))
             continue
-        root = output_root_for(source, is_dir=False, override=output_root)
-        target = target_for(source, root)
+        root = output_root_for(candidate.input, is_dir=candidate.input_is_dir, override=output_root)
+        target = target_for(candidate.path, root, _relative_dir(candidate))
         conversions.append(
             PlannedConversion(
-                source=source,
+                source=candidate.path,
                 output_root=root,
                 target=target,
                 detection=detection,
                 exists=target.exists(),
-                cost=limits.estimated_seconds(detection.format, source.stat().st_size),
+                cost=limits.estimated_seconds(detection.format, candidate.size),
             )
         )
-    plan = BatchPlan(tuple(conversions), tuple(skipped), tuple(errors))
+    plan = BatchPlan(tuple(conversions), tuple(skipped), scanned.input_errors)
     if on_event is not None:
         on_event(PlanReady(plan))
     return plan

@@ -20,6 +20,7 @@ def _ignore(event: BatchEvent) -> None:
 def plan_batch(
     inputs: Sequence[Path],
     *,
+    recursive: bool = True,
     output_root: Path | None = None,
     on_event: Callable[[BatchEvent], None] | None = None,
 ) -> BatchPlan:
@@ -28,6 +29,7 @@ def plan_batch(
         inputs,
         detector=composition.build_detector(),
         limits=composition.default_limits(),
+        recursive=recursive,
         output_root=output_root,
         on_event=on_event,
     )
