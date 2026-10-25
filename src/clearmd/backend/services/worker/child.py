@@ -16,6 +16,7 @@ from clearmd.backend.services.worker.protocol import (
     Detected,
     DetectRequest,
     Failed,
+    Ready,
     Request,
     Response,
 )
@@ -57,6 +58,7 @@ def worker_main(connection: Connection, factory_path: str) -> None:
     # Ctrl+C reaches the whole process group; only the supervisor decides what to stop.
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     registry = load_factory(factory_path)
+    connection.send(Ready())
     while True:
         try:
             request: Request = connection.recv()

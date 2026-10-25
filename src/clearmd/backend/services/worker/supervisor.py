@@ -19,6 +19,7 @@ from clearmd.backend.services.worker.protocol import (
     Detected,
     DetectRequest,
     Failed,
+    Ready,
     Request,
     Response,
 )
@@ -27,6 +28,8 @@ from clearmd.backend.use_cases.cancel import CancelToken
 REAL_REGISTRY = "clearmd.backend.services.conversion.registry:build_registry"
 POLL_SECONDS = 0.1
 JOIN_SECONDS = 5.0
+# Loading Python, markitdown and the magika model; generous for packaged apps and antivirus scans.
+STARTUP_SECONDS = 120.0
 
 
 class WorkerRunner:
@@ -67,7 +70,7 @@ class WorkerRunner:
         return Detection(FormatId(response.format), DetectionMethod.CONTENT)
 
     def _request(self, request: Request, cancel: CancelToken) -> Response:
-        connection, process = self._ensure_worker()
+        connection, process = self._ensure_worker(cancel)
         connection.send(request)
         return self._wait(connection, process, cancel)
 
@@ -81,7 +84,7 @@ class WorkerRunner:
         self._process.join(JOIN_SECONDS)
         self._stop()
 
-    def _ensure_worker(self) -> tuple[Connection, BaseProcess]:
+    def _ensure_worker(self, cancel: CancelToken) -> tuple[Connection, BaseProcess]:
         if self._process is not None and self._connection is not None and self._process.is_alive():
             return self._connection, self._process
         self._stop()
@@ -92,7 +95,32 @@ class WorkerRunner:
         process.start()
         child_end.close()
         self._process, self._connection = process, parent_end
+        self._wait_until_ready(parent_end, process, cancel)
         return parent_end, process
+
+    def _wait_until_ready(
+        self, connection: Connection, process: BaseProcess, cancel: CancelToken
+    ) -> None:
+        """Start-up is not a file's time: wait for ``Ready`` with its own limit."""
+        started = time.monotonic()
+        while not connection.poll(POLL_SECONDS):
+            if cancel.is_set():
+                self._stop()
+                raise Cancelled
+            if not process.is_alive():
+                raise self._crashed(process)
+            if time.monotonic() - started > STARTUP_SECONDS:
+                self._stop()
+                raise ConversionError(
+                    ErrorCode.WORKER_CRASHED, f"worker not ready after {STARTUP_SECONDS:g} s"
+                )
+        try:
+            message = connection.recv()
+        except EOFError:
+            raise self._crashed(process) from None
+        if not isinstance(message, Ready):
+            self._stop()
+            raise ConversionError(ErrorCode.WORKER_CRASHED, f"unexpected start-up {message!r}")
 
     def _wait(self, connection: Connection, process: BaseProcess, cancel: CancelToken) -> Response:
         started = time.monotonic()

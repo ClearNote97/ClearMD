@@ -17,6 +17,8 @@ from support import install_network_guard
 
 FAKE = "support.worker_factories:fake_registry"
 REAL = "support.worker_factories:real_registry"
+SLOW_START = "support.worker_factories:slow_start_registry"
+SLOW_START_SECONDS = 2.0
 
 
 class FakeConverter:
@@ -64,3 +66,9 @@ def fake_registry() -> ConverterRegistry:
 def real_registry() -> ConverterRegistry:
     install_network_guard()
     return build_registry()
+
+
+def slow_start_registry() -> ConverterRegistry:
+    """A worker that takes longer to start than a file is allowed to take."""
+    time.sleep(SLOW_START_SECONDS)
+    return fake_registry()

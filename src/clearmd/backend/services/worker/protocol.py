@@ -4,6 +4,11 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
+class Ready:
+    """Sent once by the worker when its converters are loaded; time limits start after it."""
+
+
+@dataclass(frozen=True)
 class ConvertRequest:
     source: str
     format: str

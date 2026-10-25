@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from build_fixtures import MARKERS
 from support import DOCUMENTS_DIR
-from support.worker_factories import FAKE, REAL
+from support.worker_factories import FAKE, REAL, SLOW_START, SLOW_START_SECONDS
 
 from clearmd.backend.schemas.errors import Cancelled, ConversionError, ErrorCode
 from clearmd.backend.schemas.formats import FormatId
@@ -148,5 +148,26 @@ def test_real_magika_detects_in_the_worker() -> None:
     try:
         detection = worker.detect(DOCUMENTS_DIR / "docx_without_extension")
         assert detection == Detection(FormatId.DOCX, DetectionMethod.CONTENT)
+    finally:
+        worker.close()
+
+
+def test_the_time_limit_does_not_count_the_worker_start_up() -> None:
+    worker = WorkerRunner(SLOW_START, Limits(time_per_file=SLOW_START_SECONDS / 2))
+    try:
+        assert worker.convert(_item("notes.txt"), CancelToken()) == "# converted notes.txt"
+    finally:
+        worker.close()
+
+
+def test_cancelling_while_the_worker_starts(runner: WorkerRunner) -> None:
+    worker = WorkerRunner(SLOW_START, TIGHT)
+    cancel = CancelToken()
+    threading.Timer(0.2, cancel.cancel).start()
+    started = time.monotonic()
+    try:
+        with pytest.raises(Cancelled):
+            worker.convert(_item("notes.txt"), cancel)
+        assert time.monotonic() - started < SLOW_START_SECONDS
     finally:
         worker.close()
