@@ -12,7 +12,7 @@ brings the two riskiest parts (the worker and markitdown) to the front.
 - [x] **T01 — Fixtures.** `tests/fixtures/build_fixtures.py` + generated files (pdf, encrypted pdf, docx,
       pptx, xlsx, html, csv, epub, ipynb, txt, an extension-less docx, corrupt pdf/docx, a zip-bomb docx).
       Add `pypdf` to the `dev` group. Document in `tests/fixtures/README.md` how to regenerate them.
-- [ ] **T02 — Test harness.** `tests/conftest.py` with the no-network autouse fixture (AC-39) and the
+- [x] **T02 — Test harness.** `tests/conftest.py` with the no-network autouse fixture (AC-39) and the
       architecture test of ADR-0014 (imports per package).
 - [ ] **T03 — Schemas and i18n basics.** `schemas/formats.py`, `limits.py`, `errors.py`, `models.py`,
       `events.py`; `use_cases/ports.py`, `cancel.py`; `i18n/` with `Catalog`, `resolve_language()` and the

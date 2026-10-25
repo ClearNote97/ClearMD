@@ -62,5 +62,5 @@ ignore_missing_imports = true
 testpaths = ["tests"]
 # importlib mode: tests mirror src/, so file names may repeat across folders.
 addopts = "-ra --import-mode=importlib"
-# The fixture builder is a plain script; its tests import it by name.
-pythonpath = ["tests/fixtures"]
+# conftest helpers and the fixture builder are plain modules; tests import them by name.
+pythonpath = ["tests", "tests/fixtures"]
