@@ -11,7 +11,7 @@ summary that explains what happened — from the command line, on a backend that
   - The batch pipeline of ADR-0010: inputs → scan → detect → **plan** → confirm → **execute** → summary.
   - Formats through the markitdown adapter (ADR-0004): PDF, docx, pptx, xlsx, HTML (full page), CSV, EPUB,
     Jupyter notebooks (`.ipynb`) and plain text (`.txt`).
-  - Format detection by extension, and by content (`magika`) when the extension is missing or unknown.
+  - Format detection by extension, and by content (`magika`) when there is no extension.
   - Conversions in a **worker process** with time, memory and archive limits, processed from the cheapest to
     the most expensive file (ADR-0015).
   - The output layout and the `Resumen_ClearMD.md` summary with its history (ADR-0016).
@@ -67,10 +67,10 @@ Each criterion has an acceptance test named after its id (`tests/acceptance/test
 
 ### Detection
 
-- [ ] **AC-10** Given a supported document without extension, or with an unknown one, it is detected by its
-  content and converted; the summary says "detected by content". With an unknown extension only real documents
-  count (a docx renamed `report.dat`): plain text with an unknown extension (`.tex`, `.log`, `.yaml`) is
-  "unsupported format", while a text file without extension (`README`) converts.
+- [ ] **AC-10** Given a supported document **without extension** (`scan`, `README`), it is detected by its
+  content and converted; the summary says "detected by content". A file with an extension ClearMD does not know
+  (`report.dat`, `paper.tex` until feature 002) is "unsupported format" without looking inside: what is not
+  contemplated is not accepted.
 - [ ] **AC-11** Given an unsupported file, it is skipped as "unsupported format" and the batch continues.
 
 ### Output location and names

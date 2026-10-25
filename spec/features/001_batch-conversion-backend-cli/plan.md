@@ -145,7 +145,7 @@ epub 0.15 · ipynb 0.03 · txt 0.03`.
 
 1. `ExtensionDetector` (CLI process): a table of extensions → `FormatId` (`.pdf`, `.docx`, `.pptx`, `.xlsx`,
    `.html`/`.htm`, `.csv`, `.epub`, `.ipynb`, `.txt`).
-2. Content detection (worker), **only** when the extension is missing or unknown: `Magika().identify_path()`,
+2. Content detection (worker), **only** for files without an extension (an unknown extension is unsupported): `Magika().identify_path()`,
    label → `FormatId` through a table verified against magika's real labels in T10 (magika 1.0.3: the labels
    equal the format ids). magika applies its own confidence thresholds and answers a generic label such as
    `unknown` when unsure; anything not in the table counts as "unsupported".

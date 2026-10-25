@@ -172,18 +172,19 @@ def test_ac_09_a_zip_bomb_is_skipped_before_converting(
     assert (workdir / "ClearMD_Output" / "OutputMD" / "good.md").is_file()
 
 
-def test_ac_10_documents_without_a_known_extension_are_detected_by_content(workdir: Path) -> None:
-    names = {"docx_without_extension": "scan", "sample.txt": "README", "sample.docx": "report.dat"}
-    for fixture, name in names.items():
-        put(workdir, fixture, name)
-    put(workdir, "sample.txt", "paper.tex")  # plain text with an unknown extension: not a document
-    arguments = [str(workdir / name) for name in [*names.values(), "paper.tex"]]
-    assert main([*arguments, "--quiet"]) == 0
+def test_ac_10_documents_without_extension_are_detected_by_content(
+    workdir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    put(workdir, "docx_without_extension", "scan")
+    put(workdir, "sample.txt", "README")
+    put(workdir, "sample.docx", "report.dat")  # an extension ClearMD does not know: skipped
+    arguments = [str(workdir / name) for name in ("scan", "README", "report.dat")]
+    assert main(arguments) == 0
     output = workdir / "ClearMD_Output" / "OutputMD"
     assert MARKERS["sample.docx"] in (output / "scan.md").read_text(encoding="utf-8")
     assert MARKERS["sample.txt"] in (output / "README.md").read_text(encoding="utf-8")
-    assert MARKERS["sample.docx"] in (output / "report.md").read_text(encoding="utf-8")
-    assert not (output / "paper.md").exists()
+    assert not (output / "report.md").exists()
+    assert "report.dat — unsupported format" in capsys.readouterr().err
 
 
 def test_ac_11_an_unsupported_file_is_skipped_and_the_batch_continues(

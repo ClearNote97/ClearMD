@@ -5,7 +5,7 @@ import psutil
 from clearmd.backend.schemas.limits import Limits
 from clearmd.backend.services.clock import SystemClock
 from clearmd.backend.services.detection.chain import ChainDetector
-from clearmd.backend.services.detection.content_policy import DocumentsOnlyWithExtension
+from clearmd.backend.services.detection.content_policy import ExtensionlessOnly
 from clearmd.backend.services.detection.extension import ExtensionDetector
 from clearmd.backend.services.worker.supervisor import REAL_REGISTRY, WorkerRunner
 
@@ -24,8 +24,8 @@ def default_limits() -> Limits:
 
 
 def build_detector(worker: WorkerRunner) -> ChainDetector:
-    """Extension first (free); content only when the extension says nothing (in the worker)."""
-    return ChainDetector(ExtensionDetector(), DocumentsOnlyWithExtension(worker))
+    """Extension first (free); content, in the worker, only for files without an extension."""
+    return ChainDetector(ExtensionDetector(), ExtensionlessOnly(worker))
 
 
 def build_runner(limits: Limits) -> WorkerRunner:
