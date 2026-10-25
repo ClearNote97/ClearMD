@@ -59,6 +59,10 @@ class WorkerRunner:
             raise ConversionError(ErrorCode.CONVERSION_FAILED, f"unexpected reply {response!r}")
         return response.markdown
 
+    def warm_up(self, cancel: CancelToken) -> None:
+        """Start the worker now, so no file's time includes the start-up (AC-41)."""
+        self._ensure_worker(cancel)
+
     def detect(self, path: Path) -> Detection | None:
         """The format of ``path`` by its content; any failure means "unsupported"."""
         try:

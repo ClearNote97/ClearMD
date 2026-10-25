@@ -22,6 +22,10 @@ class ConversionRunner(Protocol):
         """
         ...
 
+    def warm_up(self, cancel: CancelToken) -> None:
+        """Get ready before the first file, so its time does not include any start-up."""
+        ...
+
     def close(self) -> None: ...
 
 

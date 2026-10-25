@@ -44,6 +44,9 @@ class FakeRunner:
             raise Cancelled
         return f"# {item.source.stem}\r\nline two\r\n"
 
+    def warm_up(self, cancel: CancelToken) -> None:
+        pass
+
     def close(self) -> None:
         pass
 

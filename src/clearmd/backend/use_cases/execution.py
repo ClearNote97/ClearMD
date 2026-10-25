@@ -76,6 +76,13 @@ def execute_plan(
     startup_seconds: float = 0.0,
 ) -> BatchReport:
     started_at = clock.now()
+    if plan.conversions and not cancel.is_set():
+        try:
+            runner.warm_up(cancel)
+        except Cancelled:
+            pass  # every file is reported as cancelled below
+        except ConversionError:
+            pass  # a worker that cannot start fails each file with its own error below
     outcomes: list[ConversionOutcome] = []
     total = len(plan.conversions)
     estimate = TimeLeft(startup_seconds=startup_seconds)

@@ -378,3 +378,10 @@ def test_ac_28_the_summary_speaks_spanish_when_asked(workdir: Path) -> None:
     text = _summary(workdir)
     assert text.startswith("# Resumen de ClearMD")
     assert "| Origen | Resultado | Formato | Tiempo |" in text
+
+
+def test_ac_41_the_first_file_time_does_not_include_the_worker_start_up(workdir: Path) -> None:
+    source = put(workdir, "sample.txt", "tiny.txt")
+    assert main([str(source), "--quiet"]) == 0
+    row = next(line for line in _summary(workdir).splitlines() if "`tiny.txt`" in line)
+    assert row.endswith("| <1 s |")

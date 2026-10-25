@@ -171,3 +171,15 @@ def test_cancelling_while_the_worker_starts(runner: WorkerRunner) -> None:
         assert time.monotonic() - started < SLOW_START_SECONDS
     finally:
         worker.close()
+
+
+def test_warm_up_starts_the_worker_before_the_first_file() -> None:
+    worker = WorkerRunner(SLOW_START, TIGHT)
+    try:
+        worker.warm_up(CancelToken())
+        assert worker.pid is not None
+        started = time.monotonic()
+        assert worker.convert(_item("notes.txt"), CancelToken()) == "# converted notes.txt"
+        assert time.monotonic() - started < SLOW_START_SECONDS / 2  # no start-up inside
+    finally:
+        worker.close()
