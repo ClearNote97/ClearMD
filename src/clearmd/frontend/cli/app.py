@@ -122,6 +122,9 @@ class _Progress:
                 duration = self._catalog.duration(event.seconds_left)
                 line = f"{line} · {self._catalog.text('cli.time_left', duration=duration)}"
             print(line, file=self._stream)
+        elif isinstance(event, ConversionFinished) and event.outcome.notes and not self._quiet:
+            name = _p(event.outcome.item.source.name)
+            print(self._catalog.text("cli.converted_with_notes", name=name), file=self._stream)
         elif isinstance(event, ConversionFinished) and event.outcome.error is not None:
             outcome = event.outcome
             assert outcome.error is not None

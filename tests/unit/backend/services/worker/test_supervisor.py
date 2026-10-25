@@ -16,6 +16,7 @@ from clearmd.backend.schemas.errors import Cancelled, ConversionError, ErrorCode
 from clearmd.backend.schemas.formats import FormatId
 from clearmd.backend.schemas.limits import MIB, Limits
 from clearmd.backend.schemas.models import Detection, DetectionMethod, PlannedConversion
+from clearmd.backend.schemas.notes import ConversionNote, NoteItem, NoteKind
 from clearmd.backend.services.worker.supervisor import VIRTUAL_HEADROOM, WorkerRunner
 from clearmd.backend.use_cases.cancel import CancelToken
 
@@ -50,20 +51,20 @@ def _fails_with(runner: WorkerRunner, name: str, code: ErrorCode) -> ConversionE
 
 
 def test_converts_through_the_worker(runner: WorkerRunner) -> None:
-    assert runner.convert(_item("notes.txt"), CancelToken()) == "# converted notes.txt"
+    assert runner.convert(_item("notes.txt"), CancelToken()).markdown == "# converted notes.txt"
 
 
 def test_the_worker_is_reused_between_files(runner: WorkerRunner) -> None:
-    first = runner.convert(_item("pid.txt"), CancelToken())
-    second = runner.convert(_item("pid.txt"), CancelToken())
+    first = runner.convert(_item("pid.txt"), CancelToken()).markdown
+    second = runner.convert(_item("pid.txt"), CancelToken()).markdown
     assert first == second == str(runner.pid)
 
 
 def test_a_known_failure_keeps_its_code_and_the_worker(runner: WorkerRunner) -> None:
-    pid = runner.convert(_item("pid.txt"), CancelToken())
+    pid = runner.convert(_item("pid.txt"), CancelToken()).markdown
     error = _fails_with(runner, "corrupt.txt", ErrorCode.CORRUPT_FILE)
     assert error.detail == "BadZipFile: File is not a zip file"
-    assert runner.convert(_item("pid.txt"), CancelToken()) == pid
+    assert runner.convert(_item("pid.txt"), CancelToken()).markdown == pid
 
 
 def test_an_unexpected_exception_is_a_conversion_failure(runner: WorkerRunner) -> None:
@@ -72,23 +73,23 @@ def test_an_unexpected_exception_is_a_conversion_failure(runner: WorkerRunner) -
 
 
 def test_a_slow_file_times_out_and_the_worker_is_replaced(runner: WorkerRunner) -> None:
-    before = runner.convert(_item("pid.txt"), CancelToken())
+    before = runner.convert(_item("pid.txt"), CancelToken()).markdown
     started = time.monotonic()
     _fails_with(runner, "slow.txt", ErrorCode.TIMED_OUT)
     assert time.monotonic() - started < TIGHT.time_per_file + 2
-    after = runner.convert(_item("pid.txt"), CancelToken())
+    after = runner.convert(_item("pid.txt"), CancelToken()).markdown
     assert after != before
 
 
 def test_a_memory_hog_is_stopped(runner: WorkerRunner) -> None:
     _fails_with(runner, "hog.txt", ErrorCode.OUT_OF_MEMORY)
-    assert runner.convert(_item("notes.txt"), CancelToken()) == "# converted notes.txt"
+    assert runner.convert(_item("notes.txt"), CancelToken()).markdown == "# converted notes.txt"
 
 
 def test_a_crash_is_reported_and_the_batch_can_go_on(runner: WorkerRunner) -> None:
     error = _fails_with(runner, "crash.txt", ErrorCode.WORKER_CRASHED)
     assert "3" in error.detail
-    assert runner.convert(_item("notes.txt"), CancelToken()) == "# converted notes.txt"
+    assert runner.convert(_item("notes.txt"), CancelToken()).markdown == "# converted notes.txt"
 
 
 def test_cancelling_stops_the_current_file_at_once(runner: WorkerRunner) -> None:
@@ -125,8 +126,8 @@ def test_close_stops_the_worker() -> None:
 def test_real_markitdown_runs_in_the_worker() -> None:
     worker = WorkerRunner(REAL, Limits(time_per_file=60))
     try:
-        markdown = worker.convert(_item("sample.pdf", FormatId.PDF, DOCUMENTS_DIR), CancelToken())
-        assert MARKERS["sample.pdf"] in markdown
+        item = _item("sample.pdf", FormatId.PDF, DOCUMENTS_DIR)
+        assert MARKERS["sample.pdf"] in worker.convert(item, CancelToken()).markdown
         with pytest.raises(ConversionError) as raised:
             worker.convert(_item("encrypted.pdf", FormatId.PDF, DOCUMENTS_DIR), CancelToken())
         assert raised.value.code is ErrorCode.PASSWORD_PROTECTED
@@ -142,7 +143,7 @@ def test_content_detection_runs_in_the_worker(runner: WorkerRunner) -> None:
 
 def test_a_crash_while_detecting_means_unsupported_and_a_new_worker(runner: WorkerRunner) -> None:
     assert runner.detect(Path("/fake/crash")) is None
-    assert runner.convert(_item("notes.txt"), CancelToken()) == "# converted notes.txt"
+    assert runner.convert(_item("notes.txt"), CancelToken()).markdown == "# converted notes.txt"
 
 
 def test_real_magika_detects_in_the_worker() -> None:
@@ -157,7 +158,7 @@ def test_real_magika_detects_in_the_worker() -> None:
 def test_the_time_limit_does_not_count_the_worker_start_up() -> None:
     worker = WorkerRunner(SLOW_START, Limits(time_per_file=SLOW_START_SECONDS / 2))
     try:
-        assert worker.convert(_item("notes.txt"), CancelToken()) == "# converted notes.txt"
+        assert worker.convert(_item("notes.txt"), CancelToken()).markdown == "# converted notes.txt"
     finally:
         worker.close()
 
@@ -181,7 +182,7 @@ def test_warm_up_starts_the_worker_before_the_first_file() -> None:
         worker.warm_up(CancelToken())
         assert worker.pid is not None
         started = time.monotonic()
-        assert worker.convert(_item("notes.txt"), CancelToken()) == "# converted notes.txt"
+        assert worker.convert(_item("notes.txt"), CancelToken()).markdown == "# converted notes.txt"
         assert time.monotonic() - started < SLOW_START_SECONDS / 2  # no start-up inside
     finally:
         worker.close()
@@ -189,7 +190,7 @@ def test_warm_up_starts_the_worker_before_the_first_file() -> None:
 
 @pytest.mark.skipif(sys.platform == "win32", reason="RLIMIT_AS is POSIX")
 def test_the_worker_has_a_hard_memory_cap(runner: WorkerRunner) -> None:
-    cap = int(runner.convert(_item("rlimit.txt"), CancelToken()))
+    cap = int(runner.convert(_item("rlimit.txt"), CancelToken()).markdown)
     assert cap == TIGHT.worker_memory + VIRTUAL_HEADROOM
 
 
@@ -228,9 +229,9 @@ def test_a_worker_that_died_while_idle_is_reported_not_raised(runner: WorkerRunn
 
 
 def test_a_worker_is_replaced_after_a_memory_error(runner: WorkerRunner) -> None:
-    before = runner.convert(_item("pid.txt"), CancelToken())
+    before = runner.convert(_item("pid.txt"), CancelToken()).markdown
     _fails_with(runner, "memoryerror.txt", ErrorCode.OUT_OF_MEMORY)
-    assert runner.convert(_item("pid.txt"), CancelToken()) != before
+    assert runner.convert(_item("pid.txt"), CancelToken()).markdown != before
 
 
 def test_the_memory_cap_respects_a_lower_inherited_limit(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -251,3 +252,10 @@ def test_a_huge_result_is_refused_in_the_worker() -> None:
         assert "too large" in error.detail
     finally:
         worker.close()
+
+
+def test_notes_travel_back_from_the_worker(runner: WorkerRunner) -> None:
+    result = runner.convert(_item("noted.txt"), CancelToken())
+    assert result.notes == (
+        ConversionNote(NoteKind.UNKNOWN_COMMANDS, (NoteItem("\\foo"), NoteItem("\\bar"))),
+    )

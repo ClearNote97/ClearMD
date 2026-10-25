@@ -34,25 +34,34 @@ registry inside the worker (the architecture test and AC-03 enforce it).
 
 ```python
 # schemas/notes.py
-class NoteKind(StrEnum):
-    UNKNOWN_COMMANDS = "unknown_commands"        # items: command and environment names
-    INCLUDE_NOT_FOLLOWED = "include_not_followed" # items: "path — reason"
-    MACRO_LIMIT_REACHED = "macro_limit_reached"   # items: which limit
-    TABLE_KEPT_AS_LATEX = "table_kept_as_latex"   # items: count
-    ENCODING_GUESSED = "encoding_guessed"         # items: encoding
-    PARSE_RECOVERED = "parse_recovered"           # items: what was wrong
+class NoteKind(StrEnum):  # unknown_commands, include_not_followed, macro_limit_reached,
+    ...  # table_kept_as_latex, encoding_guessed, parse_recovered
+
+
+class NoteReason(StrEnum):  # outside_folder, absolute, parent_segment, link, not_tex, missing,
+    ...  # cycle, too_deep, too_many, too_large, expansions, nesting, growth
+
+
+@dataclass(frozen=True)
+class NoteItem:
+    subject: str  # a command, a path, an encoding...
+    reason: str = ""  # a NoteReason value, translated by the catalog
+
 
 @dataclass(frozen=True)
 class ConversionNote:
     kind: NoteKind
-    items: tuple[str, ...] = ()
+    items: tuple[NoteItem, ...] = ()
 
-# services/conversion/registry.py
+
+# schemas/models.py (crosses the worker boundary and the runner port)
 @dataclass(frozen=True)
 class ConversionResult:
     markdown: str
     notes: tuple[ConversionNote, ...] = ()
 
+
+# services/conversion/registry.py
 class DocumentConverter(Protocol):
     def convert(self, source: Path, detection: Detection) -> ConversionResult: ...
 ```
@@ -61,8 +70,8 @@ class DocumentConverter(Protocol):
   `ConversionOutcome.notes` (status stays `CONVERTED`).
 - Notes are facts, never sentences: the catalog turns them into words (`note.unknown_commands`: "commands ClearMD
   does not know were left as written: {items}").
-- Include reasons are codes too (`outside_folder`, `absolute`, `parent_segment`, `link`, `not_tex`, `missing`,
-  `cycle`, `too_deep`, `too_many`, `too_large`), translated by the catalog.
+- Reasons are `NoteReason` codes, translated by the catalog (`note.reason.<code>`); the summary lists at most 20
+  items per note, then "and N more".
 
 ## The pipeline inside `TexConverter`
 

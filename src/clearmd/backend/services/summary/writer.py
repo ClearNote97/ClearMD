@@ -12,12 +12,14 @@ from clearmd.backend.schemas.models import (
     OutputRootReport,
     SkippedItem,
 )
+from clearmd.backend.schemas.notes import ConversionNote
 from clearmd.backend.use_cases.output_files import UnsafeOutput, atomic_write, read_regular_file
 from clearmd.i18n import Catalog, printable
 
 HISTORY_START = "<!-- clearmd:history -->"
 HISTORY_END = "<!-- /clearmd:history -->"
 HISTORY_LIMIT = 200
+NOTE_ITEMS = 20
 DATE_FORMAT = "%Y-%m-%d %H:%M"
 # Only lines ClearMD itself wrote survive into the history: date · ClearMD version · totals.
 _HISTORY_LINE = re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2} · ClearMD [0-9A-Za-z.+-]+ · [\w ·]+")
@@ -92,6 +94,9 @@ class MarkdownSummaryWriter:
             f"- {source(o)} → {_code(_relative(o.item.target, root))}"
             for o in status[OutcomeStatus.KEPT]
         )
+        lines += self._section(
+            "summary.with_notes", self._noted(status[OutcomeStatus.CONVERTED], base)
+        )
         lines += self._section("summary.stopped", stopped)
         lines += self._section("summary.failed", self._failed(status[OutcomeStatus.FAILED], base))
         lines += self._section("summary.skipped", (self._skipped(i, base) for i in report.skipped))
@@ -128,6 +133,29 @@ class MarkdownSummaryWriter:
     def _section(self, key: str, items: Iterable[str]) -> list[str]:
         body = list(items)
         return [f"## {self._catalog.text(key)}", *body, ""] if body else []
+
+    def _noted(self, outcomes: list[ConversionOutcome], base: Path) -> Iterable[str]:
+        for outcome in outcomes:
+            if outcome.notes:
+                yield f"- {_code(_relative(outcome.item.source, base))}"
+                for note in outcome.notes:
+                    yield f"  - {self.describe(note)}"
+
+    def describe(self, note: ConversionNote) -> str:
+        """A note in words: its sentence, then its items (at most NOTE_ITEMS, then "and N more")."""
+        shown = []
+        for item in note.items[:NOTE_ITEMS]:
+            subject = _code(item.subject)
+            shown.append(
+                f"{subject} ({self._catalog.text(f'note.reason.{item.reason}')})"
+                if item.reason
+                else subject
+            )
+        listed = ", ".join(shown)
+        hidden = len(note.items) - NOTE_ITEMS
+        if hidden > 0:
+            listed += self._catalog.text("note.and_more", count=hidden)
+        return self._catalog.text(note.kind.key, items=listed)
 
     def _row(self, outcome: ConversionOutcome, base: Path, root: Path) -> str:
         detection = outcome.item.detection

@@ -65,19 +65,19 @@ def handle(
     format_id = FormatId(request.format)
     detection = Detection(format_id, DetectionMethod(request.method))
     try:
-        markdown = registry.for_format(format_id).convert(Path(request.source), detection)
+        result = registry.for_format(format_id).convert(Path(request.source), detection)
     except ConversionError as error:
         return Failed(error.code.value, error.detail)
     except MemoryError:
         return Failed(ErrorCode.OUT_OF_MEMORY.value, "MemoryError: over the hard memory cap")
     except Exception as error:
         return Failed(ErrorCode.CONVERSION_FAILED.value, f"{type(error).__name__}: {error}")
-    if len(markdown) > max_result_chars:  # never ship gigabytes back to the interface
+    if len(result.markdown) > max_result_chars:  # never ship gigabytes back to the interface
         return Failed(
             ErrorCode.CONVERSION_FAILED.value,
-            f"result too large: {len(markdown)} characters, limit {max_result_chars}",
+            f"result too large: {len(result.markdown)} characters, limit {max_result_chars}",
         )
-    return Converted(markdown)
+    return Converted(result.markdown, result.notes)
 
 
 def worker_main(

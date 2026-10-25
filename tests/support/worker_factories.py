@@ -13,7 +13,8 @@ from pathlib import Path
 
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.schemas.formats import FormatId
-from clearmd.backend.schemas.models import Detection, DetectionMethod
+from clearmd.backend.schemas.models import ConversionResult, Detection, DetectionMethod
+from clearmd.backend.schemas.notes import ConversionNote, NoteItem, NoteKind
 from clearmd.backend.services.conversion.registry import ConverterRegistry, build_registry
 from support import install_network_guard
 
@@ -24,7 +25,15 @@ SLOW_START_SECONDS = 2.0
 
 
 class FakeConverter:
-    def convert(self, source: Path, detection: Detection) -> str:
+    def convert(self, source: Path, detection: Detection) -> ConversionResult:
+        return ConversionResult(self._markdown(source), self._notes(source))
+
+    def _notes(self, source: Path) -> tuple[ConversionNote, ...]:
+        if source.stem != "noted":
+            return ()
+        return (ConversionNote(NoteKind.UNKNOWN_COMMANDS, (NoteItem("\\foo"), NoteItem("\\bar"))),)
+
+    def _markdown(self, source: Path) -> str:
         behavior = source.stem
         if behavior == "slow":
             time.sleep(60)

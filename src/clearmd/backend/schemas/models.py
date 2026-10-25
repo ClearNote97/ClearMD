@@ -7,6 +7,7 @@ from pathlib import Path
 
 from clearmd.backend.schemas.errors import ErrorCode, SkipReason
 from clearmd.backend.schemas.formats import FormatId
+from clearmd.backend.schemas.notes import ConversionNote
 
 
 class DetectionMethod(StrEnum):
@@ -101,12 +102,21 @@ class OutcomeStatus(StrEnum):
 
 
 @dataclass(frozen=True)
+class ConversionResult:
+    """What a converter returns: the Markdown, and what it could not do faithfully (ADR-0022)."""
+
+    markdown: str
+    notes: tuple[ConversionNote, ...] = ()
+
+
+@dataclass(frozen=True)
 class ConversionOutcome:
     item: PlannedConversion
     status: OutcomeStatus
     error: ErrorCode | None = None
     detail: str = ""
     seconds: float = 0.0
+    notes: tuple[ConversionNote, ...] = ()
 
     @property
     def share_done(self) -> int:

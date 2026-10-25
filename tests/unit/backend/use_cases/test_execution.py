@@ -11,11 +11,13 @@ from clearmd.backend.schemas.formats import FormatId
 from clearmd.backend.schemas.models import (
     BatchPlan,
     BatchReport,
+    ConversionResult,
     Detection,
     DetectionMethod,
     OutcomeStatus,
     PlannedConversion,
 )
+from clearmd.backend.schemas.notes import ConversionNote, NoteItem, NoteKind
 from clearmd.backend.use_cases.cancel import CancelToken
 from clearmd.backend.use_cases.execution import execute_plan
 
@@ -34,7 +36,7 @@ class FakeRunner:
         self.cancel = cancel
         self.seen: list[str] = []
 
-    def convert(self, item: PlannedConversion, cancel: CancelToken) -> str:
+    def convert(self, item: PlannedConversion, cancel: CancelToken) -> ConversionResult:
         self.seen.append(item.source.name)
         if cancel.is_set():
             raise Cancelled
@@ -43,7 +45,10 @@ class FakeRunner:
         if item.source.stem == "cancel":
             cancel.cancel()
             raise Cancelled
-        return f"# {item.source.stem}\r\nline two\r\n"
+        notes = (ConversionNote(NoteKind.UNKNOWN_COMMANDS, (NoteItem("\\x"),)),)
+        return ConversionResult(
+            f"# {item.source.stem}\r\nline two\r\n", notes if item.source.stem == "noted" else ()
+        )
 
     def warm_up(self, cancel: CancelToken) -> None:
         pass
@@ -159,7 +164,7 @@ def test_a_permission_error_on_one_result_fails_only_that_file(
 
 def test_an_unreadable_source_fails_only_that_file(tmp_path: Path) -> None:
     class LockedFirst(FakeRunner):
-        def convert(self, item: PlannedConversion, cancel: CancelToken) -> str:
+        def convert(self, item: PlannedConversion, cancel: CancelToken) -> ConversionResult:
             if item.source.stem == "locked":
                 self.seen.append(item.source.name)
                 raise ConversionError(ErrorCode.SOURCE_UNREADABLE, "PermissionError: locked")
@@ -242,7 +247,7 @@ def test_outcomes_carry_their_time_and_events_carry_the_time_left(tmp_path: Path
 
 
 class StoppingRunner(FakeRunner):
-    def convert(self, item: PlannedConversion, cancel: CancelToken) -> str:
+    def convert(self, item: PlannedConversion, cancel: CancelToken) -> ConversionResult:
         if item.source.stem == "slow":
             raise ConversionError(ErrorCode.TIMED_OUT, "stopped after 600 s")
         if item.source.stem == "huge":
@@ -293,3 +298,13 @@ def test_an_unwritable_output_root_fails_its_files_without_converting_them(tmp_p
     assert [o.error for o in outcomes[:2]] == [ErrorCode.PERMISSION_DENIED] * 2
     assert outcomes[2].status is OutcomeStatus.CONVERTED
     assert runner.seen == ["c.pdf"]  # nothing was converted for the locked root
+
+
+def test_notes_are_kept_in_the_outcome_and_the_file_is_still_converted(tmp_path: Path) -> None:
+    _, report = _run(
+        _plan(_item(tmp_path, "noted.pdf"), _item(tmp_path, "plain.pdf")), FakeRunner()
+    )
+    noted, plain = report.outcomes
+    assert noted.status is OutcomeStatus.CONVERTED
+    assert noted.notes == (ConversionNote(NoteKind.UNKNOWN_COMMANDS, (NoteItem("\\x"),)),)
+    assert plain.notes == ()

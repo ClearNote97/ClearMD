@@ -37,7 +37,7 @@ from pdfminer.psexceptions import PSException
 
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.schemas.formats import FormatId
-from clearmd.backend.schemas.models import Detection
+from clearmd.backend.schemas.models import ConversionResult, Detection
 
 _CORRUPT: tuple[type[BaseException], ...] = (
     zipfile.BadZipFile,
@@ -119,7 +119,7 @@ class MarkItDownConverter:
     def __init__(self) -> None:
         self.converters = _converters()
 
-    def convert(self, source: Path, detection: Detection) -> str:
+    def convert(self, source: Path, detection: Detection) -> ConversionResult:
         converter = self.converters[detection.format]
         hint = StreamInfo(extension=f".{detection.format.value}", filename=source.name)
         with _open_regular_file(source) as stream:
@@ -127,4 +127,4 @@ class MarkItDownConverter:
                 result = converter.convert(stream, hint)
             except Exception as error:
                 raise map_exception(error) from error
-        return result.markdown
+        return ConversionResult(result.markdown)  # markitdown reports nothing it skipped

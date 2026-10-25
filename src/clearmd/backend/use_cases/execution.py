@@ -56,17 +56,17 @@ def _convert_one(
     item: PlannedConversion, runner: ConversionRunner, cancel: CancelToken
 ) -> ConversionOutcome:
     try:
-        markdown = runner.convert(item, cancel)
+        result = runner.convert(item, cancel)
     except ConversionError as error:
         status = OutcomeStatus.STOPPED if error.code in STOPPING_CODES else OutcomeStatus.FAILED
         return ConversionOutcome(item, status, error.code, error.detail)
     try:
-        atomic_write(item.target, markdown, inside=item.output_root)
+        atomic_write(item.target, result.markdown, inside=item.output_root)
     except OSError as error:  # this file only: disk full, name too long, locked, a folder...
         return ConversionOutcome(
             item, OutcomeStatus.FAILED, ErrorCode.WRITE_FAILED, _describe(error)
         )
-    return ConversionOutcome(item, OutcomeStatus.CONVERTED)
+    return ConversionOutcome(item, OutcomeStatus.CONVERTED, notes=result.notes)
 
 
 def execute_plan(

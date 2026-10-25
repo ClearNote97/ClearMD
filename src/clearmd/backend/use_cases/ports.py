@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Protocol
 
-from clearmd.backend.schemas.models import Detection, PlannedConversion
+from clearmd.backend.schemas.models import ConversionResult, Detection, PlannedConversion
 from clearmd.backend.use_cases.cancel import CancelToken
 
 
@@ -15,8 +15,8 @@ class FormatDetector(Protocol):
 
 
 class ConversionRunner(Protocol):
-    def convert(self, item: PlannedConversion, cancel: CancelToken) -> str:
-        """The Markdown of ``item.source``.
+    def convert(self, item: PlannedConversion, cancel: CancelToken) -> ConversionResult:
+        """The Markdown of ``item.source``, and its conversion notes.
 
         Raises ``ConversionError`` for a known failure and ``Cancelled`` when ``cancel`` is set.
         """

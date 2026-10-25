@@ -11,7 +11,12 @@ import psutil
 from clearmd.backend.schemas.errors import Cancelled, ConversionError, ErrorCode
 from clearmd.backend.schemas.formats import FormatId
 from clearmd.backend.schemas.limits import Limits
-from clearmd.backend.schemas.models import Detection, DetectionMethod, PlannedConversion
+from clearmd.backend.schemas.models import (
+    ConversionResult,
+    Detection,
+    DetectionMethod,
+    PlannedConversion,
+)
 from clearmd.backend.services.worker.child import worker_main
 from clearmd.backend.services.worker.protocol import (
     Converted,
@@ -51,7 +56,7 @@ class WorkerRunner:
     def pid(self) -> int | None:
         return self._process.pid if self._process is not None else None
 
-    def convert(self, item: PlannedConversion, cancel: CancelToken) -> str:
+    def convert(self, item: PlannedConversion, cancel: CancelToken) -> ConversionResult:
         if cancel.is_set():
             raise Cancelled
         request = ConvertRequest(
@@ -60,7 +65,7 @@ class WorkerRunner:
         response = self._request(request, cancel)
         if not isinstance(response, Converted):
             raise ConversionError(ErrorCode.CONVERSION_FAILED, f"unexpected reply {response!r}")
-        return response.markdown
+        return ConversionResult(response.markdown, response.notes)
 
     def warm_up(self, cancel: CancelToken) -> None:
         """Start the worker now, so no file's time includes the start-up (AC-41)."""

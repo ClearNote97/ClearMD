@@ -39,8 +39,9 @@ def converter() -> MarkItDownConverter:
 def test_every_fixture_converts_and_keeps_its_text(
     converter: MarkItDownConverter, name: str
 ) -> None:
-    markdown = converter.convert(DOCUMENTS_DIR / name, _detection(name))
-    assert MARKERS[name] in markdown
+    result = converter.convert(DOCUMENTS_DIR / name, _detection(name))
+    assert MARKERS[name] in result.markdown
+    assert result.notes == ()  # markitdown reports no notes
 
 
 @pytest.mark.parametrize(

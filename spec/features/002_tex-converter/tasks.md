@@ -10,7 +10,7 @@ Goal: `clearmd paper.tex` writes a faithful `paper.md` through the worker, with 
 
 - [x] **T01 — Fixtures.** `tests/fixtures/tex/` from `build_fixtures.py`: `paper.tex`, the thesis folder,
       `latin1.tex`, `unknown.tex`, the `hostile/` set, `no_extension_latex`; a test that they are reproducible.
-- [ ] **T02 — Notes through the pipeline.** `schemas/notes.py`; `ConversionResult`; `ConversionOutcome.notes`;
+- [x] **T02 — Notes through the pipeline.** `schemas/notes.py`; `ConversionResult`; `ConversionOutcome.notes`;
       the worker protocol; markitdown returns no notes; summary section and CLI line; EN/ES catalog keys
       (AC-18 – AC-19 at unit level).
 - [ ] **T03 — Detection and the format.** `FormatId.TEX`, `.tex`, magika `latex`; provisional limits; the

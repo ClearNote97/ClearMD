@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+from clearmd.backend.schemas.notes import ConversionNote
+
 
 @dataclass(frozen=True)
 class Ready:
@@ -28,6 +30,7 @@ class Detected:
 @dataclass(frozen=True)
 class Converted:
     markdown: str
+    notes: tuple[ConversionNote, ...] = ()
 
 
 @dataclass(frozen=True)

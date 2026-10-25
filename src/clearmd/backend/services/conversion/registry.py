@@ -6,12 +6,12 @@ from typing import Protocol
 
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.schemas.formats import FormatId
-from clearmd.backend.schemas.models import Detection
+from clearmd.backend.schemas.models import ConversionResult, Detection
 
 
 class DocumentConverter(Protocol):
-    def convert(self, source: Path, detection: Detection) -> str:
-        """The Markdown of ``source``; raises ``ConversionError`` on failure."""
+    def convert(self, source: Path, detection: Detection) -> ConversionResult:
+        """The Markdown of ``source`` and its notes; raises ``ConversionError`` on failure."""
         ...
 
 
