@@ -1,6 +1,6 @@
 # ADR-0006: Own converters — .tex, .odt and HTML article mode
 
-- **Status:** accepted
+- **Status:** accepted; includes, macros and conversion notes refined by ADR-0022
 - **Date:** 2026-10-24
 
 ## Context

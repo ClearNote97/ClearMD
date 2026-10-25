@@ -20,10 +20,12 @@ already tested (ADR-0001).
       worker process with limits, cost-ordered queue, detection, plan → confirm → execute,
       `ClearMD_Output/OutputMD/` + `Resumen_ClearMD.md` with history, markitdown adapter, i18n EN/ES, settings
       (read), complete CLI, benchmark.
+- [ ] **002 — `.tex` converter** ([spec](./features/002_tex-converter/spec.md)): the subset, math preserved,
+      includes inside the document folder, the author's macros expanded with limits, honest conversion notes
+      (ADR-0022).
 
 ## Next
 
-- [ ] **002 — `.tex` converter** (subset defined in its spec; math preserved).
 - [ ] **003 — `.odt` converter** (standard library only).
 - [ ] **004 — HTML article mode** (second strategy for `.html`).
 - [ ] **005 — Presenter (MVP) + ttkbootstrap GUI**, following `spec/contracts/ux.md`: help window, welcome,

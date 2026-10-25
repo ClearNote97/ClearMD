@@ -23,7 +23,7 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 | [0003](./0003-pyside6-over-pyqt6.md) | PySide6-Essentials instead of PyQt6 (license) | accepted |
 | [0004](./0004-hybrid-engine-with-markitdown.md) | Hybrid engine: markitdown behind a port + own converters | accepted |
 | [0005](./0005-fully-local.md) | 100% local: documents never leave the machine | accepted |
-| [0006](./0006-own-converters.md) | Own converters: .tex, .odt and HTML article mode | accepted |
+| [0006](./0006-own-converters.md) | Own converters: .tex, .odt and HTML article mode | accepted; refined by 0022 |
 | [0007](./0007-real-package-src-layout.md) | Real package with `src/` layout | accepted; README rule superseded by 0014 |
 | [0008](./0008-dev-only-container.md) | Container for development; executables from CI | accepted |
 | [0009](./0009-template-pruning.md) | Pruning of the ClearNote_Dev template | accepted |
@@ -39,3 +39,4 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 | [0019](./0019-outputmd-and-v2-tools.md) | `OutputMD/` for results; room for the v2 tools (merge, split) | accepted |
 | [0020](./0020-non-root-dev-container.md) | The dev container runs as a non-root user with the host's UID | accepted |
 | [0021](./0021-content-detection-only-without-extension.md) | Content detection only for files without an extension | accepted |
+| [0022](./0022-latex-includes-macros-and-notes.md) | LaTeX: includes, the author's macros and conversion notes | accepted |
