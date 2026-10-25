@@ -78,7 +78,7 @@ def build_plan(
             continue
         size = candidate.size
         if detection.format in ZIP_BASED:
-            archive = inspect_archive(candidate.path)
+            archive = inspect_archive(candidate.path, limits.max_zip_entries)
             if archive is not None:
                 if is_unsafe(archive, limits):
                     skipped.append(

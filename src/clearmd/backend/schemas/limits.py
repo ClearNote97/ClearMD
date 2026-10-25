@@ -51,6 +51,8 @@ class Limits:
     max_uncompressed: int = 1 * GIB
     # Uncompressed size over the whole file's size; real documents measured 1-5, the bomb ~340.
     max_ratio: float = 100.0
+    # Entries a ZIP-based document may declare: real ones have tens to a few thousand.
+    max_zip_entries: int = 50_000
     time_per_file: float = 600.0
     # The composition root lowers it to half of the machine's RAM when that is smaller.
     worker_memory: int = 4 * GIB

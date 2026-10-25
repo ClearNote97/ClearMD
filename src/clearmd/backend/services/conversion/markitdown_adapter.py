@@ -57,6 +57,8 @@ def _describe(error: BaseException) -> str:
 
 
 def _code_for(error: BaseException) -> ErrorCode:
+    if isinstance(error, MemoryError):
+        return ErrorCode.OUT_OF_MEMORY
     if isinstance(error, PDFEncryptionError):
         return ErrorCode.PASSWORD_PROTECTED
     if isinstance(error, _CORRUPT) or type(error).__name__ in _CORRUPT_BY_NAME:

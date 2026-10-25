@@ -55,3 +55,34 @@ def test_text_size_counts_xml_parts_and_ignores_images(tmp_path: Path) -> None:
     assert info is not None
     assert info.text_bytes == 1025 + len("<Relationships/>")
     assert info.uncompressed > 50_000
+
+
+def _fake_zip_claiming(tmp_path: Path, entries: int) -> Path:
+    import struct
+
+    path = tmp_path / "many.docx"
+    end_record = b"PK\x05\x06" + struct.pack("<HHHHIIH", 0, 0, entries, entries, 46 * entries, 0, 0)
+    path.write_bytes(b"\x00" * 64 + end_record)
+    return path
+
+
+def test_an_archive_with_too_many_entries_is_unsafe_without_loading_its_index(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def forbidden(*args: object, **kwargs: object) -> None:
+        raise AssertionError("the central directory must not be loaded")
+
+    monkeypatch.setattr(zipfile, "ZipFile", forbidden)
+    info = inspect_archive(_fake_zip_claiming(tmp_path, 60_000))
+    assert info is not None and info.entries == 60_000
+    assert is_unsafe(info, Limits())
+
+
+def test_a_zip64_archive_is_unsafe(tmp_path: Path) -> None:
+    info = inspect_archive(_fake_zip_claiming(tmp_path, 0xFFFF))
+    assert info is not None and is_unsafe(info, Limits())
+
+
+def test_a_normal_archive_reports_its_entries() -> None:
+    info = inspect_archive(DOCUMENTS_DIR / "sample.docx")
+    assert info is not None and 1 <= info.entries < 50

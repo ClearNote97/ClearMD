@@ -6,6 +6,8 @@ Each one first installs the network guard inside the worker (ADR-0005), then bui
 
 import os
 import socket
+import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -41,6 +43,16 @@ class FakeConverter:
             socket.create_connection(("example.com", 443))
         elif behavior == "pid":
             return str(os.getpid())
+        elif behavior == "rlimit":
+            import resource
+
+            return str(resource.getrlimit(resource.RLIMIT_AS)[0])
+        elif behavior == "spawn":
+            child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(120)"])
+            (source.parent / "grandchild.pid").write_text(str(child.pid), encoding="utf-8")
+            time.sleep(60)
+        elif behavior == "memoryerror":
+            raise MemoryError
         return f"# converted {source.name}"
 
 

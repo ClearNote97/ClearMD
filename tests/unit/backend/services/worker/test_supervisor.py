@@ -1,10 +1,12 @@
 """The supervisor enforces time, memory and cancellation, and replaces the worker (ADR-0015)."""
 
+import sys
 import threading
 import time
 from collections.abc import Iterator
 from pathlib import Path
 
+import psutil
 import pytest
 from build_fixtures import MARKERS
 from support import DOCUMENTS_DIR
@@ -14,7 +16,7 @@ from clearmd.backend.schemas.errors import Cancelled, ConversionError, ErrorCode
 from clearmd.backend.schemas.formats import FormatId
 from clearmd.backend.schemas.limits import MIB, Limits
 from clearmd.backend.schemas.models import Detection, DetectionMethod, PlannedConversion
-from clearmd.backend.services.worker.supervisor import WorkerRunner
+from clearmd.backend.services.worker.supervisor import VIRTUAL_HEADROOM, WorkerRunner
 from clearmd.backend.use_cases.cancel import CancelToken
 
 TIGHT = Limits(time_per_file=1.0, worker_memory=200 * MIB)
@@ -183,3 +185,43 @@ def test_warm_up_starts_the_worker_before_the_first_file() -> None:
         assert time.monotonic() - started < SLOW_START_SECONDS / 2  # no start-up inside
     finally:
         worker.close()
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="RLIMIT_AS is POSIX")
+def test_the_worker_has_a_hard_memory_cap(runner: WorkerRunner) -> None:
+    cap = int(runner.convert(_item("rlimit.txt"), CancelToken()))
+    assert cap == TIGHT.worker_memory + VIRTUAL_HEADROOM
+
+
+def test_a_memory_error_inside_the_worker_is_a_memory_stop(runner: WorkerRunner) -> None:
+    _fails_with(runner, "memoryerror.txt", ErrorCode.OUT_OF_MEMORY)
+
+
+def test_stopping_the_worker_also_stops_what_it_started(tmp_path: Path) -> None:
+    worker = WorkerRunner(FAKE, TIGHT)
+    try:
+        with pytest.raises(ConversionError):
+            worker.convert(_item("spawn.txt", folder=tmp_path), CancelToken())
+    finally:
+        worker.close()
+    grandchild = int((tmp_path / "grandchild.pid").read_text(encoding="utf-8"))
+    deadline = time.monotonic() + 5
+    while time.monotonic() < deadline:
+        try:
+            if psutil.Process(grandchild).status() == psutil.STATUS_ZOMBIE:
+                break
+        except psutil.NoSuchProcess:
+            break
+        time.sleep(0.1)
+    else:
+        pytest.fail("the grandchild process is still running")
+
+
+def test_a_worker_that_died_while_idle_is_reported_not_raised(runner: WorkerRunner) -> None:
+    runner.warm_up(CancelToken())
+
+    def broken_pipe(message: object) -> None:
+        raise BrokenPipeError(32, "Broken pipe")
+
+    runner._connection.send = broken_pipe  # type: ignore[method-assign, union-attr]
+    _fails_with(runner, "notes.txt", ErrorCode.WORKER_CRASHED)

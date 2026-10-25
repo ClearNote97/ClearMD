@@ -36,6 +36,20 @@ def load_factory(path: str) -> _Registry:
     return registry
 
 
+def apply_memory_cap(limit: int) -> None:
+    """A hard cap from the OS, so one huge allocation fails at once (POSIX; Windows: feature 006).
+
+    The supervisor samples the memory every 0.1 s, but a single decompression can ask for
+    gigabytes in one call (security review of feature 001). RLIMIT_AS counts virtual memory, so
+    the cap includes room for what the libraries reserve but do not use.
+    """
+    try:
+        import resource
+    except ImportError:
+        return
+    resource.setrlimit(resource.RLIMIT_AS, (limit, limit))
+
+
 def handle(registry: _Registry, request: ConvertRequest | DetectRequest) -> Response:
     if isinstance(request, DetectRequest):
         try:
@@ -49,14 +63,18 @@ def handle(registry: _Registry, request: ConvertRequest | DetectRequest) -> Resp
         markdown = registry.for_format(format_id).convert(Path(request.source), detection)
     except ConversionError as error:
         return Failed(error.code.value, error.detail)
+    except MemoryError:
+        return Failed(ErrorCode.OUT_OF_MEMORY.value, "MemoryError: over the hard memory cap")
     except Exception as error:
         return Failed(ErrorCode.CONVERSION_FAILED.value, f"{type(error).__name__}: {error}")
     return Converted(markdown)
 
 
-def worker_main(connection: Connection, factory_path: str) -> None:
+def worker_main(connection: Connection, factory_path: str, memory_cap: int | None = None) -> None:
     # Ctrl+C reaches the whole process group; only the supervisor decides what to stop.
     signal.signal(signal.SIGINT, signal.SIG_IGN)
+    if memory_cap is not None:
+        apply_memory_cap(memory_cap)
     registry = load_factory(factory_path)
     connection.send(Ready())
     while True:

@@ -7,3 +7,8 @@
   0.1 s: cancellation, time limit, memory limit (psutil), unexpected death. The time limit starts when a file
   is sent, never during the worker's start-up, which has its own generous limit. On any of them it kills the worker;
   the next file starts a new one.
+
+Two more guards from the security review of feature 001: on POSIX the worker gets a hard OS memory cap
+(`RLIMIT_AS` = the limit + 2 GiB for libraries' virtual reservations), so one huge allocation fails at once
+instead of swapping the machine (Windows: a Job Object in feature 006); and stopping the worker also kills
+any process a converter started.

@@ -30,6 +30,9 @@ POLL_SECONDS = 0.1
 JOIN_SECONDS = 5.0
 # Loading Python, markitdown and the magika model; generous for packaged apps and antivirus scans.
 STARTUP_SECONDS = 120.0
+# Virtual memory the libraries reserve without using it (a loaded worker: ~1.4 GiB virtual for
+# ~170 MiB resident, mostly onnxruntime threads); the OS hard cap is the limit plus this.
+VIRTUAL_HEADROOM = 2 * 1024**3
 
 
 class WorkerRunner:
@@ -75,7 +78,10 @@ class WorkerRunner:
 
     def _request(self, request: Request, cancel: CancelToken) -> Response:
         connection, process = self._ensure_worker(cancel)
-        connection.send(request)
+        try:
+            connection.send(request)
+        except OSError:  # it died while idle (e.g. the system's OOM killer)
+            raise self._crashed(process) from None
         return self._wait(connection, process, cancel)
 
     def close(self) -> None:
@@ -93,8 +99,9 @@ class WorkerRunner:
             return self._connection, self._process
         self._stop()
         parent_end, child_end = self._context.Pipe()
+        memory_cap = self._limits.worker_memory + VIRTUAL_HEADROOM
         process = self._context.Process(
-            target=worker_main, args=(child_end, self._factory_path), daemon=True
+            target=worker_main, args=(child_end, self._factory_path, memory_cap), daemon=True
         )
         process.start()
         child_end.close()
@@ -165,6 +172,7 @@ class WorkerRunner:
 
     def _stop(self) -> None:
         if self._process is not None:
+            _kill_children(self._process)
             if self._process.is_alive():
                 self._process.kill()
             self._process.join(JOIN_SECONDS)
@@ -172,6 +180,21 @@ class WorkerRunner:
         if self._connection is not None:
             self._connection.close()
         self._process, self._connection = None, None
+
+
+def _kill_children(process: BaseProcess) -> None:
+    """Anything a converter started (e.g. a helper program) dies with the worker."""
+    if process.pid is None:
+        return
+    try:
+        children = psutil.Process(process.pid).children(recursive=True)
+    except psutil.Error:
+        return
+    for child in children:
+        try:
+            child.kill()
+        except psutil.Error:
+            pass
 
 
 def _memory_of(process: BaseProcess) -> int | None:
