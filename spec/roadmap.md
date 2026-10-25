@@ -26,7 +26,8 @@ already tested (ADR-0001).
 
 ## Next
 
-- [ ] **003 — `.odt` converter** (standard library only).
+- [ ] **003 — `.odt` converter** ([spec](./features/003_odt-converter/spec.md)): standard library only, XML
+      read safely, formulas as LaTeX, images as placeholders, the output guarantee shared with `.tex` (ADR-0024).
 - [ ] **004 — HTML article mode** (second strategy for `.html`).
 - [ ] **005 — Presenter (MVP) + ttkbootstrap GUI**, following `spec/contracts/ux.md`: help window, welcome,
       settings window, progress, splash, output folder choice (remembered).

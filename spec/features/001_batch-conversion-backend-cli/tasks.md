@@ -64,7 +64,7 @@ brings the two riskiest parts (the worker and markitdown) to the front.
       AC-18, AC-30, AC-31, AC-34 – AC-38, AC-40).
 - [x] **T17 — Acceptance sweep.** `tests/acceptance/test_001_batch_conversion.py` covers AC-01 … AC-44, one
       test per criterion; add the ones not written in earlier slices.
-- [ ] **T18 — Close the feature.**
+- [x] **T18 — Close the feature.**
   - Update `docs/architecture/README.md` to the as-built design.
   - Add usage to `README.md` and `README.es.md`.
   - Tick the roadmap.

@@ -1,5 +1,8 @@
 """Every feature folder under spec/features has its acceptance file, with a test per criterion.
 
+A planned feature (no acceptance file yet, tasks still open) is skipped; a closed one (every task
+ticked) must have it.
+
 Test names are read with ``ast`` (nothing is imported): a feature added without its tests, or a
 criterion added to a spec without a test, fails here.
 """
@@ -33,14 +36,28 @@ def _covered(test_file: Path) -> set[int]:
     }
 
 
+def _closed(feature: Path) -> bool:
+    """Every task of the feature ticked: it cannot be closed without its acceptance file."""
+    tasks = (feature / "tasks.md").read_text("utf-8")
+    return "- [x] **T" in tasks and "- [ ] **T" not in tasks
+
+
+def _acceptance_files(feature: Path) -> list[Path]:
+    number = feature.name.split("_", 1)[0]
+    return sorted((ROOT / "tests" / "acceptance").glob(f"test_{number}_*.py"))
+
+
 def test_there_are_features_to_check() -> None:
-    assert [feature.name[:3] for feature in FEATURES] == ["001", "002"]
+    names = [feature.name[:3] for feature in FEATURES]
+    assert names[:2] == ["001", "002"] and all(_closed(f) for f in FEATURES[:2])
 
 
 @pytest.mark.parametrize("feature", FEATURES, ids=lambda feature: feature.name)
 def test_every_acceptance_criterion_has_a_test(feature: Path) -> None:
-    number = feature.name.split("_", 1)[0]
-    (test_file,) = sorted((ROOT / "tests" / "acceptance").glob(f"test_{number}_*.py"))
+    files = _acceptance_files(feature)
+    if not files and not _closed(feature):
+        pytest.skip(f"{feature.name} is planned: its acceptance file comes with its tasks")
+    (test_file,) = files
     criteria = _criteria(feature)
     assert criteria, f"{feature.name}: no **AC-NN** in spec.md"
     assert sorted(criteria - _covered(test_file)) == []
