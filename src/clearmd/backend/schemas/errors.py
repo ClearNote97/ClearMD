@@ -44,6 +44,7 @@ class SkipReason(StrEnum):
     EXISTING_OUTPUT = "existing_output"
     UNREADABLE = "unreadable"
     TOO_MUCH_MEMORY = "too_much_memory"
+    TOO_DEEP = "too_deep"
 
     @property
     def key(self) -> str:

@@ -178,3 +178,11 @@ def test_a_file_that_may_take_too_long_is_planned_with_a_warning(tmp_path: Path)
     (warning,) = plan.warnings
     assert warning.item.source.name == "slow.pdf"
     assert warning.estimated_seconds > warning.limit_seconds == 10
+
+
+def test_the_same_input_twice_is_converted_once(tmp_path: Path) -> None:
+    (tmp_path / "a.pdf").write_bytes(b"%PDF")
+    plan = build_plan(
+        [tmp_path / "a.pdf", tmp_path / "a.pdf"], detector=TableDetector(), limits=Limits()
+    )
+    assert [item.target.name for item in plan.conversions] == ["a.md"]

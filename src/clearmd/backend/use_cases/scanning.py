@@ -17,6 +17,9 @@ from clearmd.backend.schemas.limits import Limits
 from clearmd.backend.schemas.models import InputError, InputProblem, SkippedItem
 
 LOCK_FILE_PREFIX = "~$"
+# Folders below an input deeper than this are skipped (real trees are far shallower; an archive
+# can nest thousands to exhaust the walk).
+MAX_DEPTH = 100
 _HIDDEN_ATTRIBUTE = getattr(stat, "FILE_ATTRIBUTE_HIDDEN", 2)
 
 
@@ -42,6 +45,12 @@ def is_hidden(name: str, status: os.stat_result) -> bool:
     """A leading dot, or the Windows hidden attribute (absent elsewhere)."""
     attributes = getattr(status, "st_file_attributes", 0)
     return name.startswith(".") or bool(attributes & _HIDDEN_ATTRIBUTE)
+
+
+def is_link_entry(entry: os.DirEntry[str]) -> bool:
+    """A symbolic link, or a Windows junction (which ``is_symlink`` does not report)."""
+    is_junction = getattr(entry, "is_junction", None)
+    return entry.is_symlink() or bool(is_junction and is_junction())
 
 
 def _file_rule(path: Path, size: int, limits: Limits) -> SkipReason | None:
@@ -83,7 +92,7 @@ class _Scanner:
         )
 
     def add_input(self, source: Path) -> None:
-        if source.is_symlink():
+        if source.is_symlink() or source.is_junction():
             self.skipped.append(SkippedItem(source, SkipReason.SYMLINK, input=source))
         elif not source.exists():
             self.errors.append(InputError(source, InputProblem.NOT_FOUND))
@@ -93,7 +102,12 @@ class _Scanner:
             else:
                 self._walk(source, source, Path())
         else:
-            self._add_file(source, source, Path(), source.stat().st_size, input_is_dir=False)
+            try:
+                size = source.stat().st_size
+            except OSError:
+                self._skip(source, SkipReason.UNREADABLE, source)
+                return
+            self._add_file(source, source, Path(), size, input_is_dir=False)
 
     def _add_file(
         self, path: Path, origin: Path, relative: Path, size: int, *, input_is_dir: bool
@@ -104,22 +118,39 @@ class _Scanner:
         else:
             self.candidates.append(Candidate(path, origin, relative, input_is_dir, size))
 
-    def _walk(self, origin: Path, folder: Path, relative: Path) -> None:
+    def _walk(self, origin: Path, top: Path, top_relative: Path) -> None:
+        """Depth-first and iterative: files of a folder, then its subfolders in name order."""
+        pending: list[tuple[Path, Path]] = [(top, top_relative)]
+        while pending:
+            folder, relative = pending.pop()
+            if len(relative.parts) > MAX_DEPTH:
+                self._skip(folder, SkipReason.TOO_DEEP, origin, is_dir=True)
+                continue
+            subfolders = self._scan_folder(origin, folder, relative)
+            pending.extend(reversed(subfolders))
+
+    def _scan_folder(self, origin: Path, folder: Path, relative: Path) -> list[tuple[Path, Path]]:
         if self.on_progress is not None:
             self.on_progress(ScanProgress(found=len(self.candidates), current=folder))
         try:
             entries = _sorted_entries(folder)
-        except PermissionError:
+        except OSError:  # no permission, a vanished folder, a network or disk error
             self._skip(folder, SkipReason.UNREADABLE, origin, is_dir=True)
-            return
+            return []
         subfolders: list[tuple[Path, Path]] = []
         for entry in entries:
             path = Path(entry.path)
-            if entry.is_symlink():
-                self._skip(path, SkipReason.SYMLINK, origin)
+            try:
+                if is_link_entry(entry):
+                    self._skip(path, SkipReason.SYMLINK, origin)
+                    continue
+                status = entry.stat(follow_symlinks=False)
+                is_dir = entry.is_dir(follow_symlinks=False)
+                is_file = entry.is_file(follow_symlinks=False)
+            except OSError:  # it vanished or cannot be read while scanning
+                self._skip(path, SkipReason.UNREADABLE, origin)
                 continue
-            status = entry.stat(follow_symlinks=False)
-            if entry.is_dir(follow_symlinks=False):
+            if is_dir:
                 if entry.name.casefold() == OUTPUT_DIR_NAME.casefold():
                     self._skip(path, SkipReason.OUTPUT_FOLDER, origin, is_dir=True)
                 elif is_hidden(entry.name, status):
@@ -128,10 +159,9 @@ class _Scanner:
                     subfolders.append((path, relative / entry.name))
             elif is_hidden(entry.name, status):
                 self._skip(path, SkipReason.HIDDEN, origin)
-            elif entry.is_file(follow_symlinks=False):
+            elif is_file:
                 self._add_file(path, origin, relative, status.st_size, input_is_dir=True)
-        for path, sub_relative in subfolders:
-            self._walk(origin, path, sub_relative)
+        return subfolders
 
 
 def scan(

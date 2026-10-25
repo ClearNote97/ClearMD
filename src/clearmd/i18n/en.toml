@@ -51,7 +51,8 @@ zip_archive = "ZIP archives are not supported — extract them first"
 unsafe_archive = "this file looks damaged or unsafe"
 unsupported_format = "unsupported format"
 existing_output = "output already exists (kept)"
-unreadable = "cannot be read (permission denied)"
+unreadable = "cannot be read"
+too_deep = "folders nested too deeply (over 100 levels)"
 too_much_memory = "too big to convert (it would need about {needed} of memory; the limit is {limit})"
 
 [cli.help]

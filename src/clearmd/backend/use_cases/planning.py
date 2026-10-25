@@ -56,7 +56,8 @@ def build_plan(
     output_root: Path | None = None,
     on_event: Callable[[BatchEvent], None] | None = None,
 ) -> BatchPlan:
-    scanned = scan(inputs, recursive=recursive, limits=limits, on_progress=on_event)
+    unique_inputs = list(dict.fromkeys(inputs))  # "a.pdf a.pdf" is one file, converted once
+    scanned = scan(unique_inputs, recursive=recursive, limits=limits, on_progress=on_event)
     drafts: list[tuple[Candidate, Detection, Path, float]] = []
     requests: list[NameRequest] = []
     skipped: list[SkippedItem] = [

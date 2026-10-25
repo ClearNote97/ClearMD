@@ -175,3 +175,55 @@ def test_windows_hidden_attribute_is_honored() -> None:
     assert not is_hidden("report.pdf", visible)  # type: ignore[arg-type]
     assert is_hidden(".bashrc", visible)  # type: ignore[arg-type]
     assert not is_hidden("report.pdf", SimpleNamespace())  # type: ignore[arg-type]
+
+
+def test_windows_junctions_count_as_links() -> None:
+    from clearmd.backend.use_cases.scanning import is_link_entry
+
+    junction = SimpleNamespace(is_symlink=lambda: False, is_junction=lambda: True)
+    folder = SimpleNamespace(is_symlink=lambda: False, is_junction=lambda: False)
+    assert is_link_entry(junction)  # type: ignore[arg-type]
+    assert not is_link_entry(folder)  # type: ignore[arg-type]
+
+
+def test_any_error_reading_a_folder_skips_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import errno
+
+    broken = tmp_path / "p" / "network_drive"
+    _touch(broken / "a.pdf")
+    _touch(tmp_path / "p" / "ok.pdf")
+    real_scandir = os.scandir
+
+    def scandir(path: Path) -> object:
+        if Path(path) == broken:
+            raise OSError(errno.EIO, "Input/output error", str(path))
+        return real_scandir(path)
+
+    monkeypatch.setattr(os, "scandir", scandir)
+    result = scan([tmp_path / "p"], recursive=True, limits=Limits())
+    assert _names(result.candidates) == ["ok.pdf"]
+    assert _reasons(result) == {"network_drive": SkipReason.UNREADABLE}
+
+
+def test_absurdly_deep_folders_are_cut_without_crashing(tmp_path: Path) -> None:
+    from clearmd.backend.use_cases.scanning import MAX_DEPTH
+
+    deep = tmp_path / "p"
+    for _ in range(MAX_DEPTH + 5):
+        deep = deep / "d"
+    _touch(deep / "bottom.pdf")
+    _touch(tmp_path / "p" / "top.pdf")
+    result = scan([tmp_path / "p"], recursive=True, limits=Limits())
+    assert _names(result.candidates) == ["top.pdf"]
+    assert [item.reason for item in result.skipped] == [SkipReason.TOO_DEEP]
+
+
+def test_files_come_before_subfolders_and_subfolders_in_order(tmp_path: Path) -> None:
+    _touch(tmp_path / "p" / "b" / "x.pdf")
+    _touch(tmp_path / "p" / "a" / "y.pdf")
+    _touch(tmp_path / "p" / "a" / "deep" / "z.pdf")
+    _touch(tmp_path / "p" / "top.pdf")
+    result = scan([tmp_path / "p"], recursive=True, limits=Limits())
+    assert _names(result.candidates) == ["top.pdf", "y.pdf", "z.pdf", "x.pdf"]

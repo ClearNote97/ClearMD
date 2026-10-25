@@ -51,7 +51,8 @@ zip_archive = "los archivos ZIP no se admiten — descomprímelos primero"
 unsafe_archive = "este archivo parece dañado o inseguro"
 unsupported_format = "formato no compatible"
 existing_output = "el resultado ya existe (se conserva)"
-unreadable = "no se puede leer (permiso denegado)"
+unreadable = "no se puede leer"
+too_deep = "carpetas anidadas demasiado profundo (más de 100 niveles)"
 too_much_memory = "demasiado grande para convertir (necesitaría unos {needed} de memoria; el límite es {limit})"
 
 [cli.help]
