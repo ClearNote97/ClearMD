@@ -14,10 +14,12 @@ already tested (ADR-0001).
 
 ## Now
 
-- [x] **Phase 0:** template pruning, `clearmd` package, ADRs 0001–0013, UX contract, clean dev container.
-- [ ] **001 — Batch conversion: core + CLI** ([spec](./features/001_batch-conversion-core-cli/spec.md)):
-      detection, plan → confirm → execute, `ClearMD_Output`, report, markitdown adapter, i18n EN/ES, settings
-      (read), complete CLI.
+- [x] **Phase 0:** template pruning, `clearmd` package in the template layout, ADRs 0001–0018, UX contract,
+      clean dev container.
+- [ ] **001 — Batch conversion: backend + CLI** ([spec](./features/001_batch-conversion-backend-cli/spec.md)):
+      worker process with limits, cost-ordered queue, detection, plan → confirm → execute,
+      `ClearMD_Output/Output/` + `Resumen_ClearMD.md` with history, markitdown adapter, i18n EN/ES, settings
+      (read), complete CLI, benchmark.
 
 ## Next
 
@@ -25,8 +27,10 @@ already tested (ADR-0001).
 - [ ] **003 — `.odt` converter** (standard library only).
 - [ ] **004 — HTML article mode** (second strategy for `.html`).
 - [ ] **005 — Presenter (MVP) + ttkbootstrap GUI**, following `spec/contracts/ux.md`: help window, welcome,
-      settings window, progress, splash.
-- [ ] **006 — CI:** tests on Linux and Windows + executables in GitHub Releases; executable size as a metric.
+      settings window, progress, splash, output folder choice (remembered).
+- [ ] **006 — CI:** tests on Linux and Windows (Python 3.12 and 3.14) + executables in GitHub Releases;
+      executable size as a metric; **code signing** of the Windows executables (SignPath, free for open
+      source) so SmartScreen does not scare non-technical users.
 
 ## Later
 
@@ -34,6 +38,10 @@ already tested (ADR-0001).
 - [ ] **008 — flet GUI.**
 - [ ] Incremental mode: skip files unchanged since the last run.
 - [ ] Minor formats: `.eml`, `.rtf`, subtitles.
+- [ ] A second queue lane for heavy files, or parallel workers — only if the benchmark shows blocking
+      (ADR-0015).
+- [ ] Optional summary formats (e.g. PDF).
+- [ ] **Publish on PyPI** (`pip install clearmd` / `uv tool install clearmd`), at the end (ADR-0018).
 
 ## Out for now
 

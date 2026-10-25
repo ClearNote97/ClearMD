@@ -18,8 +18,11 @@
 - **Extract only the article** from an HTML file, as an alternative strategy to the full page (ADR-0006).
 - **Convert in batches:** several files and/or whole folders, recursively (ADR-0010).
 - **Detect the format** of each file even when the extension is missing (ADR-0010).
-- **Write the results into `ClearMD_Output`** next to the input, with a report per batch (ADR-0010).
-- **Speak English and Spanish**, selectable by the user (ADR-0012).
+- **Write the results into `ClearMD_Output/Output/`** next to the input or in a folder the user chooses, with a
+  `Resumen_ClearMD.md` per output folder: a name table and the history of earlier batches (ADR-0016).
+- **Convert safely and responsively:** a worker process with time, memory and archive limits, real
+  cancellation, and the cheapest files first (ADR-0015).
+- **Speak English and Spanish**, English by default, switchable in the settings (ADR-0012, ADR-0017).
 - **Remember preferences** in one settings file shared by every interface, editable from a settings window
   (ADR-0012).
 - **Guide the user:** "?" help window, first-run welcome, visible state and progress, human error messages
@@ -40,6 +43,7 @@
 - **A database or a searchable history** (ADR-0002).
 - **A macOS executable:** notarization requires a paid Apple Developer account (ADR-0008).
 - **Minor formats** (`.rtf`, `.eml`, subtitles): on the roadmap, not in v1.
+- **Other summary formats** (e.g. PDF): a possible option later; v1 writes Markdown only.
 
 ## Assumptions
 
@@ -48,7 +52,8 @@
 
 ## Constraints
 
-- **Privacy:** no document, and no data about it, leaves the user's machine.
+- **Privacy:** ClearMD never uses the internet. If the results are saved in a folder synced by OneDrive,
+  Google Drive or Dropbox, that app may upload them — that is the sync app, not ClearMD.
 - **Licenses:** every dependency must allow distributing an MIT app (ADR-0003).
 - **Budget:** zero. No paid services, no paid code signing (for now).
 
@@ -56,5 +61,6 @@
 
 - **Local file system:** the only input and output. ClearMD writes only inside `ClearMD_Output` and its
   settings file.
+- **Worker process:** a child process of ClearMD itself, on the same machine (ADR-0015).
 - **markitdown:** an external dependency hidden behind `DocumentConverter`.
 - **GitHub Actions / Releases:** only to build and publish executables; the app never talks to GitHub.

@@ -2,7 +2,7 @@
 
 Roster que este proyecto necesita. El *cómo* del formato y la materialización está en [`README.md`](./README.md).
 Recortado desde la plantilla: se quitaron las familias de datos/analítica, investigación y base de datos,
-que ClearMD no usa (ADR-0009).
+que ClearMD no usa (ADR-0009). Los roles que quedan están adaptados a ClearMD (ADR-0014).
 
 ## Coordinación / coherencia
 
@@ -15,7 +15,7 @@ que ClearMD no usa (ADR-0009).
 | Agente | Propósito | `model_hint` | Herramientas |
 |---|---|---|---|
 | [`spec-author`](./spec-author.yaml) | Redactar/refinar `spec.md` · `plan.md` · `tasks.md` de una feature. | `frontier` | read, grep, glob, write, edit |
-| [`backend-builder`](./backend-builder.yaml) | Implementar núcleo, conversores y CLI desde el plan. | `balanced` | read, grep, glob, edit, write, bash |
+| [`backend-builder`](./backend-builder.yaml) | Implementar el backend (casos de uso, servicios, worker) y la CLI desde el plan. | `balanced` | read, grep, glob, edit, write, bash |
 | [`frontend-builder`](./frontend-builder.yaml) | Construir las GUIs (ttkbootstrap, PySide6, flet) sobre el presenter. | `balanced` | read, grep, glob, edit, write |
 | [`test-writer`](./test-writer.yaml) | Tests unit + acceptance (test-first), contra el spec. | `balanced` | read, grep, glob, write, edit, bash |
 
@@ -24,7 +24,7 @@ que ClearMD no usa (ADR-0009).
 | Agente | Propósito | `model_hint` | Herramientas |
 |---|---|---|---|
 | [`code-reviewer`](./code-reviewer.yaml) | Calidad, bugs, performance — gate pre-cierre. | `balanced` | read, grep, glob |
-| [`security-auditor`](./security-auditor.yaml) | Entradas no confiables (documentos, rutas, zips), dependencias, secretos. | `frontier` | read, grep, glob |
+| [`security-auditor`](./security-auditor.yaml) | Entradas no confiables (documentos, rutas, archivos comprimidos), el worker, dependencias, red. | `frontier` | read, grep, glob |
 
 ## Documentación
 

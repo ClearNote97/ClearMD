@@ -1,11 +1,12 @@
 id: backend-builder
-purpose: Implementar el núcleo (puertos, modelos, casos de uso), los conversores y la CLI desde el plan de la feature.
-when_to_use: Al construir o extender el núcleo, un conversor o la CLI de una feature YA especificada (spec + plan aprobados).
+purpose: Implementar el backend (schemas, casos de uso, servicios, worker) y la CLI desde el plan de la feature.
+when_to_use: Al construir o extender el backend, un conversor o la CLI de una feature YA especificada (spec + plan aprobados).
 tools_allowed: [read, grep, glob, edit, write, bash]
 guardrails:
   - Consume spec/ (no lo modifica). Construye contra el plan.md, no improvisa alcance.
-  - Modularidad (principio 8, ADR-0001) — el núcleo no importa GUIs ni librerías de conversión; los conversores implementan el puerto DocumentConverter.
-  - Los documentos de entrada son NO confiables — límites de tamaño, sin seguir symlinks, cuidado con zips (ADR-0010).
+  - Modularidad (principio 8, ADR-0001, ADR-0014) — backend/schemas y backend/use_cases solo importan la librería estándar; las librerías de terceros viven en backend/services; los puertos están en use_cases/ports.py.
+  - markitdown y magika solo se importan dentro del proceso worker (ADR-0015); el proceso principal nunca los carga.
+  - Los documentos de entrada son NO confiables — límites de tamaño y de archivo comprimido, sin seguir symlinks, tiempo y memoria acotados en el worker (ADR-0010, ADR-0015).
   - 100% local (ADR-0005) — ningún conversor hace red.
 model_hint: balanced
 handoffs:

@@ -1,40 +1,45 @@
 # docs/architecture — System design
 
-ClearMD follows a **ports and adapters** architecture (ADR-0001): a core that knows neither the GUIs
-nor the conversion libraries, surrounded by interchangeable adapters.
+ClearMD follows a **ports and adapters** architecture (ADR-0001), laid out with the ClearNote_Dev template's
+`backend/` and `frontend/` folders inside the package (ADR-0014). The use cases know neither the interfaces nor
+the conversion libraries; heavy and untrusted work runs in a separate worker process (ADR-0015).
 
 ```
-              Input adapters                                      Conversion adapters
-   ┌──────────────────────────────────┐                   ┌──────────────────────────────────┐
-   │ cli   ttk   qt   flet            │                   │ markitdown (pdf, docx, pptx,     │
-   │   (each GUI is a view)           │                   │   xlsx, html, csv, epub, ipynb)  │
-   └───────────────┬──────────────────┘                   │ tex  (pylatexenc + visitor)      │
-                   │                                      │ odt  (stdlib)                    │
-           ┌───────▼────────┐                             │ html article mode (trafilatura)  │
-           │   presenter    │  interaction logic          └────────────────▲─────────────────┘
-           │     (MVP)      │  shared by the GUIs                          │ implement
-           └───────┬────────┘                                              │ DocumentConverter
-                   │                                                       │
-           ┌───────▼───────────────────────────────────────────────────────┴───┐
-           │ core: ports (DocumentConverter, FormatDetector), models and       │
-           │ use cases (plan batch → confirm → execute, ADR-0010)              │
-           └───────────────────────────────────────────────────────────────────┘
+  frontend/                          backend/
+ ┌──────────────────────────┐       ┌──────────────────────────────────────────────────────────┐
+ │ cli   ttk   qt   flet    │       │ api/        facade (plan_batch, run_batch) + composition  │
+ │        │                 │ ───►  │   │                                                       │
+ │    presenter (MVP)       │       │   ▼                                                       │
+ └──────────────────────────┘       │ use_cases/  scan → plan → schedule → execute, ports       │
+          only api + schemas        │   ▲  (stdlib only)        schemas/ (data, stdlib only)    │
+                                    │   │ implement                                             │
+                                    │ services/   detection · summary · settings · worker ──┐   │
+                                    └───────────────────────────────────────────────────────┼───┘
+                                                                                            │ pipe
+                                                          ┌─────────────────────────────────▼───┐
+                                                          │ worker process: markitdown + magika │
+                                                          │ (later .tex, .odt, article mode)    │
+                                                          └─────────────────────────────────────┘
 ```
 
-**Dependency rule:** everything points toward `core`. `core` imports only the standard library and
-`clearmd.i18n`; a test enforces it (feature 001). Feature 001's
-[plan](../../spec/features/001_batch-conversion-core-cli/plan.md) details the modules, including `i18n/`,
-`detection/`, `config/` and the composition root.
+**Dependency rule** (an architecture test enforces it): `backend/schemas`, `backend/use_cases` and `i18n` import
+only the standard library; `backend/services` implements the ports and is the only place with third-party
+imports; `frontend/` talks only to `backend/api`, `backend/schemas` and `i18n`. The CLI process never imports
+markitdown or magika: only the worker does.
 
-## Flow of a batch conversion (ADR-0010)
+Feature 001's [plan](../../spec/features/001_batch-conversion-backend-cli/plan.md) details every module.
 
-1. The input adapter receives files and/or folders.
-2. `core` scans, detects the format of each file and computes the destinations in `ClearMD_Output`
-   (resolving collisions) → **batch plan**.
-3. The adapter shows the plan; if there are existing outputs, the user decides.
-4. `core` executes: for each file it picks the converter, writes the Markdown, reports progress and honors
-   cancellation. A failure does not stop the batch.
-5. The batch report is written to `ClearMD_Output`.
+## Flow of a batch conversion (ADR-0010, ADR-0015, ADR-0016)
 
-> This document describes the target architecture of Phase 0. It is updated as each feature
-> builds it.
+1. The interface receives files and/or folders, and optionally an output folder.
+2. `use_cases` scans the inputs (skipping hidden files, symlinks, oversized files and suspicious archives),
+   detects the format of each file (by extension; by content in the worker) and computes the destinations in
+   `ClearMD_Output/Output/` (resolving collisions) → **batch plan**, ordered from the cheapest to the most
+   expensive file.
+3. The interface shows the plan; if there are existing outputs, the user decides.
+4. `use_cases` executes: the worker converts one file at a time; the supervisor enforces the time and memory
+   limits and cancels at once when asked. The Markdown is written atomically. A failure does not stop the
+   batch.
+5. `Resumen_ClearMD.md` is written in each output root: the name table, skips, failures and the history.
+
+> This document describes the target design. It is updated to the as-built design when feature 001 closes.

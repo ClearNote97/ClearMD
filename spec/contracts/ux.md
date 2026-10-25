@@ -19,8 +19,12 @@
 - Before converting, show the **batch plan**: how many files will be converted, which ones are skipped and
   why, and which outputs already exist. The user confirms. *(CLI too: summary + prompt or flags.)*
 - Never overwrite silently (ADR-0010). Never write outside `ClearMD_Output`.
+- The user chooses where results go: **next to the originals** (default) or **a folder they pick**, remembered
+  as the suggestion for next time (ADR-0016). *(CLI too: `--output-root`.)*
 - When the batch ends: a summary (converted / skipped / failed), a button **Open results folder**, and — by
-  default — the folder opens by itself (setting, ADR-0012).
+  default — the folder opens by itself (setting, ADR-0012). `Resumen_ClearMD.md` explains the results and
+  their names (ADR-0016).
+- **Cancel** stops the current file at once, not at the next one (ADR-0015).
 
 ## 3. Errors speak human
 
@@ -33,7 +37,9 @@
 ## 4. Help is one click away
 
 - A **"?" button** is always visible and opens the instructions window (how to use, supported formats,
-  where results go, privacy promise).
+  where results go, privacy promise, how to change the language).
+- The app starts in **English**; the welcome and the help say, in English and in Spanish, where to switch to
+  Spanish (ADR-0017).
 - On first run, a **welcome** in three steps: *1. Choose files or a folder → 2. Review what will be converted →
   3. Done, your folder opens.* It has "Don't show again" (setting `show_welcome`).
 - Nothing is reachable **only** by hover: tooltips may repeat information, never be its only source.

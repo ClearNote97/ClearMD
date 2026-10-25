@@ -10,5 +10,6 @@ model_hint: frontier          # diseño: razonamiento de alto valor
 handoffs:
   - -> test-writer            # los criterios de aceptación alimentan los tests
 acceptance: >
-  spec.md con objetivo + alcance + criterios de aceptación verificables; plan.md con arquitectura,
-  modelo de datos (¿bitemporal? ¿PII? ¿RLS?) y contratos; tasks.md con pasos ejecutables en orden.
+  spec.md con objetivo + alcance + criterios de aceptación verificables; plan.md con arquitectura en el layout
+  de la plantilla (ADR-0014), contratos y estrategia de tests; tasks.md con pasos ejecutables en orden, por
+  cortes verticales.

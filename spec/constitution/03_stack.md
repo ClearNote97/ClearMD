@@ -31,15 +31,17 @@ Answers to the start-up questions (end of this file). Every change against the t
 
 | Question | Answer | ADR |
 |---|---|---|
-| 1. Interface | Desktop, with **four** adapters on one core: CLI (`argparse`), ttkbootstrap, PySide6-Essentials and flet. A deliberate exception to "one UI only". Bilingual (EN/ES). | 0001, 0003, 0012 |
+| 1. Interface | Desktop, with **four** interfaces on one backend: CLI (`argparse`), ttkbootstrap, PySide6-Essentials and flet. A deliberate exception to "one UI only". Bilingual (EN/ES), English by default. Template `src/` layout (`backend/`, `frontend/`). | 0001, 0003, 0012, 0014, 0017 |
 | 2. Other languages? | No. Pure Python; pandoc (a Haskell binary) was rejected for `.tex`. | 0006 |
 | 3. Data | **No database.** Preferences in a TOML file (`platformdirs`). | 0002, 0012 |
 | 4. Analytics / ML | No. | 0009 |
-| 5. Integrations / API | None at runtime: 100% local. Conversion libraries: markitdown 0.1.9 (pinned), pylatexenc, trafilatura. | 0004, 0005, 0006 |
+| 5. Integrations / API | None at runtime: 100% local. Conversion: markitdown 0.1.9 (pinned); pylatexenc (002) and trafilatura (004) arrive with their feature. `psutil` watches the worker process. | 0004, 0005, 0006, 0015 |
 | 6. Run / deploy | Dev Container for development only; Windows/Linux executables with PyInstaller (and `flet build`) on GitHub Actions. | 0008 |
 
-**Base:** Python 3.14 (`>=3.14,<3.15`, because of markitdown) · `uv` · package with `src/` layout and `uv_build`
-(ADR-0007) · quality gate with `pytest`, `ruff` and `mypy --strict`.
+**Base:** Python 3.12–3.14 supported (`>=3.12,<3.15`; the ceiling comes from markitdown), developed and
+packaged on 3.14 (ADR-0018) · `uv` · package with `src/` layout and `uv_build` (ADR-0007, ADR-0014) · quality
+gate with `pytest`, `ruff` and `mypy --strict`. **Only what is used:** a dependency enters with the feature that
+uses it.
 
 > The tables below are the **template's default stack**, kept as reference. In ClearMD these do not apply:
 > database, ORM, migrations, Polars and the optional menu (ADR-0009).

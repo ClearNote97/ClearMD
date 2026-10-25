@@ -310,9 +310,17 @@ Mi forma de trabajar SQL desde Python es siempre la misma, **solo con SQLAlchemy
 Y en `src/db/connection.py`, **un engine por motor con nombre propio**: `get_engine_postgres()`, `get_engine_mssql()`, etc. Nunca un `get_engine()` genérico que mezcle orígenes.
 
 > **`NAME` y `PORT` son opcionales.** `PORT` vacío → `URL.create()` lo omite. Con `NAME` vacío (típico contra un
-> **DataWarehouse** sin fijar una base) hay un matiz en `mssql+pyodbc`: pasar `database=None` cae en la heurística
-> DSN del conector, descarta el `DRIVER=` y falla con **`IM002`**. Por eso, en SQL Server, pasa **`database=config.MSSQL_NAME or ""`**
-> (la cadena vacía fuerza el modo host y `Database=` vacío = base por defecto del login). En PostgreSQL/Oracle no aplica: `None` se omite limpio.
+> **DataWarehouse** sin fijar una base) hay una trampa en `mssql+pyodbc`: sin base, el dialecto cae en la heurística
+> DSN del conector, descarta el `DRIVER=` y falla con **`IM002`**.
+> - **`database=""` NO lo arregla:** SQLAlchemy 2.0 descarta la cadena vacía igual que `None` (verificado con
+>   `MSDialect_pyodbc().create_connect_args`).
+> - **`odbc_connect` tampoco es fiable:** SQLAlchemy 2.0 le aplica `unquote_plus` y 2.1 no; el `quote_plus` que sirve
+>   en una versión rompe la otra.
+> - **Fix verificado:** sin base, se arma la **cadena ODBC exacta** y se pasa con `creator=lambda: pyodbc.connect(cadena)`
+>   sobre la URL `"mssql+pyodbc://"` (ejemplo abajo). Validarlo contra el motor real y en la versión de SQLAlchemy que
+>   instala el proyecto, no la del host.
+>
+> En PostgreSQL/Oracle no aplica: `None` se omite limpio.
 
 ### Dialecto y driver por motor
 
@@ -326,25 +334,39 @@ Y en `src/db/connection.py`, **un engine por motor con nombre propio**: `get_eng
 
 ### Dos casos de conexión
 
-**Caso A — Conexión directa.** El motor es alcanzable directamente (SQL Server en la red, o un Postgres sin túnel). El engine se arma con **`URL.create()`**, que **escapa solo** usuario, contraseña y parámetros — sin `quote_plus` manual ni `odbc_connect`, y omitiendo `PORT` cuando es `None`.
+**Caso A — Conexión directa.** El motor es alcanzable directamente (SQL Server en la red, o un Postgres sin túnel). El engine se arma con **`URL.create()`**, que **escapa solo** usuario, contraseña y parámetros — sin `quote_plus` manual ni `odbc_connect`, y omitiendo `PORT` cuando es `None`. Excepción: SQL Server **sin base**, que va por `creator` (nota de arriba).
 ```python
+import pyodbc
 from sqlalchemy import create_engine
 from sqlalchemy.engine import URL
 
-# SQL Server (pyodbc). PORT opcional: si es None, URL.create lo omite.
-url = URL.create(
-    "mssql+pyodbc",
-    username=config.MSSQL_USER,
-    password=config.MSSQL_PASSWORD,   # el escaping lo hace URL.create
-    host=config.MSSQL_HOST,
-    port=config.MSSQL_PORT,           # None si no se define
-    # database="" a propósito (NO None): con host + database=None, el conector cae en la
-    # heurística DSN de pyodbc, descarta el DRIVER y falla con IM002. "" fuerza modo host
-    # y `Database=` vacío = base por defecto del login.
-    database=config.MSSQL_NAME or "",
-    query={"driver": config.MSSQL_DRIVER},   # "ODBC Driver 17 for SQL Server"
-)
-engine = create_engine(url)
+if config.MSSQL_NAME:
+    # SQL Server con base (pyodbc). PORT opcional: si es None, URL.create lo omite.
+    url = URL.create(
+        "mssql+pyodbc",
+        username=config.MSSQL_USER,
+        password=config.MSSQL_PASSWORD,   # el escaping lo hace URL.create
+        host=config.MSSQL_HOST,
+        port=config.MSSQL_PORT,           # None si no se define
+        database=config.MSSQL_NAME,
+        query={"driver": config.MSSQL_DRIVER},   # "ODBC Driver 17 for SQL Server"
+    )
+    engine = create_engine(url)
+else:
+    # Sin base (DataWarehouse): con database None o "" el dialecto cae en modo DSN -> IM002.
+    # Cadena ODBC exacta vía creator. Cada valor va entre {} (tolera ; y = en la contraseña);
+    # una } dentro del valor se duplica.
+    def odbc_value(value: str) -> str:
+        return "{" + value.replace("}", "}}") + "}"
+
+    server = f"{config.MSSQL_HOST},{config.MSSQL_PORT}" if config.MSSQL_PORT else config.MSSQL_HOST
+    odbc = ";".join([
+        f"DRIVER={odbc_value(config.MSSQL_DRIVER)}",
+        f"SERVER={odbc_value(server)}",
+        f"UID={odbc_value(config.MSSQL_USER)}",
+        f"PWD={odbc_value(config.MSSQL_PASSWORD)}",
+    ])
+    engine = create_engine("mssql+pyodbc://", creator=lambda: pyodbc.connect(odbc))
 
 # Postgres directo: mismo patrón con "postgresql+psycopg" y sin el query del driver.
 ```

@@ -38,7 +38,7 @@ The author decides and maintains it (personal, public portfolio project). Nobody
 ## Success metrics
 
 - A mixed folder (pdf, docx, pptx, xlsx, tex, odt, html) converts in one step into `ClearMD_Output`, with a
-  report of what was converted, skipped and failed, and no unhandled error.
+  `Resumen_ClearMD.md` of what was converted, skipped and failed, and no unhandled error.
 - Executables for Windows and Linux, built by CI and published in GitHub Releases, run without installing
   Python.
 - The same functionality in the CLI, ttkbootstrap, PySide6 and flet, on a single core.

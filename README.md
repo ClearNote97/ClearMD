@@ -2,7 +2,10 @@
 
 [Leer en español](./README.es.md)
 
-**Turn your documents into Markdown. 100% local: your files never leave your machine.**
+**Turn your documents into Markdown. 100% local: ClearMD never uses the internet.**
+
+> If you save the results in a folder synced by OneDrive, Google Drive or Dropbox, that app may upload them to
+> the cloud — that is the sync app, not ClearMD.
 
 > 🚧 **Status: Phase 0.** Architecture, decisions, specs and the development environment are ready; conversion
 > is being built in feature 001 (see the [roadmap](./spec/roadmap.md)). Today `clearmd` only answers
@@ -15,19 +18,24 @@
 - Convert **LibreOffice (`.odt`)** with no external dependency.
 - Extract **only the article** from a saved web page.
 - Process **many files or whole folders** at once, detecting the format of each file.
-- Put the results in a **`ClearMD_Output`** folder next to what you chose, with a report of the batch.
-- Speak **English and Spanish**, with a help window, a first-run welcome and clear progress — built for people
-  who never open a terminal.
+- Put the results in a **`ClearMD_Output`** folder next to what you chose (or in a folder you pick), with a
+  `Resumen_ClearMD.md` that lists every file, its new name and the history of earlier batches.
+- Stay responsive and safe with heavy or damaged files: the lightest files first, a time and memory limit per
+  file, and a Cancel that works at once.
+- Speak **English and Spanish** (English by default; switch in the settings), with a help window, a first-run
+  welcome and clear progress — built for people who never open a terminal.
 - Offer the same functionality as a **command line** tool and as **three desktop apps** (ttkbootstrap, PySide6
   and flet), with downloadable executables for Windows and Linux.
 
 ## How it is built
 
-A pure core (ports and use cases) surrounded by interchangeable adapters: converters on one side, interfaces
-on the other. The four interfaces share exactly the same logic.
+A backend with pure use cases surrounded by interchangeable adapters: converters on one side, interfaces on
+the other, laid out with the `backend/` and `frontend/` folders of the ClearNote_Dev template. The four
+interfaces share exactly the same logic, and conversions run in a separate worker process.
 
 ```
- CLI · ttkbootstrap · PySide6 · flet  →  presenter  →  core  ←  markitdown · tex · odt · html-article
+ frontend: CLI · ttkbootstrap · PySide6 · flet  →  backend: api → use_cases ← services → worker
+                                                                     (markitdown · tex · odt · html-article)
 ```
 
 Details in [`docs/architecture/`](./docs/architecture/).
@@ -44,6 +52,29 @@ alternatives and consequences. Some of them:
 - [LaTeX without pandoc](./docs/decisions/0006-own-converters.md)
 - [Pruning the starting template](./docs/decisions/0009-template-pruning.md)
 - [Designed for non-technical users first](./docs/decisions/0013-non-technical-users-first.md)
+- [Conversions in a worker process, lightest files first](./docs/decisions/0015-conversion-worker-process.md)
+
+## Installation
+
+> Not released yet: the commands below will work once feature 001 lands.
+
+1. **Executables (no Python needed)** — for Windows and Linux, from
+   [GitHub Releases](https://github.com/ClearNote97/ClearMD/releases) (feature 006). Recommended for most people.
+2. **With `uv`** — recommended for developers, the same tool as the development stack:
+
+   ```bash
+   uv tool install git+https://github.com/ClearNote97/ClearMD
+   clearmd --help
+   ```
+
+3. **With `pip`** (Python 3.12–3.14):
+
+   ```bash
+   pip install git+https://github.com/ClearNote97/ClearMD
+   clearmd --help
+   ```
+
+Publishing on PyPI comes at the end of the roadmap (ADR-0018).
 
 ## Development
 

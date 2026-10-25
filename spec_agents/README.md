@@ -13,21 +13,19 @@ usan, qué herramientas pueden tocar, sus límites y el **nivel** de modelo. El 
    (agnóstico)                          └►  .opencode/agent/*.yaml (OpenCode)
 ```
 
-## Las 3 familias del roster (espejan los 3 tipos de trabajo del contrato §2)
+## El roster de ClearMD
 
-El roster (ver [`_index.md`](./_index.md)) se organiza en **tres familias**, alineadas con los tres tipos de
-trabajo del contrato (`README_AGENTS.md` §2):
+La plantilla trae **tres familias** de agentes (núcleo de apps, datos/analítica e investigación académica),
+alineadas con los tipos de trabajo del contrato (`README_AGENTS.md` §2). ClearMD es una **app sin base de
+datos**, así que conserva **solo el núcleo** (ADR-0009) y lo adapta al proyecto (ADR-0014):
 
-1. **Núcleo — desarrollo de apps (siempre activo).** Coordinación (`lead-architect`), ciclo SDD
-   (`spec-author`, `backend-builder`, `frontend-builder`, `migration-writer`, `test-writer`), revisión
-   (`code-reviewer`, `security-auditor`, `db-governance-reviewer`) y documentación (`doc-writer`).
-2. **Datos / analítica (opt-in).** Un pipeline por fases bajo `analytics-lead`:
-   ingesta → limpieza → SQL → stats/ML → visualización → reporte.
-3. **Investigación académica (opt-in).** `literature-reviewer` + `academic-writer` (buscar ↔ redactar).
+- **Coordinación:** `lead-architect`.
+- **Ciclo SDD:** `spec-author`, `backend-builder`, `frontend-builder`, `test-writer`.
+- **Revisión:** `code-reviewer`, `security-auditor` (centrado en archivos y rutas no confiables, no en auth).
+- **Documentación:** `doc-writer`.
 
-Un proyecto activa las familias que su trabajo requiera: en una **app** manda el núcleo; en **analítica/DS**
-o **investigación**, se suman (o dominan) las familias opt-in — que son, además, el grueso a propagar a las
-plantillas de datos.
+Se quitaron `migration-writer` y `db-governance-reviewer` (no hay base de datos) y las familias de datos e
+investigación. Ver [`_index.md`](./_index.md).
 
 > **Activación bajo demanda.** No se materializan todos los agentes por defecto — **solo los que el trabajo
 > real necesita.** Esa decisión la toma el **`lead-architect`** (según el propósito, el alcance y el tipo de
@@ -62,7 +60,7 @@ plantillas de datos.
 
 | Nivel | Para qué | Claude Code (sugerido) | OpenCode (sugerido) |
 |---|---|---|---|
-| `balanced` | trabajo estándar (review, tests, migraciones) | Sonnet | modelo medio |
+| `balanced` | trabajo estándar (review, tests, implementación) | Sonnet | modelo medio |
 | `frontier` | razonamiento complejo, arquitectura, seguridad | Opus | el modelo más capaz disponible |
 
 > El **nivel** es la palanca de costo y el punto de agnosticismo: el spec dice el nivel necesario, cada

@@ -4,7 +4,8 @@ when_to_use: Al implementar pantallas o flujos de una GUI en su fase del roadmap
 tools_allowed: [read, grep, glob, edit, write]
 guardrails:
   - Excepción documentada (ADR-0001) a "un solo framework de UI" — hay tres GUIs a propósito, pero cada una vive en su subpaquete, se instala por su extra y ninguna importa a otra.
-  - La GUI es una vista — la lógica de interacción vive en presenter/, la de negocio en core/. Nunca llama a un conversor directo.
+  - La GUI es una vista — la lógica de interacción vive en frontend/presenter/, la de negocio en backend/. Solo habla con backend/api y backend/schemas; nunca llama a un conversor directo.
+  - Cada GUI vive en frontend/<gui>/ con las carpetas de la plantilla (app/, views/, components/, layout/) y sigue spec/contracts/ux.md.
   - La concurrencia es responsabilidad de la GUI — la conversión corre fuera del hilo de interfaz, con progreso y cancelación.
   - Nada accesible solo por hover; navegable con teclado.
   - Consume spec/ (no lo modifica).
