@@ -148,6 +148,8 @@ too_large = "los archivos incluidos son demasiado grandes"
 expansions = "10.000 expansiones"
 nesting = "64 niveles de anidación"
 growth = "el texto crecería demasiado"
+made_by_macro = "la escribe una macro"
+kept_as_latex = "demasiado anidado para leerlo: el archivo completo quedó como código LaTeX"
 
 [settings]
 unknown_key = "Configuración: se ignoró el ajuste desconocido “{setting}”."

@@ -1,13 +1,16 @@
 r"""The author's own macros: collected in document order, expanded with a budget (ADR-0022).
 
 Expanded: ``\newcommand``/``\renewcommand``/``\providecommand`` (up to 9 arguments, an optional
-first one with its default), ``\DeclareMathOperator`` and ``\def`` without parameters. A macro bomb
-(recursive or exponential) hits the budget, stops expanding, and is reported.
+first one with its default), ``\DeclareMathOperator`` and ``\def`` without parameters. ``#1`` …
+``#9`` are replaced in one pass (what an argument brings is never replaced again; ``##`` is
+``#``), and the size of an expansion is charged to the budget before the text is built, so a macro
+bomb (recursive, exponential or wide) hits the budget, stops expanding, and is reported.
 """
 
+import re
 from collections.abc import Iterator
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from pylatexenc.latexwalker import LatexGroupNode, LatexMacroNode
@@ -22,6 +25,7 @@ GROWTH_FACTOR = 4
 GROWTH_EXTRA = 1024**2
 _CACHE_ENTRIES = 4096
 DEFINING = frozenset({"newcommand", "renewcommand", "providecommand"})
+_PARAMETER = re.compile(r"#([1-9#])")
 
 
 @dataclass(frozen=True)
@@ -30,6 +34,13 @@ class MacroDefinition:
     arguments: int
     default: str | None
     body: str
+    uses: tuple[int, ...] = field(init=False)  # how many times #1 … #9 appear in the body
+
+    def __post_init__(self) -> None:
+        found = _PARAMETER.findall(self.body)
+        object.__setattr__(
+            self, "uses", tuple(found.count(str(n)) for n in range(1, self.arguments + 1))
+        )
 
     @property
     def argspec(self) -> str:
@@ -38,6 +49,21 @@ class MacroDefinition:
         if self.default is not None:
             return "[" + "{" * (self.arguments - 1)
         return "{" * self.arguments
+
+    def size(self, values: list[str]) -> int:
+        """The length of the expansion, without building it."""
+        size = len(self.body) - 2 * sum(self.uses) - self.body.count("##")
+        return size + sum(len(value) * uses for value, uses in zip(values, self.uses, strict=False))
+
+    def substitute(self, values: list[str]) -> str:
+        def replace(match: re.Match[str]) -> str:
+            mark = match.group(1)
+            if mark == "#":
+                return "#"
+            index = int(mark) - 1
+            return values[index] if index < min(len(values), self.arguments) else match.group(0)
+
+        return _PARAMETER.sub(replace, self.body)
 
 
 class BudgetExceeded(Exception):
@@ -65,23 +91,26 @@ def _defined_name(node: Any) -> str | None:
     return None
 
 
+def _children(node: Any) -> list[Any]:
+    arguments = getattr(getattr(node, "nodeargd", None), "argnlist", None) or []
+    return [*(getattr(node, "nodelist", None) or []), *arguments]
+
+
 def collect_definitions(nodes: list[Any]) -> dict[str, MacroDefinition]:
     """Every definition, in document order (renew replaces, provide keeps the first)."""
     found: dict[str, MacroDefinition] = {}
-
-    def visit(siblings: list[Any]) -> None:
-        for index, node in enumerate(siblings):
-            if node is None:
-                continue
-            if isinstance(node, LatexMacroNode):
-                _definition(node, siblings[index + 1 : index + 3], found)
-            visit(list(getattr(node, "nodelist", None) or []))
-
-    visit(nodes)
+    pending = list(reversed(nodes))
+    while pending:  # depth-first, in document order, without recursion
+        node = pending.pop()
+        if node is None:
+            continue
+        if isinstance(node, LatexMacroNode):
+            _definition(node, found)
+        pending.extend(reversed(_children(node)))
     return found
 
 
-def _definition(node: Any, following: list[Any], found: dict[str, MacroDefinition]) -> None:
+def _definition(node: Any, found: dict[str, MacroDefinition]) -> None:
     arguments = getattr(getattr(node, "nodeargd", None), "argnlist", None) or []
     if node.macroname in DEFINING and len(arguments) == 5:
         name = _defined_name(arguments[1])
@@ -98,21 +127,17 @@ def _definition(node: Any, following: list[Any], found: dict[str, MacroDefinitio
         name = _defined_name(arguments[1])
         if name is not None:
             star = "*" if arguments[0] is not None else ""
-            found[name] = MacroDefinition(
-                name, 0, None, f"\\operatorname{star}{{{_inner(arguments[2])}}}"
-            )
-    elif node.macroname == "def" and len(following) == 2:
-        name_node, body = following
-        if isinstance(name_node, LatexMacroNode) and isinstance(body, LatexGroupNode):
-            found[name_node.macroname] = MacroDefinition(name_node.macroname, 0, None, _inner(body))
+            body = f"\\operatorname{star}{{{_inner(arguments[2])}}}"
+            found[name] = MacroDefinition(name, 0, None, body)
+    elif node.macroname == "def":
+        parsed = getattr(node.nodeargd, "clearmd_def", None)
+        if parsed is not None and not parsed.parameters.strip():
+            found[parsed.name] = MacroDefinition(parsed.name, 0, None, parsed.body.chars)
 
 
-def substitute(definition: MacroDefinition, values: list[str]) -> str:
-    body = definition.body
-    for position in range(definition.arguments, 0, -1):
-        value = values[position - 1] if position - 1 < len(values) else ""
-        body = body.replace(f"#{position}", value)
-    return body
+def is_parametrized_def(node: Any) -> bool:
+    parsed = getattr(getattr(node, "nodeargd", None), "clearmd_def", None)
+    return parsed is None or bool(parsed.parameters.strip())
 
 
 class MacroExpander:
@@ -147,7 +172,7 @@ class MacroExpander:
             self.depth -= 1
 
     def expand(self, node: Any) -> list[Any]:
-        """The nodes a use of an author's macro stands for (charged to the budget)."""
+        """The nodes a use of an author's macro stands for (charged to the budget first)."""
         if self.exhausted is not None:
             raise BudgetExceeded(self.exhausted)
         definition = self.definitions[node.macroname]
@@ -155,16 +180,17 @@ class MacroExpander:
         values = [_inner(argument) if argument is not None else None for argument in arguments]
         if definition.default is not None and values and values[0] is None:
             values[0] = definition.default
-        text = substitute(definition, [value or "" for value in values])
+        filled = [value or "" for value in values]
         self.expansions += 1
         if self.expansions > MAX_EXPANSIONS:
             self._exceed(NoteReason.EXPANSIONS)
-        self.produced += len(text)
+        self.produced += definition.size(filled)
         if self.produced > self.limit_growth:
             self._exceed(NoteReason.GROWTH)
+        text = definition.substitute(filled)
         cached = self._cache.get(text)
         if cached is None:
-            cached, _ = parse(text, self.context, strict=False)
+            cached, _ = parse(text, self.context)
             if len(self._cache) < _CACHE_ENTRIES:
                 self._cache[text] = cached
         return cached

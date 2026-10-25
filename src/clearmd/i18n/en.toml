@@ -148,6 +148,8 @@ too_large = "the included files are too large"
 expansions = "10,000 expansions"
 nesting = "64 levels of nesting"
 growth = "the text would grow too much"
+made_by_macro = "written by a macro"
+kept_as_latex = "too deeply nested to read: the whole file was kept as LaTeX code"
 
 [settings]
 unknown_key = "Settings: unknown setting “{setting}” ignored."

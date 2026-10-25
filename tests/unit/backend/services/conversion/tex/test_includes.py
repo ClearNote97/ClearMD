@@ -96,8 +96,8 @@ def test_no_more_than_two_hundred_files(tmp_path: Path) -> None:
     main = "".join(f"\\input{{parts/p{n}}}" for n in range(MAX_FILES + 1))
     (tmp_path / "main.tex").write_text(main, encoding="utf-8")
     result = convert_document(tmp_path / "main.tex")
-    assert f"parte{MAX_FILES - 1} " in result.markdown
-    assert f"parte{MAX_FILES} " not in result.markdown
+    assert f"parte{MAX_FILES - 1}\n" in result.markdown
+    assert f"parte{MAX_FILES}\n" not in result.markdown
     assert _refused(result) == [NoteItem(f"parts/p{MAX_FILES}", NoteReason.TOO_MANY)]
 
 

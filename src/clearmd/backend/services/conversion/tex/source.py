@@ -18,7 +18,7 @@ INPUTENC_CODECS = {
 # On a tie, ClearMD's audience (Spanish and English) means Western European: a short Spanish text
 # scores the same in cp1250 ("Cańón") as in cp1252 ("Cañón").
 PREFERRED_ON_TIE = ("cp1252", "latin_1", "iso8859_15", "mac_roman")
-_INPUTENC = re.compile(rb"\\usepackage\s*\[([^\]]*)\]\s*\{inputenc\}")
+_INPUTENC = re.compile(rb"\\usepackage\s*\[([^\]\n]{0,256})\]\s*\{inputenc\}")
 
 
 @dataclass(frozen=True)
@@ -45,6 +45,13 @@ def decode_source(data: bytes) -> SourceText:
     except UnicodeDecodeError:
         pass
     codec = _declared_codec(data)
+    if codec == "latin-1":
+        # Typed on Windows, "latin1" text holds cp1252 quotes and dashes (0x80-0x9F), which
+        # latin-1 would turn into invisible control characters.
+        try:
+            return SourceText(data.decode("cp1252"), "cp1252", guessed=False)
+        except UnicodeDecodeError:
+            pass
     if codec is not None and codec != "utf-8":
         try:
             return SourceText(data.decode(codec), codec, guessed=False)

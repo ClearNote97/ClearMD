@@ -38,9 +38,16 @@ def test_the_link_works_from_the_output_file(folder: Path, argument: str, expect
     assert image_link(argument, folder, ["img/", "figs/"], _target(folder)) == expected
 
 
-@pytest.mark.parametrize("argument", ["missing", "img/missing.png", "/etc/hosts", "../img/plot"])
-def test_a_missing_or_outside_image_keeps_the_path_as_written(folder: Path, argument: str) -> None:
+@pytest.mark.parametrize("argument", ["missing", "img/missing.png"])
+def test_a_missing_image_keeps_the_path_as_written(folder: Path, argument: str) -> None:
     assert image_link(argument, folder, [], _target(folder)) == argument
+
+
+@pytest.mark.parametrize(
+    "argument", ["/etc/hosts", "../img/plot", "C:/x.png", "http://evil/t.png", "//host/s/x.png"]
+)
+def test_an_image_outside_the_folder_or_remote_is_never_a_link(folder: Path, argument: str) -> None:
+    assert image_link(argument, folder, [], _target(folder)) is None
 
 
 def test_an_image_through_a_link_is_not_looked_up(
@@ -52,9 +59,9 @@ def test_an_image_through_a_link_is_not_looked_up(
     assert image_link("img/linked", folder, [], _target(folder)) == "img/linked"
 
 
-def test_spaces_are_wrapped_so_the_link_stays_valid(folder: Path) -> None:
+def test_a_name_with_spaces_is_found(folder: Path) -> None:
     (folder / "img" / "my plot.png").write_bytes(b"png")
-    assert image_link("img/my plot", folder, [], _target(folder)) == "<../../img/my plot.png>"
+    assert image_link("img/my plot", folder, [], _target(folder)) == "../../img/my plot.png"
 
 
 def test_graphicspath_is_read_from_the_source() -> None:

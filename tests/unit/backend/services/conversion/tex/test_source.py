@@ -14,7 +14,8 @@ def test_utf8_is_read_as_is_and_a_bom_is_dropped() -> None:
 def test_the_encoding_declared_with_inputenc_is_used() -> None:
     text = decode_source((TEX_DIR / "latin1.tex").read_bytes())
     assert "Cañón, acción y ñandú" in text.text
-    assert (text.encoding, text.guessed) == ("latin-1", False)
+    # Declared latin1 is read as cp1252, its superset with Windows quotes and dashes (review L4).
+    assert (text.encoding, text.guessed) == ("cp1252", False)
 
 
 def test_an_undeclared_encoding_is_detected_and_marked_as_guessed() -> None:

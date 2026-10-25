@@ -1,19 +1,84 @@
-"""One LaTeX document, its includes and (feature 002, T07) its macros, rendered to Markdown."""
+r"""One LaTeX document: its includes put in place, then rendered once (ADR-0022).
 
+In TeX, ``\input`` inserts the file's text where it is written, so that is what happens here:
+each allowed include is read once, on one budget for the whole document, and spliced in place in
+document order (definitions made in it apply from there on). Includes inside comments or code
+blocks are not includes; a refused one stays in the text, shown as code, with a note.
+"""
+
+import bisect
 import re
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from clearmd.backend.schemas.models import ConversionResult
 from clearmd.backend.schemas.notes import ConversionNote, NoteItem, NoteKind, NoteReason
 from clearmd.backend.services.conversion.safe_files import read_regular_file
-from clearmd.backend.services.conversion.tex.context import make_context, parse
-from clearmd.backend.services.conversion.tex.images import graphics_paths, image_link
+from clearmd.backend.services.conversion.tex.images import ImageFinder, graphics_paths
 from clearmd.backend.services.conversion.tex.includes import MAX_BYTES, IncludeState, enter
-from clearmd.backend.services.conversion.tex.render import Renderer, author_macros
+from clearmd.backend.services.conversion.tex.render import render_source
 from clearmd.backend.services.conversion.tex.source import decode_source
 
-_INCLUDE = re.compile(r"\\(?:input|include|subfile)\s*\{([^}]*)\}")
-_COMMENT = re.compile(r"(?<!\\)%.*")
+_INCLUDE = re.compile(
+    r"\\(input|include|subfile)(?![A-Za-z])"
+    r"(?:\s*\{([^{}\n]{0,1024})\}|(?<=input)[ \t]+([^\s{}\\%]{1,1024}))"
+)
+# What is not LaTeX to follow: comments, code environments and \verb.
+_NOT_SOURCE = re.compile(
+    r"(?<!\\)%|\\begin\s*\{(verbatim\*?|lstlisting|minted|comment)\}|\\verb\*?([^\sA-Za-z*])"
+)
+
+
+def mask(text: str) -> str:
+    """``text`` with comments and code replaced by spaces (same length, newlines kept)."""
+    pieces, cursor = [], 0
+    while (found := _NOT_SOURCE.search(text, cursor)) is not None:
+        if found.group(1):
+            close = text.find(f"\\end{{{found.group(1)}}}", found.end())
+            end = len(text) if close == -1 else close
+        elif found.group(2):
+            line_end = text.find("\n", found.end())
+            close = text.find(
+                found.group(2), found.end(), len(text) if line_end == -1 else line_end
+            )
+            end = found.end() if close == -1 else close + 1
+        else:
+            line_end = text.find("\n", found.start())
+            end = len(text) if line_end == -1 else line_end
+        pieces.append(text[cursor : found.start()])
+        pieces.append(re.sub(r"[^\n]", " ", text[found.start() : end]))
+        cursor = end
+    pieces.append(text[cursor:])
+    return "".join(pieces)
+
+
+@dataclass
+class _Segment:
+    start: int  # where it begins in the flattened text
+    name: str
+    source: str
+    offset: int  # where it begins in its file's text
+
+
+@dataclass
+class _Flattened:
+    parts: list[str] = field(default_factory=list)
+    segments: list[_Segment] = field(default_factory=list)
+    length: int = 0
+
+    def emit(self, piece: str, name: str, source: str, offset: int) -> None:
+        if piece:
+            self.segments.append(_Segment(self.length, name, source, offset))
+            self.parts.append(piece)
+            self.length += len(piece)
+
+    def locate(self, position: int) -> str:
+        if not self.segments:
+            return ""
+        starts = [segment.start for segment in self.segments]
+        segment = self.segments[max(0, bisect.bisect_right(starts, position) - 1)]
+        local = segment.offset + position - segment.start
+        return f"{segment.name}, line {segment.source.count(chr(10), 0, local) + 1}"
 
 
 class _Document:
@@ -23,9 +88,7 @@ class _Document:
         self.state = IncludeState(path.parent.absolute(), stack=[path.resolve()])
         self.refused: dict[NoteItem, None] = {}
         self.guessed: dict[NoteItem, None] = {}
-        self.parse_errors: dict[NoteItem, None] = {}
-        self.context = make_context()
-        self.renderer: Renderer | None = None
+        self.flat = _Flattened()
 
     def _decode(self, data: bytes, included: str | None = None) -> str:
         """The text; a guessed encoding is noted (with the file's name when it is an include)."""
@@ -35,70 +98,40 @@ class _Document:
             self.guessed[NoteItem(label)] = None
         return text.text
 
-    def gather(self, text: str) -> str:
-        """Every allowed include's text, once, for document-wide facts (heading levels, macros)."""
-        state = IncludeState(self.state.folder, stack=list(self.state.stack))
-        texts = [text]
-
-        def walk(source: str) -> None:
-            for argument in _INCLUDE.findall(_COMMENT.sub("", source)):
-                entered = enter(argument, state)
-                if isinstance(entered, NoteReason):
-                    continue
-                real, data = entered
-                included = decode_source(data).text
-                texts.append(included)
-                state.stack.append(real)
-                walk(included)
-                state.stack.pop()
-
-        walk(text)
-        return "\n".join(texts)
-
-    def include(self, argument: str) -> str | None:
-        entered = enter(argument, self.state)
-        if isinstance(entered, NoteReason):
-            self.refused[NoteItem(argument.strip(), entered.value)] = None
-            return None
-        real, data = entered
-        name = real.relative_to(self.state.folder.resolve()).as_posix()
-        nodes, error = parse(self._decode(data, name), self.context)
-        if error:
-            self.parse_errors[NoteItem(f"{name}: {error}")] = None
-        assert self.renderer is not None
-        self.state.stack.append(real)
-        try:
-            return self.renderer.render(nodes)
-        finally:
-            self.state.stack.pop()
+    def splice(self, text: str, name: str) -> None:
+        cursor = 0
+        for found in _INCLUDE.finditer(mask(text)):
+            self.flat.emit(text[cursor : found.start()], name, text, cursor)
+            cursor = found.end()
+            written = found.group(2) if found.group(2) is not None else found.group(3)
+            entered = enter(written, self.state)
+            if isinstance(entered, NoteReason):
+                self.refused[NoteItem(written.strip(), entered.value)] = None
+                self.flat.emit(found.group(0), name, text, found.start())
+                continue
+            real, data = entered
+            included = real.relative_to(self.state.folder.resolve()).as_posix()
+            self.state.stack.append(real)
+            try:
+                # TeX ends a file with an end of line: the next word never glues to it.
+                self.splice(self._decode(data, included) + "\n", included)
+            finally:
+                self.state.stack.pop()
+        self.flat.emit(text[cursor:], name, text, cursor)
 
     def convert(self) -> ConversionResult:
         data = read_regular_file(self.path, MAX_BYTES)
         self.state.bytes_read = len(data)
-        text = self._decode(data)
-        whole = self.gather(text)
-        macros = author_macros(parse(whole, self.context, strict=False)[0], len(whole))
-        if macros is not None:
-            self.context = macros.context
-        prefixes = graphics_paths(whole)
-        folder = self.state.folder
-
-        def image(argument: str) -> str:
-            return image_link(argument, folder, prefixes, self.target)
-
-        self.renderer = Renderer(whole, include=self.include, image=image, macros=macros)
-        nodes, error = parse(text, self.context)
-        if error:
-            self.parse_errors[NoteItem(error)] = None
-        markdown = self.renderer.document(nodes)
-        notes = list(self.renderer.notes())
-        if self.refused:
-            notes.append(ConversionNote(NoteKind.INCLUDE_NOT_FOLLOWED, tuple(self.refused)))
-        if self.guessed:
-            notes.append(ConversionNote(NoteKind.ENCODING_GUESSED, tuple(self.guessed)))
-        if self.parse_errors:
-            notes.append(ConversionNote(NoteKind.PARSE_RECOVERED, tuple(self.parse_errors)))
-        return ConversionResult(markdown, tuple(notes))
+        self.splice(self._decode(data), self.path.name)
+        whole = "".join(self.flat.parts)
+        finder = ImageFinder(self.state.folder, graphics_paths(mask(whole)), self.target)
+        result = render_source(
+            whole, image=finder.link, locate=self.flat.locate, refused=tuple(self.refused)
+        )
+        if not self.guessed:
+            return result
+        guessed = ConversionNote(NoteKind.ENCODING_GUESSED, tuple(self.guessed))
+        return ConversionResult(result.markdown, (*result.notes, guessed))
 
 
 def convert_document(path: Path, target: Path | None = None) -> ConversionResult:

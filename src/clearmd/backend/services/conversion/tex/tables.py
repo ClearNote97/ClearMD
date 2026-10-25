@@ -5,27 +5,23 @@ from typing import Any
 
 from pylatexenc.latexwalker import LatexMacroNode, LatexSpecialsNode
 
+from clearmd.backend.services.conversion.tex.nodes import walk
+
 MERGED_CELLS = frozenset({"multicolumn", "multirow"})
-RULES = frozenset({"hline", "toprule", "midrule", "bottomrule", "cline", "hhline", "cmidrule"})
+# Rules and longtable's header/footer markers: nothing to show in a Markdown table.
+RULES = frozenset(
+    {
+        "hline", "toprule", "midrule", "bottomrule", "cline", "hhline", "cmidrule", "endhead",
+        "endfirsthead", "endfoot", "endlastfoot",
+    }
+)  # fmt: skip
 ROW_ENDS = frozenset({"\\", "tabularnewline"})
-
-
-def _descendants(nodes: list[Any]) -> list[Any]:
-    found = []
-    for node in nodes:
-        if node is None:
-            continue
-        found.append(node)
-        found.extend(_descendants(getattr(node, "nodelist", None) or []))
-        arguments = getattr(getattr(node, "nodeargd", None), "argnlist", None) or []
-        found.extend(_descendants([argument for argument in arguments if argument is not None]))
-    return found
 
 
 def has_merged_cells(environment: Any) -> bool:
     return any(
         isinstance(node, LatexMacroNode) and node.macroname in MERGED_CELLS
-        for node in _descendants(environment.nodelist or [])
+        for node in walk(environment.nodelist or [])
     )
 
 

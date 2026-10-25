@@ -8,6 +8,8 @@ A note never holds a sentence: the summary and the interfaces turn it into words
 from dataclasses import dataclass
 from enum import StrEnum
 
+MAX_SUBJECT = 200  # a subject comes from the document: a 5 MB command name must not travel whole
+
 
 class NoteKind(StrEnum):
     UNKNOWN_COMMANDS = "unknown_commands"
@@ -38,6 +40,8 @@ class NoteReason(StrEnum):
     EXPANSIONS = "expansions"
     NESTING = "nesting"
     GROWTH = "growth"
+    MADE_BY_MACRO = "made_by_macro"
+    KEPT_AS_LATEX = "kept_as_latex"
 
     @property
     def key(self) -> str:
@@ -50,6 +54,10 @@ class NoteItem:
 
     subject: str
     reason: str = ""
+
+    def __post_init__(self) -> None:
+        if len(self.subject) > MAX_SUBJECT:
+            object.__setattr__(self, "subject", self.subject[: MAX_SUBJECT - 1] + "…")
 
 
 @dataclass(frozen=True)
