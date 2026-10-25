@@ -17,7 +17,7 @@ def test_ac_01_a_file_converts_into_clearmd_output(
 ) -> None:
     source = put(workdir, "sample.pdf", "report.pdf")
     assert main([str(source)]) == 0
-    output = workdir / "ClearMD_Output" / "Output" / "report.md"
+    output = workdir / "ClearMD_Output" / "OutputMD" / "report.md"
     data = output.read_bytes()
     assert b"\r\n" not in data
     assert MARKERS["sample.pdf"] in data.decode("utf-8")
@@ -38,7 +38,7 @@ def test_ac_19_the_cli_process_never_imports_markitdown_or_magika(workdir: Path)
     )
     report = json.loads(result.stdout.strip().splitlines()[-1])
     assert report == {"code": 0, "loaded": []}
-    assert (workdir / "ClearMD_Output" / "Output" / "notes.md").is_file()
+    assert (workdir / "ClearMD_Output" / "OutputMD" / "notes.md").is_file()
 
 
 def test_ac_21_a_failed_file_does_not_stop_the_batch(
@@ -47,8 +47,8 @@ def test_ac_21_a_failed_file_does_not_stop_the_batch(
     broken = put(workdir, "corrupt.docx", "broken.docx")
     good = put(workdir, "sample.txt", "good.txt")
     assert main([str(broken), str(good)]) == 1
-    assert (workdir / "ClearMD_Output" / "Output" / "good.md").is_file()
-    assert not (workdir / "ClearMD_Output" / "Output" / "broken.md").exists()
+    assert (workdir / "ClearMD_Output" / "OutputMD" / "good.md").is_file()
+    assert not (workdir / "ClearMD_Output" / "OutputMD" / "broken.md").exists()
     captured = capsys.readouterr()
     assert "This file seems to be damaged." in captured.err
     assert "1 failed" in captured.out

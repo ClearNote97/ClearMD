@@ -18,7 +18,7 @@ already tested (ADR-0001).
       clean dev container.
 - [ ] **001 — Batch conversion: backend + CLI** ([spec](./features/001_batch-conversion-backend-cli/spec.md)):
       worker process with limits, cost-ordered queue, detection, plan → confirm → execute,
-      `ClearMD_Output/Output/` + `Resumen_ClearMD.md` with history, markitdown adapter, i18n EN/ES, settings
+      `ClearMD_Output/OutputMD/` + `Resumen_ClearMD.md` with history, markitdown adapter, i18n EN/ES, settings
       (read), complete CLI, benchmark.
 
 ## Next
@@ -42,6 +42,13 @@ already tested (ADR-0001).
       (ADR-0015).
 - [ ] Optional summary formats (e.g. PDF).
 - [ ] **Publish on PyPI** (`pip install clearmd` / `uv tool install clearmd`), at the end (ADR-0018).
+
+## Version 2
+
+- [ ] **Tools window — Merge | Split** (ADR-0019):
+      **Merge** `.md` files into one (`OutputUnif/`; the last batch by default, or any `.md` the user picks);
+      **Split** a large source document into N similar parts in its own format (`OutputSep/`; PDF by pages
+      first, then csv/txt and xlsx).
 
 ## Out for now
 

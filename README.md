@@ -8,7 +8,7 @@
 > the cloud — that is the sync app, not ClearMD.
 
 > 🚧 **Status: feature 001 in progress.** The CLI already converts files through the worker process
-> (`clearmd report.pdf notes.docx` → `ClearMD_Output/Output/`); folders, the summary and the rest of the
+> (`clearmd report.pdf notes.docx` → `ClearMD_Output/OutputMD/`); folders, the summary and the rest of the
 > CLI follow (see the [roadmap](./spec/roadmap.md)).
 
 ## What it will do

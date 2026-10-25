@@ -54,7 +54,7 @@ python_version = "3.12"
 files = ["src", "tests"]
 # Tests are not packages: module names come from these roots (two conftest.py files coexist).
 explicit_package_bases = true
-mypy_path = ["src", "tests", "tests/fixtures"]
+mypy_path = ["src", "tests", "tests/fixtures", "tests/benchmark"]
 
 [[tool.mypy.overrides]]
 # Third-party libraries without type information; each entry is justified where it is imported.
@@ -66,4 +66,4 @@ testpaths = ["tests"]
 # importlib mode: tests mirror src/, so file names may repeat across folders.
 addopts = "-ra --import-mode=importlib"
 # conftest helpers and the fixture builder are plain modules; tests import them by name.
-pythonpath = ["tests", "tests/fixtures"]
+pythonpath = ["tests", "tests/fixtures", "tests/benchmark"]

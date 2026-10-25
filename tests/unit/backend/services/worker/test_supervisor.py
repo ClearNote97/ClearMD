@@ -26,7 +26,7 @@ def _item(
     return PlannedConversion(
         source=folder / name,
         output_root=folder / "ClearMD_Output",
-        target=folder / "ClearMD_Output" / "Output" / f"{Path(name).stem}.md",
+        target=folder / "ClearMD_Output" / "OutputMD" / f"{Path(name).stem}.md",
         detection=Detection(format_id, DetectionMethod.EXTENSION),
         exists=False,
         cost=1.0,

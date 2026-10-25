@@ -34,7 +34,7 @@ Feature 001's [plan](../../spec/features/001_batch-conversion-backend-cli/plan.m
 1. The interface receives files and/or folders, and optionally an output folder.
 2. `use_cases` scans the inputs (skipping hidden files, symlinks, oversized files and suspicious archives),
    detects the format of each file (by extension; by content in the worker) and computes the destinations in
-   `ClearMD_Output/Output/` (resolving collisions) → **batch plan**, ordered from the cheapest to the most
+   `ClearMD_Output/OutputMD/` (resolving collisions) → **batch plan**, ordered from the cheapest to the most
    expensive file.
 3. The interface shows the plan; if there are existing outputs, the user decides.
 4. `use_cases` executes: the worker converts one file at a time; the supervisor enforces the time and memory

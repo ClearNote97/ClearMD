@@ -15,13 +15,13 @@ def test_an_explicit_output_folder_replaces_the_parent() -> None:
 def test_target_keeps_the_full_stem_and_goes_into_output() -> None:
     root = Path("/d/ClearMD_Output")
     assert (
-        target_for(Path("/d/report.v2.final.pdf"), root) == root / "Output" / "report.v2.final.md"
+        target_for(Path("/d/report.v2.final.pdf"), root) == root / "OutputMD" / "report.v2.final.md"
     )
 
 
 def test_target_of_a_file_without_extension() -> None:
     root = Path("/d/ClearMD_Output")
-    assert target_for(Path("/d/scan"), root) == root / "Output" / "scan.md"
+    assert target_for(Path("/d/scan"), root) == root / "OutputMD" / "scan.md"
 
 
 def test_unicode_names_are_preserved() -> None:

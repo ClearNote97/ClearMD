@@ -8,7 +8,7 @@
 > subirlos a la nube — eso lo hace la app de sincronización, no ClearMD.
 
 > 🚧 **Estado: feature 001 en curso.** La CLI ya convierte archivos a través del proceso worker
-> (`clearmd informe.pdf notas.docx` → `ClearMD_Output/Output/`); faltan carpetas, el resumen y el resto de la
+> (`clearmd informe.pdf notas.docx` → `ClearMD_Output/OutputMD/`); faltan carpetas, el resumen y el resto de la
 > CLI (ver el [roadmap](./spec/roadmap.md)).
 
 ## Qué hará

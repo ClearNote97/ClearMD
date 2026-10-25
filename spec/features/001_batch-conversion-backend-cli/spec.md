@@ -29,7 +29,7 @@ summary that explains what happened — from the command line, on a backend that
 - **Input:** a path the user passes (file or folder).
 - **Output parent:** the folder that contains the input file, or the parent of the input folder. For an input
   folder that is the root of a drive or the user's home, the folder itself. `--output-root DIR` replaces it.
-- **Output root:** `<output parent>/ClearMD_Output`. It holds `Resumen_ClearMD.md` and `Output/`.
+- **Output root:** `<output parent>/ClearMD_Output`. It holds `Resumen_ClearMD.md` and `OutputMD/`.
 - **Batch:** all inputs of one invocation.
 - **Plan:** every planned conversion and every skipped item, computed **before writing anything**.
 - **ZIP-based document:** docx, pptx, xlsx and epub (and odt from feature 003).
@@ -41,9 +41,9 @@ Each criterion has an acceptance test named after its id (`tests/acceptance/test
 ### Inputs and scanning
 
 - [ ] **AC-01** Given a supported file `D/report.pdf`, when it is converted, then
-  `D/ClearMD_Output/Output/report.md` exists, is UTF-8 with LF line endings, and contains the document's text.
+  `D/ClearMD_Output/OutputMD/report.md` exists, is UTF-8 with LF line endings, and contains the document's text.
 - [ ] **AC-02** Given a folder `P/project/` with nested subfolders, when it is converted, then
-  `P/ClearMD_Output/Output/project/` mirrors its structure for every supported file, and no empty folder is
+  `P/ClearMD_Output/OutputMD/project/` mirrors its structure for every supported file, and no empty folder is
   created for subfolders without supported files.
 - [ ] **AC-03** Given `--no-recursive` (or the setting `recursive = false`), only the files directly inside an
   input folder are converted.
@@ -71,9 +71,9 @@ Each criterion has an acceptance test named after its id (`tests/acceptance/test
 ### Output location and names
 
 - [ ] **AC-12** Given an input folder that is the root of a drive or the user's home, `ClearMD_Output` is
-  created inside it and its contents go directly into `Output/`.
-- [ ] **AC-13** `--output-root DIR` writes to `DIR/ClearMD_Output/` with the same layout (`Output/name.md` for
-  files, `Output/<folder>/…` for folders).
+  created inside it and its contents go directly into `OutputMD/`.
+- [ ] **AC-13** `--output-root DIR` writes to `DIR/ClearMD_Output/` with the same layout (`OutputMD/name.md` for
+  files, `OutputMD/<folder>/…` for folders).
 - [ ] **AC-14** Outputs of one batch that would collide — compared **case-insensitively** — all get the source
   extension: `report.pdf` and `Report.docx` → `report (pdf).md` and `Report (docx).md`. If they still collide,
   a counter follows in path order: `report (pdf).md`, `report (pdf 2).md`. A source without extension uses

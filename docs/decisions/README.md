@@ -33,6 +33,7 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 | [0013](./0013-non-technical-users-first.md) | Designed for non-technical users first, with a shared UX contract | accepted |
 | [0014](./0014-template-aligned-src-layout.md) | `src/` layout aligned with the ClearNote_Dev template | accepted |
 | [0015](./0015-conversion-worker-process.md) | Worker process, resource limits and a cost-ordered queue | accepted |
-| [0016](./0016-output-layout-and-summary.md) | Output layout, chosen output folder and `Resumen_ClearMD.md` | accepted |
+| [0016](./0016-output-layout-and-summary.md) | Output layout, chosen output folder and `Resumen_ClearMD.md` | accepted; folder renamed by 0019 |
 | [0017](./0017-english-default-language.md) | English by default, no OS language detection | accepted |
 | [0018](./0018-python-range-and-installation.md) | Python 3.12–3.14 and ways to install | accepted |
+| [0019](./0019-outputmd-and-v2-tools.md) | `OutputMD/` for results; room for the v2 tools (merge, split) | accepted |

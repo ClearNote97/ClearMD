@@ -26,7 +26,7 @@ class Detection:
 
 @dataclass(frozen=True)
 class PlannedConversion:
-    """One file to convert. ``target`` lives in ``output_root / "Output"``."""
+    """One file to convert. ``target`` lives in ``output_root / "OutputMD"``."""
 
     source: Path
     output_root: Path

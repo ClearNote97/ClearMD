@@ -18,14 +18,14 @@ def test_a_supported_file_is_planned(tmp_path: Path) -> None:
     plan = build_plan([source], detector=TableDetector(), limits=Limits())
     (item,) = plan.conversions
     assert item.source == source
-    assert item.target == tmp_path / "ClearMD_Output" / "Output" / "report.md"
+    assert item.target == tmp_path / "ClearMD_Output" / "OutputMD" / "report.md"
     assert not item.exists
 
 
 def test_an_existing_output_is_marked(tmp_path: Path) -> None:
     source = tmp_path / "report.pdf"
     source.write_bytes(b"%PDF")
-    target = tmp_path / "ClearMD_Output" / "Output" / "report.md"
+    target = tmp_path / "ClearMD_Output" / "OutputMD" / "report.md"
     target.parent.mkdir(parents=True)
     target.write_text("old", encoding="utf-8")
     (item,) = build_plan([source], detector=TableDetector(), limits=Limits()).conversions

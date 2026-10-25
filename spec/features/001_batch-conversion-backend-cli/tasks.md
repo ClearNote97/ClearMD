@@ -6,7 +6,7 @@
 
 ## Slice A — Walking skeleton: one file, end to end, through the worker
 
-Goal: `clearmd D/report.pdf` writes `D/ClearMD_Output/Output/report.md` through the real worker process. It
+Goal: `clearmd D/report.pdf` writes `D/ClearMD_Output/OutputMD/report.md` through the real worker process. It
 brings the two riskiest parts (the worker and markitdown) to the front.
 
 - [x] **T01 — Fixtures.** `tests/fixtures/build_fixtures.py` + generated files (pdf, encrypted pdf, docx,
@@ -24,7 +24,7 @@ brings the two riskiest parts (the worker and markitdown) to the front.
 - [x] **T06 — Thin path to the CLI.** `use_cases/paths.py` for a single file, `use_cases/execution.py` with
       atomic writes, `api/` (`plan_batch`, `run_batch`, `composition.py`) and a minimal CLI with progress,
       summary line and exit codes 0/1/2 (acceptance: AC-01, AC-19, AC-21, AC-22).
-- [ ] **T07 — Benchmark.** `tests/benchmark/` (deselected from the default run with a `benchmark` marker):
+- [ ] **T07 — Benchmark.** `tests/benchmark/run_benchmark.py` (a script; a smoke test keeps it working):
       time and peak memory per format and size, worker start-up, memory of a second magika instance. Write
       `docs/benchmarks/001-conversion-limits.md`; update `schemas/limits.py` (limits and weights) and the
       spec/ADR-0015 values if they change.

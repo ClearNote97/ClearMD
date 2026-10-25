@@ -53,7 +53,7 @@ def _item(folder: Path, name: str, *, exists: bool = False) -> PlannedConversion
     return PlannedConversion(
         source=folder / name,
         output_root=root,
-        target=root / "Output" / f"{Path(name).stem}.md",
+        target=root / "OutputMD" / f"{Path(name).stem}.md",
         detection=Detection(FormatId.PDF, DetectionMethod.EXTENSION),
         exists=exists,
         cost=1.0,

@@ -28,5 +28,5 @@ def test_skip_only_extensions_are_not_convertible() -> None:
 
 def test_output_names_follow_adr_0016() -> None:
     assert formats.OUTPUT_DIR_NAME == "ClearMD_Output"
-    assert formats.RESULTS_DIR_NAME == "Output"
+    assert formats.RESULTS_DIR_NAME == "OutputMD"
     assert formats.SUMMARY_NAME == "Resumen_ClearMD.md"

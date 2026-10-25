@@ -44,7 +44,7 @@ MARKDOWN_EXTENSIONS: frozenset[str] = frozenset({".md", ".markdown"})
 ZIP_EXTENSIONS: frozenset[str] = frozenset({".zip"})
 
 OUTPUT_DIR_NAME = "ClearMD_Output"
-RESULTS_DIR_NAME = "Output"
+RESULTS_DIR_NAME = "OutputMD"
 SUMMARY_NAME = "Resumen_ClearMD.md"
 TEMP_SUFFIX = ".clearmd-tmp"
 

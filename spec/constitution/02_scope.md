@@ -18,7 +18,7 @@
 - **Extract only the article** from an HTML file, as an alternative strategy to the full page (ADR-0006).
 - **Convert in batches:** several files and/or whole folders, recursively (ADR-0010).
 - **Detect the format** of each file even when the extension is missing (ADR-0010).
-- **Write the results into `ClearMD_Output/Output/`** next to the input or in a folder the user chooses, with a
+- **Write the results into `ClearMD_Output/OutputMD/`** next to the input or in a folder the user chooses, with a
   `Resumen_ClearMD.md` per output folder: a name table and the history of earlier batches (ADR-0016).
 - **Convert safely and responsively:** a worker process with time, memory and archive limits, real
   cancellation, and the cheapest files first (ADR-0015).

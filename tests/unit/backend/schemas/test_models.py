@@ -17,7 +17,7 @@ def _planned(
     return PlannedConversion(
         source=Path("/d") / name,
         output_root=Path(root),
-        target=Path(root) / "Output" / f"{Path(name).stem}.md",
+        target=Path(root) / "OutputMD" / f"{Path(name).stem}.md",
         detection=Detection(FormatId.PDF, DetectionMethod.EXTENSION),
         exists=exists,
         cost=1.0,

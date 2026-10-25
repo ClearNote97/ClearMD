@@ -1,6 +1,6 @@
 # ADR-0016: Output layout, chosen output folder and the `Resumen_ClearMD.md` summary
 
-- **Status:** accepted (the fine-grained rules are set in the spec of feature 001)
+- **Status:** accepted; results folder renamed `OutputMD/` by ADR-0019 (fine-grained rules in the spec of feature 001)
 - **Date:** 2026-10-25
 - **Supersedes:** the output names and collision rule of ADR-0010.
 
