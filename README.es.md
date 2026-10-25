@@ -7,9 +7,9 @@
 > Si guardas los resultados en una carpeta de OneDrive, Google Drive o Dropbox, esa aplicación sí puede
 > subirlos a la nube — eso lo hace la app de sincronización, no ClearMD.
 
-> 🚧 **Estado: Fase 0.** La arquitectura, las decisiones, las specs y el entorno de desarrollo están listos; la
-> conversión se construye en la feature 001 (ver el [roadmap](./spec/roadmap.md)). Hoy `clearmd` solo responde
-> `--version`.
+> 🚧 **Estado: feature 001 en curso.** La CLI ya convierte archivos a través del proceso worker
+> (`clearmd informe.pdf notas.docx` → `ClearMD_Output/Output/`); faltan carpetas, el resumen y el resto de la
+> CLI (ver el [roadmap](./spec/roadmap.md)).
 
 ## Qué hará
 
