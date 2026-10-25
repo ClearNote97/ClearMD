@@ -1,75 +1,131 @@
-# ClearMD
+<div align="center">
+
+# 📝 ClearMD
+
+**Convierte tus documentos a Markdown — 100% local: ClearMD nunca usa internet.**
+
+_PDF, Word, PowerPoint, Excel, HTML, CSV, EPUB y notebooks → Markdown limpio, una carpeta entera de una vez,
+pensado primero para quienes nunca abren una terminal._
+
+![Python](https://img.shields.io/badge/Python-3.12%E2%80%933.14-3776AB?logo=python&logoColor=white)
+![markitdown](https://img.shields.io/badge/markitdown-0.1.9-0078D4?logo=microsoft&logoColor=white)
+![uv](https://img.shields.io/badge/uv-gestionado-DE5FE9?logo=uv&logoColor=white)
+![Dev Container](https://img.shields.io/badge/Dev-Container-2496ED?logo=docker&logoColor=white)
+![Spec-Driven](https://img.shields.io/badge/Spec--Driven-Development-6E40C9)
+![hecho con Claude Code](https://img.shields.io/badge/hecho%20con-Claude%20Code-D97757?logo=anthropic&logoColor=white)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Estado](https://img.shields.io/badge/estado-en%20construcci%C3%B3n-orange)
 
 [Read in English](./README.md)
 
-**Convierte tus documentos a Markdown. 100% local: ClearMD nunca usa internet.**
+</div>
 
-> Si guardas los resultados en una carpeta de OneDrive, Google Drive o Dropbox, esa aplicación sí puede
-> subirlos a la nube — eso lo hace la app de sincronización, no ClearMD.
+> 👋 **¿Quieres conocer mis otros proyectos?** → **[github.com/ClearNote97](https://github.com/ClearNote97)**
 
-> 🚧 **Estado: la línea de comandos funciona (feature 001).** Convierte archivos y carpetas a través de un
-> proceso aparte, con límites, un resumen y mensajes en inglés y español. Las apps de escritorio vienen después
-> (ver el [roadmap](./spec/roadmap.md)).
+---
 
-## Qué hará
+## 🧩 El problema
 
-- Convertir **PDF, Word, PowerPoint, Excel, HTML, CSV, EPUB y notebooks** a Markdown.
-- Convertir **LaTeX (`.tex`)** conservando las ecuaciones (`$...$`), sin pandoc.
-- Convertir **LibreOffice (`.odt`)** sin dependencias externas.
-- Extraer **solo el artículo** de una página web guardada.
-- Procesar **muchos archivos o carpetas enteras** de una vez, detectando el formato de cada archivo.
-- Dejar el resultado en una carpeta **`ClearMD_Output`** junto a lo que elegiste (o en la carpeta que escojas),
-  con un `Resumen_ClearMD.md` que lista cada archivo, su nombre nuevo y el historial de lotes anteriores.
-- Responder bien con archivos pesados o dañados: primero los más livianos, un límite de tiempo y de memoria por
-  archivo, y un Cancelar que funciona al instante.
-- Hablar **inglés y español** (inglés por defecto; se cambia en la configuración), con ventana de ayuda,
-  bienvenida inicial y progreso claro: pensada para personas que nunca abren una terminal.
-- Ofrecer la misma funcionalidad como **línea de comandos** y como **tres apps de escritorio** (ttkbootstrap,
-  PySide6 y flet), con ejecutables descargables para Windows y Linux.
+> **El contenido útil está atrapado en formatos pesados, y las herramientas para liberarlo no son para todos.**
 
-## Cómo está construido
+Notas para Obsidian, documentación para GitHub, contexto para un LLM: todo eso pide Markdown, mientras el
+contenido vive en PDFs, Word y hojas de cálculo. Las respuestas que existen son librerías de línea de comandos,
+servicios web que te obligan a **subir tus documentos**, o conversores de un solo formato. Ninguna está hecha para
+alguien que nunca ha abierto una terminal — y los documentos privados (contratos, historias clínicas, tesis sin
+publicar) nunca deberían tener que salir de la máquina.
 
-Un backend con casos de uso puros rodeado de adaptadores intercambiables: conversores por un lado,
-interfaces por el otro, organizado con las carpetas `backend/` y `frontend/` de la plantilla ClearNote_Dev.
-Las cuatro interfaces comparten exactamente la misma lógica, y las conversiones corren en un proceso aparte.
+---
 
+## 🧠 Cómo lo resolví
+
+El valor está en el método — un producto pequeño construido como uno serio:
+
+1. **Primero las decisiones, por escrito.** Cada decisión no trivial es un ADR en
+   [`docs/decisions/`](./docs/decisions/) (21 hasta hoy), con las alternativas descartadas y su costo: por qué
+   PySide6 y no PyQt6, por qué sin pandoc, por qué sin base de datos, por qué un proceso aparte.
+2. **La spec antes que el código.** Con **Spec-Driven Development**, [`spec/`](./spec/) dice lo que *debe* ser
+   verdad: la feature 001 tiene 44 criterios de aceptación, y un test falla si alguno queda sin su test.
+3. **Un núcleo que no sabe nada de afuera.** Arquitectura hexagonal organizada con las carpetas `backend/` y
+   `frontend/` de mi plantilla: los casos de uso solo importan la librería estándar; markitdown y magika viven
+   detrás de puertos y corren **solo en un proceso aparte**.
+4. **Archivos no confiables, tratados como tales.** Las bombas ZIP se detectan desde el índice antes de
+   descomprimir nada; nunca se siguen enlaces; cada archivo corre con límite de tiempo y de memoria (con tope duro
+   del sistema operativo); un enlace plantado en la carpeta de salida no puede desviar una escritura; Ctrl+C
+   detiene al instante.
+5. **Medido, no adivinado.** Un [benchmark](./docs/benchmarks/001-conversion-limits.md) fijó los límites y la
+   velocidad de cada formato: el PDF es el cuello de botella por tiempo (~10 páginas/s) y el xlsx por memoria. Los
+   archivos se convierten del más liviano al más pesado, y el tiempo restante se estima con la velocidad real del
+   lote.
+6. **Revisado por ojos independientes.** Una revisión de código, una auditoría de seguridad y una verificación
+   adversarial de los arreglos — que encontró huecos reales en la primera ronda, cerrados antes de publicar.
+
+> 🤖 Trabajé esto con un agente de IA (**Claude Code**): yo dirijo — defino el problema, decido el diseño y
+> reviso cada paso; el agente ejecuta y deja todo trazado.
+
+---
+
+## 👀 Un vistazo
+
+Una carpeta mixta, con un PDF protegido con contraseña, un documento sin extensión, dos archivos que quedarían
+con el mismo nombre y una bomba ZIP disfrazada de Word:
+
+```text
+$ clearmd Tesis/ --lang es
+– factura.docx — este archivo parece dañado o inseguro
+[1/5] escaneado
+[2/5] Informe.docx · faltan menos de un minuto
+[3/5] informe.pdf · faltan menos de un minuto
+[4/5] datos.xlsx · faltan menos de un minuto
+[5/5] contrato.pdf · faltan menos de un minuto
+✗ contrato.pdf — Este PDF está protegido con contraseña. Quítale la contraseña e inténtalo de nuevo.
+4 convertidos · 1 omitidos · 1 con error
+Resultados: ClearMD_Output
 ```
- frontend: CLI · ttkbootstrap · PySide6 · flet  →  backend: api → use_cases ← services → worker
-                                                                     (markitdown · tex · odt · html-artículo)
-```
 
-Detalle en [`docs/architecture/`](./docs/architecture/) (en inglés).
+Y el `Resumen_ClearMD.md` que deja junto a los resultados:
 
-## Decisiones de diseño
+| Origen | Resultado | Formato | Tiempo |
+|---|---|---|---|
+| `Tesis/escaneado` | `OutputMD/Tesis/escaneado.md` | DOCX, detectado por su contenido | <1 s |
+| `Tesis/Informe.docx` | `OutputMD/Tesis/Informe (docx).md` | DOCX | <1 s |
+| `Tesis/informe.pdf` | `OutputMD/Tesis/informe (pdf).md` | PDF | <1 s |
+| `Tesis/capitulos/datos.xlsx` | `OutputMD/Tesis/capitulos/datos.md` | XLSX | <1 s |
 
-Cada decisión no trivial tiene su ADR en [`docs/decisions/`](./docs/decisions/) (en inglés), con contexto,
-alternativas descartadas y consecuencias. Algunas:
+_Además, los archivos con error y omitidos con su razón en palabras sencillas, y el historial de lotes
+anteriores._
 
-- [Núcleo puro con puertos y adaptadores](./docs/decisions/0001-core-and-adapters.md)
-- [PySide6 en vez de PyQt6, por licencia](./docs/decisions/0003-pyside6-over-pyqt6.md)
-- [markitdown detrás de un puerto + conversores propios](./docs/decisions/0004-hybrid-engine-with-markitdown.md)
-- [100% local](./docs/decisions/0005-fully-local.md)
-- [LaTeX sin pandoc](./docs/decisions/0006-own-converters.md)
-- [Poda de la plantilla de partida](./docs/decisions/0009-template-pruning.md)
-- [Pensada primero para usuarios no técnicos](./docs/decisions/0013-non-technical-users-first.md)
-- [Conversiones en un proceso aparte, primero los archivos livianos](./docs/decisions/0015-conversion-worker-process.md)
+---
 
-## Uso (línea de comandos)
+## 🚧 Estado
+
+| Feature | | |
+|---|---|---|
+| **001** Conversión por lotes — backend + CLI | ✅ lista | 512 tests · revisada |
+| **002** Conversor de `.tex` (con ecuaciones, sin pandoc) | ⏳ sigue | |
+| **003** Conversor de `.odt` (solo librería estándar) | ⏳ | |
+| **004** Modo artículo para HTML | ⏳ | |
+| **005** Primera app de escritorio (ttkbootstrap) | ⏳ | |
+| **006** CI + ejecutables para Windows y Linux | ⏳ | |
+| **007–008** Apps en PySide6 y flet | ⏳ | |
+
+El plan completo está en el [roadmap](./spec/roadmap.md). Hoy ClearMD es una **herramienta de línea de comandos**;
+las apps de escritorio vienen después.
+
+---
+
+## ▶️ Cómo correr
+
+**Desde el repositorio** (aún no está en PyPI):
 
 ```bash
+uv tool install git+https://github.com/ClearNote97/ClearMD   # recomendado: la misma herramienta del stack
+# o: pip install git+https://github.com/ClearNote97/ClearMD  (Python 3.12–3.14)
+
 clearmd informe.pdf notas.docx               # archivos
 clearmd ~/Documentos/proyecto                # una carpeta completa, con subcarpetas
 clearmd tesis/ --output-root ~/Escritorio    # resultados en ~/Escritorio/ClearMD_Output
 clearmd proyecto/ --dry-run                  # ver el plan sin escribir nada
 clearmd informe.pdf --lang es                # mensajes en español
-```
-
-Los resultados quedan en una carpeta `ClearMD_Output` junto a lo que elegiste:
-
-```
-ClearMD_Output/
-  Resumen_ClearMD.md   qué se convirtió (nombre original → nuevo, tiempo), omitió, detuvo o falló, y el historial
-  OutputMD/            los Markdown, con la misma estructura de tus carpetas
 ```
 
 | Opción | Qué hace |
@@ -82,59 +138,70 @@ ClearMD_Output/
 | `--lang {en,es}` | Idioma de esta ejecución. |
 | `-q`, `--quiet` | Solo el resumen y los errores. |
 
-- **Seguro con cualquier archivo:** nunca sigue enlaces simbólicos; omite ocultos, archivos de bloqueo de Office y
-  ZIP; los archivos dañados o sospechosos (bombas ZIP) se reportan sin abrirlos a ciegas; cada archivo tiene
-  límite de tiempo y de memoria, y **Ctrl+C** detiene al instante.
-- **Códigos de salida:** `0` todo convertido · `1` algún archivo falló o se detuvo · `2` error de uso o ninguna
-  entrada válida · `3` hay resultados existentes y nadie puede responder (usa `--overwrite` o `--skip`) ·
-  `130` cancelado.
-- **Configuración:** un `settings.toml` opcional en tu carpeta de configuración de usuario (en Linux
-  `~/.config/ClearMD/settings.toml`) guarda `language = "es"`, `on_existing_output = "skip"`, `recursive = false`…
-  Los flags mandan sobre él en una ejecución.
+**Códigos de salida:** `0` todo convertido · `1` algún archivo falló o se detuvo · `2` error de uso o ninguna
+entrada válida · `3` hay resultados existentes y nadie puede responder · `130` cancelado. **Configuración**
+(opcional): `settings.toml` en tu carpeta de configuración de usuario (en Linux `~/.config/ClearMD/`) —
+`language = "es"`, `on_existing_output = "skip"`, `recursive = false`…
 
-## Instalación
+> 🔒 ClearMD nunca usa internet. Si guardas los resultados en una carpeta de OneDrive, Google Drive o Dropbox,
+> esa aplicación sí puede subirlos a la nube — eso lo hace la app de sincronización, no ClearMD.
 
-> Aún no está publicada en PyPI: se instala desde el repositorio.
+---
 
-1. **Ejecutables (sin instalar Python)** — para Windows y Linux, desde
-   [GitHub Releases](https://github.com/ClearNote97/ClearMD/releases) (feature 006). Lo recomendado para la
-   mayoría.
-2. **Con `uv`** — lo recomendado para desarrolladores, la misma herramienta del stack de desarrollo:
+## 📦 Qué produce
 
-   ```bash
-   uv tool install git+https://github.com/ClearNote97/ClearMD
-   clearmd --help
-   ```
-
-3. **Con `pip`** (Python 3.12–3.14):
-
-   ```bash
-   pip install git+https://github.com/ClearNote97/ClearMD
-   clearmd --help
-   ```
-
-La publicación en PyPI llega al final del roadmap (ADR-0018).
-
-## Desarrollo
-
-Requisitos en el host: **Docker + Docker Compose v2** y **VS Code con Dev Containers** (en Windows, dentro de
-WSL 2). Nada de Python en el host.
-
-1. Abre la carpeta en VS Code → **Reopen in Container**.
-2. El contenedor instala las dependencias con `uv` automáticamente.
-3. Dentro del contenedor:
-
-```bash
-uv run pytest                                   # tests
-uv run ruff check . && uv run ruff format --check .
-uv run mypy                                     # tipos (strict)
-uv run clearmd --version
+```
+ClearMD_Output/          junto a lo que elegiste (o en --output-root)
+  Resumen_ClearMD.md     qué se convirtió (nombre original → nuevo, formato, tiempo), se detuvo, falló o se
+                         omitió, y el historial de lotes anteriores
+  OutputMD/              los Markdown, con la misma estructura de tus carpetas
 ```
 
-El proyecto sigue **Spec-Driven Development**: [`spec/`](./spec/) define lo que debe ser verdad;
-[`docs/`](./docs/) explica cómo y por qué quedó así. La colaboración con agentes de IA se rige por
-[`README_AGENTS.md`](./README_AGENTS.md).
+---
 
-## Licencia
+## 🗂️ Estructura
 
-[MIT](./LICENSE) © 2026 Nicolás Enrique Valencia Santiago
+```
+.
+├── src/clearmd/
+│   ├── backend/
+│   │   ├── api/         # la fachada que usan todas las interfaces + el composition root
+│   │   ├── schemas/     # datos inmutables: planes, reportes, límites, códigos de error (solo stdlib)
+│   │   ├── use_cases/   # escanear → planear → ordenar → ejecutar → reportar, y los puertos (solo stdlib)
+│   │   └── services/    # proceso worker, adaptadores de markitdown y magika, resumen, configuración
+│   ├── frontend/cli/    # la línea de comandos (las GUIs llegan aquí, una carpeta cada una)
+│   └── i18n/            # catálogos de mensajes EN/ES
+├── spec/                # ★ Spec-Driven Development: constitución, roadmap, specs, contrato de UX
+├── docs/                # arquitectura, 21 ADRs, benchmark
+├── tests/               # unit (espejo de src) · aceptación (uno por criterio) · fixtures · benchmark
+└── .devcontainer/       # entorno reproducible (sin root, uv)
+```
+
+---
+
+## 🛠️ Stack
+
+**Python 3.12–3.14** · **[markitdown](https://github.com/microsoft/markitdown)** (conversión) ·
+**[magika](https://github.com/google/magika)** (detección por contenido) · **psutil** (límites del worker) ·
+**platformdirs** · **pytest · ruff · mypy --strict** · **uv** · **Dev Container + Docker**.
+
+**Plantilla base:** [ClearNote_Dev](https://github.com/ClearNote97/ClearNote_Dev) — mi plantilla insignia de
+desarrollo en Python bajo Spec-Driven Development. ClearMD nació de ella y se podó: sin base de datos, sin backend
+web — una herramienta de escritorio ([ADR-0009](./docs/decisions/0009-template-pruning.md)).
+
+**Desarrollo:** abre la carpeta en VS Code → *Reopen in Container*; luego `uv run pytest`,
+`uv run ruff check .`, `uv run mypy`. La colaboración con agentes de IA sigue [`README_AGENTS.md`](./README_AGENTS.md).
+
+---
+
+## 🙏 Créditos
+
+- **Autor:** MSc. Nicolás Enrique Valencia Santiago.
+- **Par de trabajo:** agente de IA (Claude / Claude Code, en el marco [Helix](https://github.com/ftuga/helix_asisten)
+  de [ftuga](https://github.com/ftuga)).
+- **Conversión:** [markitdown](https://github.com/microsoft/markitdown) (MIT) · **Detección:**
+  [magika](https://github.com/google/magika) (Apache-2.0).
+
+## ⚖️ Licencia
+
+[MIT](./LICENSE) © 2026 Nicolás Enrique Valencia Santiago.

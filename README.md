@@ -1,74 +1,128 @@
-# ClearMD
+<div align="center">
+
+# 📝 ClearMD
+
+**Turn your documents into Markdown — 100% local: ClearMD never uses the internet.**
+
+_PDF, Word, PowerPoint, Excel, HTML, CSV, EPUB and notebooks → clean Markdown, a whole folder at once,
+built first for people who never open a terminal._
+
+![Python](https://img.shields.io/badge/Python-3.12%E2%80%933.14-3776AB?logo=python&logoColor=white)
+![markitdown](https://img.shields.io/badge/markitdown-0.1.9-0078D4?logo=microsoft&logoColor=white)
+![uv](https://img.shields.io/badge/uv-managed-DE5FE9?logo=uv&logoColor=white)
+![Dev Container](https://img.shields.io/badge/Dev-Container-2496ED?logo=docker&logoColor=white)
+![Spec-Driven](https://img.shields.io/badge/Spec--Driven-Development-6E40C9)
+![made with Claude Code](https://img.shields.io/badge/made%20with-Claude%20Code-D97757?logo=anthropic&logoColor=white)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Status](https://img.shields.io/badge/status-under%20construction-orange)
 
 [Leer en español](./README.es.md)
 
-**Turn your documents into Markdown. 100% local: ClearMD never uses the internet.**
+</div>
 
-> If you save the results in a folder synced by OneDrive, Google Drive or Dropbox, that app may upload them to
-> the cloud — that is the sync app, not ClearMD.
+> 👋 **Want to see my other projects?** → **[github.com/ClearNote97](https://github.com/ClearNote97)**
 
-> 🚧 **Status: the command line works (feature 001).** It converts files and folders through a worker
-> process, with limits, a summary and English/Spanish messages. The desktop apps come next (see the
-> [roadmap](./spec/roadmap.md)).
+---
 
-## What it will do
+## 🧩 The problem
 
-- Convert **PDF, Word, PowerPoint, Excel, HTML, CSV, EPUB and notebooks** to Markdown.
-- Convert **LaTeX (`.tex`)** keeping the equations (`$...$`), without pandoc.
-- Convert **LibreOffice (`.odt`)** with no external dependency.
-- Extract **only the article** from a saved web page.
-- Process **many files or whole folders** at once, detecting the format of each file.
-- Put the results in a **`ClearMD_Output`** folder next to what you chose (or in a folder you pick), with a
-  `Resumen_ClearMD.md` that lists every file, its new name and the history of earlier batches.
-- Stay responsive and safe with heavy or damaged files: the lightest files first, a time and memory limit per
-  file, and a Cancel that works at once.
-- Speak **English and Spanish** (English by default; switch in the settings), with a help window, a first-run
-  welcome and clear progress — built for people who never open a terminal.
-- Offer the same functionality as a **command line** tool and as **three desktop apps** (ttkbootstrap, PySide6
-  and flet), with downloadable executables for Windows and Linux.
+> **Useful content is trapped in heavy formats, and the tools to free it are not made for everyone.**
 
-## How it is built
+Notes for Obsidian, documentation for GitHub, context for an LLM: all of them want Markdown, while the content
+lives in PDFs, Word files and spreadsheets. The existing answers are command-line libraries, web services that
+make you **upload your documents**, or single-format converters. None of them is made for someone who has never
+opened a terminal — and private documents (contracts, medical records, unpublished theses) should never have to
+leave the machine.
 
-A backend with pure use cases surrounded by interchangeable adapters: converters on one side, interfaces on
-the other, laid out with the `backend/` and `frontend/` folders of the ClearNote_Dev template. The four
-interfaces share exactly the same logic, and conversions run in a separate worker process.
+---
 
+## 🧠 How I solved it
+
+The value is in the method — a small product built like a serious one:
+
+1. **Decisions first, recorded.** Every non-trivial choice is an ADR in [`docs/decisions/`](./docs/decisions/)
+   (21 so far), with the rejected alternatives and the costs: why PySide6 and not PyQt6, why no pandoc, why no
+   database, why a worker process.
+2. **Spec before code.** Under **Spec-Driven Development**, [`spec/`](./spec/) says what *must* be true: feature
+   001 has 44 acceptance criteria, and a test fails if any of them has no acceptance test.
+3. **A core that knows nothing of the outside.** Hexagonal architecture laid out with the `backend/` and
+   `frontend/` folders of my template: the use cases import only the standard library; markitdown and magika live
+   behind ports and run **only in a worker process**.
+4. **Untrusted files, handled as such.** Zip bombs are caught from the archive index before anything is
+   decompressed; links are never followed; each file runs under a time limit and a memory limit (with a hard cap
+   from the OS); a link planted in the output folder cannot redirect a write; Ctrl+C stops at once.
+5. **Measured, not guessed.** A [benchmark](./docs/benchmarks/001-conversion-limits.md) set the limits and the
+   speed of each format: PDF is the time bottleneck (~10 pages/s), xlsx the memory one. Files are converted from
+   the cheapest to the most expensive, and the time left is estimated from the real speed of the batch.
+6. **Reviewed by independent eyes.** A code review, a security audit and an adversarial verification of the
+   fixes — which found real gaps in the first round of fixes, closed before shipping.
+
+> 🤖 I built this with an AI agent (**Claude Code**): I direct — I define the problem, decide the design and
+> review every step; the agent executes and leaves everything traced.
+
+---
+
+## 👀 A look
+
+A mixed folder, with a password-protected PDF, a document without extension, two files that would get the same
+name, and a zip bomb disguised as a Word file:
+
+```text
+$ clearmd Thesis/
+– invoice.docx — this file looks damaged or unsafe
+[1/5] Report.docx
+[2/5] scan · less than a minute left
+[3/5] report.pdf · less than a minute left
+[4/5] data.xlsx · less than a minute left
+[5/5] contract.pdf · less than a minute left
+✗ contract.pdf — This PDF is password-protected. Remove the password and try again.
+4 converted · 1 skipped · 1 failed
+Results: ClearMD_Output
 ```
- frontend: CLI · ttkbootstrap · PySide6 · flet  →  backend: api → use_cases ← services → worker
-                                                                     (markitdown · tex · odt · html-article)
-```
 
-Details in [`docs/architecture/`](./docs/architecture/).
+And the `Resumen_ClearMD.md` it leaves next to the results:
 
-## Design decisions
+| Source | Output | Format | Time |
+|---|---|---|---|
+| `Thesis/Report.docx` | `OutputMD/Thesis/Report (docx).md` | DOCX | <1 s |
+| `Thesis/scan` | `OutputMD/Thesis/scan.md` | DOCX, detected by content | <1 s |
+| `Thesis/report.pdf` | `OutputMD/Thesis/report (pdf).md` | PDF | <1 s |
+| `Thesis/chapters/data.xlsx` | `OutputMD/Thesis/chapters/data.md` | XLSX | <1 s |
 
-Every non-trivial decision has an ADR in [`docs/decisions/`](./docs/decisions/), with its context, rejected
-alternatives and consequences. Some of them:
+_Plus the failed and skipped files with a plain-words reason, and the history of earlier batches._
 
-- [Pure core with ports and adapters](./docs/decisions/0001-core-and-adapters.md)
-- [PySide6 instead of PyQt6, for licensing reasons](./docs/decisions/0003-pyside6-over-pyqt6.md)
-- [markitdown behind a port + own converters](./docs/decisions/0004-hybrid-engine-with-markitdown.md)
-- [100% local](./docs/decisions/0005-fully-local.md)
-- [LaTeX without pandoc](./docs/decisions/0006-own-converters.md)
-- [Pruning the starting template](./docs/decisions/0009-template-pruning.md)
-- [Designed for non-technical users first](./docs/decisions/0013-non-technical-users-first.md)
-- [Conversions in a worker process, lightest files first](./docs/decisions/0015-conversion-worker-process.md)
+---
 
-## Usage (command line)
+## 🚧 Status
+
+| Feature | | |
+|---|---|---|
+| **001** Batch conversion — backend + CLI | ✅ done | 512 tests · reviewed |
+| **002** `.tex` converter (math preserved, no pandoc) | ⏳ next | |
+| **003** `.odt` converter (standard library only) | ⏳ | |
+| **004** HTML article mode | ⏳ | |
+| **005** First desktop app (ttkbootstrap) | ⏳ | |
+| **006** CI + Windows/Linux executables | ⏳ | |
+| **007–008** PySide6 and flet apps | ⏳ | |
+
+Full plan in the [roadmap](./spec/roadmap.md). Today ClearMD is a **command-line tool**; the desktop apps come
+next.
+
+---
+
+## ▶️ How to run
+
+**From the repository** (the package is not on PyPI yet):
 
 ```bash
+uv tool install git+https://github.com/ClearNote97/ClearMD   # recommended: same tool as the dev stack
+# or: pip install git+https://github.com/ClearNote97/ClearMD  (Python 3.12–3.14)
+
 clearmd report.pdf notes.docx            # files
 clearmd ~/Documents/project              # a whole folder, subfolders included
 clearmd thesis/ --output-root ~/Desktop  # results in ~/Desktop/ClearMD_Output
 clearmd project/ --dry-run               # see the plan, write nothing
-```
-
-Results go to a `ClearMD_Output` folder next to what you chose:
-
-```
-ClearMD_Output/
-  Resumen_ClearMD.md   what was converted (old name → new name, time), skipped, stopped or failed, and the history
-  OutputMD/            the Markdown files, mirroring your folders
+clearmd report.pdf --lang es             # messages in Spanish
 ```
 
 | Option | What it does |
@@ -81,57 +135,70 @@ ClearMD_Output/
 | `--lang {en,es}` | Language for this run. |
 | `-q`, `--quiet` | Only the summary and errors. |
 
-- **Safe with any file:** symbolic links are never followed; hidden files, Office lock files and ZIP archives
-  are skipped; damaged or suspicious files (zip bombs) are reported, never opened blindly; each file has a time
-  and a memory limit, and **Ctrl+C** stops at once.
-- **Exit codes:** `0` all converted · `1` some file failed or was stopped · `2` usage error or no valid input ·
-  `3` outputs exist and nobody can answer (use `--overwrite` or `--skip`) · `130` cancelled.
-- **Settings:** an optional `settings.toml` in your user configuration folder (on Linux
-  `~/.config/ClearMD/settings.toml`) holds `language = "es"`, `on_existing_output = "skip"`, `recursive = false`…
-  Flags win over it for one run.
+**Exit codes:** `0` all converted · `1` some file failed or was stopped · `2` usage error or no valid input ·
+`3` outputs exist and nobody can answer · `130` cancelled. **Settings** (optional): `settings.toml` in your
+user configuration folder (on Linux `~/.config/ClearMD/`) — `language = "es"`, `on_existing_output = "skip"`,
+`recursive = false`…
 
-## Installation
+> 🔒 ClearMD never uses the internet. If you save the results in a folder synced by OneDrive, Google Drive or
+> Dropbox, that app may upload them — that is the sync app, not ClearMD.
 
-> Not released on PyPI yet: install from the repository.
+---
 
-1. **Executables (no Python needed)** — for Windows and Linux, from
-   [GitHub Releases](https://github.com/ClearNote97/ClearMD/releases) (feature 006). Recommended for most people.
-2. **With `uv`** — recommended for developers, the same tool as the development stack:
+## 📦 What it produces
 
-   ```bash
-   uv tool install git+https://github.com/ClearNote97/ClearMD
-   clearmd --help
-   ```
-
-3. **With `pip`** (Python 3.12–3.14):
-
-   ```bash
-   pip install git+https://github.com/ClearNote97/ClearMD
-   clearmd --help
-   ```
-
-Publishing on PyPI comes at the end of the roadmap (ADR-0018).
-
-## Development
-
-Requirements on the host: **Docker + Docker Compose v2** and **VS Code with Dev Containers** (on Windows,
-inside WSL 2). No Python on the host.
-
-1. Open the folder in VS Code → **Reopen in Container**.
-2. The container installs the dependencies with `uv` automatically.
-3. Inside the container:
-
-```bash
-uv run pytest                                   # tests
-uv run ruff check . && uv run ruff format --check .
-uv run mypy                                     # types (strict)
-uv run clearmd --version
+```
+ClearMD_Output/          next to what you chose (or in --output-root)
+  Resumen_ClearMD.md     what was converted (old name → new name, format, time), stopped, failed or skipped,
+                         and the history of earlier batches
+  OutputMD/              the Markdown files, mirroring your folders
 ```
 
-The project follows **Spec-Driven Development**: [`spec/`](./spec/) defines what must be true; [`docs/`](./docs/)
-explains how and why it ended up that way. Working with AI agents follows
-[`README_AGENTS.md`](./README_AGENTS.md) (in Spanish).
+---
 
-## License
+## 🗂️ Structure
 
-[MIT](./LICENSE) © 2026 Nicolás Enrique Valencia Santiago
+```
+.
+├── src/clearmd/
+│   ├── backend/
+│   │   ├── api/         # the facade every interface calls + the composition root
+│   │   ├── schemas/     # immutable data: plans, reports, limits, error codes (stdlib only)
+│   │   ├── use_cases/   # scan → plan → order → execute → report, and the ports (stdlib only)
+│   │   └── services/    # worker process, markitdown and magika adapters, summary, settings
+│   ├── frontend/cli/    # the command-line interface (the GUIs arrive here, one folder each)
+│   └── i18n/            # EN/ES message catalogs
+├── spec/                # ★ Spec-Driven Development: constitution, roadmap, feature specs, UX contract
+├── docs/                # architecture, 21 ADRs, benchmark
+├── tests/               # unit (mirror of src) · acceptance (one per criterion) · fixtures · benchmark
+└── .devcontainer/       # reproducible environment (non-root, uv)
+```
+
+---
+
+## 🛠️ Stack
+
+**Python 3.12–3.14** · **[markitdown](https://github.com/microsoft/markitdown)** (conversion) ·
+**[magika](https://github.com/google/magika)** (detection by content) · **psutil** (worker limits) ·
+**platformdirs** · **pytest · ruff · mypy --strict** · **uv** · **Dev Container + Docker**.
+
+**Base template:** [ClearNote_Dev](https://github.com/ClearNote97/ClearNote_Dev) — my flagship template for
+Python development under Spec-Driven Development. ClearMD was born from it and pruned: no database, no web
+backend — a desktop tool ([ADR-0009](./docs/decisions/0009-template-pruning.md)).
+
+**Development:** open the folder in VS Code → *Reopen in Container*; then `uv run pytest`,
+`uv run ruff check .`, `uv run mypy`. Working with AI agents follows [`README_AGENTS.md`](./README_AGENTS.md).
+
+---
+
+## 🙏 Credits
+
+- **Author:** MSc. Nicolás Enrique Valencia Santiago.
+- **Work partner:** AI agent (Claude / Claude Code, within the [Helix](https://github.com/ftuga/helix_asisten)
+  framework by [ftuga](https://github.com/ftuga)).
+- **Conversion:** [markitdown](https://github.com/microsoft/markitdown) (MIT) · **Detection:**
+  [magika](https://github.com/google/magika) (Apache-2.0).
+
+## ⚖️ License
+
+[MIT](./LICENSE) © 2026 Nicolás Enrique Valencia Santiago.
