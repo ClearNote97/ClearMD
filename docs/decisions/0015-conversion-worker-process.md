@@ -1,6 +1,7 @@
 # ADR-0015: Conversions run in a worker process, with resource limits and a cost-ordered queue
 
-- **Status:** accepted (limit values and cost weights are set by the benchmark of feature 001)
+- **Status:** accepted; values measured in `docs/benchmarks/001-conversion-limits.md` (cost = estimated seconds;
+  ZIP sizes count text parts only; the ratio applies to the whole file)
 - **Date:** 2026-10-25
 
 ## Context

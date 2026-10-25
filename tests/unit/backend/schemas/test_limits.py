@@ -15,10 +15,25 @@ def test_defaults_follow_adr_0015() -> None:
     assert limits.worker_memory == 4 * GIB
 
 
-def test_xlsx_weighs_more_than_pdf_and_pdf_more_than_the_rest() -> None:
+def test_every_format_has_a_measured_speed() -> None:
+    assert set(Limits().weights) == set(FormatId)
+
+
+def test_weights_are_seconds_per_mib_from_the_benchmark() -> None:
     limits = Limits()
-    assert limits.weight(FormatId.XLSX) > limits.weight(FormatId.PDF) > limits.weight(FormatId.TXT)
-    assert limits.weight(FormatId.TXT) == 1
+    # docs/benchmarks/001-conversion-limits.md: PDF is the slowest, plain text the fastest.
+    assert limits.weight(FormatId.PDF) == max(limits.weights.values())
+    assert limits.weight(FormatId.TXT) == min(limits.weights.values())
+    assert 20 < limits.weight(FormatId.PDF) < 40
+
+
+def test_estimated_seconds_of_a_file() -> None:
+    limits = Limits()
+    assert limits.estimated_seconds(FormatId.PDF, 2 * MIB) == 2 * limits.weight(FormatId.PDF)
+
+
+def test_worker_start_up_was_measured() -> None:
+    assert 0 < Limits().worker_startup_seconds < 2
 
 
 def test_limits_are_immutable() -> None:

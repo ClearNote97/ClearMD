@@ -24,7 +24,7 @@ brings the two riskiest parts (the worker and markitdown) to the front.
 - [x] **T06 — Thin path to the CLI.** `use_cases/paths.py` for a single file, `use_cases/execution.py` with
       atomic writes, `api/` (`plan_batch`, `run_batch`, `composition.py`) and a minimal CLI with progress,
       summary line and exit codes 0/1/2 (acceptance: AC-01, AC-19, AC-21, AC-22).
-- [ ] **T07 — Benchmark.** `tests/benchmark/run_benchmark.py` (a script; a smoke test keeps it working):
+- [x] **T07 — Benchmark.** `tests/benchmark/run_benchmark.py` (a script; a smoke test keeps it working):
       time and peak memory per format and size, worker start-up, memory of a second magika instance. Write
       `docs/benchmarks/001-conversion-limits.md`; update `schemas/limits.py` (limits and weights) and the
       spec/ADR-0015 values if they change.
@@ -33,8 +33,9 @@ brings the two riskiest parts (the worker and markitdown) to the front.
 
 - [ ] **T08 — Scanning.** `use_cases/scanning.py`: recursion, `ClearMD_Output`, symlinks, hidden, `~$`, size
       limit, `.md`/`.zip`, missing inputs, empty inputs (AC-02, AC-03, AC-05 – AC-08).
-- [ ] **T09 — Archive check.** `use_cases/archive.py`: uncompressed size and ratio from the central
-      directory; the zip-bomb fixture is skipped without being decompressed (AC-09).
+- [ ] **T09 — Archive check.** `use_cases/archive.py`: uncompressed size and whole-file ratio from the
+      central directory, plus the size of the text entries for the cost; the zip-bomb fixture is skipped
+      without being decompressed (AC-09).
 - [ ] **T10 — Detection.** `services/detection/extension.py`, `chain.py` and the content detector served by
       the worker. Verify magika's real labels for every supported format and write the mapping from that
       (AC-10, AC-11).
@@ -44,12 +45,13 @@ brings the two riskiest parts (the worker and markitdown) to the front.
 - [ ] **T11 — Output paths and names.** `use_cases/paths.py` complete: output parents, root/home, layout,
       `--output-root`, case-insensitive collisions with extension and counter, determinism
       (AC-04, AC-12 – AC-15).
-- [ ] **T12 — Planning and scheduling.** `use_cases/planning.py` + `scheduling.py` + `ScanProgress` /
-      `PlanReady` events; the plan is identical for shuffled inputs and ordered by cost (AC-20).
+- [ ] **T12 — Planning, scheduling and time left.** `use_cases/planning.py` + `scheduling.py` +
+      `estimation.py` + `ScanProgress` / `PlanReady` events; the plan is identical for shuffled inputs and
+      ordered by cost; the estimate corrects itself with the measured speed (AC-20, AC-40).
 - [ ] **T13 — Execution complete.** Existing outputs (re-checked before writing), failure isolation,
       cancellation, permission errors per output root (AC-16, AC-21, AC-26, AC-27).
-- [ ] **T14 — Summary.** `services/summary/writer.py`: name table, skipped, failed, cancelled, history merge,
-      both languages; snapshot tests with a fixed clock (AC-28, AC-29).
+- [ ] **T14 — Summary.** `services/summary/writer.py`: name table with the time per file, skipped, failed,
+      cancelled, history merge, both languages; snapshot tests with a fixed clock (AC-28, AC-29, AC-41).
 
 ## Slice D — Language, settings and the complete CLI
 
@@ -57,8 +59,9 @@ brings the two riskiest parts (the worker and markitdown) to the front.
       serialization) + `services/settings_store.py` (platformdirs path, load); tests for missing, corrupt and
       invalid files (AC-33, AC-34).
 - [ ] **T16 — CLI complete.** Prompt, `--overwrite`/`--skip`, `--dry-run`, `--open`, `--output-root`,
-      `--lang`, `--quiet`, `--no-recursive`, exit codes 3 and 130 (AC-17, AC-18, AC-30, AC-31, AC-34 – AC-38).
-- [ ] **T17 — Acceptance sweep.** `tests/acceptance/test_001_batch_conversion.py` covers AC-01 … AC-39, one
+      `--lang`, `--quiet`, `--no-recursive`, time left in the progress line, exit codes 3 and 130 (AC-17,
+      AC-18, AC-30, AC-31, AC-34 – AC-38, AC-40).
+- [ ] **T17 — Acceptance sweep.** `tests/acceptance/test_001_batch_conversion.py` covers AC-01 … AC-41, one
       test per criterion; add the ones not written in earlier slices.
 - [ ] **T18 — Close the feature.**
   - Update `docs/architecture/README.md` to the as-built design.

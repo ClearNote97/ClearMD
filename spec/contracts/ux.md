@@ -9,6 +9,9 @@
   *Finished* · *Finished with problems* · *Cancelled*. *(CLI too: as text.)*
 - **Progress:** while converting, show "*i* of *n*", the current file name and a progress bar. Anything that
   takes longer than ~300 ms shows a busy indicator. *(CLI too: "[3/37] report.pdf".)*
+- **Time left, in plain words:** "about 3 minutes left", never pages/s or MB/s; it corrects itself as files
+  finish. A file that takes long shows a running timer and "large files can take a few minutes", so the user
+  sees the app is working. *(CLI too: "· about 3 min left".)*
 - **Startup:** if opening the app takes noticeably long (packaged executables unpack first), show a splash or
   loading screen instead of nothing.
 - **The window never freezes:** conversions run outside the UI thread (ADR-0001). A **Cancel** button is

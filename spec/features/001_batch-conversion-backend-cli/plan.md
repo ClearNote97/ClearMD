@@ -11,7 +11,7 @@ src/clearmd/
   backend/
     schemas/                  # stdlib only
       formats.py              # FormatId, extension table, ZIP-based formats, skip-only extensions, names
-      limits.py               # Limits dataclass (size, archive, time, memory) + cost weights per format
+      limits.py               # Limits (size, archive, time, memory) + seconds per MiB per format
       errors.py               # ErrorCode, SkipReason (each maps to a catalog key)
       models.py               # frozen: Detection, PlannedConversion, SkippedItem, BatchPlan,
                               #   ConversionOutcome, BatchReport, OutputRootReport
@@ -25,6 +25,7 @@ src/clearmd/
       scanning.py             # expand inputs into candidates + skipped items
       planning.py             # build_plan()
       scheduling.py           # order_by_cost()
+      estimation.py           # TimeLeft: estimated seconds left, corrected with the measured speed
       execution.py            # execute_plan(), atomic_write()
       settings.py             # parse_settings() / serialize_settings() (pure)
     services/                 # the only place with third-party imports
@@ -94,7 +95,8 @@ def run_batch(plan, *, overwrite, settings, on_event, cancel) -> BatchReport  # 
 - `BatchReport` carries **data and codes, not text**: the summary writer turns it into words with the catalog
   (ADR-0012). `use_cases` never sees a catalog.
 - Events are plain dataclasses; `on_event` runs in the caller's thread. Thread-hopping is the GUI's job
-  (ADR-0001).
+  (ADR-0001). `ConversionStarted` carries `seconds_left: float | None` (the batch estimate) and
+  `ConversionFinished` the `seconds` the file took; the outcome keeps them for the summary.
 
 ## The worker process (ADR-0015)
 
@@ -118,20 +120,23 @@ def run_batch(plan, *, overwrite, settings, on_event, cancel) -> BatchReport  # 
 | Rule | Implementation |
 |---|---|
 | Output parent | file → `input.parent`; folder → `input.parent`, except a drive root (`p == p.parent`) or `Path.home()`, which use the folder itself; `--output-root` replaces it |
-| Layout | `<output parent>/ClearMD_Output/Resumen_ClearMD.md` and `…/Output/`; a folder input goes to `Output/<input.name>/…`, a root/home input directly into `Output/` |
+| Layout | `<output parent>/ClearMD_Output/Resumen_ClearMD.md` and `…/OutputMD/`; a folder input goes to `OutputMD/<input.name>/…`, a root/home input directly into `OutputMD/` |
 | Names | group targets by `str(path).casefold()`; in groups larger than one, every member gets `" (" + ext + ")"` (ext = source extension, or the detected format id when there is none); members still equal after that get `" (" + ext + " N)"`, N = 2, 3… in `casefold()` path order |
 | Existing outputs | a target that exists on disk at planning time → `exists = True`; checked again just before writing |
 | Skips | `ClearMD_Output` folders (casefold), symlinks (`is_symlink()` before `is_dir()`), hidden (`.` prefix; on Windows `st_file_attributes & FILE_ATTRIBUTE_HIDDEN`), `~$*`, `> limits.max_file_size`, `.md`/`.markdown`, `.zip`, suspicious archives, unsupported |
-| Archive check | for ZIP-based formats, `zipfile.ZipFile(path).infolist()` reads only the central directory: sum of `file_size` > `limits.max_uncompressed` or `file_size / compress_size` > `limits.max_ratio` → skip `unsafe_archive`; an unreadable index is left to the converter (`corrupt_file`) |
-| Cost and order | `cost = (uncompressed size if ZIP-based else st_size) × limits.weight[format]`; order by `(cost, casefold(path))` |
+| Archive check | for ZIP-based formats, `zipfile.ZipFile(path).infolist()` reads only the central directory: sum of `file_size` > `limits.max_uncompressed` or that sum / `st_size` > `limits.max_ratio` (whole file, never per entry) → skip `unsafe_archive`; an unreadable index is left to the converter (`corrupt_file`) |
+| Cost and order | `cost = limits.estimated_seconds(format, size)`, i.e. size in MiB × seconds per MiB; `size` = `st_size`, or for ZIP-based formats the uncompressed size of the text entries (`.xml`, `.xhtml`, `.html`, `.htm`, `.rels`), read by the archive check; order by `(cost, casefold(path))` |
+| Time left | `TimeLeft` keeps `estimated` and `measured` seconds of the finished files; left = `limits.worker_startup_seconds` (until the worker answered once) + Σ cost of the pending files × (`measured / estimated` once a file finished, else 1); shown from the second file on, rounded ("about 3 min", "less than a minute") |
 | Atomic write | write `target.with_name(target.name + ".clearmd-tmp")` → `os.replace(tmp, target)`; the temp file is removed on any failure or cancellation |
 | Cancellation | the supervisor kills the worker at once; the current file is reported as cancelled, the rest too; the summaries are still written |
 | Encoding | outputs and summary: UTF-8, LF line endings |
 
-Names live in `schemas/formats.py`: `OUTPUT_DIR_NAME = "ClearMD_Output"`, `RESULTS_DIR_NAME = "Output"`,
-`SUMMARY_NAME = "Resumen_ClearMD.md"`. Initial limits in `schemas/limits.py` (replaced by the benchmark, T07):
-`max_file_size = 250 MiB`, `max_uncompressed = 1 GiB`, `max_ratio = 100`, `time_per_file = 600 s`, weights
-`xlsx = 20`, `pdf = 4`, everything else `1`.
+Names live in `schemas/formats.py`: `OUTPUT_DIR_NAME = "ClearMD_Output"`, `RESULTS_DIR_NAME = "OutputMD"`,
+`SUMMARY_NAME = "Resumen_ClearMD.md"`. Limits in `schemas/limits.py`, measured in
+[`docs/benchmarks/001-conversion-limits.md`](../../../docs/benchmarks/001-conversion-limits.md):
+`max_file_size = 250 MiB`, `max_uncompressed = 1 GiB`, `max_ratio = 100`, `time_per_file = 600 s`,
+`worker_startup_seconds = 0.7`, seconds per MiB `pdf 31 · xlsx 1.5 · pptx 1.2 · docx 0.6 · html 0.2 · csv 0.15 ·
+epub 0.15 · ipynb 0.03 · txt 0.03`.
 
 ## Detection
 
@@ -209,12 +214,12 @@ clearmd [options] PATH [PATH ...]
 2026-10-25 15:30 · ClearMD 0.1.0 · 12 converted · 2 skipped · 1 failed
 
 ## Converted
-| Source | Output | Format |
-|---|---|---|
-| `project/notes.pdf` | `Output/project/notes.md` | PDF |
-| `project/report.pdf` | `Output/project/report (pdf).md` | PDF |
-| `project/Report.docx` | `Output/project/Report (docx).md` | DOCX |
-| `project/scan` | `Output/project/scan.md` | DOCX, detected by content |
+| Source | Output | Format | Time |
+|---|---|---|---|
+| `project/notes.pdf` | `OutputMD/project/notes.md` | PDF | 28 s |
+| `project/report.pdf` | `OutputMD/project/report (pdf).md` | PDF | 3 s |
+| `project/Report.docx` | `OutputMD/project/Report (docx).md` | DOCX | 0.4 s |
+| `project/scan` | `OutputMD/project/scan.md` | DOCX, detected by content | 0.6 s |
 
 ## Skipped
 - `project/.cache/` — hidden folder
@@ -252,7 +257,8 @@ the header line of the previous batch becomes the first history line.
 - **Adapter:** the real markitdown on every fixture (one per format, plus password-protected and corrupt).
 - **Acceptance:** `tests/acceptance/test_001_batch_conversion.py`, one test per AC, driving `cli.main(argv)` on
   `tmp_path`. Each slice adds the acceptance tests of the criteria it covers.
-- **Benchmark** (`tests/benchmark/`, not part of the default `pytest` run): generated files of growing size
-  per format; wall time and the worker's peak memory; worker start-up time; memory of a second magika instance.
-  Results in `docs/benchmarks/001-conversion-limits.md`.
+- **Benchmark** (`tests/benchmark/run_benchmark.py`, a script that takes minutes): generated files of growing
+  size per format; conversion time and peak memory in a fresh spawn process; worker start-up time; memory of a
+  second magika instance. A smoke test runs its generators and one measurement at tiny sizes in the default
+  suite. Results in `docs/benchmarks/001-conversion-limits.md` (+ raw `001-results.json`).
 - **Gate:** `pytest`, `ruff check`, `ruff format --check`, `mypy --strict`, all inside the container.

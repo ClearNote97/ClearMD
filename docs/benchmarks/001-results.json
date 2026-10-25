@@ -1,0 +1,564 @@
+{
+ "machine": {
+  "python": "3.14.5",
+  "platform": "Linux-5.15.167.4-microsoft-standard-WSL2-x86_64-with-glibc2.36",
+  "cpus": 16,
+  "ram_mib": 15848,
+  "memory_cap_mib": 2048
+ },
+ "startup": {
+  "import_and_init_s": 0.6791069330065511,
+  "rss_after_markitdown_mib": 161.51953125,
+  "second_magika_mib": -9.48046875,
+  "sampled_peak_mib": 154.33984375,
+  "wall_s": 0.883661652012961
+ },
+ "rows": [
+  {
+   "kind": "txt",
+   "size_mib": 1,
+   "file_mib": 1.000020980834961,
+   "result": {
+    "ok": true,
+    "markdown_mib": 1.000020980834961,
+    "startup_s": 0.6146315469813999,
+    "seconds": 0.030333381990203634,
+    "baseline_mib": 161.14453125,
+    "peak_mib": 164.3203125,
+    "sampled_peak_mib": 161.14453125,
+    "wall_s": 0.8088111290126108
+   },
+   "archive": null
+  },
+  {
+   "kind": "txt",
+   "size_mib": 10,
+   "file_mib": 10.000039100646973,
+   "result": {
+    "ok": true,
+    "markdown_mib": 10.000039100646973,
+    "startup_s": 0.7701903519919142,
+    "seconds": 0.3345019459957257,
+    "baseline_mib": 162.828125,
+    "peak_mib": 201.5703125,
+    "sampled_peak_mib": 191.78125,
+    "wall_s": 1.2786015089950524
+   },
+   "archive": null
+  },
+  {
+   "kind": "txt",
+   "size_mib": 50,
+   "file_mib": 50.0000524520874,
+   "result": {
+    "ok": true,
+    "markdown_mib": 50.0000524520874,
+    "startup_s": 0.6928822089976165,
+    "seconds": 1.300311190978391,
+    "baseline_mib": 164.62890625,
+    "peak_mib": 358.9921875,
+    "sampled_peak_mib": 312.9921875,
+    "wall_s": 2.1774655539775267
+   },
+   "archive": null
+  },
+  {
+   "kind": "txt",
+   "size_mib": 100,
+   "file_mib": 100.00007152557373,
+   "result": {
+    "ok": true,
+    "markdown_mib": 100.00007152557373,
+    "startup_s": 0.6570869550050702,
+    "seconds": 2.4193808419804554,
+    "baseline_mib": 164.46484375,
+    "peak_mib": 554.15625,
+    "sampled_peak_mib": 549.83203125,
+    "wall_s": 3.249121534987353
+   },
+   "archive": null
+  },
+  {
+   "kind": "csv",
+   "size_mib": 1,
+   "file_mib": 1.0000476837158203,
+   "result": {
+    "ok": true,
+    "markdown_mib": 1.163435935974121,
+    "startup_s": 0.6511443839990534,
+    "seconds": 0.1660682520014234,
+    "baseline_mib": 161.66796875,
+    "peak_mib": 174.16015625,
+    "sampled_peak_mib": 173.90234375,
+    "wall_s": 0.9808164809946902
+   },
+   "archive": null
+  },
+  {
+   "kind": "csv",
+   "size_mib": 10,
+   "file_mib": 10.000045776367188,
+   "result": {
+    "ok": true,
+    "markdown_mib": 11.60729694366455,
+    "startup_s": 0.728952075005509,
+    "seconds": 1.2376008779974654,
+    "baseline_mib": 164.9453125,
+    "peak_mib": 302.6484375,
+    "sampled_peak_mib": 299.63671875,
+    "wall_s": 2.1358759879949503
+   },
+   "archive": null
+  },
+  {
+   "kind": "csv",
+   "size_mib": 50,
+   "file_mib": 50.00000762939453,
+   "result": {
+    "ok": true,
+    "markdown_mib": 57.96774196624756,
+    "startup_s": 0.6212580330029596,
+    "seconds": 6.413095127994893,
+    "baseline_mib": 163.046875,
+    "peak_mib": 850.7109375,
+    "sampled_peak_mib": 824.76171875,
+    "wall_s": 7.2056587359984405
+   },
+   "archive": null
+  },
+  {
+   "kind": "csv",
+   "size_mib": 100,
+   "file_mib": 100.00003242492676,
+   "result": {
+    "ok": true,
+    "markdown_mib": 115.81822299957275,
+    "startup_s": 0.7457745540014002,
+    "seconds": 14.723927070997888,
+    "baseline_mib": 161.6640625,
+    "peak_mib": 1533.7421875,
+    "sampled_peak_mib": 1529.1015625,
+    "wall_s": 15.675237280986039
+   },
+   "archive": null
+  },
+  {
+   "kind": "html",
+   "size_mib": 1,
+   "file_mib": 1.0000829696655273,
+   "result": {
+    "ok": true,
+    "markdown_mib": 0.9867038726806641,
+    "startup_s": 0.8299148509977385,
+    "seconds": 0.27572665401385166,
+    "baseline_mib": 160.73828125,
+    "peak_mib": 165.96875,
+    "sampled_peak_mib": 164.9375,
+    "wall_s": 1.2931436660001054
+   },
+   "archive": null
+  },
+  {
+   "kind": "html",
+   "size_mib": 10,
+   "file_mib": 10.00049114227295,
+   "result": {
+    "ok": true,
+    "markdown_mib": 9.867549896240234,
+    "startup_s": 0.6655673519999254,
+    "seconds": 2.0471163040201645,
+    "baseline_mib": 161.1015625,
+    "peak_mib": 226.0,
+    "sampled_peak_mib": 225.21875,
+    "wall_s": 2.884853508003289
+   },
+   "archive": null
+  },
+  {
+   "kind": "html",
+   "size_mib": 50,
+   "file_mib": 50.000542640686035,
+   "result": {
+    "ok": true,
+    "markdown_mib": 49.33638572692871,
+    "startup_s": 0.7005990140023641,
+    "seconds": 9.717503673979081,
+    "baseline_mib": 164.90234375,
+    "peak_mib": 515.47265625,
+    "sampled_peak_mib": 487.90625,
+    "wall_s": 10.590364295989275
+   },
+   "archive": null
+  },
+  {
+   "kind": "ipynb",
+   "size_mib": 1,
+   "file_mib": 1.0775270462036133,
+   "result": {
+    "ok": true,
+    "markdown_mib": 0.9389629364013672,
+    "startup_s": 0.7105052490078378,
+    "seconds": 0.034503341012168676,
+    "baseline_mib": 161.0625,
+    "peak_mib": 163.7421875,
+    "sampled_peak_mib": 150.85546875,
+    "wall_s": 0.9104631999798585
+   },
+   "archive": null
+  },
+  {
+   "kind": "ipynb",
+   "size_mib": 10,
+   "file_mib": 10.769098281860352,
+   "result": {
+    "ok": true,
+    "markdown_mib": 9.384956359863281,
+    "startup_s": 0.6549210770172067,
+    "seconds": 0.362178022012813,
+    "baseline_mib": 163.50390625,
+    "peak_mib": 200.6171875,
+    "sampled_peak_mib": 190.99609375,
+    "wall_s": 1.1825078790134285
+   },
+   "archive": null
+  },
+  {
+   "kind": "ipynb",
+   "size_mib": 50,
+   "file_mib": 53.84111499786377,
+   "result": {
+    "ok": true,
+    "markdown_mib": 46.92213249206543,
+    "startup_s": 0.6882029710104689,
+    "seconds": 1.3518981950182933,
+    "baseline_mib": 160.9765625,
+    "peak_mib": 362.0078125,
+    "sampled_peak_mib": 324.4609375,
+    "wall_s": 2.273494330001995
+   },
+   "archive": null
+  },
+  {
+   "kind": "pdf",
+   "size_mib": 1,
+   "file_mib": 1.0158491134643555,
+   "result": {
+    "ok": true,
+    "markdown_mib": 0.7872276306152344,
+    "startup_s": 0.639105465990724,
+    "seconds": 27.656748851004522,
+    "baseline_mib": 161.93359375,
+    "peak_mib": 227.765625,
+    "sampled_peak_mib": 171.08203125,
+    "wall_s": 28.46059292901191
+   },
+   "archive": null
+  },
+  {
+   "kind": "pdf",
+   "size_mib": 5,
+   "file_mib": 5.062747955322266,
+   "result": {
+    "ok": true,
+    "markdown_mib": 3.9240856170654297,
+    "startup_s": 0.7208078170078807,
+    "seconds": 159.01979714501067,
+    "baseline_mib": 164.4296875,
+    "peak_mib": 227.765625,
+    "sampled_peak_mib": 205.16015625,
+    "wall_s": 159.9030035129981
+   },
+   "archive": null
+  },
+  {
+   "kind": "pdf",
+   "size_mib": 20,
+   "file_mib": 20.245161056518555,
+   "result": {
+    "ok": true,
+    "markdown_mib": 15.68622875213623,
+    "startup_s": 0.7624125049915165,
+    "seconds": 624.9615279419813,
+    "baseline_mib": 162.8984375,
+    "peak_mib": 334.5390625,
+    "sampled_peak_mib": 318.75,
+    "wall_s": 625.9133670089941
+   },
+   "archive": null
+  },
+  {
+   "kind": "docx_text",
+   "size_mib": 1,
+   "file_mib": 1.0131101608276367,
+   "result": {
+    "ok": true,
+    "markdown_mib": 2.8477983474731445,
+    "startup_s": 0.6968408550019376,
+    "seconds": 1.727469485020265,
+    "baseline_mib": 162.6171875,
+    "peak_mib": 227.765625,
+    "sampled_peak_mib": 213.89453125,
+    "wall_s": 2.6178177209803835
+   },
+   "archive": {
+    "uncompressed_mib": 3.093174934387207,
+    "total_ratio": 3.053147677307184,
+    "worst_entry_ratio": 3.0545798628838847
+   }
+  },
+  {
+   "kind": "docx_text",
+   "size_mib": 10,
+   "file_mib": 10.014412879943848,
+   "result": {
+    "ok": true,
+    "markdown_mib": 28.187424659729004,
+    "startup_s": 0.6285353550047148,
+    "seconds": 18.08374927198747,
+    "baseline_mib": 160.6640625,
+    "peak_mib": 547.55859375,
+    "sampled_peak_mib": 546.52734375,
+    "wall_s": 18.873515929008136
+   },
+   "archive": {
+    "uncompressed_mib": 30.609000205993652,
+    "total_ratio": 3.0564947314380433,
+    "worst_entry_ratio": 3.056639764147727
+   }
+  },
+  {
+   "kind": "docx_text",
+   "size_mib": 50,
+   "file_mib": 50.01598262786865,
+   "result": {
+    "ok": true,
+    "markdown_mib": 140.81673908233643,
+    "startup_s": 0.6300536099879537,
+    "seconds": 94.2042791970016,
+    "baseline_mib": 163.78125,
+    "peak_mib": 1979.84375,
+    "sampled_peak_mib": 1978.5546875,
+    "wall_s": 94.9905073219852
+   },
+   "archive": {
+    "uncompressed_mib": 152.9097318649292,
+    "total_ratio": 3.0572173899414437,
+    "worst_entry_ratio": 3.0572464375794
+   }
+  },
+  {
+   "kind": "docx_images",
+   "size_mib": 10,
+   "file_mib": 10.002396583557129,
+   "result": {
+    "ok": true,
+    "markdown_mib": 0.0010499954223632812,
+    "startup_s": 0.6990039069787599,
+    "seconds": 0.10889474500436336,
+    "baseline_mib": 161.22265625,
+    "peak_mib": 235.54296875,
+    "sampled_peak_mib": 230.38671875,
+    "wall_s": 0.9742877229873557
+   },
+   "archive": {
+    "uncompressed_mib": 10.004579544067383,
+    "total_ratio": 1.000218243747088,
+    "worst_entry_ratio": 4.190721649484536
+   }
+  },
+  {
+   "kind": "docx_images",
+   "size_mib": 50,
+   "file_mib": 50.00658893585205,
+   "result": {
+    "ok": true,
+    "markdown_mib": 0.005229949951171875,
+    "startup_s": 0.666326353995828,
+    "seconds": 0.6422986709803808,
+    "baseline_mib": 162.921875,
+    "peak_mib": 489.03125,
+    "sampled_peak_mib": 477.3046875,
+    "wall_s": 1.4687111740058754
+   },
+   "archive": {
+    "uncompressed_mib": 50.01789093017578,
+    "total_ratio": 1.0002260101031533,
+    "worst_entry_ratio": 11.392282958199356
+   }
+  },
+  {
+   "kind": "docx_images",
+   "size_mib": 100,
+   "file_mib": 100.01168155670166,
+   "result": {
+    "ok": true,
+    "markdown_mib": 0.010303497314453125,
+    "startup_s": 0.6039986820251215,
+    "seconds": 1.3172983299882617,
+    "baseline_mib": 161.17578125,
+    "peak_mib": 807.03515625,
+    "sampled_peak_mib": 785.76953125,
+    "wall_s": 2.0764573970227502
+   },
+   "archive": {
+    "uncompressed_mib": 100.03440856933594,
+    "total_ratio": 1.000227243580755,
+    "worst_entry_ratio": 15.800453514739228
+   }
+  },
+  {
+   "kind": "epub",
+   "size_mib": 1,
+   "file_mib": 1.036346435546875,
+   "result": {
+    "ok": true,
+    "markdown_mib": 2.888474464416504,
+    "startup_s": 0.6545906419923995,
+    "seconds": 0.4673733719973825,
+    "baseline_mib": 163.078125,
+    "peak_mib": 227.765625,
+    "sampled_peak_mib": 175.05078125,
+    "wall_s": 1.2780368110106792
+   },
+   "archive": {
+    "uncompressed_mib": 2.913808822631836,
+    "total_ratio": 2.811616581760358,
+    "worst_entry_ratio": 5.753886010362694
+   }
+  },
+  {
+   "kind": "epub",
+   "size_mib": 10,
+   "file_mib": 10.062736511230469,
+   "result": {
+    "ok": true,
+    "markdown_mib": 28.055587768554688,
+    "startup_s": 1.0621033830102533,
+    "seconds": 4.231190579012036,
+    "baseline_mib": 162.953125,
+    "peak_mib": 258.5390625,
+    "sampled_peak_mib": 252.52734375,
+    "wall_s": 5.465563837002264
+   },
+   "archive": {
+    "uncompressed_mib": 28.298599243164062,
+    "total_ratio": 2.8122170556271198,
+    "worst_entry_ratio": 10.830280172413794
+   }
+  },
+  {
+   "kind": "epub",
+   "size_mib": 50,
+   "file_mib": 50.117756843566895,
+   "result": {
+    "ok": true,
+    "markdown_mib": 139.74236488342285,
+    "startup_s": 0.608211336977547,
+    "seconds": 20.862546065007336,
+    "baseline_mib": 161.15625,
+    "peak_mib": 613.28515625,
+    "sampled_peak_mib": 587.26953125,
+    "wall_s": 21.65673631001846
+   },
+   "archive": {
+    "uncompressed_mib": 140.9526424407959,
+    "total_ratio": 2.812429193125162,
+    "worst_entry_ratio": 11.811207706766917
+   }
+  },
+  {
+   "kind": "pptx",
+   "size_mib": 1,
+   "file_mib": 0.5517635345458984,
+   "result": {
+    "ok": true,
+    "markdown_mib": 0.5361137390136719,
+    "startup_s": 0.6463875590125099,
+    "seconds": 1.2156855569919571,
+    "baseline_mib": 163.21875,
+    "peak_mib": 227.765625,
+    "sampled_peak_mib": 169.69921875,
+    "wall_s": 2.0572899850085378
+   },
+   "archive": {
+    "uncompressed_mib": 1.1482458114624023,
+    "total_ratio": 2.081046933279868,
+    "worst_entry_ratio": 32.073232323232325
+   }
+  },
+  {
+   "kind": "pptx",
+   "size_mib": 10,
+   "file_mib": 5.293376922607422,
+   "result": {
+    "ok": true,
+    "markdown_mib": 5.362801551818848,
+    "startup_s": 0.6347704420040827,
+    "seconds": 12.874231713998597,
+    "baseline_mib": 163.57421875,
+    "peak_mib": 231.59765625,
+    "sampled_peak_mib": 231.26953125,
+    "wall_s": 13.669508638995467
+   },
+   "archive": {
+    "uncompressed_mib": 10.689501762390137,
+    "total_ratio": 2.019410655745384,
+    "worst_entry_ratio": 43.34155529643914
+   }
+  },
+  {
+   "kind": "xlsx",
+   "size_mib": 1,
+   "file_mib": 0.9629831314086914,
+   "result": {
+    "ok": true,
+    "markdown_mib": 1.3276786804199219,
+    "startup_s": 0.6535690219898243,
+    "seconds": 6.154613841994433,
+    "baseline_mib": 163.1796875,
+    "peak_mib": 273.7578125,
+    "sampled_peak_mib": 273.7578125,
+    "wall_s": 6.9645234670024365
+   },
+   "archive": {
+    "uncompressed_mib": 4.364258766174316,
+    "total_ratio": 4.532019953236459,
+    "worst_entry_ratio": 6.533505154639175
+   }
+  },
+  {
+   "kind": "xlsx",
+   "size_mib": 10,
+   "file_mib": 9.627572059631348,
+   "result": {
+    "ok": true,
+    "markdown_mib": 13.453177452087402,
+    "startup_s": 0.6611077600100543,
+    "seconds": 65.367478537024,
+    "baseline_mib": 161.5546875,
+    "peak_mib": 1291.05859375,
+    "sampled_peak_mib": 1291.05859375,
+    "wall_s": 66.19697021800675
+   },
+   "archive": {
+    "uncompressed_mib": 44.56888675689697,
+    "total_ratio": 4.629296616098615,
+    "worst_entry_ratio": 6.533505154639175
+   }
+  },
+  {
+   "kind": "xlsx",
+   "size_mib": 50,
+   "file_mib": 48.18587017059326,
+   "result": {
+    "ok": false,
+    "error": "stopped above the 2048 MiB cap"
+   },
+   "archive": {
+    "uncompressed_mib": 225.33679103851318,
+    "total_ratio": 4.676408047436925,
+    "worst_entry_ratio": 6.533505154639175
+   }
+  }
+ ]
+}

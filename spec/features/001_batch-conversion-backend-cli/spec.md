@@ -20,6 +20,8 @@ summary that explains what happened — from the command line, on a backend that
   - Reading the shared settings file (ADR-0012). The CLI never writes it.
   - The complete CLI.
   - A **benchmark** that measures time and memory per format and size, and sets the limits and cost weights.
+  - An **estimate of the time left** while converting, corrected with the speed measured in the batch, and the
+    time each file took in the summary.
 - **Does not include:** `.tex`, `.odt` and HTML article mode (features 002–004); presenter, GUIs, settings
   window and the remembered output folder (005+); executables and CI (006); ZIP archives, OCR and image
   extraction (out of scope); a second queue lane or parallel workers (deferred, ADR-0015).
@@ -58,9 +60,10 @@ Each criterion has an acceptance test named after its id (`tests/acceptance/test
 - [ ] **AC-07** A file larger than 250 MiB is skipped with the reason "too large".
 - [ ] **AC-08** `.md` / `.markdown` files are skipped as "already Markdown"; `.zip` files are skipped with
   "ZIP archives are not supported — extract them first".
-- [ ] **AC-09** A ZIP-based document whose contents would expand to more than 1 GiB, or with a compression
-  ratio above 100:1, is skipped as "this file looks damaged or unsafe". It is checked from the archive's index,
-  without decompressing anything.
+- [ ] **AC-09** A ZIP-based document whose contents would expand to more than 1 GiB, or whose uncompressed
+  total is more than 100 times its file size, is skipped as "this file looks damaged or unsafe". It is checked
+  from the archive's index, without decompressing anything. (Real documents measured 1–5:1; single entries can
+  reach 43:1, so the rule never applies per entry.)
 
 ### Detection
 
@@ -94,8 +97,9 @@ Each criterion has an acceptance test named after its id (`tests/acceptance/test
 
 - [ ] **AC-19** Conversions and content detection run in a separate worker process: after a batch, the CLI
   process has not imported `markitdown` nor `magika`.
-- [ ] **AC-20** Files are converted from the lowest to the highest estimated cost (size — uncompressed for
-  ZIP-based documents — times a per-format weight), ties broken by path. The order is the same for any input
+- [ ] **AC-20** Files are converted from the lowest to the highest estimated cost — the estimated conversion
+  time: size × the format's seconds per MiB measured by the benchmark, where the size of a ZIP-based document is
+  its uncompressed text parts (not its images) — ties broken by path. The order is the same for any input
   order.
 - [ ] **AC-21** A file that fails to convert does not stop the batch; the summary lists it with a human message
   and the technical detail; the exit code is 1.
@@ -150,6 +154,13 @@ Each criterion has an acceptance test named after its id (`tests/acceptance/test
 - [ ] **AC-39** No conversion opens a network connection (ADR-0005): the test suite makes any socket
   connection fail, and markitdown plugins are disabled.
 
+### Time left and durations
+
+- [ ] **AC-40** From the second file on, the progress line adds the estimated time left for the batch
+  (`[12/37] report.pdf · about 3 min left`). The estimate starts from the benchmark's speeds and is corrected
+  after every file with the ratio between measured and estimated time of the files already converted.
+- [ ] **AC-41** The name table of `Resumen_ClearMD.md` shows how long each file took to convert.
+
 ## Actors and data
 
 - **Actors:** a user through the CLI. Feature 005 adds the presenter and the GUIs on the same backend.
@@ -162,13 +173,13 @@ Each criterion has an acceptance test named after its id (`tests/acceptance/test
 - **markitdown's error details are internal:** mapping exceptions to `password_protected` / `corrupt_file`
   depends on what its converters raise. Verified with fixtures; anything unknown falls back to
   `conversion_failed`.
-- **Worker start-up cost:** Python + markitdown + the magika model are loaded once per batch (and after every
-  replacement). The benchmark measures it.
-- **Two magika models in the worker:** `MarkItDown()` always creates its own `Magika()` and does not accept one;
-  the content detector needs one too. The benchmark measures the memory of the second instance and decides
-  between keeping it or reusing markitdown's (a private attribute, acceptable only because the version is
-  pinned and a test guards it).
-- **Limit values:** the initial values of ADR-0015 are replaced by the benchmark's results.
+- **Worker start-up cost:** 0.7 s per batch (and after every replacement), measured by the benchmark.
+- **Two magika models in the worker:** `MarkItDown()` always creates its own `Magika()`; the content detector
+  keeps a second one. The benchmark measured no noticeable memory for it, so markitdown's private instance is
+  not reused.
+- **Limit values** come from `docs/benchmarks/001-conversion-limits.md`: PDF is the time bottleneck (~10
+  pages/s), xlsx the memory one (~30 MiB at most under the 4 GiB limit). Real documents may differ from the
+  synthetic ones; the time-left estimate corrects itself per batch.
 - **argparse in English:** a known gap (ADR-0017).
 - **Windows specifics** (hidden attribute, long paths, case-insensitive file system, spawn start method) are
   tested on Linux by simulation here and on a real Windows machine and runner in feature 006.

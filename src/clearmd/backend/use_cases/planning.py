@@ -49,7 +49,7 @@ def build_plan(
                 target=target,
                 detection=detection,
                 exists=target.exists(),
-                cost=source.stat().st_size * limits.weight(detection.format),
+                cost=limits.estimated_seconds(detection.format, source.stat().st_size),
             )
         )
     plan = BatchPlan(tuple(conversions), tuple(skipped), tuple(errors))
