@@ -1,12 +1,24 @@
 """Pure output-path rules (ADR-0016, ADR-0019)."""
 
 import os
+import unicodedata
 from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
 from clearmd.backend.schemas.formats import OUTPUT_DIR_NAME, RESULTS_DIR_NAME
+
+# Bytes of an output file name, collision suffix included: well under the 255 of every file system,
+# with room for the temporary name used while writing.
+MAX_NAME_BYTES = 200
+
+
+def _fit(stem: str, ending: str) -> str:
+    """``stem + ending`` cut (on a character boundary) so its UTF-8 fits in MAX_NAME_BYTES."""
+    room = MAX_NAME_BYTES - len(ending.encode("utf-8"))
+    cut = stem.encode("utf-8")[:room].decode("utf-8", errors="ignore").rstrip()
+    return cut + ending
 
 
 def keeps_output_inside(folder: Path) -> bool:
@@ -29,7 +41,7 @@ def output_root_for(source: Path, *, is_dir: bool, override: Path | None = None)
 
 def target_for(source: Path, output_root: Path, relative_dir: Path = Path()) -> Path:
     """Where the Markdown of ``source`` goes: ``OutputMD/<relative_dir>/<full stem>.md``."""
-    return output_root / RESULTS_DIR_NAME / relative_dir / f"{source.stem}.md"
+    return output_root / RESULTS_DIR_NAME / relative_dir / _fit(source.stem, ".md")
 
 
 @dataclass(frozen=True)
@@ -41,11 +53,12 @@ class NameRequest:
 
 
 def _key(path: Path) -> str:
-    return str(path).casefold()
+    """Case- and Unicode-form-insensitive, as Windows and macOS compare names."""
+    return unicodedata.normalize("NFC", str(path)).casefold()
 
 
 def _with_label(target: Path, label: str) -> Path:
-    return target.with_name(f"{target.stem} ({label}){target.suffix}")
+    return target.with_name(_fit(target.stem, f" ({label}){target.suffix}"))
 
 
 def resolve_names(requests: Sequence[NameRequest]) -> list[Path]:

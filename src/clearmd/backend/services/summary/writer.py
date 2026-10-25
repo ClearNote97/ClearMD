@@ -11,7 +11,7 @@ from clearmd.backend.schemas.models import (
     OutputRootReport,
     SkippedItem,
 )
-from clearmd.backend.use_cases.execution import atomic_write
+from clearmd.backend.use_cases.output_files import UnsafeOutput, atomic_write, read_regular_file
 from clearmd.i18n import Catalog
 
 HISTORY_START = "<!-- clearmd:history -->"
@@ -36,11 +36,11 @@ def _relative(path: Path, base: Path) -> str:
 def _previous_history(summary: Path) -> tuple[list[str], bool]:
     """Earlier batches, newest first, and whether a previous summary could not be read."""
     try:
-        text = summary.read_text(encoding="utf-8")
-    except FileNotFoundError:
-        return [], False
-    except (OSError, UnicodeDecodeError):
+        text = read_regular_file(summary)  # a planted link is never read through
+    except (UnsafeOutput, OSError, UnicodeDecodeError):
         return [], True
+    if text is None:
+        return [], False
     if HISTORY_START not in text or HISTORY_END not in text:
         return [], True
     lines = text.splitlines()
@@ -60,7 +60,8 @@ class MarkdownSummaryWriter:
     def write(self, report: OutputRootReport) -> None:
         path = report.root / SUMMARY_NAME
         history, unreadable = _previous_history(path)
-        atomic_write(path, self.render(report, history[:HISTORY_LIMIT], unreadable))
+        rendered = self.render(report, history[:HISTORY_LIMIT], unreadable)
+        atomic_write(path, rendered, inside=report.root)
 
     def render(self, report: OutputRootReport, history: list[str], unreadable: bool) -> str:
         text = self._catalog.text

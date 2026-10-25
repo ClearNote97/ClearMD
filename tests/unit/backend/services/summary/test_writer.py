@@ -225,3 +225,14 @@ def test_kept_and_cancelled_items_have_their_sections(tmp_path: Path) -> None:
     assert "## Kept (the output already existed)\n- `a.pdf` → `OutputMD/a.md`" in text
     assert "## Cancelled\n- `b.pdf`" in text
     assert "cancelled" in text.splitlines()[1]
+
+
+def test_a_planted_summary_link_is_neither_read_nor_written_through(tmp_path: Path) -> None:
+    victim = tmp_path / "victim.txt"
+    victim.write_text("precious <!-- clearmd:history -->", encoding="utf-8")
+    root = tmp_path / "ClearMD_Output"
+    root.mkdir()
+    (root / "Resumen_ClearMD.md").symlink_to(victim)
+    text = _write(tmp_path)
+    assert victim.read_text(encoding="utf-8") == "precious <!-- clearmd:history -->"
+    assert "precious" not in text

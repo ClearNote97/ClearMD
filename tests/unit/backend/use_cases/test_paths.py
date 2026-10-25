@@ -120,3 +120,25 @@ def test_names_do_not_depend_on_input_order() -> None:
         random.Random(seed).shuffle(shuffled)
         got = dict(zip((r.source for r in shuffled), resolve_names(shuffled), strict=True))
         assert got == expected
+
+
+def test_very_long_names_are_shortened_to_fit_any_file_system() -> None:
+    long_stem = "ñ" * 200  # 400 bytes in UTF-8
+    target = target_for(Path(f"/d/{long_stem}.pdf"), ROOT)
+    assert len(target.name.encode("utf-8")) <= 200
+    assert target.name.endswith(".md")
+    collided = resolve_names(
+        [
+            NameRequest(Path(f"/d/{long_stem}.pdf"), target, "pdf"),
+            NameRequest(Path(f"/d/{long_stem}.docx"), target, "docx"),
+        ]
+    )
+    assert all(len(path.name.encode("utf-8")) <= 200 for path in collided)
+    assert collided[0] != collided[1]
+
+
+def test_unicode_forms_of_the_same_name_collide() -> None:
+    nfc, nfd = "a\u00f1o.pdf", "an\u0303o.docx"  # "año" composed and decomposed
+    names = _names([_request(nfc), _request(nfd)])
+    # Same name on macOS (and to the eye): both get the extension, so neither overwrites the other.
+    assert [name.endswith((" (pdf).md", " (docx).md")) for name in names] == [True, True]

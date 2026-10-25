@@ -1,3 +1,4 @@
+import errno
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -16,7 +17,7 @@ from clearmd.backend.schemas.models import (
     PlannedConversion,
 )
 from clearmd.backend.use_cases.cancel import CancelToken
-from clearmd.backend.use_cases.execution import atomic_write, execute_plan
+from clearmd.backend.use_cases.execution import execute_plan
 
 NOW = datetime(2026, 10, 25, 15, 30, tzinfo=UTC)
 
@@ -136,40 +137,79 @@ def test_report_carries_the_clock_and_the_plan(tmp_path: Path) -> None:
     assert report.finished_at == NOW
 
 
-def test_a_permission_error_fails_that_file(
+def test_a_permission_error_on_one_result_fails_only_that_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import clearmd.backend.use_cases.execution as execution
+    from clearmd.backend.use_cases.output_files import atomic_write as real_write
+
+    def deny_first(target: Path, text: str, *, inside: Path) -> None:
+        if target.stem == "a":
+            raise PermissionError(13, "Permission denied", str(target))  # e.g. locked by an editor
+        real_write(target, text, inside=inside)
+
+    monkeypatch.setattr(execution, "atomic_write", deny_first)
+    items = (_item(tmp_path, "a.pdf"), _item(tmp_path, "b.pdf"))
+    _, report = _run(_plan(*items), FakeRunner())
+    assert [(o.status, o.error) for o in report.outcomes] == [
+        (OutcomeStatus.FAILED, ErrorCode.WRITE_FAILED),
+        (OutcomeStatus.CONVERTED, None),
+    ]
+
+
+def test_an_unreadable_source_fails_only_that_file(tmp_path: Path) -> None:
+    class LockedFirst(FakeRunner):
+        def convert(self, item: PlannedConversion, cancel: CancelToken) -> str:
+            if item.source.stem == "locked":
+                self.seen.append(item.source.name)
+                raise ConversionError(ErrorCode.SOURCE_UNREADABLE, "PermissionError: locked")
+            return super().convert(item, cancel)
+
+    items = (_item(tmp_path, "locked.xlsx"), _item(tmp_path, "b.pdf"), _item(tmp_path, "c.pdf"))
+    runner = LockedFirst()
+    _, report = _run(_plan(*items), runner)
+    assert [o.status for o in report.outcomes] == [
+        OutcomeStatus.FAILED,
+        OutcomeStatus.CONVERTED,
+        OutcomeStatus.CONVERTED,
+    ]
+    assert runner.seen == ["locked.xlsx", "b.pdf", "c.pdf"]
+
+
+@pytest.mark.parametrize(
+    ("error", "code"),
+    [
+        (OSError(errno.EROFS, "Read-only file system"), ErrorCode.PERMISSION_DENIED),
+        (OSError(errno.ENOSPC, "No space left on device"), ErrorCode.WRITE_FAILED),
+    ],
+)
+def test_an_output_root_that_cannot_be_created_fails_its_files_without_crashing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, error: OSError, code: ErrorCode
+) -> None:
+    import clearmd.backend.use_cases.execution as execution
+
+    def broken(root: Path) -> None:
+        raise error
+
+    monkeypatch.setattr(execution, "prepare_root", broken)
+    runner = FakeRunner()
+    _, report = _run(_plan(_item(tmp_path, "a.pdf"), _item(tmp_path, "b.pdf")), runner)
+    assert [o.error for o in report.outcomes] == [code, code]
+    assert runner.seen == []
+
+
+def test_any_os_error_while_saving_fails_that_file(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     import clearmd.backend.use_cases.execution as execution
 
-    def deny(target: Path, text: str) -> None:
-        raise PermissionError(13, "Permission denied", str(target))
+    def is_a_directory(target: Path, text: str, *, inside: Path) -> None:
+        raise IsADirectoryError(errno.EISDIR, "Is a directory", str(target))
 
-    monkeypatch.setattr(execution, "atomic_write", deny)
+    monkeypatch.setattr(execution, "atomic_write", is_a_directory)
     _, report = _run(_plan(_item(tmp_path, "a.pdf")), FakeRunner())
     (outcome,) = report.outcomes
-    assert outcome.error is ErrorCode.PERMISSION_DENIED
-
-
-def test_atomic_write_leaves_no_temp_file(tmp_path: Path) -> None:
-    target = tmp_path / "out" / "a.md"
-    atomic_write(target, "hello\r\nworld")
-    assert target.read_bytes() == b"hello\nworld"
-    assert [p.name for p in target.parent.iterdir()] == ["a.md"]
-
-
-def test_atomic_write_removes_the_temp_file_on_failure(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    import os
-
-    def broken_replace(src: str, dst: str) -> None:
-        raise OSError("disk full")
-
-    monkeypatch.setattr(os, "replace", broken_replace)
-    target = tmp_path / "a.md"
-    with pytest.raises(OSError, match="disk full"):
-        atomic_write(target, "x")
-    assert list(tmp_path.iterdir()) == []
+    assert (outcome.status, outcome.error) == (OutcomeStatus.FAILED, ErrorCode.WRITE_FAILED)
 
 
 class StepClock:
