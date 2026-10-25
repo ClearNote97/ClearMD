@@ -17,7 +17,7 @@ brings the two riskiest parts (the worker and markitdown) to the front.
 - [x] **T03 — Schemas and i18n basics.** `schemas/formats.py`, `limits.py`, `errors.py`, `models.py`,
       `events.py`; `use_cases/ports.py`, `cancel.py`; `i18n/` with `Catalog`, `resolve_language()` and the
       keys this slice needs; parity test (AC-31, AC-32).
-- [ ] **T04 — markitdown adapter.** `services/conversion/markitdown_adapter.py` + `registry.py`. Confirm with
+- [x] **T04 — markitdown adapter.** `services/conversion/markitdown_adapter.py` + `registry.py`. Confirm with
       the fixtures which exceptions mean "password" and "corrupt" before writing the mapping (AC-22).
 - [ ] **T05 — Worker process.** `services/worker/` (protocol, child, supervisor): persistent worker, time
       and memory limits, cancellation, replacement after a kill or a crash (AC-19, AC-23 – AC-26 at unit level).
