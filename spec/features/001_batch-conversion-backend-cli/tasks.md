@@ -9,7 +9,7 @@
 Goal: `clearmd D/report.pdf` writes `D/ClearMD_Output/Output/report.md` through the real worker process. It
 brings the two riskiest parts (the worker and markitdown) to the front.
 
-- [ ] **T01 — Fixtures.** `tests/fixtures/build_fixtures.py` + generated files (pdf, encrypted pdf, docx,
+- [x] **T01 — Fixtures.** `tests/fixtures/build_fixtures.py` + generated files (pdf, encrypted pdf, docx,
       pptx, xlsx, html, csv, epub, ipynb, txt, an extension-less docx, corrupt pdf/docx, a zip-bomb docx).
       Add `pypdf` to the `dev` group. Document in `tests/fixtures/README.md` how to regenerate them.
 - [ ] **T02 — Test harness.** `tests/conftest.py` with the no-network autouse fixture (AC-39) and the

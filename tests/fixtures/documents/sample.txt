@@ -1,0 +1,1 @@
+Text from a plain-text file: fixture-txt

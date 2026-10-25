@@ -27,6 +27,7 @@ dev = [
     "pytest>=9.1",
     "ruff>=0.17",
     "mypy>=2.4",
+    "pypdf>=6",
 ]
 
 [build-system]
@@ -52,7 +53,14 @@ strict = true
 python_version = "3.12"
 files = ["src", "tests"]
 
+[[tool.mypy.overrides]]
+# Third-party libraries without type information; each entry is justified where it is imported.
+module = ["openpyxl", "openpyxl.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 # importlib mode: tests mirror src/, so file names may repeat across folders.
 addopts = "-ra --import-mode=importlib"
+# The fixture builder is a plain script; its tests import it by name.
+pythonpath = ["tests/fixtures"]
