@@ -1,6 +1,6 @@
 # spec/features — Levels 2–4: one folder per feature
 
-Each feature lives in a numbered folder (`001_batch-conversion-core-cli`, …) with three files:
+Each feature lives in a numbered folder (`001_batch-conversion-backend-cli`, …) with three files:
 
 - `spec.md` — **what** it does and what must be true (acceptance criteria with ids, `AC-NN`).
 - `plan.md` — **how** it is built (architecture, contracts, testing strategy).
