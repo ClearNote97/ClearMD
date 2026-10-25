@@ -22,6 +22,13 @@ class Catalog:
         self.language = language
         self._messages = dict(messages)
 
+    def keys(self) -> set[str]:
+        return set(self._messages)
+
+    def text_template(self, key: str) -> str:
+        """The raw message, placeholders unfilled."""
+        return self._messages[key]
+
     def text(self, key: str, **values: object) -> str:
         """The message ``key`` with its named placeholders filled. A missing key is a bug."""
         return self._messages[key].format(**values)

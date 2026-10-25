@@ -62,7 +62,7 @@ brings the two riskiest parts (the worker and markitdown) to the front.
 - [x] **T16 — CLI complete.** Prompt, `--overwrite`/`--skip`, `--dry-run`, `--open`, `--output-root`,
       `--lang`, `--quiet`, `--no-recursive`, time left in the progress line, exit codes 3 and 130 (AC-17,
       AC-18, AC-30, AC-31, AC-34 – AC-38, AC-40).
-- [ ] **T17 — Acceptance sweep.** `tests/acceptance/test_001_batch_conversion.py` covers AC-01 … AC-44, one
+- [x] **T17 — Acceptance sweep.** `tests/acceptance/test_001_batch_conversion.py` covers AC-01 … AC-44, one
       test per criterion; add the ones not written in earlier slices.
 - [ ] **T18 — Close the feature.**
   - Update `docs/architecture/README.md` to the as-built design.

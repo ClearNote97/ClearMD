@@ -12,11 +12,14 @@ from pathlib import Path
 
 import pytest
 from build_fixtures import MARKERS
-from run_benchmark import SEED, make_pdf
+from run_benchmark import SEED, make_pdf, make_xlsx
 from support import put
+from support.worker_factories import FAKE
 
 from clearmd.backend.api import composition
+from clearmd.backend.schemas.formats import FormatId
 from clearmd.frontend.cli import main
+from clearmd.i18n import load_catalog
 
 
 def test_ac_01_a_file_converts_into_clearmd_output(
@@ -592,3 +595,88 @@ def test_ac_38_quiet_shows_only_the_summary_and_errors(
     assert "notes.md" not in captured.err  # no skip notes
     assert "broken.docx — This file seems to be damaged." in captured.err
     assert "converted" in captured.out
+
+
+def test_ac_24_a_worker_over_the_memory_limit_is_stopped_and_replaced(
+    workdir: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    make_xlsx(workdir / "sales.xlsx", 2 * 1024**2, random.Random(SEED))  # ~400 MiB peak
+    after = put(workdir, "sample.txt", "zz_after.txt")
+    # The plan must not skip it (AC-42), so its estimate is zeroed; the real use is not.
+    base = composition.default_limits()
+    limits = replace(
+        base,
+        worker_memory=230 * 1024**2,
+        memory_per_mib={**base.memory_per_mib, FormatId.XLSX: 0.0},
+        weights={**base.weights, FormatId.XLSX: 0.0},  # convert it first
+    )
+    monkeypatch.setattr(composition, "default_limits", lambda: limits)
+    assert main([str(workdir / "sales.xlsx"), str(after)]) == 1
+    err = capsys.readouterr().err
+    assert "⏹ sales.xlsx — stopped after" in err
+    assert "close other programs" in err
+    assert (workdir / "ClearMD_Output" / "OutputMD" / "zz_after.md").is_file()  # new worker
+
+
+def test_ac_25_a_crashing_worker_fails_that_file_and_the_batch_goes_on(
+    workdir: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(composition, "REGISTRY_FACTORY", FAKE)  # its "crash" file kills the worker
+    crash = put(workdir, "sample.txt", "crash.txt")
+    after = put(workdir, "sample.txt", "zz_after.txt")
+    assert main([str(crash), str(after)]) == 1
+    assert "crash.txt — The converter stopped unexpectedly" in capsys.readouterr().err
+    assert (workdir / "ClearMD_Output" / "OutputMD" / "zz_after.md").is_file()
+
+
+def test_ac_30_the_cli_ends_with_counts_and_the_output_folders(
+    workdir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    first = put(workdir / "one", "sample.txt", "a.txt")
+    second = put(workdir / "two", "corrupt.docx", "b.docx")
+    (workdir / "one" / "c.md").write_text("# hi", encoding="utf-8")
+    main([str(first), str(second), str(workdir / "one" / "c.md")])
+    out = capsys.readouterr().out.splitlines()
+    assert out[0] == "1 converted · 1 skipped · 1 failed"
+    assert out[1:] == [
+        f"Results: {workdir / 'one' / 'ClearMD_Output'}",
+        f"Results: {workdir / 'two' / 'ClearMD_Output'}",
+    ]
+
+
+def test_ac_32_both_catalogs_have_the_same_keys_and_placeholders() -> None:
+    import string
+
+    def placeholders(text: str) -> set[str]:
+        return {name for _, name, _, _ in string.Formatter().parse(text) if name}
+
+    english, spanish = load_catalog("en"), load_catalog("es")
+    assert english.keys() == spanish.keys()
+    for key in english.keys():
+        assert placeholders(english.text_template(key)) == placeholders(spanish.text_template(key))
+
+
+def test_ac_39_every_format_converts_with_the_network_blocked_in_the_worker(
+    workdir: Path,
+) -> None:
+    samples = [put(workdir, name) for name in sorted(MARKERS) if name.startswith("sample.")]
+    assert main([*map(str, samples), "--quiet"]) == 0  # the REAL factory guards the worker
+
+
+def test_ac_39_a_converter_that_tries_the_network_is_stopped(
+    workdir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(composition, "REGISTRY_FACTORY", FAKE)  # "network" opens a socket
+    source = put(workdir, "sample.txt", "network.txt")
+    assert main([str(source), "--quiet"]) == 1
+    assert "NetworkBlockedError" in _summary(workdir)
+
+
+def test_every_acceptance_criterion_of_the_spec_has_a_test() -> None:
+    import re
+
+    spec = Path(__file__).parents[2] / "spec" / "features" / "001_batch-conversion-backend-cli"
+    ids = {int(n) for n in re.findall(r"\*\*AC-(\d+)\*\*", (spec / "spec.md").read_text("utf-8"))}
+    names = [name for name in globals() if name.startswith("test_ac_")]
+    covered = {int(n) for name in names for n in re.findall(r"ac_(\d+)", name)}
+    assert sorted(ids - covered) == []
