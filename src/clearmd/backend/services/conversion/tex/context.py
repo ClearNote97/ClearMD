@@ -62,6 +62,10 @@ _ENVIRONMENTS = [
 ]
 
 
+class _SkipStrict(Exception):
+    pass
+
+
 def make_context(extra_macros: list[Any] | None = None) -> LatexContextDb:
     """A fresh context: pylatexenc's defaults, ClearMD's additions, then the author's macros."""
     context = latexwalker.get_default_latex_context_db()
@@ -73,13 +77,22 @@ def make_context(extra_macros: list[Any] | None = None) -> LatexContextDb:
     return context
 
 
-def parse(text: str, context: LatexContextDb) -> tuple[list[Any], str | None]:
-    """The nodes of ``text``, and the first parse error (the tolerant parse recovers from it)."""
+def parse(
+    text: str, context: LatexContextDb, *, strict: bool = True
+) -> tuple[list[Any], str | None]:
+    """The nodes of ``text``, and the first parse error (the tolerant parse recovers from it).
+
+    ``strict=False`` skips the strict pass that only reports errors (macro expansions).
+    """
     error: str | None = None
     try:
+        if not strict:
+            raise _SkipStrict
         latexwalker.LatexWalker(
             text, latex_context=context, tolerant_parsing=False
         ).get_latex_nodes()
+    except _SkipStrict:
+        pass
     except latexwalker.LatexWalkerError as problem:
         error = str(problem).splitlines()[0]
     walker = latexwalker.LatexWalker(text, latex_context=context, tolerant_parsing=True)

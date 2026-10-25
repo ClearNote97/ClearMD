@@ -8,7 +8,7 @@ from clearmd.backend.schemas.notes import ConversionNote, NoteItem, NoteKind, No
 from clearmd.backend.services.conversion.safe_files import read_regular_file
 from clearmd.backend.services.conversion.tex.context import make_context, parse
 from clearmd.backend.services.conversion.tex.includes import MAX_BYTES, IncludeState, enter
-from clearmd.backend.services.conversion.tex.render import Renderer
+from clearmd.backend.services.conversion.tex.render import Renderer, author_macros
 from clearmd.backend.services.conversion.tex.source import decode_source
 
 _INCLUDE = re.compile(r"\\(?:input|include|subfile)\s*\{([^}]*)\}")
@@ -74,7 +74,11 @@ class _Document:
         data = read_regular_file(self.path, MAX_BYTES)
         self.state.bytes_read = len(data)
         text = self._decode(data)
-        self.renderer = Renderer(self.gather(text), include=self.include)
+        whole = self.gather(text)
+        macros = author_macros(parse(whole, self.context, strict=False)[0], len(whole))
+        if macros is not None:
+            self.context = macros.context
+        self.renderer = Renderer(whole, include=self.include, macros=macros)
         nodes, error = parse(text, self.context)
         if error:
             self.parse_errors[NoteItem(error)] = None

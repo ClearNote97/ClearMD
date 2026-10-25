@@ -189,3 +189,24 @@ def test_ac_15_includes_outside_the_folder_are_never_read(workdir: Path) -> None
         "`cycle_a` (it includes itself)",
     ):
         assert expected in notes, expected
+
+
+def test_ac_16_the_authors_macros_are_expanded(workdir: Path) -> None:
+    (thesis,) = copy_tex(workdir, "thesis")
+    assert main([str(thesis / "main.tex"), "--quiet"]) == 0
+    text = (thesis / "ClearMD_Output" / "OutputMD" / "main.md").read_text(encoding="utf-8")
+    assert "$x \\in \\mathbb{R}$" in text and "$(0, a)$, $(b, c)$" in text
+    assert "Herramienta: ClearMD." in text
+
+
+def test_ac_17_macro_bombs_stop_at_the_limit_with_a_note(workdir: Path) -> None:
+    (hostile,) = copy_tex(workdir, "hostile")
+    sources = [hostile / "recursive_macro.tex", hostile / "exponential_macro.tex"]
+    assert main([*map(str, sources), "--quiet"]) == 0
+    converted = (hostile / "ClearMD_Output" / "OutputMD" / "exponential_macro.md").read_text(
+        encoding="utf-8"
+    )
+    assert "$\\bombaa$" in converted
+    notes = (hostile / "ClearMD_Output" / "Resumen_ClearMD.md").read_text(encoding="utf-8")
+    assert "`\\loop` (64 levels of nesting)" in notes
+    assert "`\\bombaa` (10,000 expansions)" in notes

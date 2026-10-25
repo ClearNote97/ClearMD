@@ -27,6 +27,11 @@ from clearmd.backend.services.conversion.tex.context import (
     make_context,
     parse,
 )
+from clearmd.backend.services.conversion.tex.macros import (
+    BudgetExceeded,
+    MacroExpander,
+    collect_definitions,
+)
 from clearmd.backend.services.conversion.tex.tables import tabular_to_markdown
 
 SECTION_LEVELS = {
@@ -38,6 +43,7 @@ SECTION_LEVELS = {
     "paragraph": 5,
     "subparagraph": 6,
 }
+_CONTROL_WORD_AT_END = re.compile(r"\\[A-Za-z]+$")
 _SECTIONING = re.compile(r"\\(" + "|".join(SECTION_LEVELS) + r")\*?\s*[\[{]")
 _BABEL = re.compile(r"\\usepackage\s*\[([^\]]*)\]\s*\{babel\}|\\setmainlanguage\s*\{([^}]*)\}")
 
@@ -133,13 +139,11 @@ class Renderer:
         *,
         include: IncludeHandler | None = None,
         image: ImageHandler | None = None,
-        math_text: Callable[[list[Any]], str] | None = None,
+        macros: MacroExpander | None = None,
     ) -> None:
         self._include = include
         self._image = image or (lambda path: path)
-        self._math_text = math_text or (
-            lambda nodes: "".join(n.latex_verbatim() for n in nodes if not _is_label(n))
-        )
+        self._macros = macros
         present = [SECTION_LEVELS[name] for name in _SECTIONING.findall(source)]
         self._top_level = min(present, default=SECTION_LEVELS["section"])
         babel = _BABEL.search(source)
@@ -170,8 +174,17 @@ class Renderer:
     def render(self, nodes: list[Any]) -> str:
         parts = []
         after_unknown = False
+        skip = 0
         for node in nodes:
             if node is None:
+                continue
+            if skip:  # the name and body of a \def
+                skip -= 1
+                if isinstance(node, LatexMacroNode) or isinstance(node, LatexGroupNode):
+                    continue
+                skip = 0
+            if _is_macro(node, "def"):
+                skip = 2
                 continue
             if after_unknown and isinstance(node, LatexGroupNode):
                 parts.append(node.latex_verbatim())  # its arguments, as written
@@ -223,6 +236,8 @@ class Renderer:
 
     def _macro(self, node: Any) -> str:
         name: str = node.macroname
+        if self._macros is not None and self._macros.knows(name):
+            return self._expanded(node, self.render)
         if name in SECTION_LEVELS:
             level = 2 + max(0, SECTION_LEVELS[name] - self._top_level)
             return _block("#" * min(6, level) + " " + self.inline(self._last_arg(node)))
@@ -323,7 +338,56 @@ class Renderer:
         return f"${body}$"
 
     def _math_body(self, nodes: list[Any] | None) -> str:
-        return " ".join(self._math_text(list(nodes or [])).split())
+        return " ".join(self._math_source(list(nodes or [])).split())
+
+    # --- The author's macros ------------------------------------------------------------------
+
+    def _expanded(self, node: Any, serialize: Callable[[list[Any]], str]) -> str:
+        """A use of an author's macro, expanded; past the budget the top-level use stays as is."""
+        assert self._macros is not None
+        top = self._macros.depth == 0
+        try:
+            with self._macros.nested():
+                return serialize(self._macros.expand(node))
+        except BudgetExceeded:
+            if not top:
+                raise
+            if self._macros.limited is None:
+                self._macros.limited = f"\\{node.macroname}"
+            text: str = node.latex_verbatim()
+            return text
+
+    def _math_source(self, nodes: list[Any]) -> str:
+        return "".join(self._serialize(n) for n in nodes if n is not None and not _is_label(n))
+
+    def _serialize(self, node: Any) -> str:
+        """Math as written, with only the spans that use an author's macro replaced."""
+        verbatim: str = node.latex_verbatim()
+        if self._macros is None:
+            return verbatim
+        if isinstance(node, LatexMacroNode) and self._macros.knows(node.macroname):
+            text = self._expanded(node, self._math_source)
+            # "\\R x" must not become "\\mathbb{R}x" glued to a following letter by mistake.
+            if text != verbatim and _CONTROL_WORD_AT_END.search(text):
+                text += " "
+            return text
+        children = sorted((c for c in _children(node) if c is not None), key=lambda c: c.pos)
+        if not any(self._uses_author_macro(child) for child in children):
+            return verbatim
+        source: str = node.parsing_state.s
+        parts, cursor = [], node.pos
+        for child in children:
+            parts.append(source[cursor : child.pos])
+            parts.append(self._serialize(child))
+            cursor = child.pos + child.len
+        parts.append(source[cursor : node.pos + node.len])
+        return "".join(parts)
+
+    def _uses_author_macro(self, node: Any) -> bool:
+        assert self._macros is not None
+        if isinstance(node, LatexMacroNode) and self._macros.knows(node.macroname):
+            return True
+        return any(self._uses_author_macro(c) for c in _children(node) if c is not None)
 
     def _list(self, node: Any) -> str:
         items: list[tuple[Any, list[Any]]] = []
@@ -410,6 +474,9 @@ class Renderer:
         if self.unknown:
             items = tuple(NoteItem(name) for name in self.unknown)
             found.append(ConversionNote(NoteKind.UNKNOWN_COMMANDS, items))
+        if self._macros is not None and self._macros.exhausted is not None:
+            limit = NoteItem(self._macros.limited or "", self._macros.exhausted.value)
+            found.append(ConversionNote(NoteKind.MACRO_LIMIT_REACHED, (limit,)))
         if self.tables_kept:
             found.append(
                 ConversionNote(NoteKind.TABLE_KEPT_AS_LATEX, (NoteItem(str(self.tables_kept)),))
@@ -423,6 +490,11 @@ def _is_macro(node: Any, name: str) -> bool:
 
 def _is_label(node: Any) -> bool:
     return _is_macro(node, "label")
+
+
+def _children(node: Any) -> list[Any]:
+    arguments = getattr(getattr(node, "nodeargd", None), "argnlist", None) or []
+    return [*(getattr(node, "nodelist", None) or []), *arguments]
 
 
 def _walk(nodes: list[Any] | None) -> list[Any]:
@@ -444,10 +516,19 @@ def _tidy(text: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", joined).strip() + "\n"
 
 
+def author_macros(nodes: list[Any], source_size: int) -> MacroExpander | None:
+    """The expander for the definitions in ``nodes``, or ``None`` when there are none."""
+    definitions = collect_definitions(nodes)
+    return MacroExpander(definitions, source_size) if definitions else None
+
+
 def render_latex(text: str) -> ConversionResult:
     """Convert one LaTeX source (no includes followed: see ``TexConverter``)."""
     nodes, error = parse(text, make_context())
-    renderer = Renderer(text)
+    macros = author_macros(nodes, len(text))
+    if macros is not None:
+        nodes, error = parse(text, macros.context)
+    renderer = Renderer(text, macros=macros)
     markdown = renderer.document(nodes)
     notes = list(renderer.notes())
     if error:
