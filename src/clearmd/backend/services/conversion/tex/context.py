@@ -7,8 +7,11 @@ code would become math), reads ``\url`` as LaTeX (a ``%`` would start a comment)
 first one is kept for the ``parse_recovered`` note.
 """
 
+import bisect
 import re
+from array import array
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any
 
 from pylatexenc import latexwalker
@@ -23,7 +26,17 @@ from pylatexenc.macrospec import (
 
 CITATION_MACROS = ("cite", "citep", "citet", "parencite", "textcite", "autocite", "citeauthor")
 REFERENCE_MACROS = ("ref", "eqref", "autoref", "cref", "Cref", "pageref", "nameref")
-CODE_ENVIRONMENTS = ("verbatim", "verbatim*", "lstlisting", "minted")
+CODE_ENVIRONMENTS = (
+    "verbatim",
+    "verbatim*",
+    "lstlisting",
+    "minted",
+    "Verbatim",
+    "Verbatim*",
+    "BVerbatim",
+    "LVerbatim",
+)
+VERB_WINDOW = 4096  # a \verb argument is on one line; never searched farther than this
 _SPACE = " \t\n\r"
 
 
@@ -45,9 +58,10 @@ def _chars(w: Any, parsing_state: Any, start: int, end: int) -> Any:
     )
 
 
-def _balanced_end(text: str, start: int, *, comments: bool = True) -> int:
-    """The index of the ``}`` closing the ``{`` at ``start`` (escaped braces and comments
-    skipped), or -1."""
+_SMALL_TEXT = 4096  # scanned directly; larger texts get their pairs computed once
+
+
+def _scan_end(text: str, start: int, comments: bool) -> int:
     depth = 0
     index = start
     while index < len(text):
@@ -69,6 +83,46 @@ def _balanced_end(text: str, start: int, *, comments: bool = True) -> int:
                 return index
         index += 1
     return -1
+
+
+@lru_cache(maxsize=4)
+def _brace_pairs(text: str, comments: bool) -> tuple[array[int], array[int]]:
+    """Every matched ``{`` of a large text and its ``}``, in one pass: two compact arrays
+    (opening positions, sorted, and their closings), about 16 bytes per pair."""
+    pairs: list[tuple[int, int]] = []
+    open_at: list[int] = []
+    index = 0
+    while index < len(text):
+        char = text[index]
+        if char == "\\":
+            index += 2
+            continue
+        if char == "%" and comments:
+            line_end = text.find("\n", index)
+            index = len(text) if line_end == -1 else line_end + 1
+            continue
+        if char == "{":
+            open_at.append(index)
+        elif char == "}" and open_at:
+            pairs.append((open_at.pop(), index))
+        index += 1
+    pairs.sort()
+    return array("q", (o for o, _ in pairs)), array("q", (c for _, c in pairs))
+
+
+def forget_brace_pairs() -> None:
+    """Free the pairs kept for the large texts of the document just converted."""
+    _brace_pairs.cache_clear()
+
+
+def _balanced_end(text: str, start: int, *, comments: bool = True) -> int:
+    """The index of the ``}`` closing the ``{`` at ``start``, or -1. Linear over a document:
+    a large text's pairs are found once, not once per unclosed brace."""
+    if len(text) < _SMALL_TEXT:
+        return _scan_end(text, start, comments)
+    openings, closings = _brace_pairs(text, comments)
+    index = bisect.bisect_left(openings, start)
+    return closings[index] if index < len(openings) and openings[index] == start else -1
 
 
 class CmidruleParser(MacroStandardArgsParser):  # type: ignore[misc]
@@ -107,17 +161,26 @@ class VerbatimEnvironmentParser(MacroStandardArgsParser):  # type: ignore[misc]
 
 
 class VerbParser(MacroStandardArgsParser):  # type: ignore[misc]
-    r"""``\verb|…|`` and ``\verb*|…|`` on one line; anything else leaves no argument."""
+    r"""``\verb|…|`` and ``\verb*|…|`` on one line; ``\lstinline[opts]|…|`` or ``{…}`` too.
+    Anything else leaves no argument."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, options: bool = False) -> None:
         super().__init__(argspec="")
+        self.options = options
 
     def parse_args(self, w: Any, pos: int, parsing_state: Any = None) -> tuple[Any, int, int]:
         start = pos + 1 if w.s.startswith("*", pos) else pos
+        if self.options and w.s.startswith("[", start):
+            closing = w.s.find("]", start, start + VERB_WINDOW)
+            start = closing + 1 if closing != -1 else start
         delimiter = w.s[start : start + 1]
-        end = w.s.find(delimiter, start + 1) if delimiter and not delimiter.isalpha() else -1
-        newline = w.s.find("\n", start + 1)
-        if end == -1 or (newline != -1 and newline < end) or delimiter in _SPACE:
+        limit = min(len(w.s), start + VERB_WINDOW)
+        newline = w.s.find("\n", start + 1, limit)
+        limit = newline if newline != -1 else limit
+        closer = "}" if self.options and delimiter == "{" else delimiter
+        usable = delimiter and not delimiter.isalpha() and delimiter not in _SPACE
+        end = w.s.find(closer, start + 1, limit) if usable else -1
+        if end == -1:
             _report(w, pos, "\\verb without its closing delimiter")
             return ParsedMacroArgs(argspec="", argnlist=[]), pos, 0
         node = _chars(w, parsing_state, start + 1, end)
@@ -140,7 +203,8 @@ class UrlArgsParser(MacroStandardArgsParser):  # type: ignore[misc]
         end = _balanced_end(w.s, start, comments=False) if found else -1
         if end == -1:
             _report(w, pos, "URL without its closing brace")
-            return ParsedMacroArgs(argspec="", argnlist=[]), pos, 0
+            empty = [None] * len(self.argspec)  # every argument absent, never a short list
+            return ParsedMacroArgs(argspec=self.argspec, argnlist=empty), pos, 0
         url = _chars(w, parsing_state, start + 1, end)
         arguments = [url]
         stop = end + 1
@@ -214,6 +278,7 @@ class RawBodyParser(MacroStandardArgsParser):  # type: ignore[misc]
 
 _MACROS = [
     MacroSpec("verb", args_parser=VerbParser()),
+    MacroSpec("lstinline", args_parser=VerbParser(options=True)),
     MacroSpec("def", args_parser=DefParser()),
     MacroSpec("url", args_parser=UrlArgsParser()),
     MacroSpec("href", args_parser=UrlArgsParser("{")),
@@ -303,15 +368,28 @@ def parse(text: str, context: LatexContextDb) -> tuple[list[Any], ParseError | N
 
 
 # What is not LaTeX to look into for includes: comments (a "%" after an even run of backslashes),
-# code environments, the comment environment, \verb, \iffalse … \fi and URL arguments.
+# code environments, the comment environment, \verb and \lstinline, \iffalse … \fi (nested
+# conditionals counted) and URL arguments.
 _NOT_SOURCE = re.compile(
     r"(?<!\\)(?:\\\\)*%"
-    r"|\\begin\s*\{(verbatim\*?|lstlisting|minted|comment)\}"
-    r"|\\verb\*?([^\sA-Za-z*])"
+    r"|\\begin\s*\{(verbatim\*?|Verbatim\*?|BVerbatim|LVerbatim|lstlisting|minted|comment)\}"
+    r"|\\(?:verb\*?|lstinline(?:\[[^\]\n]{0,256}\])?)([^\sA-Za-z*])"
     r"|\\iffalse(?![A-Za-z@])"
     r"|\\(?:url|href)\s*(?=\{)"
 )
-_FI = re.compile(r"\\fi(?![A-Za-z@])")
+# \ifthenelse is a macro of the ifthen package, not a TeX conditional: it has no \fi.
+_CONDITIONAL = re.compile(r"\\(if(?!thenelse)[A-Za-z@]*|fi)(?![A-Za-z@])")
+
+
+def matching_fi(text: str, start: int) -> int | None:
+    r"""The end of the ``\fi`` closing a conditional opened just before ``start`` (nested ones
+    counted), or ``None``."""
+    depth = 1
+    for found in _CONDITIONAL.finditer(text, start):
+        depth += -1 if found.group(1) == "fi" else 1
+        if depth == 0:
+            return found.end()
+    return None
 
 
 def mask(text: str) -> str:
@@ -327,13 +405,14 @@ def mask(text: str) -> str:
             close = text.find(f"\\end{{{found.group(1)}}}", found.end())
             end = len(text) if close == -1 else close
         elif found.group(2):
-            line_end = text.find("\n", found.end())
-            limit = len(text) if line_end == -1 else line_end
-            close = text.find(found.group(2), found.end(), limit)
+            delimiter = "}" if found.group(2) == "{" else found.group(2)
+            limit = min(len(text), found.end() + VERB_WINDOW)
+            line_end = text.find("\n", found.end(), limit)
+            close = text.find(delimiter, found.end(), limit if line_end == -1 else line_end)
             end = found.end() if close == -1 else close + 1
         elif token.startswith("\\iffalse"):
-            fi = _FI.search(text, found.end())
-            end = len(text) if fi is None else fi.end()
+            fi = matching_fi(text, found.end())
+            end = found.end() if fi is None else fi  # unclosed: not a comment (noted when read)
         else:  # \url{…} or \href{…}: read as written by UrlArgsParser
             close = _balanced_end(text, found.end(), comments=False)
             end = found.end() if close == -1 else close + 1

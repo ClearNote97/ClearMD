@@ -99,7 +99,8 @@ Each criterion has an acceptance test named after its id (`tests/acceptance/test
 - [ ] **AC-16** The author's `\newcommand`/`\renewcommand`/`\providecommand` (up to 9 arguments, an optional
   first one with its default), `\DeclareMathOperator` and parameterless `\def` are expanded, in text and in math,
   including definitions made in an included file.
-- [ ] **AC-17** Expansion stops at 10,000 expansions, a nesting depth of 64, or an expanded text larger than 4×
+- [ ] **AC-17** Expansion stops at 10,000 expansions (or 10 per KiB of source, when that is more), a nesting
+  depth of 64, or an expanded text larger than 4×
   the source plus 1 MiB; what remains is left as written and a note says which limit was reached. A recursive or
   exponential macro never hangs or exhausts the worker.
 
@@ -123,7 +124,9 @@ Each criterion has an acceptance test named after its id (`tests/acceptance/test
 
 - **Actors:** the same as feature 001 (CLI now, GUIs later).
 - **Data:** `.tex` files and the `.tex` files they include, read-only and only inside the document folder;
-  referenced images are linked, never read or copied.
+  referenced images are linked, never read or copied; an image named outside the folder or remote (`http:`,
+  `//host`, an absolute path) is shown as code, never as a link, so opening the Markdown fetches nothing
+  (ADR-0023).
 
 ## Risks / open questions
 
@@ -132,3 +135,8 @@ Each criterion has an acceptance test named after its id (`tests/acceptance/test
   macro bombs, deep nesting).
 - **Custom document classes** (university thesis classes) may define sectioning commands of their own: they are
   unknown commands unless defined with `\newcommand` in the document.
+- **Speed:** pylatexenc reads a source character by character (measured in benchmark 002); a very large `.tex`
+  meets the per-file time limit of ADR-0015 like any slow format.
+- **Known limits of the subset** (from the review, accepted): a `\renewcommand` in the middle of a document
+  applies to the whole document; a remote image the author wanted shows as code; `\date{\today}` gives no date;
+  includes written by a macro are not followed (noted).

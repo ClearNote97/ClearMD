@@ -14,7 +14,7 @@ from pathlib import Path
 from clearmd.backend.schemas.models import ConversionResult
 from clearmd.backend.schemas.notes import ConversionNote, NoteItem, NoteKind, NoteReason
 from clearmd.backend.services.conversion.safe_files import read_regular_file
-from clearmd.backend.services.conversion.tex.context import mask
+from clearmd.backend.services.conversion.tex.context import forget_brace_pairs, mask
 from clearmd.backend.services.conversion.tex.images import ImageFinder, graphics_paths
 from clearmd.backend.services.conversion.tex.includes import (
     MAX_BYTES,
@@ -126,4 +126,7 @@ def convert_document(path: Path, target: Path | None = None) -> ConversionResult
     ``target`` is where the Markdown will be written: image links are relative to it (by
     default, a file next to the source).
     """
-    return _Document(path, target or path.with_suffix(".md")).convert()
+    try:
+        return _Document(path, target or path.with_suffix(".md")).convert()
+    finally:
+        forget_brace_pairs()

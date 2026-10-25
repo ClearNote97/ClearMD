@@ -35,14 +35,22 @@ from clearmd.backend.services.conversion.tex.context import (
 )
 from clearmd.backend.services.conversion.tex.macros import (
     BudgetExceeded,
+    DefinitionSite,
     MacroDefinition,
     MacroExpander,
     collect_definitions,
-    definition_spans,
+    definition_sites,
     is_parametrized_def,
     opens_or_closes_an_environment,
 )
-from clearmd.backend.services.conversion.tex.nodes import argument, children, is_macro, raw, walk
+from clearmd.backend.services.conversion.tex.nodes import (
+    MARK,
+    argument,
+    children,
+    is_macro,
+    raw,
+    walk,
+)
 from clearmd.backend.services.conversion.tex.tables import tabular_to_markdown
 
 SECTION_LEVELS = {
@@ -56,11 +64,21 @@ SECTION_LEVELS = {
 }
 _CONTROL_WORD_AT_END = re.compile(r"\\[A-Za-z]+$")
 _INDENTATION = re.compile(r"\n[ \t]+")
-_FENCE_LINE = re.compile(r"[ \t]*(`{3,}|~{3,})(.*)")
+# ClearMD marks the start of every block line it writes itself (headings, list markers, quotes,
+# fences, math, table rows, footnotes); a final pass neutralizes any other line that Markdown
+# would read as a block, and removes the marks. The mark is stripped from the input first, so a
+# document cannot forge it (ADR-0023).
+_FENCE_LINE = re.compile(r"[ \t]*" + MARK + r"(`{3,}|~{3,})(.*)")
+_OWN_FENCE = re.compile(r"(`{3,}|~{3,})(.*)")
 _SECTIONING_IN_BODY = re.compile(r"\\(" + "|".join(SECTION_LEVELS) + r")(?![A-Za-z@])")
 _ENTITY = re.compile(r"&[#A-Za-z]")
-# At the start of a line, what Markdown would read as a heading, a quote or a list item.
-_BLOCK_START = re.compile(r"(^|\n)([ \t]*)(#|>|[-+*](?=[ \t])|\d+(?=[.)][ \t]))")
+# What Markdown reads as a block at the start of a line written by the document.
+_BLOCK_LINE = re.compile(
+    r"(?P<mark>#{1,6}(?=\s|$)|>|[-+*](?=\s|$)|(?P<number>\d{1,9})(?=[.)](?:\s|$))"
+    r"|`{3,}|~{3,}|\||[=]+[ \t]*$|(?P<rule>[-*_])(?:[ \t]*(?P=rule)){2,}[ \t]*$)"
+)
+_TABLE_RULE = re.compile(r"\|?[ \t]*:?-+:?[ \t]*(\|[ \t]*:?-+:?[ \t]*)*\|?[ \t]*")
+_MATH_TAG = re.compile(r"<(?=[A-Za-z/!?])")
 _SAFE_LINK = re.compile(r"^(?:https?|ftp|mailto):|^[^:]*$", re.IGNORECASE)
 
 INLINE = {
@@ -122,6 +140,7 @@ LANGUAGES = frozenset(
         "basque", "galician",
     }
 )  # fmt: skip
+MAX_SUBSTITUTION_ROUNDS = 4  # \\myeq → \\bal → \\begin{align}: chains are short
 MAX_UNKNOWN = 1000  # distinct names kept for the note; the text keeps every one as written
 
 _LATEX2TEXT = LatexNodes2Text(math_mode="verbatim", strict_latex_spaces=False)
@@ -154,7 +173,7 @@ def _indent(text: str, width: int) -> str:
     return "\n".join([lines[0], *[(" " * width + line) if line else "" for line in lines[1:]]])
 
 
-def outside_code(text: str, fix: Callable[[str], str]) -> str:
+def outside_code(text: str, fix: Callable[[str], str], *, blank_around: bool = False) -> str:
     """``fix`` applied to the text between fenced code blocks; the blocks stay as they are.
 
     A line scanner (linear): a fence closes on a line of the same character, at least as long,
@@ -179,21 +198,77 @@ def outside_code(text: str, fix: Callable[[str], str]) -> str:
                 pieces.append((False, []))
         else:
             pieces[-1][1].append(line)
-    return "\n".join(
-        "\n".join(lines) if is_code else fix("\n".join(lines)) for is_code, lines in pieces
-    )
+    if not blank_around:
+        return "\n".join(
+            "\n".join(lines) if is_code else fix("\n".join(lines)) for is_code, lines in pieces
+        )
+    # Exactly one blank line between a code block and the text around it.
+    parts = [
+        "\n".join(lines) if is_code else fix("\n".join(lines)).strip("\n")
+        for is_code, lines in pieces
+    ]
+    return "\n\n".join(part for part in parts if part)
 
 
 def escape_text(text: str) -> str:
-    """Text from the document never becomes Markdown structure, a link or raw HTML."""
-    text = text.replace("<", "&lt;").replace("[", "&#91;").replace("]", "&#93;")
+    """Text from the document never becomes a link, an image or raw HTML (blocks: neutralize)."""
+    return text.replace("<", "&lt;").replace("[", "&#91;").replace("]", "&#93;")
 
-    def protect(found: re.Match[str]) -> str:
-        marker = found.group(3)
-        marked = marker + "\\" if marker[0].isdigit() else "\\" + marker
-        return found.group(1) + found.group(2) + marked
 
-    return _BLOCK_START.sub(protect, text)
+def escape_math(text: str) -> str:
+    """``<img`` inside math is HTML to a viewer without math support; ``< img`` is the same math."""
+    return _MATH_TAG.sub("< ", text)
+
+
+def _marked(text: str) -> str:
+    """``text``'s lines, each marked as written by ClearMD."""
+    return "\n".join(MARK + line for line in text.split("\n"))
+
+
+def _neutral_line(line: str, after_blank: bool) -> str:
+    indent = len(line) - len(line.lstrip(" \t"))
+    content = line[indent:]
+    if after_blank and indent >= 4:  # an indented code block
+        indent, line = 0, content
+    if indent >= 4 or not content:
+        return line
+    if _TABLE_RULE.fullmatch(content) and "|" in content:
+        return line[:indent] + "\\" + content
+    found = _BLOCK_LINE.match(content)
+    if found is None:
+        return line
+    if found.group("number") is not None:
+        digits = found.group("number")
+        return line[:indent] + digits + "\\" + content[len(digits) :]
+    if content[0] == "<":
+        return line[:indent] + "&lt;" + content[1:]
+    return line[:indent] + "\\" + content
+
+
+def neutralize(text: str, *, keep_marks: bool = False) -> str:
+    """Every line the document wrote that Markdown would read as a block becomes plain text;
+    ClearMD's own marked lines (and the code inside its fences) stay; the marks go (or stay,
+    for a part that is marked again as a whole: a list item, a quote)."""
+    out: list[str] = []
+    fence: str | None = None
+    after_blank = True
+    for line in text.split("\n"):
+        stripped = line.lstrip(" \t")
+        if stripped.startswith(MARK):
+            own = _OWN_FENCE.match(stripped[1:])
+            if fence is None and own is not None:
+                fence = own.group(1)
+            elif fence is not None and own is not None and not own.group(2).strip():
+                if own.group(1)[0] == fence[0] and len(own.group(1)) >= len(fence):
+                    fence = None
+            out.append(line if keep_marks else line.replace(MARK, ""))
+        elif fence is not None:
+            out.append(line)  # code, as written
+        else:
+            out.append(_neutral_line(line, after_blank))
+        after_blank = not line.strip()
+    joined = "\n".join(out)
+    return joined if keep_marks else joined.replace(MARK, "")
 
 
 def link_target(path: str) -> str:
@@ -303,6 +378,7 @@ class Renderer:
         self._known_refused = known_refused  # includes already noted while reading
         self._listed = listed  # how many of them: the note lists at most MAX_UNKNOWN
         self._in_code = 0  # inside \\texttt: text as written, no escaping, no ligatures
+        self.recovered: dict[str, None] = {}  # what went wrong and was kept as written
 
     # --- Entry points -------------------------------------------------------------------------
 
@@ -314,25 +390,20 @@ class Renderer:
                     self.metadata[node.macroname] = self._last_arg(node)
         text = self.render(body)
         if self.footnotes:
-            notes = "\n".join(f"[^{n}]: {note}" for n, note in enumerate(self.footnotes, start=1))
+            notes = "\n".join(
+                f"{MARK}[^{n}]: {note}" for n, note in enumerate(self.footnotes, start=1)
+            )
             text += _block(notes)
         return _tidy(text)
 
     def render(self, nodes: list[Any]) -> str:
         parts: list[str] = []
         after_unknown = False
-        skipping = False  # between \\iffalse and \\fi: commented out
-        for node in nodes:
+        for node in self._without_false(nodes):
             if node is None:
                 continue
-            if skipping:
-                skipping = not is_macro(node, "fi")
-                continue
-            if is_macro(node, "iffalse"):
-                skipping = True
-                continue
             if after_unknown and isinstance(node, LatexGroupNode):
-                parts.append(node.latex_verbatim())  # its arguments, as written
+                parts.append(self._esc(node.latex_verbatim()))  # its arguments, as written
                 continue
             before = len(self.unknown)
             piece = self._node(node)
@@ -341,6 +412,23 @@ class Renderer:
             parts.append(piece)
             after_unknown = isinstance(node, LatexMacroNode) and len(self.unknown) > before
         return "".join(parts)
+
+    def _without_false(self, nodes: list[Any]) -> list[Any]:
+        """``nodes`` without what ``\\iffalse … \\fi`` comments out (nested conditionals
+        counted); an ``\\iffalse`` without its ``\\fi`` hides nothing and is noted."""
+        kept: list[Any] = []
+        index = 0
+        while index < len(nodes):
+            node = nodes[index]
+            if is_macro(node, "iffalse"):
+                closing = _matching_fi(nodes, index + 1)
+                if closing is not None:
+                    index = closing + 1
+                    continue
+                self.recovered["\\iffalse without its \\fi"] = None
+            kept.append(node)
+            index += 1
+        return kept
 
     def inline(self, nodes: list[Any]) -> str:
         return re.sub(r"\s+,", ",", " ".join(self.render(nodes).split()))
@@ -362,10 +450,17 @@ class Renderer:
             return self.render(node.nodelist or [])
         if isinstance(node, LatexMathNode):
             return self._math(node)
-        if isinstance(node, LatexMacroNode):
-            return self._macro(node)
-        if isinstance(node, LatexEnvironmentNode):
-            return self._environment(node)
+        if isinstance(node, LatexMacroNode | LatexEnvironmentNode):
+            try:
+                if isinstance(node, LatexMacroNode):
+                    return self._macro(node)
+                return self._environment(node)
+            except (BudgetExceeded, RecursionError, MemoryError):
+                raise
+            except Exception as problem:  # one bad command, not the whole document (AC-21)
+                name = getattr(node, "macroname", None) or f"{{{node.environmentname}}}"
+                self.recovered[f"\\{name}: {type(problem).__name__}"] = None
+                return self._esc(node.latex_verbatim())
         return ""
 
     def _arg_nodes(self, node: Any, index: int) -> list[Any]:
@@ -385,7 +480,7 @@ class Renderer:
             return self._expanded(node, self.render)
         if name in SECTION_LEVELS:
             level = 2 + max(0, SECTION_LEVELS[name] - self._top_level)
-            return _block("#" * min(6, level) + " " + self.inline(self._last_arg(node)))
+            return _block(MARK + "#" * min(6, level) + " " + self.inline(self._last_arg(node)))
         if name in INLINE:
             content = self.inline(self._last_arg(node))
             return INLINE[name].format(content) if content else ""
@@ -414,7 +509,7 @@ class Renderer:
         if name in CITATION_MACROS:
             return self._citation(node)
         if name in REFERENCE_MACROS:
-            return f"({raw(argument(node, 0)).strip()})"
+            return f"({self._esc(raw(argument(node, 0)).strip())})"
         if name == "includegraphics":
             return self._picture(node)
         if name == "caption":
@@ -436,7 +531,7 @@ class Renderer:
         if name in WORDS:
             return WORDS[name]
         if _LATEX2TEXT_DB.get_macro_spec(name) is not None:
-            return str(_LATEX2TEXT.nodelist_to_text([node]))
+            return self._esc(str(_LATEX2TEXT.nodelist_to_text([node])))
         return self._unknown(f"\\{name}", node)
 
     def _environment(self, node: Any) -> str:
@@ -447,20 +542,21 @@ class Renderer:
             return self.render(node.nodelist or [])
         if name == "abstract":
             heading = "Resumen" if self._spanish else "Abstract"
-            return _block(f"## {heading}") + _block(self.render(node.nodelist or []))
+            return _block(f"{MARK}## {heading}") + _block(self.render(node.nodelist or []))
         if name in LISTS:
             return _block(self._list(node))
         if name in QUOTES:
-            body = self.render(node.nodelist or []).strip()
-            return _block("\n".join(f"> {line}" if line else ">" for line in body.split("\n")))
+            body = neutralize(self.render(node.nodelist or []).strip(), keep_marks=True)
+            quoted = (f"{MARK}> {line}" if line else f"{MARK}>" for line in body.split("\n"))
+            return _block("\n".join(quoted))
         if name in CODE:
             return _block(self._code(node))
         if name in DISPLAY_MATH:
-            return _block(f"$$\n{self._math_body(node.nodelist)}\n$$")
+            return _block(_marked(f"$$\n{self._math_body(node.nodelist)}\n$$"))
         if name in ALIGNED:
             inner = ALIGNED[name]
             body = self._math_body(node.nodelist)
-            return _block(f"$$\n\\begin{{{inner}}}\n{body}\n\\end{{{inner}}}\n$$")
+            return _block(_marked(f"$$\n\\begin{{{inner}}}\n{body}\n\\end{{{inner}}}\n$$"))
         if _is_float(node):
             return self._float(node)
         if name in TABULARS:
@@ -470,8 +566,11 @@ class Renderer:
     def _unknown(self, label: str, node: Any) -> str:
         if label in self.unknown or len(self.unknown) < MAX_UNKNOWN:
             self.unknown[label] = None
-        text: str = node.latex_verbatim()
-        return text
+        return self._esc(node.latex_verbatim())
+
+    def _esc(self, text: str) -> str:
+        """Document text copied as written: never a link or HTML (inside code, left as is)."""
+        return text if self._in_code else escape_text(text)
 
     # --- Pieces -------------------------------------------------------------------------------
 
@@ -484,7 +583,7 @@ class Renderer:
             for part in (self.inline(self.metadata.get(k, [])) for k in ("author", "date"))
             if part
         )
-        return _block(f"# {title}" + (f"\n\n*{byline}*" if byline else ""))
+        return _block(f"{MARK}# {title}" + (f"\n\n{MARK}*{byline}*" if byline else ""))
 
     def _link(self, node: Any) -> str:
         url = raw(argument(node, 0)).strip()
@@ -498,11 +597,12 @@ class Renderer:
         return f"[{text or url}]({link_target(url)})"
 
     def _citation(self, node: Any) -> str:
-        written = raw(argument(node, 3)).replace("[", "").replace("]", "")
+        written = self._esc(raw(argument(node, 3)))
         keys = [key.strip() for key in written.split(",") if key.strip()]
         if not keys:
             return ""
-        first, second = raw(argument(node, 1)).strip(), raw(argument(node, 2)).strip()
+        first = self._esc(raw(argument(node, 1)).strip())
+        second = self._esc(raw(argument(node, 2)).strip())
         before, after = (first, second) if argument(node, 2) is not None else ("", first)
         cited = "; ".join(f"@{key}" for key in keys)
         return (
@@ -512,15 +612,17 @@ class Renderer:
     def _math(self, node: Any) -> str:
         body = self._math_body(node.nodelist)
         if node.displaytype == "display":
-            return _block(f"$$\n{body}\n$$")
+            return _block(_marked(f"$$\n{body}\n$$"))
         return f"${body}$"
 
     def _math_body(self, nodes: list[Any] | None) -> str:
-        return " ".join(self._math_source(list(nodes or [])).split())
+        return escape_math(" ".join(self._math_source(list(nodes or [])).split()))
 
     # --- Math as written, with the author's macros ----------------------------------------------
 
-    def _expanded(self, node: Any, serialize: Callable[[list[Any]], str]) -> str:
+    def _expanded(
+        self, node: Any, serialize: Callable[[list[Any]], str], *, math: bool = False
+    ) -> str:
         """A use of an author's macro, expanded; past the budget the top-level use stays as is."""
         assert self._macros is not None
         top = self._macros.depth == 0
@@ -532,8 +634,8 @@ class Renderer:
                 raise
             if self._macros.limited is None:
                 self._macros.limited = f"\\{node.macroname}"
-            text: str = node.latex_verbatim()
-            return text
+            written: str = node.latex_verbatim()
+            return written if math else self._esc(written)
 
     def _math_source(self, nodes: list[Any]) -> str:
         return "".join(self._serialize(n) for n in nodes if n is not None and not _is_label(n))
@@ -544,7 +646,7 @@ class Renderer:
             return " "  # "% first\nc &= d" must not hide "c &= d" once lines are joined
         verbatim: str = node.latex_verbatim()
         if isinstance(node, LatexMacroNode) and self._knows(node.macroname):
-            text = self._expanded(node, self._math_source)
+            text = self._expanded(node, self._math_source, math=True)
             # "\\R x" must not become "\\mathbb{R}x" glued to a following letter by mistake.
             if text != verbatim and _CONTROL_WORD_AT_END.search(text):
                 text += " "
@@ -576,7 +678,7 @@ class Renderer:
     def _list(self, node: Any) -> str:
         before: list[Any] = []
         items: list[tuple[Any, list[Any]]] = []
-        for child in node.nodelist or []:
+        for child in self._without_false(list(node.nodelist or [])):
             if is_macro(child, "item"):
                 items.append((child, []))
             elif items:
@@ -592,7 +694,8 @@ class Renderer:
                 text = f"**{term}** {text}" if term else text
             # Tight items, nested lists included; code inside an item keeps its blank lines.
             text = outside_code(text, lambda part: re.sub(r"\n[ \t]*\n+", "\n", part))
-            lines.append(marker + _indent(text, len(marker)))
+            text = neutralize(text, keep_marks=True)  # "\\item # x" is not a heading in an item
+            lines.append(MARK + marker + _indent(text, len(marker)))
         intro = self.render(before).strip()
         listed = "\n".join(lines)
         return f"{intro}\n\n{listed}" if intro else listed
@@ -614,7 +717,7 @@ class Renderer:
                 language = declared.group(1).strip().lower()
         code = code_text.strip("\n")
         fence = _fence(code)
-        return f"{fence}{language}\n{code}\n{fence}"
+        return f"{MARK}{fence}{language}\n{code}\n{MARK}{fence}"
 
     def _picture(self, node: Any) -> str:
         path = raw(argument(node, -1)).strip()
@@ -653,7 +756,7 @@ class Renderer:
             self.tables_kept += 1
             source = node.latex_verbatim()
             fence = _fence(source)
-            table = f"{fence}latex\n{source}\n{fence}"
+            table = f"{MARK}{fence}latex\n{source}\n{MARK}{fence}"
         return _block(table) + (_block(f"*{caption}*") if caption else "")
 
     def _include_left(self, node: Any) -> str:
@@ -681,6 +784,24 @@ class Renderer:
         return tuple(found)
 
 
+_CONDITIONAL_NAME = re.compile(r"if(?!thenelse)[A-Za-z@]*")
+
+
+def _matching_fi(nodes: list[Any], start: int) -> int | None:
+    r"""The index of the sibling ``\fi`` closing a conditional opened before ``start``."""
+    depth = 1
+    for index in range(start, len(nodes)):
+        node = nodes[index]
+        if isinstance(node, LatexMacroNode):
+            if node.macroname == "fi":
+                depth -= 1
+                if depth == 0:
+                    return index
+            elif _CONDITIONAL_NAME.fullmatch(node.macroname):
+                depth += 1
+    return None
+
+
 def _ends_a_line(parts: list[str]) -> bool:
     for part in reversed(parts):
         if part:
@@ -697,7 +818,7 @@ def _tidy(text: str) -> str:
         ]
         return re.sub(r"\n{3,}", "\n\n", "\n".join(lines))
 
-    return outside_code(text, tidy).strip() + "\n"
+    return outside_code(text, tidy, blank_around=True).strip() + "\n"
 
 
 def _expander(nodes: list[Any], source_size: int) -> tuple[MacroExpander | None, bool]:
@@ -713,39 +834,84 @@ def _expander(nodes: list[Any], source_size: int) -> tuple[MacroExpander | None,
     return MacroExpander(definitions, source_size), again
 
 
-def _substitute_structural(text: str, nodes: list[Any], macros: MacroExpander) -> str:
-    r"""Uses of ``\beq`` → ``\begin{equation}`` in the text itself, as TeX does, so that the
-    environment they open takes the text up to the macro that closes it. Never inside a
-    definition, a comment or code; charged to the budget like any expansion."""
+def _substitute_round(
+    text: str, nodes: list[Any], macros: MacroExpander
+) -> tuple[str, list[tuple[int, int, int, int]]] | None:
+    """One round of text substitution of structural macros, in document order (each use takes
+    the definition in force where it is written). ``None`` when there is nothing to do."""
+    sites = definition_sites(nodes)
     structural = {
-        name: definition
-        for name, definition in macros.definitions.items()
-        if opens_or_closes_an_environment(definition)
+        site.name
+        for site in sites
+        if site.name and site.definition and opens_or_closes_an_environment(site.definition)
     }
     if not structural:
-        return text
+        return None
+    by_name: dict[str, list[DefinitionSite]] = {}
+    for site in sites:
+        if site.name in structural:
+            by_name.setdefault(site.name, []).append(site)
+    heads = sorted((site.head_start, site.head_end) for site in sites)
+    head_starts = [start for start, _ in heads]
     names = "|".join(re.escape(name) for name in sorted(structural, key=len, reverse=True))
     use = re.compile(r"\\(" + names + r")(?![A-Za-z@])")
-    spans = definition_spans(nodes)
-    starts = [start for start, _ in spans]
-    masked = mask(text)
-    pieces, cursor = [], 0
-    for found in use.finditer(masked):
-        index = bisect.bisect_right(starts, found.start()) - 1
-        if index >= 0 and found.start() < spans[index][1]:
-            continue  # inside a definition
-        body = structural[found.group(1)].body
+    pieces: list[str] = []
+    moved: list[tuple[int, int, int, int]] = []  # new start, new end, old start, old end
+    cursor = length = 0
+    for found in use.finditer(mask(text)):
+        at = bisect.bisect_right(head_starts, found.start()) - 1
+        if at >= 0 and found.start() < heads[at][1]:
+            continue  # the name being defined, never a use
+        defined = [site for site in by_name[found.group(1)] if site.head_start < found.start()]
+        definition = defined[-1].definition if defined else None
+        if definition is None or not opens_or_closes_an_environment(definition):
+            continue
         try:
-            macros.charge(found.group(1), len(body))
+            macros.charge(found.group(1), len(definition.body))
         except BudgetExceeded:
             break
-        pieces.append(text[cursor : found.start()])
-        pieces.append(body + " ")
+        before = text[cursor : found.start()]
+        pieces.append(before)
+        length += len(before)
+        replacement = definition.body + " "
+        moved.append((length, length + len(replacement), found.start(), found.end()))
+        pieces.append(replacement)
+        length += len(replacement)
         cursor = found.end()
+    if not moved:
+        return None
     pieces.append(text[cursor:])
-    for name in structural:  # their uses are in the text now
-        del macros.definitions[name]
-    return "".join(pieces)
+    return "".join(pieces), moved
+
+
+def _substitute_structural(
+    text: str, nodes: list[Any], macros: MacroExpander
+) -> tuple[str, list[Any], Callable[[int], int]] | None:
+    r"""Uses of ``\beq`` → ``\begin{equation}`` in the text itself, as TeX does, so that the
+    environment they open takes the text up to the macro that closes it. Repeated while a round
+    makes new uses appear (``\myeq`` → ``\bal`` → ``\begin{align}``, or inside a body); never
+    inside a definition's head, a comment or code; charged to the budget like any expansion."""
+    rounds: list[list[tuple[int, int, int, int]]] = []
+    for _ in range(MAX_SUBSTITUTION_ROUNDS):
+        done = _substitute_round(text, nodes, macros)
+        if done is None:
+            break
+        text, moved = done
+        rounds.append(moved)
+        nodes, _ = parse(text, make_context())
+    if not rounds:
+        return None
+
+    def original(position: int) -> int:
+        for moved in reversed(rounds):
+            index = bisect.bisect_right([m[0] for m in moved], position) - 1
+            if index < 0:
+                continue
+            new_start, new_end, old_start, old_end = moved[index]
+            position = old_start if position < new_end else old_end + (position - new_end)
+        return position
+
+    return text, nodes, original
 
 
 def _kept_as_latex(text: str, cause: str, refused: tuple[NoteItem, ...]) -> ConversionResult:
@@ -770,26 +936,34 @@ def render_source(
 
     Whatever happens inside, the file is converted: at worst kept whole as LaTeX (AC-21).
     """
+    text = text.replace(MARK, "")  # the document can never forge ClearMD's own block marks
     try:
         nodes, error = parse(text, make_context())
         macros, again = _expander(nodes, len(text))
         if macros is not None:
             substituted = _substitute_structural(text, nodes, macros)
-            if substituted is not text:
-                # Positions moved: a parse error is reported without a file and line.
-                text, locate, again = substituted, None, True
+            if substituted is not None:
+                text, nodes, original = substituted
+                if locate is not None:
+                    locate = _through(locate, original)
+                remaining = {
+                    name: definition
+                    for name, definition in collect_definitions(nodes).items()
+                    if not opens_or_closes_an_environment(definition)  # uses already in place
+                }
+                macros.redefine(remaining)
+                again = True
             if again:
                 nodes, error = parse(text, macros.context)
-        definitions = macros.definitions if macros is not None else None
         renderer = Renderer(
-            level=top_level(nodes, definitions),
+            level=top_level(nodes, macros.definitions if macros is not None else None),
             spanish=is_spanish(nodes),
             image=image,
             macros=macros,
             known_refused=frozenset(item.subject for item in refused),
             listed=len(refused),
         )
-        markdown = renderer.document(nodes)
+        markdown = neutralize(renderer.document(nodes))
     except MemoryError:
         raise  # the worker reports it as out of memory
     except (Unparseable, RecursionError) as problem:
@@ -801,10 +975,17 @@ def render_source(
     not_followed = (*refused, *renderer.refused)
     if not_followed:
         notes.append(ConversionNote(NoteKind.INCLUDE_NOT_FOLLOWED, not_followed))
+    recovered = [NoteItem(problem) for problem in renderer.recovered]
     if error is not None:
-        where = f"{locate(error.position)}: " if locate is not None else ""
-        notes.append(ConversionNote(NoteKind.PARSE_RECOVERED, (NoteItem(where + error.message),)))
+        place = f"{locate(error.position)}: " if locate is not None else ""
+        recovered.insert(0, NoteItem(place + error.message))
+    if recovered:
+        notes.append(ConversionNote(NoteKind.PARSE_RECOVERED, tuple(recovered)))
     return ConversionResult(markdown, tuple(notes))
+
+
+def _through(locate: Locator, original: Callable[[int], int]) -> Locator:
+    return lambda position: locate(original(position))
 
 
 def render_latex(text: str) -> ConversionResult:

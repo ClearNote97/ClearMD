@@ -1,6 +1,6 @@
 # ADR-0022: LaTeX — following includes, expanding the author's macros, and honest conversion notes
 
-- **Status:** accepted
+- **Status:** accepted; includes, images and robustness refined by ADR-0023
 - **Date:** 2026-10-25
 - **Refines:** ADR-0006 (the `.tex` converter).
 
@@ -32,8 +32,9 @@ must not leak files into the Markdown, and macros can recurse or grow exponentia
   argument with its default), `\DeclareMathOperator` (→ `\operatorname{…}`), and `\def` **without parameters**.
 - Not expanded: `\def` with parameter patterns, `\let`, conditionals, `\makeatletter` internals, macros from
   packages and classes (`.sty`, `.cls`): they are unknown commands.
-- Limits per document: at most **10,000 expansions**, nesting depth at most **64**, and the expanded text at
-  most **4× the size of the source plus 1 MiB**. When a limit is reached, expansion stops, what remains is left as
+- Limits per document: at most **10,000 expansions, or 10 per KiB of source when that is more** (benchmark 002: a
+  1 MiB thesis that uses its macros in every equation needs more than 10,000; growth and nesting are what stop a
+  bomb), nesting depth at most **64**, and the expanded text at most **4× the size of the source plus 1 MiB**. When a limit is reached, expansion stops, what remains is left as
   written, and a note says so. The limits are fixed (not settings), like the other safety limits (ADR-0012).
 
 ### Conversion notes

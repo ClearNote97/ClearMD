@@ -5,6 +5,9 @@ from typing import Any
 
 from pylatexenc.latexwalker import LatexGroupNode, LatexMacroNode
 
+# Marks the start of each block line ClearMD writes itself (see render.neutralize, ADR-0023).
+MARK = "\ue000"
+
 
 def children(node: Any) -> list[Any]:
     """A node's content and arguments, in source order."""

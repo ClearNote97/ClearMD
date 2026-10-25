@@ -5,7 +5,7 @@ from typing import Any
 
 from pylatexenc.latexwalker import LatexMacroNode, LatexSpecialsNode
 
-from clearmd.backend.services.conversion.tex.nodes import walk
+from clearmd.backend.services.conversion.tex.nodes import MARK, walk
 
 MERGED_CELLS = frozenset({"multicolumn", "multirow"})
 # Rules and longtable's header/footer markers: nothing to show in a Markdown table.
@@ -54,9 +54,9 @@ def tabular_to_markdown(environment: Any, render_cell: Callable[[list[Any]], str
     lines = []
     for index, r in enumerate(rows):
         cells = r + [""] * (width - len(r))
-        lines.append("| " + " | ".join(cells) + " |")
+        lines.append(MARK + "| " + " | ".join(cells) + " |")
         if index == 0:
-            lines.append("|" + "---|" * width)
+            lines.append(MARK + "|" + "---|" * width)
     return "\n".join(lines)
 
 

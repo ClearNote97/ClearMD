@@ -19,7 +19,8 @@ from pylatexenc.macrospec import MacroSpec
 from clearmd.backend.schemas.notes import NoteReason
 from clearmd.backend.services.conversion.tex.context import make_context, parse
 
-MAX_EXPANSIONS = 10_000
+MAX_EXPANSIONS = 10_000  # at least; 10 per KiB of source for larger documents
+EXPANSIONS_PER_KIB = 10
 MAX_NESTING = 64
 GROWTH_FACTOR = 4
 GROWTH_EXTRA = 1024**2
@@ -64,6 +65,12 @@ class MacroDefinition:
             return values[index] if index < min(len(values), self.arguments) else match.group(0)
 
         return _PARAMETER.sub(replace, self.body)
+
+
+def expansion_limit(source_size: int) -> int:
+    """10,000 expansions, or 10 per KiB of source when that is more (a 1 MiB thesis that uses
+    ``\\R`` in every equation needs more than 10,000; growth and nesting still stop bombs)."""
+    return max(MAX_EXPANSIONS, EXPANSIONS_PER_KIB * source_size // 1024)
 
 
 class BudgetExceeded(Exception):
@@ -145,19 +152,43 @@ def opens_or_closes_an_environment(definition: MacroDefinition) -> bool:
     return definition.arguments == 0 and found.count("begin") != found.count("end")
 
 
-def definition_spans(nodes: list[Any]) -> list[tuple[int, int]]:
-    """Where the definitions are written: a use is never substituted inside its own definition."""
-    spans = []
+@dataclass(frozen=True)
+class DefinitionSite:
+    """Where a definition is written: ``head`` (``\\newcommand{\\x}``) is never substituted
+    into; its body is, so a macro built from a structural one works."""
+
+    head_start: int
+    head_end: int
+    name: str | None
+    definition: MacroDefinition | None
+
+
+def definition_sites(nodes: list[Any]) -> list[DefinitionSite]:
+    """Every definition, in document order, with the span of its head."""
+    sites = []
     pending = list(reversed(nodes))
     while pending:
         node = pending.pop()
         if node is None:
             continue
         if isinstance(node, LatexMacroNode) and node.macroname in DEFINITIONS:
-            spans.append((node.pos, node.pos + node.len))
+            found: dict[str, MacroDefinition] = {}
+            _definition(node, found)
+            name, definition = next(iter(found.items()), (None, None))
+            body = _body_node(node)
+            head_end = body.pos if body is not None else node.pos + node.len
+            sites.append(DefinitionSite(node.pos, head_end, name, definition))
             continue
         pending.extend(reversed(_children(node)))
-    return spans
+    return sites
+
+
+def _body_node(node: Any) -> Any:
+    parsed = getattr(getattr(node, "nodeargd", None), "clearmd_def", None)
+    if parsed is not None:
+        return parsed.body
+    arguments = getattr(getattr(node, "nodeargd", None), "argnlist", None) or []
+    return arguments[-1] if arguments else None
 
 
 def is_parametrized_def(node: Any) -> bool:
@@ -171,12 +202,19 @@ class MacroExpander:
         specs = [MacroSpec(name, d.argspec) for name, d in definitions.items()]
         self.context = make_context(specs)
         self.limit_growth = GROWTH_FACTOR * source_size + GROWTH_EXTRA
+        self.max_expansions = expansion_limit(source_size)
         self.expansions = 0
         self.produced = 0
         self.depth = 0
         self.exhausted: NoteReason | None = None
         self.limited: str | None = None  # the top-level use that hit the budget first
         self._cache: dict[str, list[Any]] = {}
+
+    def redefine(self, definitions: dict[str, MacroDefinition]) -> None:
+        """New definitions (after text substitution), keeping the budget already spent."""
+        self.definitions = definitions
+        self.context = make_context([MacroSpec(n, d.argspec) for n, d in definitions.items()])
+        self._cache.clear()
 
     def knows(self, name: str) -> bool:
         return name in self.definitions
@@ -202,7 +240,7 @@ class MacroExpander:
             raise BudgetExceeded(self.exhausted)
         self.expansions += 1
         self.produced += size
-        if self.expansions > MAX_EXPANSIONS:
+        if self.expansions > self.max_expansions:
             self.limited = self.limited or f"\\{name}"
             self._exceed(NoteReason.EXPANSIONS)
         if self.produced > self.limit_growth:
@@ -220,7 +258,7 @@ class MacroExpander:
             values[0] = definition.default
         filled = [value or "" for value in values]
         self.expansions += 1
-        if self.expansions > MAX_EXPANSIONS:
+        if self.expansions > self.max_expansions:
             self._exceed(NoteReason.EXPANSIONS)
         self.produced += definition.size(filled)
         if self.produced > self.limit_growth:

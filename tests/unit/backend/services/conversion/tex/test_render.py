@@ -1,5 +1,7 @@
 """The supported subset of spec 002, row by row (AC-04 - AC-13, AC-18, AC-21)."""
 
+from pathlib import Path
+
 import pytest
 from support import TEX_DIR
 
@@ -196,3 +198,9 @@ def test_the_whole_paper_converts_without_unknown_commands() -> None:
     result = render_latex((TEX_DIR / "paper.tex").read_text(encoding="utf-8"))
     assert "fixture-tex-paper" in result.markdown
     assert [n for n in result.notes if n.kind is NoteKind.UNKNOWN_COMMANDS] == []
+
+
+def test_the_paper_comes_out_exactly_as_expected() -> None:
+    """The whole fixture, line by line: any change in spacing, escaping or structure shows."""
+    expected = (Path(__file__).parent / "golden" / "paper.md").read_text(encoding="utf-8")
+    assert render_latex((TEX_DIR / "paper.tex").read_text(encoding="utf-8")).markdown == expected
