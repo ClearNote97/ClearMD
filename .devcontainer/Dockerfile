@@ -22,6 +22,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # 'uv', the package manager: binaries copied from Astral's official image.
 COPY --from=ghcr.io/astral-sh/uv:0.11.13 /uv /uvx /bin/
+# The uv cache lives in the container and the project on a bind mount: hardlinks cannot cross them.
+ENV UV_LINK_MODE=copy
+
+# -----------------------------------------------------------------------------
+# NON-ROOT USER
+# -----------------------------------------------------------------------------
+# Same UID/GID as the host user (1000 by default on WSL/Ubuntu), so every file created inside the
+# container -- by VS Code's git, by uv, by the tests -- belongs to the host user on the bind mount.
+ARG USER_NAME=dev
+ARG USER_UID=1000
+ARG USER_GID=1000
+RUN groupadd --gid ${USER_GID} ${USER_NAME} \
+    && useradd --uid ${USER_UID} --gid ${USER_GID} --create-home --shell /bin/bash ${USER_NAME}
 
 # -----------------------------------------------------------------------------
 # DYNAMIC WORKDIR
@@ -33,6 +46,9 @@ ENV PROJECT_NAME=${APP_NAME}
 
 # Example: APP_NAME=ClearMD -> WORKDIR /workspaces/ClearMD
 WORKDIR /workspaces/${PROJECT_NAME}
+RUN chown ${USER_UID}:${USER_GID} /workspaces/${PROJECT_NAME}
+
+USER ${USER_NAME}
 
 # Keep the container running while you work.
 CMD ["sleep", "infinity"]

@@ -66,8 +66,11 @@
     }
   },
 
-  // User inside the container (root, for simplicity in development)
-  "remoteUser": "root",
+  // Non-root user created in the Dockerfile with the host user's UID/GID, so files written in the
+  // bind mount (git objects, .venv, test outputs) belong to the host user. On Linux/WSL VS Code also
+  // aligns the UID automatically if the host user is not 1000.
+  "remoteUser": "dev",
+  "updateRemoteUserUID": true,
 
   // ------------------------------------------------------------
   // postCreateCommand: init.sh installs the dependencies with uv (reproducible uv.lock).

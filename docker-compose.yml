@@ -13,6 +13,9 @@ services:
       args:
         # Passes APP_NAME from .env to the Dockerfile to create the WORKDIR
         APP_NAME: ${APP_NAME:-clearmd}
+        # The container user gets the host user's ids (see .env.example)
+        USER_UID: ${USER_UID:-1000}
+        USER_GID: ${USER_GID:-1000}
     container_name: ${APP_NAME:-clearmd}_dev
     env_file: [.env]
     environment:
