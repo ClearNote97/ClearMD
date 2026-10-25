@@ -44,6 +44,7 @@ unsafe_archive = "este archivo parece dañado o inseguro"
 unsupported_format = "formato no compatible"
 existing_output = "el resultado ya existe (se conserva)"
 unreadable = "no se puede leer (permiso denegado)"
+too_much_memory = "demasiado grande para convertir (necesitaría unos {needed} de memoria; el límite es {limit})"
 
 [cli.help]
 description = "Convierte documentos a Markdown. 100% local: ClearMD nunca usa internet."
@@ -64,3 +65,14 @@ nothing_to_convert = "Nada que convertir."
 decision_required = "Ya existen {count} resultado(s). Vuelve a ejecutar con --overwrite o --skip."
 summary = "{converted} convertidos · {skipped} omitidos · {failed} con error"
 results = "Resultados: {path}"
+time_left = "faltan {duration}"
+warning_slow = "⚠ {name} — podría tardar más de {limit} ({estimate}) y detenerse"
+
+[time]
+under_a_minute = "menos de un minuto"
+exact_minutes = "{minutes} min"
+minutes = "unos {minutes} min"
+hours = "unas {hours} h {minutes} min"
+
+[number]
+decimal_mark = ","

@@ -2,6 +2,7 @@
 
 import os
 from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 
 from clearmd.backend.schemas.errors import Cancelled, ConversionError, ErrorCode
@@ -15,6 +16,7 @@ from clearmd.backend.schemas.models import (
     PlannedConversion,
 )
 from clearmd.backend.use_cases.cancel import CancelToken
+from clearmd.backend.use_cases.estimation import TimeLeft
 from clearmd.backend.use_cases.ports import Clock, ConversionRunner
 
 
@@ -53,10 +55,12 @@ def execute_plan(
     on_event: Callable[[BatchEvent], None],
     cancel: CancelToken,
     clock: Clock,
+    startup_seconds: float = 0.0,
 ) -> BatchReport:
     started_at = clock.now()
     outcomes: list[ConversionOutcome] = []
     total = len(plan.conversions)
+    estimate = TimeLeft(startup_seconds=startup_seconds)
     for index, item in enumerate(plan.conversions, start=1):
         if cancel.is_set():
             outcomes.append(ConversionOutcome(item, OutcomeStatus.CANCELLED))
@@ -64,11 +68,17 @@ def execute_plan(
         if item.exists and not overwrite(item):
             outcome = ConversionOutcome(item, OutcomeStatus.KEPT)
         else:
-            on_event(ConversionStarted(index, total, item))
+            pending = (pending.cost for pending in plan.conversions[index - 1 :])
+            seconds_left = estimate.seconds_left(pending) if outcomes else None
+            on_event(ConversionStarted(index, total, item, seconds_left))
+            began = clock.now()
             try:
                 outcome = _convert_one(item, runner, cancel)
             except Cancelled:
                 outcome = ConversionOutcome(item, OutcomeStatus.CANCELLED)
+            seconds = (clock.now() - began).total_seconds()
+            outcome = replace(outcome, seconds=seconds)
+            estimate.record(estimated=item.cost, measured=seconds)
         outcomes.append(outcome)
         on_event(ConversionFinished(index, total, outcome))
     return BatchReport(

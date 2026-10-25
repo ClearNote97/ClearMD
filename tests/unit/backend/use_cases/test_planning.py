@@ -69,10 +69,10 @@ def test_a_folder_mirrors_its_structure_under_its_name(tmp_path: Path) -> None:
     (project / "empty").mkdir()
     plan = build_plan([project], detector=TableDetector(), limits=Limits())
     root = tmp_path / "ClearMD_Output"
-    assert [item.target for item in plan.conversions] == [
+    assert {item.target for item in plan.conversions} == {
         root / "OutputMD" / "project" / "top.md",
         root / "OutputMD" / "project" / "sub" / "inner.md",
-    ]
+    }
     assert {item.output_root for item in plan.conversions} == {root}
 
 
@@ -148,3 +148,33 @@ def test_an_output_folder_override_keeps_the_layout(tmp_path: Path) -> None:
         [project], detector=TableDetector(), limits=Limits(), output_root=out
     ).conversions
     assert item.target == out / "ClearMD_Output" / "OutputMD" / "project" / "a.md"
+
+
+def test_the_plan_is_ordered_from_the_cheapest_file(tmp_path: Path) -> None:
+    (tmp_path / "a_big.pdf").write_bytes(b"%PDF" + b"x" * 50_000)
+    (tmp_path / "b_small.pdf").write_bytes(b"%PDF")
+    (tmp_path / "c.txt").write_text("x" * 50_000, encoding="utf-8")
+    plan = build_plan([tmp_path], detector=TableDetector(), limits=Limits())
+    assert [item.source.name for item in plan.conversions] == ["b_small.pdf", "c.txt", "a_big.pdf"]
+
+
+def test_a_file_that_would_not_fit_in_memory_is_skipped_with_the_numbers(tmp_path: Path) -> None:
+    (tmp_path / "a.pdf").write_bytes(b"%PDF" + b"x" * 1000)
+    limits = Limits(worker_memory=100 * MIB)  # less than the worker's own base memory
+    plan = build_plan([tmp_path / "a.pdf"], detector=TableDetector(), limits=limits)
+    assert plan.is_empty
+    (skipped,) = plan.skipped
+    assert skipped.reason is SkipReason.TOO_MUCH_MEMORY
+    assert skipped.needed_memory == limits.estimated_memory(FormatId.PDF, 1004)
+    assert skipped.memory_limit == 100 * MIB
+
+
+def test_a_file_that_may_take_too_long_is_planned_with_a_warning(tmp_path: Path) -> None:
+    (tmp_path / "slow.pdf").write_bytes(b"%PDF" + b"x" * MIB)
+    (tmp_path / "quick.txt").write_text("x", encoding="utf-8")
+    limits = Limits(time_per_file=10)
+    plan = build_plan([tmp_path], detector=TableDetector(), limits=limits)
+    assert [item.source.name for item in plan.conversions] == ["quick.txt", "slow.pdf"]
+    (warning,) = plan.warnings
+    assert warning.item.source.name == "slow.pdf"
+    assert warning.estimated_seconds > warning.limit_seconds == 10

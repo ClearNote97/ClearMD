@@ -41,6 +41,9 @@ class SkippedItem:
     path: Path
     reason: SkipReason
     is_dir: bool = False
+    # Only for SkipReason.TOO_MUCH_MEMORY (AC-42): bytes the file would need, and the limit.
+    needed_memory: int | None = None
+    memory_limit: int | None = None
 
 
 class InputProblem(StrEnum):
@@ -54,12 +57,22 @@ class InputError:
 
 
 @dataclass(frozen=True)
+class PlanWarning:
+    """A planned file whose estimated time exceeds the time limit (AC-43): tried anyway, last."""
+
+    item: PlannedConversion
+    estimated_seconds: float
+    limit_seconds: float
+
+
+@dataclass(frozen=True)
 class BatchPlan:
     """Everything computed before writing anything, already in execution order."""
 
     conversions: tuple[PlannedConversion, ...]
     skipped: tuple[SkippedItem, ...]
     input_errors: tuple[InputError, ...]
+    warnings: tuple[PlanWarning, ...] = ()
 
     @property
     def is_empty(self) -> bool:
@@ -87,6 +100,7 @@ class ConversionOutcome:
     status: OutcomeStatus
     error: ErrorCode | None = None
     detail: str = ""
+    seconds: float = 0.0
 
 
 @dataclass(frozen=True)

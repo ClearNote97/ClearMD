@@ -38,6 +38,7 @@ class SkipReason(StrEnum):
     UNSUPPORTED_FORMAT = "unsupported_format"
     EXISTING_OUTPUT = "existing_output"
     UNREADABLE = "unreadable"
+    TOO_MUCH_MEMORY = "too_much_memory"
 
     @property
     def key(self) -> str:

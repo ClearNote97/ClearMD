@@ -27,6 +27,8 @@ class ConversionStarted:
     index: int
     total: int
     item: PlannedConversion
+    # Estimated seconds left for the whole batch; None until one file was measured (AC-40).
+    seconds_left: float | None = None
 
 
 @dataclass(frozen=True)

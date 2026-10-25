@@ -13,7 +13,13 @@ from typing import TextIO
 
 from clearmd.backend.api import plan_batch, run_batch
 from clearmd.backend.schemas.events import BatchEvent, ConversionFinished, ConversionStarted
-from clearmd.backend.schemas.models import BatchReport, OutcomeStatus, PlannedConversion
+from clearmd.backend.schemas.models import (
+    BatchPlan,
+    BatchReport,
+    OutcomeStatus,
+    PlannedConversion,
+    SkippedItem,
+)
 from clearmd.i18n import Catalog, load_catalog, resolve_language
 
 EXIT_OK = 0
@@ -54,6 +60,9 @@ class _Progress:
             line = self._catalog.text(
                 "cli.progress", index=event.index, total=event.total, name=event.item.source.name
             )
+            if event.seconds_left is not None:
+                duration = self._catalog.duration(event.seconds_left)
+                line = f"{line} · {self._catalog.text('cli.time_left', duration=duration)}"
             print(line, file=self._stream)
         elif isinstance(event, ConversionFinished) and event.outcome.error is not None:
             message = self._catalog.error(event.outcome.error)
@@ -82,21 +91,43 @@ def _shown(path: Path, is_dir: bool) -> str:
     return f"{path.name}/" if is_dir else path.name
 
 
+def _skip_reason(catalog: Catalog, item: SkippedItem) -> str:
+    if item.needed_memory is not None and item.memory_limit is not None:
+        return catalog.text(
+            item.reason.key,
+            needed=catalog.gigabytes(item.needed_memory),
+            limit=catalog.gigabytes(item.memory_limit),
+        )
+    return catalog.text(item.reason.key)
+
+
+def _print_plan_notes(catalog: Catalog, plan: BatchPlan, *, quiet: bool, stream: TextIO) -> None:
+    for problem in plan.input_errors:
+        print(catalog.text("cli.input_not_found", path=problem.path), file=stream)
+    if not quiet:
+        for item in plan.skipped:
+            name = _shown(item.path, item.is_dir)
+            print(
+                catalog.text("cli.skipped", name=name, reason=_skip_reason(catalog, item)),
+                file=stream,
+            )
+    for warning in plan.warnings:
+        line = catalog.text(
+            "cli.warning_slow",
+            name=warning.item.source.name,
+            limit=catalog.text("time.exact_minutes", minutes=round(warning.limit_seconds / 60)),
+            estimate=catalog.duration(warning.estimated_seconds),
+        )
+        print(line, file=stream)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     catalog = load_catalog(resolve_language(None, None))
     args = build_parser(catalog).parse_args(argv)
     err = sys.stderr
 
     plan = plan_batch(args.paths, recursive=not args.no_recursive, output_root=args.output_root)
-    for problem in plan.input_errors:
-        print(catalog.text("cli.input_not_found", path=problem.path), file=err)
-    if not args.quiet:
-        for item in plan.skipped:
-            reason = catalog.text(item.reason.key)
-            print(
-                catalog.text("cli.skipped", name=_shown(item.path, item.is_dir), reason=reason),
-                file=err,
-            )
+    _print_plan_notes(catalog, plan, quiet=args.quiet, stream=err)
     if plan.is_empty:
         if plan.input_errors and not plan.skipped:
             print(catalog.text("cli.no_valid_input"), file=err)

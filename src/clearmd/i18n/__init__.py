@@ -30,6 +30,27 @@ class Catalog:
         """What happened and what to do, in one sentence pair (ADR-0013)."""
         return f"{self.text(code.message_key)} {self.text(code.action_key)}"
 
+    def duration(self, seconds: float) -> str:
+        """An estimate in plain words: never seconds, pages/s or MB/s (UX contract)."""
+        if seconds < 60:
+            return self.text("time.under_a_minute")
+        minutes = round(seconds / 60)
+        if minutes < 60:
+            return self.text("time.minutes", minutes=minutes)
+        return self.text("time.hours", hours=minutes // 60, minutes=minutes % 60)
+
+    def clock(self, seconds: float) -> str:
+        """Elapsed time as on a stopwatch: ``1:24``, ``10:00``, ``1:02:05``."""
+        whole = int(seconds)
+        hours, rest = divmod(whole, 3600)
+        minutes, secs = divmod(rest, 60)
+        return f"{hours}:{minutes:02d}:{secs:02d}" if hours else f"{minutes}:{secs:02d}"
+
+    def gigabytes(self, size: int) -> str:
+        """``6.9 GB`` / ``6,9 GB``: the decimal mark follows the language."""
+        value = f"{size / 1024**3:.1f}"
+        return f"{value.replace('.', self.text('number.decimal_mark'))} GB"
+
 
 def flatten(table: Mapping[str, Any], prefix: str = "") -> dict[str, str]:
     """TOML tables to flat dotted keys: ``{"a": {"b": "x"}}`` → ``{"a.b": "x"}``."""

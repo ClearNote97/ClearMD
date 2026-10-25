@@ -1,7 +1,8 @@
 """Build the batch plan before writing anything (ADR-0010).
 
 Scanning (T08) and the archive check (T09) feed it; names are resolved before anything is marked
-as existing (T11); the order and the warnings come in T12.
+as existing (T11); files that cannot fit in memory are skipped and the slow ones warned about, then
+the plan is put in cost order (T12).
 """
 
 from collections.abc import Callable, Sequence
@@ -11,7 +12,13 @@ from clearmd.backend.schemas.errors import SkipReason
 from clearmd.backend.schemas.events import BatchEvent, PlanReady
 from clearmd.backend.schemas.formats import ZIP_BASED
 from clearmd.backend.schemas.limits import Limits
-from clearmd.backend.schemas.models import BatchPlan, Detection, PlannedConversion, SkippedItem
+from clearmd.backend.schemas.models import (
+    BatchPlan,
+    Detection,
+    PlannedConversion,
+    PlanWarning,
+    SkippedItem,
+)
 from clearmd.backend.use_cases.archive import inspect_archive, is_unsafe
 from clearmd.backend.use_cases.paths import (
     NameRequest,
@@ -22,6 +29,7 @@ from clearmd.backend.use_cases.paths import (
 )
 from clearmd.backend.use_cases.ports import FormatDetector
 from clearmd.backend.use_cases.scanning import Candidate, scan
+from clearmd.backend.use_cases.scheduling import order_by_cost
 
 
 def _relative_dir(candidate: Candidate) -> Path:
@@ -64,6 +72,17 @@ def build_plan(
                     skipped.append(SkippedItem(candidate.path, SkipReason.UNSAFE_ARCHIVE))
                     continue
                 size = archive.text_bytes
+        needed = limits.estimated_memory(detection.format, size)
+        if needed > limits.worker_memory:
+            skipped.append(
+                SkippedItem(
+                    candidate.path,
+                    SkipReason.TOO_MUCH_MEMORY,
+                    needed_memory=needed,
+                    memory_limit=limits.worker_memory,
+                )
+            )
+            continue
         root = output_root_for(candidate.input, is_dir=candidate.input_is_dir, override=output_root)
         target = target_for(candidate.path, root, _relative_dir(candidate))
         drafts.append(
@@ -83,7 +102,13 @@ def build_plan(
             drafts, resolve_names(requests), strict=True
         )
     ]
-    plan = BatchPlan(tuple(conversions), tuple(skipped), scanned.input_errors)
+    ordered = order_by_cost(conversions)
+    warnings = tuple(
+        PlanWarning(item, item.cost, limits.time_per_file)
+        for item in ordered
+        if item.cost > limits.time_per_file
+    )
+    plan = BatchPlan(ordered, tuple(skipped), scanned.input_errors, warnings)
     if on_event is not None:
         on_event(PlanReady(plan))
     return plan

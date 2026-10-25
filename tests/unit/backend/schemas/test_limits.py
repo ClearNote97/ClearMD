@@ -46,3 +46,20 @@ def test_limits_are_immutable() -> None:
 
 def test_limits_can_be_tightened_for_tests() -> None:
     assert Limits(time_per_file=0.5).time_per_file == 0.5
+
+
+def test_estimated_memory_adds_the_worker_base_and_the_format_factor() -> None:
+    limits = Limits()
+    expected = limits.worker_base_memory + 10 * limits.memory_per_mib[FormatId.XLSX] * MIB
+    assert limits.estimated_memory(FormatId.XLSX, 10 * MIB) == expected
+
+
+def test_a_60_mb_xlsx_does_not_fit_and_a_10_mb_pdf_does() -> None:
+    limits = Limits()
+    # 60 MB of xlsx is ~276 MiB of XML inside (ratio 4.6, benchmark 001).
+    assert limits.estimated_memory(FormatId.XLSX, 276 * MIB) > limits.worker_memory
+    assert limits.estimated_memory(FormatId.PDF, 10 * MIB) < limits.worker_memory
+
+
+def test_every_format_has_a_memory_factor() -> None:
+    assert set(Limits().memory_per_mib) == set(FormatId)

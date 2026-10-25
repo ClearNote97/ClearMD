@@ -62,6 +62,7 @@ def run_batch(
             on_event=on_event or _ignore,
             cancel=cancel or CancelToken(),
             clock=composition.build_clock(),
+            startup_seconds=composition.default_limits().worker_startup_seconds,
         )
     finally:
         runner.close()

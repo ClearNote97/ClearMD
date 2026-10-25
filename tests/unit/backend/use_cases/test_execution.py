@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -167,3 +167,32 @@ def test_atomic_write_removes_the_temp_file_on_failure(
     with pytest.raises(OSError, match="disk full"):
         atomic_write(target, "x")
     assert list(tmp_path.iterdir()) == []
+
+
+class StepClock:
+    """Each call is ``step`` seconds after the previous one."""
+
+    def __init__(self, step: float) -> None:
+        self.step = step
+        self.calls = 0
+
+    def now(self) -> datetime:
+        self.calls += 1
+        return NOW + timedelta(seconds=self.calls * self.step)
+
+
+def test_outcomes_carry_their_time_and_events_carry_the_time_left(tmp_path: Path) -> None:
+    items = tuple(_item(tmp_path, f"{name}.pdf") for name in ("a", "b", "c"))
+    events: list[BatchEvent] = []
+    report = execute_plan(
+        _plan(*items),
+        overwrite=lambda item: True,
+        runner=FakeRunner(),
+        on_event=events.append,
+        cancel=CancelToken(),
+        clock=StepClock(2.0),
+    )
+    assert all(outcome.seconds > 0 for outcome in report.outcomes)
+    started = [event for event in events if isinstance(event, ConversionStarted)]
+    assert started[0].seconds_left is None  # nothing measured yet
+    assert all(event.seconds_left is not None for event in started[1:])

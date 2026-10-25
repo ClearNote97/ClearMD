@@ -82,3 +82,26 @@ def test_language_resolution_follows_adr_0017(
     cli: str | None, settings: str | None, expected: str
 ) -> None:
     assert resolve_language(cli, settings) == expected
+
+
+@pytest.mark.parametrize(
+    ("language", "seconds", "expected"),
+    [
+        ("en", 20, "less than a minute"),
+        ("en", 170, "about 3 min"),
+        ("es", 170, "unos 3 min"),
+        ("en", 2 * 3600 + 600, "about 2 h 10 min"),
+    ],
+)
+def test_durations_in_plain_words(language: str, seconds: float, expected: str) -> None:
+    assert load_catalog(language).duration(seconds) == expected
+
+
+@pytest.mark.parametrize(("language", "expected"), [("en", "6.9 GB"), ("es", "6,9 GB")])
+def test_gigabytes_follow_the_language(language: str, expected: str) -> None:
+    assert load_catalog(language).gigabytes(int(6.9 * 1024**3)) == expected
+
+
+@pytest.mark.parametrize(("seconds", "expected"), [(600, "10:00"), (84, "1:24"), (3725, "1:02:05")])
+def test_clock_style_elapsed_time(seconds: float, expected: str) -> None:
+    assert load_catalog("en").clock(seconds) == expected

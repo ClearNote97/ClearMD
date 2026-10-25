@@ -4,12 +4,14 @@ import json
 import os
 import subprocess
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 from build_fixtures import MARKERS
 from support import put
 
+from clearmd.backend.api import composition
 from clearmd.frontend.cli import main
 
 
@@ -236,3 +238,58 @@ def test_ac_15_full_stems_and_unicode_names_are_kept(workdir: Path) -> None:
     assert main([str(first), str(second), "--quiet"]) == 0
     output = workdir / "ClearMD_Output" / "OutputMD"
     assert sorted(p.name for p in output.iterdir()) == ["informe_año_ñ.md", "report.v2.final.md"]
+
+
+def _progress_names(err: str) -> list[str]:
+    lines = [line for line in err.splitlines() if line.startswith("[")]
+    return [line.split("] ", 1)[1].split(" · ")[0] for line in lines]
+
+
+def test_ac_20_files_are_converted_from_the_cheapest(
+    workdir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    put(workdir, "sample.pdf", "a_report.pdf")  # PDF: the slowest per MiB
+    put(workdir, "sample.txt", "z_notes.txt")
+    put(workdir, "sample.docx", "m_letter.docx")
+    assert main([str(workdir)]) == 0
+    # 41 bytes of text, ~1.5 KB of docx XML, then the PDF (the slowest per MiB), whatever the names.
+    expected = ["z_notes.txt", "m_letter.docx", "a_report.pdf"]
+    assert _progress_names(capsys.readouterr().err) == expected
+
+
+def test_ac_40_the_time_left_appears_from_the_second_file(
+    workdir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    for name in ("a", "b", "c"):
+        put(workdir, "sample.txt", f"{name}.txt")
+    assert main([str(workdir)]) == 0
+    lines = [line for line in capsys.readouterr().err.splitlines() if line.startswith("[")]
+    assert " · " not in lines[0]
+    assert all(" · " in line and "left" in line for line in lines[1:])
+
+
+def test_ac_42_a_file_that_would_not_fit_in_memory_is_skipped_before_converting(
+    workdir: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    put(workdir, "sample.xlsx", "sales.xlsx")
+    tiny = replace(composition.default_limits(), worker_memory=100 * 1024**2)
+    monkeypatch.setattr(composition, "default_limits", lambda: tiny)
+    assert main([str(workdir / "sales.xlsx")]) == 0
+    err = capsys.readouterr().err
+    assert "sales.xlsx — too big to convert (it would need about" in err
+    assert "the limit is 0.1 GB" in err
+    assert not (workdir / "ClearMD_Output").exists()
+
+
+def test_ac_43_a_file_that_may_take_too_long_is_warned_about_and_still_tried(
+    workdir: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    put(workdir, "sample.txt", "quick.txt")
+    put(workdir, "sample.pdf", "manual.pdf")
+    # The PDF's estimate (~0.02 s) exceeds this limit; the tiny text file's does not.
+    limits = replace(composition.default_limits(), time_per_file=0.015)
+    monkeypatch.setattr(composition, "default_limits", lambda: limits)
+    main([str(workdir)])
+    err = capsys.readouterr().err
+    assert "⚠ manual.pdf — may take more than" in err
+    assert _progress_names(err)[-1] == "manual.pdf"

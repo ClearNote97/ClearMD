@@ -45,7 +45,7 @@ brings the two riskiest parts (the worker and markitdown) to the front.
 - [x] **T11 — Output paths and names.** `use_cases/paths.py` complete: output parents, root/home, layout,
       `--output-root`, case-insensitive collisions with extension and counter, determinism
       (AC-04, AC-12 – AC-15).
-- [ ] **T12 — Planning, scheduling and time left.** `use_cases/planning.py` + `scheduling.py` +
+- [x] **T12 — Planning, scheduling and time left.** `use_cases/planning.py` + `scheduling.py` +
       `estimation.py` + `ScanProgress` / `PlanReady` events; the plan is identical for shuffled inputs and
       ordered by cost; the estimate corrects itself with the measured speed; memory skip and time warning
       (AC-20, AC-40, AC-42, AC-43).
