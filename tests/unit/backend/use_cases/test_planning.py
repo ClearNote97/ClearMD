@@ -1,17 +1,22 @@
+import shutil
+import zipfile
 from pathlib import Path
+
+import pytest
+from support import DOCUMENTS_DIR
 
 from clearmd.backend.schemas.errors import SkipReason
 from clearmd.backend.schemas.formats import FormatId
-from clearmd.backend.schemas.limits import Limits
+from clearmd.backend.schemas.limits import MIB, Limits
 from clearmd.backend.schemas.models import Detection, DetectionMethod, InputProblem
 from clearmd.backend.use_cases.planning import build_plan
 
 
 class TableDetector:
-    """Detects .pdf and .txt by extension, nothing else."""
+    """Detects .pdf, .txt and .docx by extension, nothing else."""
 
     def detect(self, path: Path) -> Detection | None:
-        table = {".pdf": FormatId.PDF, ".txt": FormatId.TXT}
+        table = {".pdf": FormatId.PDF, ".txt": FormatId.TXT, ".docx": FormatId.DOCX}
         found = table.get(path.suffix)
         return Detection(found, DetectionMethod.EXTENSION) if found else None
 
@@ -86,3 +91,21 @@ def test_scanning_skips_reach_the_plan(tmp_path: Path) -> None:
     (project / "notes.md").write_text("# hi", encoding="utf-8")
     plan = build_plan([project], detector=TableDetector(), limits=Limits())
     assert [item.reason for item in plan.skipped] == [SkipReason.ALREADY_MARKDOWN]
+
+
+def test_an_unsafe_archive_is_skipped_while_planning(tmp_path: Path) -> None:
+    bomb = tmp_path / "contract.docx"
+    shutil.copyfile(DOCUMENTS_DIR / "zip_bomb.docx", bomb)
+    plan = build_plan([bomb], detector=TableDetector(), limits=Limits())
+    assert plan.is_empty
+    assert [item.reason for item in plan.skipped] == [SkipReason.UNSAFE_ARCHIVE]
+
+
+def test_the_cost_of_a_zip_document_counts_its_text_not_its_images(tmp_path: Path) -> None:
+    path = tmp_path / "photos.docx"
+    with zipfile.ZipFile(path, "w") as archive:
+        archive.writestr("word/document.xml", "x" * MIB)
+        archive.writestr(zipfile.ZipInfo("word/media/image1.png"), b"\x01" * (20 * MIB))
+    limits = Limits()
+    (item,) = build_plan([path], detector=TableDetector(), limits=limits).conversions
+    assert item.cost == pytest.approx(limits.estimated_seconds(FormatId.DOCX, MIB))

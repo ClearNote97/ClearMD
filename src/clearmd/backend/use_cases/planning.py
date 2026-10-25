@@ -1,6 +1,6 @@
 """Build the batch plan before writing anything (ADR-0010).
 
-Scanning (T08) feeds it; the archive check (T09), names and order (T11-T12) complete it.
+Scanning (T08) and the archive check (T09) feed it; names and order (T11-T12) complete it.
 """
 
 from collections.abc import Callable, Sequence
@@ -8,8 +8,10 @@ from pathlib import Path
 
 from clearmd.backend.schemas.errors import SkipReason
 from clearmd.backend.schemas.events import BatchEvent, PlanReady
+from clearmd.backend.schemas.formats import ZIP_BASED
 from clearmd.backend.schemas.limits import Limits
 from clearmd.backend.schemas.models import BatchPlan, PlannedConversion, SkippedItem
+from clearmd.backend.use_cases.archive import inspect_archive, is_unsafe
 from clearmd.backend.use_cases.paths import output_root_for, target_for
 from clearmd.backend.use_cases.ports import FormatDetector
 from clearmd.backend.use_cases.scanning import Candidate, scan
@@ -39,6 +41,14 @@ def build_plan(
         if detection is None:
             skipped.append(SkippedItem(candidate.path, SkipReason.UNSUPPORTED_FORMAT))
             continue
+        size = candidate.size
+        if detection.format in ZIP_BASED:
+            archive = inspect_archive(candidate.path)
+            if archive is not None:
+                if is_unsafe(archive, limits):
+                    skipped.append(SkippedItem(candidate.path, SkipReason.UNSAFE_ARCHIVE))
+                    continue
+                size = archive.text_bytes
         root = output_root_for(candidate.input, is_dir=candidate.input_is_dir, override=output_root)
         target = target_for(candidate.path, root, _relative_dir(candidate))
         conversions.append(
@@ -48,7 +58,7 @@ def build_plan(
                 target=target,
                 detection=detection,
                 exists=target.exists(),
-                cost=limits.estimated_seconds(detection.format, candidate.size),
+                cost=limits.estimated_seconds(detection.format, size),
             )
         )
     plan = BatchPlan(tuple(conversions), tuple(skipped), scanned.input_errors)

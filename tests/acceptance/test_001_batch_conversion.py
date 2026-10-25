@@ -158,3 +158,14 @@ def test_ac_08_markdown_and_zip_are_skipped_with_their_reason(
     err = capsys.readouterr().err
     assert "already Markdown" in err
     assert "ZIP archives are not supported — extract them first" in err
+
+
+def test_ac_09_a_zip_bomb_is_skipped_before_converting(
+    workdir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    bomb = put(workdir, "zip_bomb.docx", "contract.docx")
+    good = put(workdir, "sample.txt", "good.txt")
+    assert main([str(bomb), str(good)]) == 0
+    assert "this file looks damaged or unsafe" in capsys.readouterr().err
+    assert not (workdir / "ClearMD_Output" / "OutputMD" / "contract.md").exists()
+    assert (workdir / "ClearMD_Output" / "OutputMD" / "good.md").is_file()
