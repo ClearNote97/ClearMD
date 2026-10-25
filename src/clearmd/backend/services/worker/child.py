@@ -65,7 +65,8 @@ def handle(
     format_id = FormatId(request.format)
     detection = Detection(format_id, DetectionMethod(request.method))
     try:
-        result = registry.for_format(format_id).convert(Path(request.source), detection)
+        converter = registry.for_format(format_id)
+        result = converter.convert(Path(request.source), detection, Path(request.target))
     except ConversionError as error:
         return Failed(error.code.value, error.detail)
     except MemoryError:

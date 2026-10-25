@@ -26,7 +26,7 @@ Goal: `clearmd paper.tex` writes a faithful `paper.md` through the worker, with 
       shared state (AC-14, AC-15).
 - [x] **T07 — Macros.** `macros.py`: first-pass collection, the context with user specs, expansion in text and
       math, definitions from included files, the budget and its note (AC-16, AC-17).
-- [ ] **T08 — Images.** Paths relative to the output `.md`, `\graphicspath`, extension lookup; the request carries
+- [x] **T08 — Images.** Paths relative to the output `.md`, `\graphicspath`, extension lookup; the request carries
       the target path (AC-13).
 
 ## Slice C — Measured and closed

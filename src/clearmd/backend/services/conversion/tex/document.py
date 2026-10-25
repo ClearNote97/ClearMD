@@ -7,6 +7,7 @@ from clearmd.backend.schemas.models import ConversionResult
 from clearmd.backend.schemas.notes import ConversionNote, NoteItem, NoteKind, NoteReason
 from clearmd.backend.services.conversion.safe_files import read_regular_file
 from clearmd.backend.services.conversion.tex.context import make_context, parse
+from clearmd.backend.services.conversion.tex.images import graphics_paths, image_link
 from clearmd.backend.services.conversion.tex.includes import MAX_BYTES, IncludeState, enter
 from clearmd.backend.services.conversion.tex.render import Renderer, author_macros
 from clearmd.backend.services.conversion.tex.source import decode_source
@@ -16,8 +17,9 @@ _COMMENT = re.compile(r"(?<!\\)%.*")
 
 
 class _Document:
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path, target: Path) -> None:
         self.path = path
+        self.target = target
         self.state = IncludeState(path.parent.absolute(), stack=[path.resolve()])
         self.refused: dict[NoteItem, None] = {}
         self.guessed: dict[NoteItem, None] = {}
@@ -78,7 +80,13 @@ class _Document:
         macros = author_macros(parse(whole, self.context, strict=False)[0], len(whole))
         if macros is not None:
             self.context = macros.context
-        self.renderer = Renderer(whole, include=self.include, macros=macros)
+        prefixes = graphics_paths(whole)
+        folder = self.state.folder
+
+        def image(argument: str) -> str:
+            return image_link(argument, folder, prefixes, self.target)
+
+        self.renderer = Renderer(whole, include=self.include, image=image, macros=macros)
         nodes, error = parse(text, self.context)
         if error:
             self.parse_errors[NoteItem(error)] = None
@@ -93,6 +101,10 @@ class _Document:
         return ConversionResult(markdown, tuple(notes))
 
 
-def convert_document(path: Path) -> ConversionResult:
-    """Convert ``path`` and the files it includes inside its folder (ADR-0022)."""
-    return _Document(path).convert()
+def convert_document(path: Path, target: Path | None = None) -> ConversionResult:
+    """Convert ``path`` and the files it includes inside its folder (ADR-0022).
+
+    ``target`` is where the Markdown will be written: image links are relative to it (by
+    default, a file next to the source).
+    """
+    return _Document(path, target or path.with_suffix(".md")).convert()

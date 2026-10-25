@@ -22,6 +22,9 @@ from clearmd.backend.services.conversion.markitdown_adapter import (
 CONVERTIBLE = sorted(name for name in MARKERS if name != "encrypted.pdf")
 
 
+TARGET = Path("out.md")  # markitdown writes no links to other files
+
+
 def _detection(name: str) -> Detection:
     if name == "docx_without_extension":
         return Detection(FormatId.DOCX, DetectionMethod.CONTENT)
@@ -39,7 +42,7 @@ def converter() -> MarkItDownConverter:
 def test_every_fixture_converts_and_keeps_its_text(
     converter: MarkItDownConverter, name: str
 ) -> None:
-    result = converter.convert(DOCUMENTS_DIR / name, _detection(name))
+    result = converter.convert(DOCUMENTS_DIR / name, _detection(name), TARGET)
     assert MARKERS[name] in result.markdown
     assert result.notes == ()  # markitdown reports no notes
 
@@ -56,7 +59,7 @@ def test_hard_fixtures_fail_with_their_code(
     converter: MarkItDownConverter, name: str, code: ErrorCode
 ) -> None:
     with pytest.raises(ConversionError) as raised:
-        converter.convert(DOCUMENTS_DIR / name, _detection(name))
+        converter.convert(DOCUMENTS_DIR / name, _detection(name), TARGET)
     assert raised.value.code is code
     assert raised.value.detail  # the technical detail is kept for the summary
 
@@ -75,7 +78,9 @@ def test_only_the_converter_of_the_detected_format_runs(tmp_path: Path) -> None:
         with zipfile.ZipFile(fake, "w") as archive:
             archive.writestr("inner.txt", "x" * 1000)
         with pytest.raises(ConversionError) as raised:
-            MarkItDownConverter().convert(fake, Detection(FormatId.PDF, DetectionMethod.EXTENSION))
+            MarkItDownConverter().convert(
+                fake, Detection(FormatId.PDF, DetectionMethod.EXTENSION), TARGET
+            )
         assert raised.value.code is ErrorCode.CORRUPT_FILE
     finally:
         zip_module.ZipConverter.convert = original  # type: ignore[method-assign]
@@ -95,7 +100,9 @@ def test_a_source_replaced_by_a_symlink_is_not_followed(tmp_path: Path) -> None:
     link = tmp_path / "notes.txt"
     link.symlink_to(secret)
     with pytest.raises(ConversionError) as raised:
-        MarkItDownConverter().convert(link, Detection(FormatId.TXT, DetectionMethod.EXTENSION))
+        MarkItDownConverter().convert(
+            link, Detection(FormatId.TXT, DetectionMethod.EXTENSION), TARGET
+        )
     assert raised.value.code is ErrorCode.SOURCE_UNREADABLE
 
 
@@ -106,7 +113,7 @@ def test_a_source_that_cannot_be_read_is_source_unreadable(tmp_path: Path) -> No
     try:
         with pytest.raises(ConversionError) as raised:
             MarkItDownConverter().convert(
-                locked, Detection(FormatId.TXT, DetectionMethod.EXTENSION)
+                locked, Detection(FormatId.TXT, DetectionMethod.EXTENSION), TARGET
             )
     finally:
         locked.chmod(0o644)

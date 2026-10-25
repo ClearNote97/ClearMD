@@ -38,7 +38,7 @@ def _is_link(status: os.stat_result) -> bool:
     )
 
 
-def _walk_inside(folder: Path, relative: PurePosixPath) -> Path | NoteReason:
+def walk_inside(folder: Path, relative: PurePosixPath) -> Path | NoteReason:
     current = folder
     for part in relative.parts:
         current = current / part
@@ -57,20 +57,28 @@ def _walk_inside(folder: Path, relative: PurePosixPath) -> Path | NoteReason:
     return current
 
 
+def is_outside_by_name(name: str) -> NoteReason | None:
+    """Why ``name`` cannot be inside the folder, from the name alone (no disk access)."""
+    if name.startswith(("/", "~")) or _DRIVE.match(name):
+        return NoteReason.ABSOLUTE
+    if ".." in PurePosixPath(name).parts:
+        return NoteReason.PARENT_SEGMENT
+    return None
+
+
 def resolve_include(argument: str, state: IncludeState) -> Path | NoteReason:
     """The file an include names, or why it is not followed (cycles and limits: ``enter``)."""
     name = argument.strip().replace("\\", "/")
     if not name:
         return NoteReason.MISSING
-    if name.startswith(("/", "~")) or _DRIVE.match(name):
-        return NoteReason.ABSOLUTE
+    refused = is_outside_by_name(name)
+    if refused is not None:
+        return refused
     relative = PurePosixPath(name)
-    if ".." in relative.parts:
-        return NoteReason.PARENT_SEGMENT
     if relative.suffix.lower() == ".tex":
-        return _walk_inside(state.folder, relative)
+        return walk_inside(state.folder, relative)
     # Like LaTeX: "chapter" means "chapter.tex"; "data.csv" is not a LaTeX file.
-    with_tex = _walk_inside(state.folder, PurePosixPath(f"{name}.tex"))
+    with_tex = walk_inside(state.folder, PurePosixPath(f"{name}.tex"))
     if isinstance(with_tex, Path) or not relative.suffix:
         return with_tex
     return NoteReason.NOT_TEX

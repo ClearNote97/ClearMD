@@ -15,6 +15,7 @@ class ConvertRequest:
     source: str
     format: str
     method: str
+    target: str  # where the Markdown will be written: links to images start there
 
 
 @dataclass(frozen=True)

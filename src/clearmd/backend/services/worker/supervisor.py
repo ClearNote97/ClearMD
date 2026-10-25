@@ -60,7 +60,10 @@ class WorkerRunner:
         if cancel.is_set():
             raise Cancelled
         request = ConvertRequest(
-            str(item.source), item.detection.format.value, item.detection.method.value
+            str(item.source),
+            item.detection.format.value,
+            item.detection.method.value,
+            str(item.target),
         )
         response = self._request(request, cancel)
         if not isinstance(response, Converted):

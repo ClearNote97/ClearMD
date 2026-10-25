@@ -25,7 +25,7 @@ SLOW_START_SECONDS = 2.0
 
 
 class FakeConverter:
-    def convert(self, source: Path, detection: Detection) -> ConversionResult:
+    def convert(self, source: Path, detection: Detection, target: Path) -> ConversionResult:
         return ConversionResult(self._markdown(source), self._notes(source))
 
     def _notes(self, source: Path) -> tuple[ConversionNote, ...]:

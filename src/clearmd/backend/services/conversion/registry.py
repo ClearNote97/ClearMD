@@ -10,8 +10,11 @@ from clearmd.backend.schemas.models import ConversionResult, Detection
 
 
 class DocumentConverter(Protocol):
-    def convert(self, source: Path, detection: Detection) -> ConversionResult:
-        """The Markdown of ``source`` and its notes; raises ``ConversionError`` on failure."""
+    def convert(self, source: Path, detection: Detection, target: Path) -> ConversionResult:
+        """The Markdown of ``source`` and its notes; raises ``ConversionError`` on failure.
+
+        ``target`` is where the Markdown will be written (links to other files start there).
+        """
         ...
 
 

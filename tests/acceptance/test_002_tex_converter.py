@@ -121,8 +121,17 @@ def test_ac_12_merged_cells_are_kept_as_latex_with_a_note(workdir: Path) -> None
     assert "kept as LaTeX code: `1`" in summary(workdir)
 
 
-def test_ac_13_a_figure_links_its_image(paper_md: str) -> None:
-    assert "![Un gráfico](" in paper_md
+def test_ac_13_a_figure_links_its_image_from_the_output_file(paper_md: str) -> None:
+    assert "![Un gráfico](../../img/plot.png)" in paper_md
+
+
+def test_ac_13_the_link_follows_a_chosen_output_folder(workdir: Path) -> None:
+    (paper,) = copy_tex(workdir, "paper.tex")
+    copy_tex(workdir, "img")
+    elsewhere = workdir / "elsewhere"
+    assert main([str(paper), "--output-root", str(elsewhere), "--quiet"]) == 0
+    converted = (elsewhere / "ClearMD_Output" / "OutputMD" / "paper.md").read_text(encoding="utf-8")
+    assert "![Un gráfico](../../../img/plot.png)" in converted
 
 
 def test_ac_18_unknown_commands_are_kept_and_reported(

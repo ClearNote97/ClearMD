@@ -111,7 +111,7 @@ class MarkItDownConverter:
     def __init__(self) -> None:
         self.converters = _converters()
 
-    def convert(self, source: Path, detection: Detection) -> ConversionResult:
+    def convert(self, source: Path, detection: Detection, target: Path) -> ConversionResult:
         converter = self.converters[detection.format]
         hint = StreamInfo(extension=f".{detection.format.value}", filename=source.name)
         with _open_regular_file(source) as stream:
