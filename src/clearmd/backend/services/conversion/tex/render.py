@@ -8,7 +8,8 @@ nesting) is kept whole as a LaTeX code block, with a note: a file never fails as
 
 import bisect
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from typing import Any
 
 from pylatexenc.latex2text import LatexNodes2Text, get_default_latex_context_db
@@ -33,6 +34,7 @@ from clearmd.backend.services.conversion.tex.context import (
     mask,
     parse,
 )
+from clearmd.backend.services.conversion.tex.includes import is_outside_by_name
 from clearmd.backend.services.conversion.tex.macros import (
     BudgetExceeded,
     DefinitionSite,
@@ -75,11 +77,13 @@ _ENTITY = re.compile(r"&[#A-Za-z]")
 # What Markdown reads as a block at the start of a line written by the document.
 _BLOCK_LINE = re.compile(
     r"(?P<mark>#{1,6}(?=\s|$)|>|[-+*](?=\s|$)|(?P<number>\d{1,9})(?=[.)](?:\s|$))"
-    r"|`{3,}|~{3,}|\||[=]+[ \t]*$|(?P<rule>[-*_])(?:[ \t]*(?P=rule)){2,}[ \t]*$)"
+    r"|`{3,}|~{3,}|\||\[[^\]\n]*\]:|[=]+[ \t]*$|-{2,}[ \t]*$"
+    r"|(?P<rule>[-*_])(?:[ \t]*(?P=rule)){2,}[ \t]*$)"
 )
 _TABLE_RULE = re.compile(r"\|?[ \t]*:?-+:?[ \t]*(\|[ \t]*:?-+:?[ \t]*)*\|?[ \t]*")
 _MATH_TAG = re.compile(r"<(?=[A-Za-z/!?])")
-_SAFE_LINK = re.compile(r"^(?:https?|ftp|mailto):|^[^:]*$", re.IGNORECASE)
+# http, https, ftp, mailto, or a relative path (never "//host": that is remote).
+_SAFE_LINK = re.compile(r"^(?:https?|ftp|mailto):|^(?![/\\]{2})[^:]*$", re.IGNORECASE)
 
 INLINE = {
     "textbf": "**{}**",
@@ -162,6 +166,9 @@ def _fence(code: str) -> str:
 
 
 def _inline_code(code: str) -> str:
+    # One line: a code span cannot cross a blank line (it would stay open and its content live),
+    # and CommonMark shows its line breaks as spaces anyway.
+    code = re.sub(r"[ \t]*\n\s*", " ", code)
     if "`" not in code:
         return f"`{code}`"
     ticks = "`" * (max(len(run) for run in re.findall("`+", code)) + 1)
@@ -211,13 +218,40 @@ def outside_code(text: str, fix: Callable[[str], str], *, blank_around: bool = F
 
 
 def escape_text(text: str) -> str:
-    """Text from the document never becomes a link, an image or raw HTML (blocks: neutralize)."""
+    """Text from the document never becomes a link, an image, a code span or raw HTML (blocks:
+    neutralize; neighbours: ``_join``)."""
+    text = text.replace(MARK, "").replace("`", "\\`")
     return text.replace("<", "&lt;").replace("[", "&#91;").replace("]", "&#93;")
 
 
 def escape_math(text: str) -> str:
-    """``<img`` inside math is HTML to a viewer without math support; ``< img`` is the same math."""
-    return _MATH_TAG.sub("< ", text)
+    """Math is Markdown text to a viewer without math support. TeX ignores spaces in math, so
+    ``< img``, ``! [`` and ``] (`` are the same formula and no HTML, image or link. A backtick
+    would pair with one of ClearMD's code spans: it is escaped (rare in math)."""
+    text = _MATH_TAG.sub("< ", text.replace(MARK, ""))
+    text = text.replace("![", "! [").replace("](", "] (")
+    return text.replace("`", "\\`")
+
+
+def _join(parts: list[str]) -> str:
+    """Pieces written next to each other never form a construct none of them wrote: a ``!``
+    before ClearMD's ``[`` (an image), a ``]`` before ``(``, ``[`` or ``:`` (a link, a
+    reference, a definition), two backtick runs glued into one (code spans that never close)."""
+    pieces = [part for part in parts if part]
+    for index in range(1, len(pieces)):
+        left, right = pieces[index - 1], pieces[index]
+        if left.endswith("!") and right.startswith("[") and not left.endswith("\\!"):
+            pieces[index - 1] = left[:-1] + "\\!"
+        elif left.endswith("]") and right.startswith(("(", "[", ":")):
+            pieces[index] = "\\" + right
+        elif left.endswith("`") and right.startswith("`"):  # two code spans, never one run
+            pieces[index] = " " + right
+    return "".join(pieces)
+
+
+def _math_line(line: str) -> str:
+    """A display-math line a viewer without math would read as a block gets a ``{}`` (no-op)."""
+    return "{}" + line if _neutral_line(line, after_blank=True) != line else line
 
 
 def _marked(text: str) -> str:
@@ -228,9 +262,10 @@ def _marked(text: str) -> str:
 def _neutral_line(line: str, after_blank: bool) -> str:
     indent = len(line) - len(line.lstrip(" \t"))
     content = line[indent:]
-    if after_blank and indent >= 4:  # an indented code block
-        indent, line = 0, content
-    if indent >= 4 or not content:
+    columns = len(line[:indent].expandtabs(4))  # a tab is up to 4 columns to CommonMark
+    if after_blank and columns >= 4:  # an indented code block
+        indent, columns, line = 0, 0, content
+    if columns >= 4 or not content:
         return line
     if _TABLE_RULE.fullmatch(content) and "|" in content:
         return line[:indent] + "\\" + content
@@ -366,7 +401,7 @@ class Renderer:
     ) -> None:
         self._top_level = level
         self._spanish = spanish
-        self._image = image or (lambda path: path)
+        self._image = image or _name_only_image
         self._macros = macros
         self.unknown: dict[str, None] = {}
         self.refused: dict[NoteItem, None] = {}
@@ -411,7 +446,7 @@ class Renderer:
                 piece = piece.lstrip(" \t")  # "\\section{A}    Text" is not a code block
             parts.append(piece)
             after_unknown = isinstance(node, LatexMacroNode) and len(self.unknown) > before
-        return "".join(parts)
+        return _join(parts)
 
     def _without_false(self, nodes: list[Any]) -> list[Any]:
         """``nodes`` without what ``\\iffalse … \\fi`` comments out (nested conditionals
@@ -504,7 +539,8 @@ class Renderer:
             code = getattr(node.nodeargd, "verbatim_text", None)
             return _inline_code(code) if code is not None else self._unknown("\\verb", node)
         if name == "footnote":
-            self.footnotes.append(self.inline(self._last_arg(node)))
+            with self._text_mode():
+                self.footnotes.append(self.inline(self._last_arg(node)))
             return f"[^{len(self.footnotes)}]"
         if name in CITATION_MACROS:
             return self._citation(node)
@@ -552,11 +588,11 @@ class Renderer:
         if name in CODE:
             return _block(self._code(node))
         if name in DISPLAY_MATH:
-            return _block(_marked(f"$$\n{self._math_body(node.nodelist)}\n$$"))
+            return _block(self._display(self._math_body(node.nodelist)))
         if name in ALIGNED:
             inner = ALIGNED[name]
             body = self._math_body(node.nodelist)
-            return _block(_marked(f"$$\n\\begin{{{inner}}}\n{body}\n\\end{{{inner}}}\n$$"))
+            return _block(self._display(f"\\begin{{{inner}}}\n{body}\n\\end{{{inner}}}"))
         if _is_float(node):
             return self._float(node)
         if name in TABULARS:
@@ -570,11 +606,25 @@ class Renderer:
 
     def _esc(self, text: str) -> str:
         """Document text copied as written: never a link or HTML (inside code, left as is)."""
-        return text if self._in_code else escape_text(text)
+        return text.replace(MARK, "") if self._in_code else escape_text(text)
+
+    @contextmanager
+    def _text_mode(self) -> Iterator[None]:
+        """Text written somewhere else later (a footnote, a caption, the title) is never code,
+        even when its command sits inside ``\\texttt``."""
+        saved, self._in_code = self._in_code, 0
+        try:
+            yield
+        finally:
+            self._in_code = saved
 
     # --- Pieces -------------------------------------------------------------------------------
 
     def _title_block(self) -> str:
+        with self._text_mode():
+            return self._title_text()
+
+    def _title_text(self) -> str:
         title = self.inline(self.metadata.get("title", []))
         if not title:
             return ""
@@ -591,7 +641,16 @@ class Renderer:
         # "javascript&#58;" is "javascript:" once a viewer decodes it.
         safe = bool(_SAFE_LINK.match(url)) and not _ENTITY.search(url)
         if node.macroname == "url":
-            return f"<{url}>" if safe and not re.search(r"[\s<>]", url) else _inline_code(url)
+            if not url:
+                return ""
+            # <…> is an autolink only with a scheme ("<texto>" would be an HTML tag); any other
+            # \url is shown as code.
+            absolute = re.match(r"(?:https?|ftp|mailto):", url, re.IGNORECASE)
+            if safe and absolute and not re.search(r"[\s<>]", url):
+                return f"<{url}>"
+            return _inline_code(url)
+        if not url:
+            return text
         if not safe:  # javascript: and friends never become links
             return f"{text} ({_inline_code(url)})" if text else _inline_code(url)
         return f"[{text or url}]({link_target(url)})"
@@ -612,8 +671,13 @@ class Renderer:
     def _math(self, node: Any) -> str:
         body = self._math_body(node.nodelist)
         if node.displaytype == "display":
-            return _block(_marked(f"$$\n{body}\n$$"))
+            return _block(self._display(body))
         return f"${body}$"
+
+    def _display(self, body: str) -> str:
+        """``$$`` lines are ClearMD's; the math between them is never read as Markdown blocks."""
+        lines = "\n".join(_math_line(line) for line in body.split("\n"))
+        return f"{MARK}$$\n{lines}\n{MARK}$$"
 
     def _math_body(self, nodes: list[Any] | None) -> str:
         return escape_math(" ".join(self._math_source(list(nodes or [])).split()))
@@ -730,7 +794,8 @@ class Renderer:
     def _float(self, node: Any) -> str:
         """A figure or table: its content in order; the caption on its only image, or under it."""
         caption_node = _own_caption(node)
-        caption = self.inline(self._last_arg(caption_node)) if caption_node is not None else ""
+        with self._text_mode():
+            caption = self.inline(self._last_arg(caption_node)) if caption_node else ""
         if caption_node is not None:
             self._consumed.add(id(caption_node))
         images = [n for n in walk(node.nodelist, skip=_is_float) if is_macro(n, "includegraphics")]
@@ -936,7 +1001,9 @@ def render_source(
 
     Whatever happens inside, the file is converted: at worst kept whole as LaTeX (AC-21).
     """
-    text = text.replace(MARK, "")  # the document can never forge ClearMD's own block marks
+    # The document can never forge ClearMD's own block marks; every line ends with "\n" (a lone
+    # "\r" is a line ending to CommonMark too).
+    text = re.sub(r"\r\n?", "\n", text.replace(MARK, ""))
     try:
         nodes, error = parse(text, make_context())
         macros, again = _expander(nodes, len(text))
@@ -990,4 +1057,12 @@ def _through(locate: Locator, original: Callable[[int], int]) -> Locator:
 
 def render_latex(text: str) -> ConversionResult:
     """Convert one LaTeX source on its own (no includes followed: see ``convert_document``)."""
-    return render_source(text)
+    return render_source(text, image=_name_only_image)
+
+
+def _name_only_image(path: str) -> str | None:
+    """Without a folder to look in: a path that names something outside or remote is no link."""
+    name = path.strip().replace("\\", "/")
+    if not name or is_outside_by_name(name) is not None or _ENTITY.search(name):
+        return None
+    return path.strip()

@@ -78,7 +78,7 @@ class _Document:
         if text.guessed:
             label = f"{included}: {text.encoding}" if included else text.encoding
             self.guessed[NoteItem(label)] = None
-        return text.text
+        return re.sub(r"\r\n?", "\n", text.text)  # one line ending everywhere (CommonMark: \r too)
 
     def splice(self, text: str, name: str) -> None:
         cursor = 0

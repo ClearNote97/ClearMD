@@ -521,7 +521,7 @@ def test_r2_10_clearmd_own_structure_is_kept() -> None:
             "\\begin{tabular}{c}x\\\\\\end{tabular}\\[ - x \\]\\footnote{n}"
         )
     )
-    for expected in ("## S", "- a", "> q", "| x |", "$$\n- x\n$$", "[^1]: n"):
+    for expected in ("## S", "- a", "> q", "| x |", "$$\n{}- x\n$$", "[^1]: n"):
         assert expected in text, expected
     assert "\ue000" not in text
 
