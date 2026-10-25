@@ -59,7 +59,7 @@ brings the two riskiest parts (the worker and markitdown) to the front.
 - [x] **T15 — Settings.** `schemas/settings.py`, `use_cases/settings.py` (defaults, validation,
       serialization) + `services/settings_store.py` (platformdirs path, load); tests for missing, corrupt and
       invalid files (AC-33, AC-34).
-- [ ] **T16 — CLI complete.** Prompt, `--overwrite`/`--skip`, `--dry-run`, `--open`, `--output-root`,
+- [x] **T16 — CLI complete.** Prompt, `--overwrite`/`--skip`, `--dry-run`, `--open`, `--output-root`,
       `--lang`, `--quiet`, `--no-recursive`, time left in the progress line, exit codes 3 and 130 (AC-17,
       AC-18, AC-30, AC-31, AC-34 – AC-38, AC-40).
 - [ ] **T17 — Acceptance sweep.** `tests/acceptance/test_001_batch_conversion.py` covers AC-01 … AC-44, one

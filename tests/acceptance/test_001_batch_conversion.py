@@ -3,8 +3,10 @@
 import json
 import os
 import random
+import signal
 import subprocess
 import sys
+import time
 from dataclasses import replace
 from pathlib import Path
 
@@ -98,7 +100,7 @@ def test_ac_03_no_recursive_converts_only_the_top_level(workdir: Path) -> None:
     project = workdir / "project"
     put(project, "sample.txt", "top.txt")
     put(project, "sample.txt", "sub/inner.txt")
-    assert main([str(project), "--no-recursive", "--quiet"]) == 0
+    assert main([str(project), "--no-recursive", "--quiet"]) == 0  # the flag wins over settings
     assert _tree(workdir / "ClearMD_Output" / "OutputMD") == ["project", "project/top.md"]
 
 
@@ -437,3 +439,156 @@ def test_ac_34_flags_override_settings_for_that_run_only(workdir: Path) -> None:
     put(project, "sample.txt", "sub/inner.txt")
     assert main([str(project), "--recursive", "--quiet"]) == 0
     assert (workdir / "ClearMD_Output" / "OutputMD" / "project" / "sub" / "inner.md").is_file()
+
+
+def _with_existing_outputs(workdir: Path) -> tuple[Path, Path]:
+    first = put(workdir, "sample.txt", "a.txt")
+    second = put(workdir, "sample.txt", "b.txt")
+    assert main([str(first), str(second), "--quiet"]) == 0
+    for name in ("a", "b"):
+        (workdir / "ClearMD_Output" / "OutputMD" / f"{name}.md").write_text("old", encoding="utf-8")
+    return first, second
+
+
+def _outputs(workdir: Path) -> dict[str, str]:
+    folder = workdir / "ClearMD_Output" / "OutputMD"
+    return {p.stem: p.read_text(encoding="utf-8") for p in sorted(folder.glob("*.md"))}
+
+
+@pytest.mark.parametrize(
+    ("answers", "expected"),
+    [
+        (["1"], {"a": "new", "b": "new"}),
+        (["2"], {"a": "old", "b": "old"}),
+        (["3", "y", "n"], {"a": "new", "b": "old"}),
+        (["9", "x", "?"], {"a": "old", "b": "old"}),  # no valid answer: the safe choice
+        ([], {"a": "old", "b": "old"}),  # end of input: the safe choice
+    ],
+)
+def test_ac_16_existing_outputs_are_asked_about_once(
+    workdir: Path, monkeypatch: pytest.MonkeyPatch, answers: list[str], expected: dict[str, str]
+) -> None:
+    from clearmd.frontend.cli import app
+
+    first, second = _with_existing_outputs(workdir)
+    replies = iter(answers)
+    monkeypatch.setattr(app, "_is_interactive", lambda: True)
+    monkeypatch.setattr(app, "_ask", lambda prompt: next(replies, None))
+    assert main([str(first), str(second), "--quiet"]) == 0
+    got = {name: ("old" if text == "old" else "new") for name, text in _outputs(workdir).items()}
+    assert got == expected
+
+
+def test_ac_17_overwrite_and_skip_together_are_a_usage_error(workdir: Path) -> None:
+    source = put(workdir, "sample.txt", "a.txt")
+    with pytest.raises(SystemExit) as exit_info:
+        main([str(source), "--overwrite", "--skip"])
+    assert exit_info.value.code == 2
+
+
+def test_ac_18_no_terminal_no_flag_means_exit_3_and_nothing_written(
+    workdir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    first, second = _with_existing_outputs(workdir)
+    capsys.readouterr()
+    assert main([str(first), str(second)]) == 3
+    assert "--overwrite or --skip" in capsys.readouterr().err
+    assert _outputs(workdir) == {"a": "old", "b": "old"}
+
+
+def test_ac_26_ctrl_c_stops_at_once_and_still_writes_the_summary(workdir: Path) -> None:
+    quick = put(workdir, "sample.txt", "quick.txt")
+    slow = workdir / "slow.pdf"
+    make_pdf(slow, 300 * 1024, random.Random(SEED))  # ~8 s of pdfminer
+    script = "import sys\nfrom clearmd.frontend.cli import main\nsys.exit(main(sys.argv[1:]))\n"
+    process = subprocess.Popen(
+        [sys.executable, "-c", script, str(quick), str(slow)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    assert process.stderr is not None
+    seen = ""
+    deadline = time.monotonic() + 60
+    while "[2/2]" not in seen and time.monotonic() < deadline:
+        seen += process.stderr.readline()
+    time.sleep(0.5)  # the slow PDF is being converted now
+    began = time.monotonic()
+    process.send_signal(signal.SIGINT)
+    process.communicate(timeout=60)
+    assert process.returncode == 130
+    assert time.monotonic() - began < 5  # at once, not after the 8 s file
+    output = workdir / "ClearMD_Output"
+    assert (output / "OutputMD" / "quick.md").is_file()
+    assert not (output / "OutputMD" / "slow.md").exists()
+    assert list(output.rglob("*.clearmd-tmp")) == []
+    summary = (output / "Resumen_ClearMD.md").read_text(encoding="utf-8")
+    assert "## Cancelled\n- `slow.pdf`" in summary
+
+
+def test_ac_31_messages_follow_lang(workdir: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    source = put(workdir, "sample.txt", "notas.txt")
+    assert main([str(source), "--lang", "es"]) == 0
+    captured = capsys.readouterr()
+    assert "1 convertidos · 0 omitidos · 0 con error" in captured.out
+    assert "Resultados:" in captured.out
+    assert _summary(workdir).startswith("# Resumen de ClearMD")
+
+
+def test_ac_31_the_language_setting_is_used_without_lang(
+    workdir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _settings('language = "es"\n')
+    source = put(workdir, "sample.txt", "notas.txt")
+    assert main([str(source)]) == 0
+    assert "convertidos" in capsys.readouterr().out
+
+
+def test_ac_35_exit_codes(workdir: Path) -> None:
+    good = put(workdir, "sample.txt", "good.txt")
+    broken = put(workdir, "corrupt.docx", "broken.docx")
+    assert main([str(good), "--quiet"]) == 0
+    assert main([str(broken), "--quiet"]) == 1
+    assert main([str(workdir / "missing.pdf"), "--quiet"]) == 2
+    assert main([str(good), "--quiet"]) == 3  # existing output, no terminal, no flag
+
+
+def test_ac_36_open_shows_the_results_folder_only_when_asked(
+    workdir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from clearmd.frontend.cli import app
+
+    opened: list[Path] = []
+    monkeypatch.setattr(app, "_open_folder", opened.append)
+    source = put(workdir, "sample.txt", "a.txt")
+    assert main([str(source), "--quiet"]) == 0
+    assert opened == []
+    assert main([str(source), "--overwrite", "--open", "--quiet"]) == 0
+    assert opened == [workdir / "ClearMD_Output"]
+
+
+def test_ac_37_dry_run_shows_the_plan_and_writes_nothing(
+    workdir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    source = put(workdir, "sample.txt", "a.txt")
+    (workdir / "notes.md").write_text("# hi", encoding="utf-8")
+    assert main([str(source), str(workdir / "notes.md"), "--dry-run"]) == 0
+    captured = capsys.readouterr()
+    assert "a.txt → " in captured.out and "OutputMD/a.md" in captured.out
+    assert "notes.md — already Markdown" in captured.err
+    assert "nothing was written" in captured.out
+    assert not (workdir / "ClearMD_Output").exists()
+
+
+def test_ac_38_quiet_shows_only_the_summary_and_errors(
+    workdir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    good = put(workdir, "sample.txt", "good.txt")
+    broken = put(workdir, "corrupt.docx", "broken.docx")
+    (workdir / "notes.md").write_text("# hi", encoding="utf-8")
+    assert main([str(good), str(broken), str(workdir / "notes.md"), "--quiet"]) == 1
+    captured = capsys.readouterr()
+    assert "[1/" not in captured.err  # no progress
+    assert "notes.md" not in captured.err  # no skip notes
+    assert "broken.docx — This file seems to be damaged." in captured.err
+    assert "converted" in captured.out

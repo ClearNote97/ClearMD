@@ -1,17 +1,21 @@
-"""CLI entry point. Thin path of slice A: files in, Markdown out, progress and exit codes (T06).
+"""The command-line interface (feature 001): plan, ask if needed, convert, summarize.
 
-The prompt, --dry-run, --open, --output-root, --lang and exit codes 3/130 in full arrive in T16;
---recursive/--no-recursive and the shared settings came with T08/T15, --output-root with T11.
+Every text comes from the catalogs (ADR-0012). Progress, prompts and notes go to stderr; the final
+summary goes to stdout. The batch runs in a thread so that Ctrl+C reaches the main thread at once
+and cancels it (AC-26).
 """
 
 import argparse
+import os
+import subprocess
 import sys
-from collections.abc import Sequence
+import threading
+from collections.abc import Callable, Sequence
 from importlib.metadata import version
 from pathlib import Path
 from typing import TextIO
 
-from clearmd.backend.api import load_settings, plan_batch, run_batch
+from clearmd.backend.api import CancelToken, load_settings, plan_batch, run_batch
 from clearmd.backend.schemas.errors import ErrorCode
 from clearmd.backend.schemas.events import BatchEvent, ConversionFinished, ConversionStarted
 from clearmd.backend.schemas.models import (
@@ -22,38 +26,75 @@ from clearmd.backend.schemas.models import (
     SkippedItem,
 )
 from clearmd.backend.schemas.settings import SettingsWarning
-from clearmd.i18n import Catalog, load_catalog, resolve_language
+from clearmd.i18n import SUPPORTED_LANGUAGES, Catalog, load_catalog, resolve_language
 
 EXIT_OK = 0
 EXIT_FAILED = 1
 EXIT_USAGE = 2
 EXIT_DECISION_REQUIRED = 3
+EXIT_CANCELLED = 130
+PROMPT_ATTEMPTS = 3
+
+Decision = Callable[[PlannedConversion], bool]
 
 
 def build_parser(catalog: Catalog) -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="clearmd", description=catalog.text("cli.help.description")
-    )
-    parser.add_argument(
-        "paths", nargs="+", type=Path, metavar="PATH", help=catalog.text("cli.help.paths")
-    )
+    help_ = catalog.text
+    parser = argparse.ArgumentParser(prog="clearmd", description=help_("cli.help.description"))
+    parser.add_argument("paths", nargs="+", type=Path, metavar="PATH", help=help_("cli.help.paths"))
     existing = parser.add_mutually_exclusive_group()
-    existing.add_argument(
-        "--overwrite", action="store_true", help=catalog.text("cli.help.overwrite")
-    )
-    existing.add_argument("--skip", action="store_true", help=catalog.text("cli.help.skip"))
+    existing.add_argument("--overwrite", action="store_true", help=help_("cli.help.overwrite"))
+    existing.add_argument("--skip", action="store_true", help=help_("cli.help.skip"))
     parser.add_argument(
         "--recursive",
         action=argparse.BooleanOptionalAction,
         default=None,
-        help=catalog.text("cli.help.recursive"),
+        help=help_("cli.help.recursive"),
     )
     parser.add_argument(
-        "--output-root", type=Path, metavar="DIR", help=catalog.text("cli.help.output_root")
+        "--output-root", type=Path, metavar="DIR", help=help_("cli.help.output_root")
     )
-    parser.add_argument("-q", "--quiet", action="store_true", help=catalog.text("cli.help.quiet"))
+    parser.add_argument("--dry-run", action="store_true", help=help_("cli.help.dry_run"))
+    parser.add_argument("--open", action="store_true", help=help_("cli.help.open"))
+    parser.add_argument("--lang", choices=SUPPORTED_LANGUAGES, help=help_("cli.help.lang"))
+    parser.add_argument("-q", "--quiet", action="store_true", help=help_("cli.help.quiet"))
     parser.add_argument("--version", action="version", version=f"%(prog)s {version('clearmd')}")
     return parser
+
+
+def _requested_language(argv: Sequence[str] | None) -> str | None:
+    """``--lang`` is read first, so that even the help and the settings warnings use it."""
+    pre = argparse.ArgumentParser(add_help=False)
+    pre.add_argument("--lang", choices=SUPPORTED_LANGUAGES)
+    known, _ = pre.parse_known_args(argv)
+    language: str | None = known.lang
+    return language
+
+
+# --- Terminal I/O (replaceable in the tests) ---------------------------------------------------
+
+
+def _is_interactive() -> bool:
+    return sys.stdin.isatty()
+
+
+def _ask(prompt: str) -> str | None:
+    """One answer from the user, or ``None`` at the end of input."""
+    print(prompt, end="", file=sys.stderr, flush=True)
+    line = sys.stdin.readline()
+    return line.strip() if line else None
+
+
+def _open_folder(path: Path) -> None:
+    """Show a folder in the system file browser. Local only: no network (ADR-0005)."""
+    if sys.platform == "win32":
+        os.startfile(path)  # type: ignore[attr-defined]  # Windows only
+        return
+    opener = "open" if sys.platform == "darwin" else "xdg-open"
+    subprocess.Popen([opener, str(path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+# --- Output ----------------------------------------------------------------------------------
 
 
 class _Progress:
@@ -105,8 +146,12 @@ def _print_summary(catalog: Catalog, report: BatchReport) -> None:
     if count[OutcomeStatus.STOPPED]:
         line += catalog.text("cli.summary_stopped", stopped=count[OutcomeStatus.STOPPED])
     print(line)
-    for root in dict.fromkeys(outcome.item.output_root for outcome in report.outcomes):
+    for root in _output_roots(report):
         print(catalog.text("cli.results", path=root))
+
+
+def _output_roots(report: BatchReport) -> list[Path]:
+    return list(dict.fromkeys(outcome.item.output_root for outcome in report.outcomes))
 
 
 def _shown(path: Path, is_dir: bool) -> str:
@@ -129,10 +174,8 @@ def _print_plan_notes(catalog: Catalog, plan: BatchPlan, *, quiet: bool, stream:
     if not quiet:
         for item in plan.skipped:
             name = _shown(item.path, item.is_dir)
-            print(
-                catalog.text("cli.skipped", name=name, reason=_skip_reason(catalog, item)),
-                file=stream,
-            )
+            line = catalog.text("cli.skipped", name=name, reason=_skip_reason(catalog, item))
+            print(line, file=stream)
     for warning in plan.warnings:
         line = catalog.text(
             "cli.warning_slow",
@@ -150,9 +193,107 @@ def _print_settings_warnings(
         print(catalog.text(f"settings.{warning.problem.value}", setting=warning.key), file=stream)
 
 
+def _print_dry_run(catalog: Catalog, plan: BatchPlan) -> None:
+    for item in plan.conversions:
+        target = item.target.relative_to(item.output_root.parent)
+        line = catalog.text("cli.dry_run_item", source=item.source, target=target)
+        if item.exists:
+            line += catalog.text("cli.dry_run_exists")
+        print(line)
+    print(catalog.text("cli.dry_run_done", count=len(plan.conversions)))
+
+
+# --- Decisions about existing outputs (AC-14 - AC-16) -----------------------------------------
+
+
+def _ask_once(catalog: Catalog, plan: BatchPlan) -> Decision:
+    """One question for the whole batch; any doubt means the safe answer: keep them."""
+    prompt = catalog.text("cli.ask_existing", count=len(plan.existing))
+    for _ in range(PROMPT_ATTEMPTS):
+        answer = _ask(prompt)
+        if answer is None:
+            break
+        if answer == "1":
+            return lambda item: True
+        if answer == "2":
+            return lambda item: False
+        if answer == "3":
+            yes = catalog.text("cli.yes_letter").casefold()
+            chosen = set()
+            for item in plan.existing:
+                target = item.target.relative_to(item.output_root.parent)
+                reply = _ask(catalog.text("cli.ask_one", target=target))
+                if reply is not None and reply.casefold().startswith(yes):
+                    chosen.add(item.target)
+            return lambda item: item.target in chosen
+    return lambda item: False
+
+
+def _decision(
+    catalog: Catalog, plan: BatchPlan, on_existing: str, stream: TextIO
+) -> Decision | None:
+    """``None`` when a decision is required but nobody can answer (exit 3, AC-18)."""
+    if on_existing == "overwrite":
+        return lambda item: True
+    if on_existing == "skip" or not plan.existing:
+        return lambda item: False
+    if not _is_interactive():
+        print(catalog.text("cli.decision_required", count=len(plan.existing)), file=stream)
+        return None
+    return _ask_once(catalog, plan)
+
+
+# --- The batch -------------------------------------------------------------------------------
+
+
+def _run_cancellable(
+    catalog: Catalog, plan: BatchPlan, decision: Decision, progress: _Progress, stream: TextIO
+) -> BatchReport:
+    """Run the batch in a thread; Ctrl+C cancels it at once and its summary is still written."""
+    cancel = CancelToken()
+    reports: list[BatchReport] = []
+    errors: list[BaseException] = []
+
+    def work() -> None:
+        try:
+            report = run_batch(
+                plan,
+                overwrite=decision,
+                on_event=progress,
+                cancel=cancel,
+                language=catalog.language,
+            )
+        except BaseException as error:  # re-raised in the main thread
+            errors.append(error)
+        else:
+            reports.append(report)
+
+    thread = threading.Thread(target=work, name="clearmd-batch", daemon=True)
+    thread.start()
+    try:
+        while thread.is_alive():
+            thread.join(0.2)
+    except KeyboardInterrupt:
+        cancel.cancel()
+        print(catalog.text("cli.cancelling"), file=stream)
+        thread.join()  # a second Ctrl+C here stops the process for good
+    if errors:
+        raise errors[0]
+    return reports[0]
+
+
+def _exit_code(report: BatchReport) -> int:
+    if report.cancelled:
+        return EXIT_CANCELLED
+    unfinished = {OutcomeStatus.FAILED, OutcomeStatus.STOPPED}
+    if any(outcome.status in unfinished for outcome in report.outcomes):
+        return EXIT_FAILED
+    return EXIT_OK
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     settings, settings_warnings = load_settings()
-    catalog = load_catalog(resolve_language(None, settings.language))
+    catalog = load_catalog(resolve_language(_requested_language(argv), settings.language))
     args = build_parser(catalog).parse_args(argv)
     err = sys.stderr
     _print_settings_warnings(catalog, settings_warnings, err)
@@ -162,7 +303,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     on_existing = (
         "overwrite" if args.overwrite else "skip" if args.skip else settings.on_existing_output
     )
-    plan = plan_batch(args.paths, recursive=recursive, output_root=args.output_root)
+    try:
+        plan = plan_batch(args.paths, recursive=recursive, output_root=args.output_root)
+    except KeyboardInterrupt:
+        print(catalog.text("cli.cancelled_before_start"), file=err)
+        return EXIT_CANCELLED
     _print_plan_notes(catalog, plan, quiet=args.quiet, stream=err)
     if plan.is_empty:
         if plan.input_errors and not plan.skipped:
@@ -170,20 +315,17 @@ def main(argv: Sequence[str] | None = None) -> int:
             return EXIT_USAGE
         print(catalog.text("cli.nothing_to_convert"))
         return EXIT_OK
-    if plan.existing and on_existing == "ask":
-        print(catalog.text("cli.decision_required", count=len(plan.existing)), file=err)
+    if args.dry_run:
+        _print_dry_run(catalog, plan)
+        return EXIT_OK
+
+    decision = _decision(catalog, plan, on_existing, err)
+    if decision is None:
         return EXIT_DECISION_REQUIRED
-
-    def overwrite(item: PlannedConversion) -> bool:
-        return on_existing == "overwrite"
-
-    report = run_batch(
-        plan,
-        overwrite=overwrite,
-        on_event=_Progress(catalog, quiet=args.quiet, stream=err),
-        language=catalog.language,
-    )
+    progress = _Progress(catalog, quiet=args.quiet, stream=err)
+    report = _run_cancellable(catalog, plan, decision, progress, err)
     _print_summary(catalog, report)
-    unfinished = {OutcomeStatus.FAILED, OutcomeStatus.STOPPED}
-    failed = any(outcome.status in unfinished for outcome in report.outcomes)
-    return EXIT_FAILED if failed else EXIT_OK
+    if args.open:
+        for root in _output_roots(report):
+            _open_folder(root)
+    return _exit_code(report)
