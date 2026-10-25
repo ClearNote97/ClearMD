@@ -1,4 +1,4 @@
-"""Which converter handles each format. Built inside the worker process (ADR-0015)."""
+"""Which converter handles each format, and content detection. Built inside the worker."""
 
 from collections.abc import Mapping
 from pathlib import Path
@@ -15,9 +15,23 @@ class DocumentConverter(Protocol):
         ...
 
 
+class ContentDetector(Protocol):
+    def detect(self, path: Path) -> Detection | None: ...
+
+
 class ConverterRegistry:
-    def __init__(self, converters: Mapping[FormatId, DocumentConverter]) -> None:
+    """What the worker can do: convert each format, and detect a format by content."""
+
+    def __init__(
+        self,
+        converters: Mapping[FormatId, DocumentConverter],
+        content_detector: ContentDetector | None = None,
+    ) -> None:
         self._converters = dict(converters)
+        self._content_detector = content_detector
+
+    def detect_content(self, path: Path) -> Detection | None:
+        return self._content_detector.detect(path) if self._content_detector else None
 
     def for_format(self, format_id: FormatId) -> DocumentConverter:
         try:
@@ -29,8 +43,9 @@ class ConverterRegistry:
 
 
 def build_registry() -> ConverterRegistry:
-    """The real registry: markitdown for every format of feature 001 (one shared instance)."""
+    """The real registry: markitdown for every format of feature 001, magika for content."""
     from clearmd.backend.services.conversion.markitdown_adapter import MarkItDownConverter
+    from clearmd.backend.services.detection.content import MagikaDetector
 
     markitdown = MarkItDownConverter()
-    return ConverterRegistry(dict.fromkeys(FormatId, markitdown))
+    return ConverterRegistry(dict.fromkeys(FormatId, markitdown), content_detector=MagikaDetector())

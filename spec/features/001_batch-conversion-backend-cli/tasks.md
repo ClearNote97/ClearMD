@@ -36,7 +36,7 @@ brings the two riskiest parts (the worker and markitdown) to the front.
 - [x] **T09 — Archive check.** `use_cases/archive.py`: uncompressed size and whole-file ratio from the
       central directory, plus the size of the text entries for the cost; the zip-bomb fixture is skipped
       without being decompressed (AC-09).
-- [ ] **T10 — Detection.** `services/detection/extension.py`, `chain.py` and the content detector served by
+- [x] **T10 — Detection.** `services/detection/extension.py`, `chain.py` and the content detector served by
       the worker. Verify magika's real labels for every supported format and write the mapping from that
       (AC-10, AC-11).
 

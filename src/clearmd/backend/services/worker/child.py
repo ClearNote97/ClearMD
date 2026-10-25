@@ -10,11 +10,21 @@ from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.schemas.formats import FormatId
 from clearmd.backend.schemas.models import Detection, DetectionMethod
 from clearmd.backend.services.conversion.registry import DocumentConverter
-from clearmd.backend.services.worker.protocol import Converted, ConvertRequest, Failed, Response
+from clearmd.backend.services.worker.protocol import (
+    Converted,
+    ConvertRequest,
+    Detected,
+    DetectRequest,
+    Failed,
+    Request,
+    Response,
+)
 
 
 class _Registry(Protocol):
     def for_format(self, format_id: FormatId) -> DocumentConverter: ...
+
+    def detect_content(self, path: Path) -> Detection | None: ...
 
 
 def load_factory(path: str) -> _Registry:
@@ -25,7 +35,13 @@ def load_factory(path: str) -> _Registry:
     return registry
 
 
-def handle(registry: _Registry, request: ConvertRequest) -> Response:
+def handle(registry: _Registry, request: ConvertRequest | DetectRequest) -> Response:
+    if isinstance(request, DetectRequest):
+        try:
+            detection = registry.detect_content(Path(request.source))
+        except Exception as error:
+            return Failed(ErrorCode.CONVERSION_FAILED.value, f"{type(error).__name__}: {error}")
+        return Detected(detection.format.value if detection is not None else None)
     format_id = FormatId(request.format)
     detection = Detection(format_id, DetectionMethod(request.method))
     try:
@@ -43,7 +59,7 @@ def worker_main(connection: Connection, factory_path: str) -> None:
     registry = load_factory(factory_path)
     while True:
         try:
-            request = connection.recv()
+            request: Request = connection.recv()
         except EOFError:
             return
         if request is None:

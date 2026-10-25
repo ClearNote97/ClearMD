@@ -20,3 +20,17 @@ def test_a_format_without_converter_is_unsupported() -> None:
     with pytest.raises(ConversionError) as raised:
         ConverterRegistry({}).for_format(FormatId.PDF)
     assert raised.value.code is ErrorCode.UNSUPPORTED_FORMAT
+
+
+def test_the_real_registry_detects_content_with_magika() -> None:
+    from support import DOCUMENTS_DIR
+
+    registry = build_registry()
+    detection = registry.detect_content(DOCUMENTS_DIR / "docx_without_extension")
+    assert detection is not None and detection.format is FormatId.DOCX
+
+
+def test_a_registry_without_content_detector_detects_nothing() -> None:
+    from pathlib import Path
+
+    assert ConverterRegistry({}).detect_content(Path("scan")) is None

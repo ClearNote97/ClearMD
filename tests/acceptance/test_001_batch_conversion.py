@@ -27,10 +27,11 @@ def test_ac_01_a_file_converts_into_clearmd_output(
 
 def test_ac_19_the_cli_process_never_imports_markitdown_or_magika(workdir: Path) -> None:
     source = put(workdir, "sample.docx", "notes.docx")
+    scan = put(workdir, "docx_without_extension", "scan")  # content detection runs in the worker
     script = (
         "import json, sys\n"
         "from clearmd.frontend.cli import main\n"
-        f"code = main([{str(source)!r}, '--quiet'])\n"
+        f"code = main([{str(source)!r}, {str(scan)!r}, '--quiet'])\n"
         "print(json.dumps({'code': code, 'loaded': sorted(m for m in ('markitdown', 'magika')"
         " if m in sys.modules)}))\n"
     )
@@ -168,4 +169,29 @@ def test_ac_09_a_zip_bomb_is_skipped_before_converting(
     assert main([str(bomb), str(good)]) == 0
     assert "this file looks damaged or unsafe" in capsys.readouterr().err
     assert not (workdir / "ClearMD_Output" / "OutputMD" / "contract.md").exists()
+    assert (workdir / "ClearMD_Output" / "OutputMD" / "good.md").is_file()
+
+
+def test_ac_10_documents_without_a_known_extension_are_detected_by_content(workdir: Path) -> None:
+    names = {"docx_without_extension": "scan", "sample.txt": "README", "sample.docx": "report.dat"}
+    for fixture, name in names.items():
+        put(workdir, fixture, name)
+    put(workdir, "sample.txt", "paper.tex")  # plain text with an unknown extension: not a document
+    arguments = [str(workdir / name) for name in [*names.values(), "paper.tex"]]
+    assert main([*arguments, "--quiet"]) == 0
+    output = workdir / "ClearMD_Output" / "OutputMD"
+    assert MARKERS["sample.docx"] in (output / "scan.md").read_text(encoding="utf-8")
+    assert MARKERS["sample.txt"] in (output / "README.md").read_text(encoding="utf-8")
+    assert MARKERS["sample.docx"] in (output / "report.md").read_text(encoding="utf-8")
+    assert not (output / "paper.md").exists()
+
+
+def test_ac_11_an_unsupported_file_is_skipped_and_the_batch_continues(
+    workdir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    script = workdir / "tool.py"
+    script.write_text("import sys\n\ndef main():\n    print(sys.argv)\n", encoding="utf-8")
+    good = put(workdir, "sample.txt", "good.txt")
+    assert main([str(script), str(good)]) == 0
+    assert "tool.py — unsupported format" in capsys.readouterr().err
     assert (workdir / "ClearMD_Output" / "OutputMD" / "good.md").is_file()

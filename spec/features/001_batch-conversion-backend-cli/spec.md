@@ -68,7 +68,9 @@ Each criterion has an acceptance test named after its id (`tests/acceptance/test
 ### Detection
 
 - [ ] **AC-10** Given a supported document without extension, or with an unknown one, it is detected by its
-  content and converted; the summary says "detected by content".
+  content and converted; the summary says "detected by content". With an unknown extension only real documents
+  count (a docx renamed `report.dat`): plain text with an unknown extension (`.tex`, `.log`, `.yaml`) is
+  "unsupported format", while a text file without extension (`README`) converts.
 - [ ] **AC-11** Given an unsupported file, it is skipped as "unsupported format" and the batch continues.
 
 ### Output location and names

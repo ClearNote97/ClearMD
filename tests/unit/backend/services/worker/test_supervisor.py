@@ -130,3 +130,23 @@ def test_real_markitdown_runs_in_the_worker() -> None:
         assert raised.value.code is ErrorCode.PASSWORD_PROTECTED
     finally:
         worker.close()
+
+
+def test_content_detection_runs_in_the_worker(runner: WorkerRunner) -> None:
+    detection = runner.detect(Path("/fake/detect_docx"))
+    assert detection == Detection(FormatId.DOCX, DetectionMethod.CONTENT)
+    assert runner.detect(Path("/fake/unknown_thing")) is None
+
+
+def test_a_crash_while_detecting_means_unsupported_and_a_new_worker(runner: WorkerRunner) -> None:
+    assert runner.detect(Path("/fake/crash")) is None
+    assert runner.convert(_item("notes.txt"), CancelToken()) == "# converted notes.txt"
+
+
+def test_real_magika_detects_in_the_worker() -> None:
+    worker = WorkerRunner(REAL, Limits(time_per_file=60))
+    try:
+        detection = worker.detect(DOCUMENTS_DIR / "docx_without_extension")
+        assert detection == Detection(FormatId.DOCX, DetectionMethod.CONTENT)
+    finally:
+        worker.close()

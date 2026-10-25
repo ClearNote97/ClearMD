@@ -4,14 +4,24 @@ import multiprocessing
 import time
 from multiprocessing.connection import Connection
 from multiprocessing.process import BaseProcess
+from pathlib import Path
 
 import psutil
 
 from clearmd.backend.schemas.errors import Cancelled, ConversionError, ErrorCode
+from clearmd.backend.schemas.formats import FormatId
 from clearmd.backend.schemas.limits import Limits
-from clearmd.backend.schemas.models import PlannedConversion
+from clearmd.backend.schemas.models import Detection, DetectionMethod, PlannedConversion
 from clearmd.backend.services.worker.child import worker_main
-from clearmd.backend.services.worker.protocol import Converted, ConvertRequest, Response
+from clearmd.backend.services.worker.protocol import (
+    Converted,
+    ConvertRequest,
+    Detected,
+    DetectRequest,
+    Failed,
+    Request,
+    Response,
+)
 from clearmd.backend.use_cases.cancel import CancelToken
 
 REAL_REGISTRY = "clearmd.backend.services.conversion.registry:build_registry"
@@ -20,7 +30,8 @@ JOIN_SECONDS = 5.0
 
 
 class WorkerRunner:
-    """A ``ConversionRunner``: one persistent worker, replaced whenever it has to be stopped."""
+    """A ``ConversionRunner`` and a content ``FormatDetector``: one persistent worker, replaced
+    whenever it has to be stopped."""
 
     def __init__(self, factory_path: str = REAL_REGISTRY, limits: Limits | None = None) -> None:
         self._factory_path = factory_path
@@ -37,12 +48,27 @@ class WorkerRunner:
     def convert(self, item: PlannedConversion, cancel: CancelToken) -> str:
         if cancel.is_set():
             raise Cancelled
-        connection, process = self._ensure_worker()
-        connection.send(
-            ConvertRequest(
-                str(item.source), item.detection.format.value, item.detection.method.value
-            )
+        request = ConvertRequest(
+            str(item.source), item.detection.format.value, item.detection.method.value
         )
+        response = self._request(request, cancel)
+        if not isinstance(response, Converted):
+            raise ConversionError(ErrorCode.CONVERSION_FAILED, f"unexpected reply {response!r}")
+        return response.markdown
+
+    def detect(self, path: Path) -> Detection | None:
+        """The format of ``path`` by its content; any failure means "unsupported"."""
+        try:
+            response = self._request(DetectRequest(str(path)), CancelToken())
+        except ConversionError:
+            return None
+        if not isinstance(response, Detected) or response.format is None:
+            return None
+        return Detection(FormatId(response.format), DetectionMethod.CONTENT)
+
+    def _request(self, request: Request, cancel: CancelToken) -> Response:
+        connection, process = self._ensure_worker()
+        connection.send(request)
         return self._wait(connection, process, cancel)
 
     def close(self) -> None:
@@ -68,7 +94,7 @@ class WorkerRunner:
         self._process, self._connection = process, parent_end
         return parent_end, process
 
-    def _wait(self, connection: Connection, process: BaseProcess, cancel: CancelToken) -> str:
+    def _wait(self, connection: Connection, process: BaseProcess, cancel: CancelToken) -> Response:
         started = time.monotonic()
         while True:
             if connection.poll(POLL_SECONDS):
@@ -76,9 +102,9 @@ class WorkerRunner:
                     response: Response = connection.recv()
                 except EOFError:
                     raise self._crashed(process) from None
-                if isinstance(response, Converted):
-                    return response.markdown
-                raise ConversionError(ErrorCode(response.code), response.detail)
+                if isinstance(response, Failed):
+                    raise ConversionError(ErrorCode(response.code), response.detail)
+                return response
             if cancel.is_set():
                 self._stop()
                 raise Cancelled

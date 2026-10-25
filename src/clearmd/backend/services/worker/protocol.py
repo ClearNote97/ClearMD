@@ -11,6 +11,16 @@ class ConvertRequest:
 
 
 @dataclass(frozen=True)
+class DetectRequest:
+    source: str
+
+
+@dataclass(frozen=True)
+class Detected:
+    format: str | None
+
+
+@dataclass(frozen=True)
 class Converted:
     markdown: str
 
@@ -21,5 +31,5 @@ class Failed:
     detail: str
 
 
-type Request = ConvertRequest | None  # None asks the worker to exit
-type Response = Converted | Failed
+type Request = ConvertRequest | DetectRequest | None  # None asks the worker to exit
+type Response = Converted | Detected | Failed

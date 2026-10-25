@@ -24,15 +24,23 @@ def plan_batch(
     output_root: Path | None = None,
     on_event: Callable[[BatchEvent], None] | None = None,
 ) -> BatchPlan:
-    """Everything that would happen, computed without writing anything."""
-    return build_plan(
-        inputs,
-        detector=composition.build_detector(),
-        limits=composition.default_limits(),
-        recursive=recursive,
-        output_root=output_root,
-        on_event=on_event,
-    )
+    """Everything that would happen, computed without writing anything.
+
+    The worker starts only if a file needs detection by content.
+    """
+    limits = composition.default_limits()
+    worker = composition.build_runner(limits)
+    try:
+        return build_plan(
+            inputs,
+            detector=composition.build_detector(worker),
+            limits=limits,
+            recursive=recursive,
+            output_root=output_root,
+            on_event=on_event,
+        )
+    finally:
+        worker.close()
 
 
 def run_batch(

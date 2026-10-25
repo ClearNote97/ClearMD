@@ -1,1 +1,1 @@
-"""Format detectors: by extension (CLI process) and by content (worker, T10)."""
+"""Format detectors: by extension (CLI process) and by content (worker process), chained."""
