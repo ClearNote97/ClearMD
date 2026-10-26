@@ -9,7 +9,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from clearmd.backend.services.conversion.markdown_out import MARK
-from clearmd.backend.services.conversion.odt.xmltree import Element
+from clearmd.backend.services.conversion.odt.xmltree import Element, int_attribute
 
 MAX_REPEAT = 64
 MAX_CELLS = 100_000
@@ -22,26 +22,21 @@ class Table:
     simplified: bool  # merged cells, or more than MAX_CELLS
 
 
-def _repeat(element: Element, attribute: str, empty: bool) -> int:
-    count = element.get(attribute)
-    times = int(count) if count.isdigit() else 1
-    return 1 if empty else max(1, min(times, MAX_REPEAT))
+def _repeat(element: Element, attribute: str) -> int:
+    return max(1, min(int_attribute(element.get(attribute), 1), MAX_REPEAT))
 
 
-def _rows(table: Element) -> list[tuple[Element, bool]]:
-    """Every row, in order, with whether it is a header row (no recursion)."""
-    rows: list[tuple[Element, bool]] = []
-    pending: list[tuple[Element, bool]] = [(table, False)]
+def _rows(table: Element) -> list[Element]:
+    """Every row, in order, header rows first as written (no recursion)."""
+    rows: list[Element] = []
+    pending: list[Element] = [table]
     while pending:
-        element, header = pending.pop()
-        children = list(element.elements())
-        for child in reversed(children):
-            if child.tag == "table:table-row":
-                pending.append((child, header))
-            elif child.tag in ROW_CONTAINERS:
-                pending.append((child, header or child.tag == "table:table-header-rows"))
+        element = pending.pop()
+        for child in reversed(list(element.elements())):
+            if child.tag == "table:table-row" or child.tag in ROW_CONTAINERS:
+                pending.append(child)
         if element.tag == "table:table-row":
-            rows.append((element, header))
+            rows.append(element)
     return rows
 
 
@@ -54,7 +49,7 @@ def table_to_markdown(
     simplified = False
     grid: list[list[str]] = []  # header rows come first: the first row is the header
     cells = 0
-    for row, _header in _rows(table):
+    for row in _rows(table):
         line: list[str] = []
         for cell in row.elements():
             if cell.tag not in {"table:table-cell", "table:covered-table-cell"}:
@@ -65,11 +60,12 @@ def table_to_markdown(
                 simplified = True
             if cell.get("table:number-rows-spanned") not in {"", "1"}:
                 simplified = True
-            repeat = _repeat(cell, "table:number-columns-repeated", not text)
+            # An empty run keeps the columns after it in place; trailing empty columns go below.
+            repeat = _repeat(cell, "table:number-columns-repeated")
             if repeat > 1 and not spend(len(text) * (repeat - 1)):
                 repeat, simplified = 1, True
             line.extend([_cell(text)] * repeat)
-        rows = _repeat(row, "table:number-rows-repeated", not any(line))
+        rows = _repeat(row, "table:number-rows-repeated") if any(line) else 1
         if rows > 1 and not spend(sum(map(len, line)) * (rows - 1)):
             rows, simplified = 1, True
         cells += len(line) * rows

@@ -41,10 +41,14 @@ class _Formulas:
         if name is None:  # outside the archive: never read
             return FormulaResult(None)
         if name not in self._results:
-            math, allowed = self._object(name)
-            self._results[name] = (
-                self._translate(math, allowed=allowed) if math is not None else FormulaResult(None)
-            )
+            tree, allowed = self._object(name)
+            if tree is None:
+                result = FormulaResult(None)
+            elif tree.tag != "math:math":  # a chart or another embedded object
+                result = FormulaResult(None, formula=False)
+            else:
+                result = self._translate(tree, allowed=allowed)
+            self._results[name] = result
         return self._results[name]
 
     def _translate(self, math: Element, *, allowed: bool) -> FormulaResult:

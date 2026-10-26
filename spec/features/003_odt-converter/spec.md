@@ -111,7 +111,8 @@ Each criterion has an acceptance test named after its id (`tests/acceptance/test
   image, link or block structure the document did not write as such (checked with a CommonMark parser and a
   seeded fuzz, as for `.tex`).
 - [ ] **AC-19** Object and image references point inside the archive only (`../`, absolute paths and URLs are
-  never followed); formula objects over their count or size limit fall back to the StarMath source.
+  never followed); formula objects over their count limit fall back to their StarMath source, and objects over
+  their size limit (never read) to the formula placeholder, with a note.
 
 ### Measured
 

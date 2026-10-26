@@ -113,6 +113,8 @@ def escape_text(text: str) -> str:
     # only characters CommonMark lets a backslash escape) must not cancel an escape. Elsewhere it
     # stays single, so "\\section" reads as written.
     text = _ESCAPING_BACKSLASH.sub(r"\\\\", text.replace(MARK, "")).replace("`", "\\`")
+    # The document's own *, _ and ~ are characters, never emphasis or strike-through.
+    text = text.replace("*", "\\*").replace("_", "\\_").replace("~", "\\~")
     return text.replace("<", "&lt;").replace("[", "&#91;").replace("]", "&#93;")
 
 

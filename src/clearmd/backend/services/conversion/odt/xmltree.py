@@ -83,6 +83,14 @@ class Element:
         return "".join(parts)
 
 
+def int_attribute(value: str, default: int, *, cap: int = 1_000_000) -> int:
+    """A whole number written in an attribute: ASCII digits only ("²" is a digit to ``isdigit``),
+    a bounded length (``int`` refuses over 4,300 digits) and a cap."""
+    if not (value.isascii() and value.isdigit()):
+        return default
+    return min(int(value), cap) if len(value) <= 9 else cap
+
+
 def _name(expat_name: str) -> str:
     uri, _, local = expat_name.rpartition(" ")
     if not uri:

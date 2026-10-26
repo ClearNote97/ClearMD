@@ -82,7 +82,7 @@ $ clearmd Thesis/
 [3/5] report.pdf · less than a minute left
 [4/5] data.xlsx · less than a minute left
 [5/5] contract.pdf · less than a minute left
-✗ contract.pdf — This PDF is password-protected. Remove the password and try again.
+✗ contract.pdf — This file is password-protected. Remove the password and try again.
 4 converted · 1 skipped · 1 failed
 Results: ClearMD_Output
 ```

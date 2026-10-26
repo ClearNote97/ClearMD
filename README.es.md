@@ -85,7 +85,7 @@ $ clearmd Tesis/ --lang es
 [3/5] informe.pdf · faltan menos de un minuto
 [4/5] datos.xlsx · faltan menos de un minuto
 [5/5] contrato.pdf · faltan menos de un minuto
-✗ contrato.pdf — Este PDF está protegido con contraseña. Quítale la contraseña e inténtalo de nuevo.
+✗ contrato.pdf — Este archivo está protegido con contraseña. Quítale la contraseña e inténtalo de nuevo.
 4 convertidos · 1 omitidos · 1 con error
 Resultados: ClearMD_Output
 ```

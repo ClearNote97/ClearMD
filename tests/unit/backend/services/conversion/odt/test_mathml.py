@@ -33,7 +33,7 @@ def convert(path: Path) -> tuple[str, dict[NoteKind, tuple[NoteItem, ...]]]:
         ("<msub><mi>x</mi><mi>i</mi></msub>", "x_{i}"),
         ("<msubsup><mi>x</mi><mi>i</mi><mn>2</mn></msubsup>", "x_{i}^{2}"),
         ("<msqrt><mi>y</mi></msqrt>", "\\sqrt{y}"),
-        ("<mroot><mi>y</mi><mn>3</mn></mroot>", "\\sqrt[3]{y}"),
+        ("<mroot><mi>y</mi><mn>3</mn></mroot>", "\\sqrt[{3}]{y}"),
         ("<mi>α</mi><mo>+</mo><mi>Ω</mi>", "\\alpha+\\Omega"),
         ("<mi>sin</mi><mi>x</mi>", "\\sin x"),
         ('<mi mathvariant="italic">dx</mi>', "dx"),

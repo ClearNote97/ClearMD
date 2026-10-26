@@ -13,10 +13,10 @@ MAX_DEPTH = 64
 STARMATH = "StarMath 5.0"
 
 GREEK = {
-    "α": "alpha", "β": "beta", "γ": "gamma", "δ": "delta", "ε": "epsilon", "ϵ": "epsilon",
+    "α": "alpha", "β": "beta", "γ": "gamma", "δ": "delta", "ε": "varepsilon", "ϵ": "epsilon",
     "ζ": "zeta", "η": "eta", "θ": "theta", "ϑ": "vartheta", "ι": "iota", "κ": "kappa",
     "λ": "lambda", "μ": "mu", "ν": "nu", "ξ": "xi", "π": "pi", "ϖ": "varpi", "ρ": "rho",
-    "ϱ": "varrho", "σ": "sigma", "ς": "varsigma", "τ": "tau", "υ": "upsilon", "φ": "phi",
+    "ϱ": "varrho", "σ": "sigma", "ς": "varsigma", "τ": "tau", "υ": "upsilon", "φ": "varphi",
     "ϕ": "phi", "χ": "chi", "ψ": "psi", "ω": "omega", "Γ": "Gamma", "Δ": "Delta",
     "Θ": "Theta", "Λ": "Lambda", "Ξ": "Xi", "Π": "Pi", "Σ": "Sigma", "Υ": "Upsilon",
     "Φ": "Phi", "Ψ": "Psi", "Ω": "Omega",
@@ -45,6 +45,8 @@ FUNCTIONS = frozenset(
         "inf", "det", "dim", "ker", "deg", "gcd", "arg", "hom", "Pr",
     }
 )  # fmt: skip
+# LibreOffice writes these as one identifier or operator with a space or as a word.
+WORDS = {"lim inf": "\\liminf", "lim sup": "\\limsup", "mod": "\\bmod"}
 # ASCII characters LaTeX gives a meaning; written as text in math they need a backslash.
 _LATEX_SPECIAL = {"{": "\\{", "}": "\\}", "#": "\\#", "%": "\\%", "&": "\\&", "$": "\\$",
                   "_": "\\_", "\\": "\\backslash", "~": "\\sim", "^": "\\hat{}"}  # fmt: skip
@@ -55,8 +57,15 @@ ACCENTS = {
     "^": "\\hat", "ˆ": "\\hat", "̂": "\\hat", "¯": "\\overline", "‾": "\\overline",
     "→": "\\vec", "⃗": "\\vec", "~": "\\tilde", "˜": "\\tilde", "̃": "\\tilde", "˙": "\\dot",
     "¨": "\\ddot", "ˇ": "\\check", "˘": "\\breve", "´": "\\acute", "`": "\\grave",
+    "˚": "\\mathring", "⃛": "\\dddot",
 }  # fmt: skip
-UNDER_ACCENTS = {"_": "\\underline", "¯": "\\underline", "‾": "\\underline"}
+# Stretchy accents over more than one symbol (LibreOffice's widehat, widetilde, widevec).
+WIDE_ACCENTS = {"^": "\\widehat", "ˆ": "\\widehat", "~": "\\widetilde", "˜": "\\widetilde",
+                "→": "\\overrightarrow", "⃗": "\\overrightarrow"}  # fmt: skip
+UNDER_ACCENTS = {"_": "\\underline", "¯": "\\underline", "‾": "\\underline", "̲": "\\underline"}
+# mathvariant of an mstyle around its content.
+VARIANTS = {"bold": "\\boldsymbol", "normal": "\\mathrm", "sans-serif": "\\mathsf",
+            "bold-sans-serif": "\\mathsf", "monospace": "\\mathtt"}  # fmt: skip
 FENCES = {"(": "(", ")": ")", "[": "[", "]": "]", "{": "\\{", "}": "\\}", "|": "|",
           "‖": "\\|", "⟨": "\\langle", "⟩": "\\rangle", "〈": "\\langle", "〉": "\\rangle",
           "⌊": "\\lfloor", "⌋": "\\rfloor", "⌈": "\\lceil", "⌉": "\\rceil"}  # fmt: skip
@@ -103,6 +112,8 @@ def _children(element: Element) -> list[Element]:
 def _identifier(element: Element) -> str:
     text = _text(element)
     variant = element.get("mathvariant")
+    if text in WORDS:
+        return WORDS[text]
     if text in FUNCTIONS:
         return f"\\{text}"
     if len(text) == 1:
@@ -118,6 +129,8 @@ def _identifier(element: Element) -> str:
 
 def _operator(element: Element) -> str:
     text = _text(element)
+    if text in WORDS:
+        return WORDS[text]
     return "".join(_char(c, _LATEX_SPECIAL) for c in text)
 
 
@@ -149,7 +162,10 @@ def _row(elements: list[Element], depth: int) -> str:
         opening, closing = _fence_char(elements[0]), _fence_char(elements[-1])
         if opening is not None and closing is not None:
             inner = _row(elements[1:-1], depth + 1)
-            return f"\\left{opening}{inner}\\right{closing}"
+            return _join([f"\\left{opening}", inner, f"\\right{closing}"])
+        if opening is not None and elements[0].get("form") != "postfix":
+            # "left lbrace … right none" (piecewise definitions): an invisible right fence.
+            return _join([f"\\left{opening}", _row(elements[1:], depth + 1), "\\right."])
     return _join([_latex(element, depth + 1) for element in elements])
 
 
@@ -173,6 +189,11 @@ def _latex(element: Element, depth: int) -> str:
         raise Unsupported("nested too deeply")
     tag = element.tag
     kids = _children(element)
+    if tag == "math:mstyle" and element.get("mathvariant") not in {"", "italic"}:
+        command = VARIANTS.get(element.get("mathvariant"))
+        if command is None:
+            raise Unsupported(f"mstyle mathvariant={element.get('mathvariant')}")
+        return f"{command}{_group(_row(kids, depth))}"
     if tag in {"math:mrow", "math:mstyle", "math:mpadded", "math:math"}:
         return _row(kids, depth)
     if tag == "math:semantics":
@@ -181,7 +202,7 @@ def _latex(element: Element, depth: int) -> str:
     if tag == "math:mi":
         return _identifier(element)
     if tag == "math:mn":
-        return _text(element)
+        return "".join(_LATEX_SPECIAL.get(c, c) for c in _text(element))
     if tag == "math:mo":
         return _operator(element)
     if tag == "math:mtext":
@@ -197,7 +218,8 @@ def _latex(element: Element, depth: int) -> str:
     if tag == "math:msqrt":
         return f"\\sqrt{_group(_row(kids, depth))}"
     if tag == "math:mroot" and len(kids) == 2:
-        return f"\\sqrt[{_latex(kids[1], depth + 1)}]{_group(_latex(kids[0], depth + 1))}"
+        index = _group(_latex(kids[1], depth + 1))  # braced: an index holding "]" stays one
+        return f"\\sqrt[{index}]{_group(_latex(kids[0], depth + 1))}"
     if tag in {"math:msup", "math:msub", "math:msubsup"}:
         expected = 3 if tag == "math:msubsup" else 2
         if len(kids) != expected:
@@ -216,7 +238,7 @@ def _latex(element: Element, depth: int) -> str:
         closing = FENCES.get(element.get("close", ")"), element.get("close", ")"))
         separator = (element.get("separators", ",").strip() or ",")[0]
         inner = separator.join(_latex(k, depth + 1) for k in kids)
-        return f"\\left{opening or '.'}{inner}\\right{closing or '.'}"
+        return _join([f"\\left{opening or '.'}", inner, f"\\right{closing or '.'}"])
     if tag == "math:mtable":
         return _rows(element, depth)
     raise Unsupported(tag)
@@ -230,10 +252,13 @@ def _under_over(element: Element, kids: list[Element], depth: int) -> str:
     base_element = kids[0]
     base_text = _text(base_element)
     big = base_element.tag in {"math:mo", "math:mi"} and (
-        base_text in SYMBOLS or base_text in FUNCTIONS
+        base_text in SYMBOLS or base_text in FUNCTIONS or base_text in WORDS
     )
     if tag == "math:mover" and not big:
         mark = _text(kids[1])
+        wide = kids[1].get("stretchy") == "true" and len(_text(base_element)) > 1
+        if kids[1].tag == "math:mo" and wide and mark in WIDE_ACCENTS:
+            return f"{WIDE_ACCENTS[mark]}{_group(_latex(base_element, depth + 1))}"
         if kids[1].tag == "math:mo" and mark in ACCENTS:
             return f"{ACCENTS[mark]}{_group(_latex(base_element, depth + 1))}"
         above = _group(_latex(kids[1], depth + 1))

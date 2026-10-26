@@ -26,12 +26,11 @@ from clearmd.backend.services.conversion.markdown_out import (
     link_target,
     math_line,
     neutralize,
-    outside_code,
     tidy,
 )
 from clearmd.backend.services.conversion.odt.styles import Role, Styles, TextProps
 from clearmd.backend.services.conversion.odt.tables import table_to_markdown
-from clearmd.backend.services.conversion.odt.xmltree import Element
+from clearmd.backend.services.conversion.odt.xmltree import Element, int_attribute
 
 LINE_BREAK = "  \n"
 MAX_NOTES = 10_000
@@ -131,8 +130,9 @@ def _closer(key: str) -> str:
     return _CLOSE[key]
 
 
-# A formula object and whether it is alone in its paragraph → its LaTeX (without $), or ``None``
-# with the source to show instead (StarMath, or nothing) when it is not converted.
+# A formula object → its LaTeX (without $), or ``None`` with the source to show instead
+# (StarMath, or nothing) when it is not converted; ``formula`` is false for a chart or another
+# embedded object, which is shown as an image placeholder.
 FormulaHandler = Callable[[Element], "FormulaResult"]
 
 
@@ -140,6 +140,7 @@ FormulaHandler = Callable[[Element], "FormulaResult"]
 class FormulaResult:
     latex: str | None
     source: str | None = None
+    formula: bool = True
 
 
 @dataclass
@@ -170,6 +171,7 @@ class OdtRenderer:
         self._image_word = IMAGE_WORD.get(primary, "Image")
         self._formula_word = FORMULA_WORD.get(primary, "Formula")
         self._top = 1
+        self._numbers: dict[tuple[str, int], int] = {}  # last number of each list style and level
 
     # --- Document -------------------------------------------------------------------------
 
@@ -178,10 +180,17 @@ class OdtRenderer:
         text = body.find("office:text") if body is not None else None
         if text is None:
             return ""
-        levels = [
-            int(h.get("text:outline-level")) for h in text.walk()
-            if h.tag == "text:h" and h.get("text:outline-level").isdigit()
-        ]  # fmt: skip
+        # Headings that are really shown: not deleted (tracked changes), not in notes or hidden.
+        skipped = {"text:tracked-changes", "text:note", "office:annotation"}
+        levels = []
+        pending = list(text.elements())
+        while pending:
+            element = pending.pop()
+            if element.tag in skipped or element.get("text:display") == "none":
+                continue
+            if element.tag == "text:h":
+                levels.append(int_attribute(element.get("text:outline-level"), 1, cap=10))
+            pending.extend(element.elements())
         self._top = min(levels, default=1)
         rendered = self.blocks(list(text.elements()))
         if self.footnotes:
@@ -223,6 +232,9 @@ class OdtRenderer:
             return block(self._list(element, 1, ""))
         if tag == "table:table":
             return self._table(element)
+        if tag in {"draw:frame", "draw:a"}:  # a page-anchored frame sits directly in the text
+            frames = [element] if tag == "draw:frame" else list(element.elements("draw:frame"))
+            return block(" ".join(self._frame(frame) for frame in frames))
         if tag == "text:section":
             if element.get("text:display") == "none":
                 return ""
@@ -238,10 +250,16 @@ class OdtRenderer:
     # --- Paragraph-level elements ----------------------------------------------------------
 
     def _hidden(self, paragraph: Element) -> bool:
+        """Hidden by a field in it, or by its style (``text:display="none"``)."""
+        if self.styles.paragraph_props(paragraph.get("text:style-name")).hidden:
+            return True
         return any(
             child.tag == "text:hidden-paragraph" and child.get("text:is-hidden") == "true"
             for child in paragraph.elements()
         )
+
+    def _props(self, paragraph: Element) -> TextProps:
+        return self.styles.paragraph_props(paragraph.get("text:style-name"))
 
     def _paragraph(self, paragraph: Element) -> str:
         if self._hidden(paragraph):
@@ -249,34 +267,45 @@ class OdtRenderer:
         style = paragraph.get("text:style-name")
         role = self.styles.role(style)
         if role in {Role.TITLE, Role.SUBTITLE}:
-            text = self.inline(paragraph, TextProps())
+            text = self.inline(paragraph, TextProps()).replace(LINE_BREAK, " ")
             if not text:
                 return ""
             return block(f"{MARK}# {text}" if role is Role.TITLE else f"{MARK}*{text}*")
         alone = _sole_formula(paragraph)
         if alone is not None:  # a formula alone in its paragraph is display math
-            return block(self._formula_markdown(alone, display=True))
-        text = self.inline(paragraph, self.styles.paragraph_props(style))
+            shown = self._formula_markdown(alone, display=True)
+            if shown is not None:
+                return block(shown)
+        text = self.inline(paragraph, self._props(paragraph))
         return block(text) if text else ""
 
     def _heading(self, heading: Element) -> str:
-        text = self.inline(heading, TextProps())  # a heading's own bold is not emphasis
+        if self._hidden(heading):
+            return ""
+        # A heading's own bold is not emphasis; a line break in it never ends the heading.
+        text = self.inline(heading, TextProps()).replace(LINE_BREAK, " ")
         if not text:
             return ""
-        level = heading.get("text:outline-level")
-        number = int(level) if level.isdigit() else self._top
+        number = int_attribute(heading.get("text:outline-level"), self._top, cap=10)
         hashes = "#" * min(6, 2 + max(0, number - self._top))
         return block(f"{MARK}{hashes} {text}")
 
     def _quote(self, paragraphs: list[Element]) -> str:
         lines = []
         for paragraph in paragraphs:
-            text = self.inline(paragraph, TextProps())
+            if self._hidden(paragraph):
+                continue
+            text = self.inline(paragraph, self._props(paragraph))
             lines.append(f"{MARK}> {text}" if text else f"{MARK}>")
+        if not lines:
+            return ""
         return block("\n".join(lines))
 
     def _code(self, paragraphs: list[Element]) -> str:
-        code = "\n".join(self.plain(paragraph) for paragraph in paragraphs).strip("\n")
+        shown = [paragraph for paragraph in paragraphs if not self._hidden(paragraph)]
+        if not shown:
+            return ""
+        code = "\n".join(self.plain(paragraph) for paragraph in shown).strip("\n")
         fence = fence_for(code)
         return block(f"{MARK}{fence}\n{code}\n{MARK}{fence}")
 
@@ -294,35 +323,60 @@ class OdtRenderer:
                 self.styles.list_style_of_paragraph(first.get("text:style-name")) if first else ""
             )
         kind = self.styles.list_level(style, level)
-        number = kind.start
-        lines = []
+        continues = element.get("text:continue-numbering") == "true" or element.get(
+            "text:continue-list"
+        )
+        number = self._numbers.get((style, level), kind.start - 1) + 1 if continues else kind.start
+        lines: list[str] = []
         for item in items:
             children = list(item.elements())
             if children and children[0].tag == "text:h":  # an outline-numbered heading
                 lines.append(self.blocks(children).strip("\n"))
                 continue
-            start = item.get("text:start-value")
-            if start.isdigit():
-                number = int(start)
+            number = int_attribute(item.get("text:start-value"), number)
             content = self._item(children, level, style)
-            if item.tag == "text:list-header":
-                lines.append(content)
+            if not content:
+                continue
+            if item.tag == "text:list-header":  # no marker, its own block
+                lines.append("\n" + content + "\n")
+                continue
+            if all(child.tag == "text:list" for child in children):  # a skipped level
+                lines.append(indent("\n" + content, 3).lstrip("\n"))
                 continue
             marker = f"{number}. " if kind.numbered else "- "
             number += 1
             lines.append(MARK + marker + indent(content, len(marker)))
-        return "\n".join(line for line in lines if line)
+        if kind.numbered:
+            self._numbers[(style, level)] = number - 1
+        return "\n".join(line for line in lines if line).strip("\n")
 
     def _item(self, children: list[Element], level: int, style: str) -> str:
-        parts = []
+        """An item's content: paragraphs (with their roles), nested lists and the rest. A nested
+        list that starts at 1 or a bullet list follows its paragraph directly; anything else is
+        separated by a blank line, so it never merges into the paragraph before it."""
+        parts: list[str] = []
+        group: list[Element] = []
+
+        def flush() -> None:
+            if group:
+                parts.append(self.blocks(list(group)).strip("\n"))
+                group.clear()
+
         for child in children:
             if child.tag == "text:list":
+                flush()
                 parts.append(self._list(child, level + 1, style))
             else:
-                parts.append(self._block(child).strip("\n"))
-        text = "\n".join(part for part in parts if part)
-        tight = outside_code(text, lambda part: re.sub(r"\n[ \t]*\n+", "\n", part))
-        return neutralize(tight, keep_marks=True)
+                group.append(child)
+        flush()
+        text = ""
+        for part in (p for p in parts if p):
+            if not text:
+                text = part
+                continue
+            starts_tight = re.match(rf"{MARK}(?:- |1\. )", part) is not None
+            text += ("\n" if starts_tight else "\n\n") + part
+        return neutralize(text, keep_marks=True)
 
     def _spend(self, size: int) -> bool:
         """Charge ``size`` characters to the document's growth budget; ``False`` past it."""
@@ -339,7 +393,8 @@ class OdtRenderer:
         return block(found.markdown) if found.markdown else ""
 
     def _cell(self, cell: Element) -> str:
-        texts = [self.inline(p, TextProps()) for p in _own_paragraphs(cell)]
+        shown = [p for p in _own_paragraphs(cell) if not self._hidden(p)]
+        texts = [self.inline(p, self._props(p)) for p in shown]
         return " ".join(text.replace(LINE_BREAK, " ") for text in texts if text)
 
     # --- Inline ------------------------------------------------------------------------------
@@ -352,6 +407,8 @@ class OdtRenderer:
                 out.append(piece.text if piece.literal else _WHITESPACE.sub(" ", piece.text))
             elif piece.markdown == LINE_BREAK:
                 out.append("\n")
+            elif piece.markdown.startswith("[^"):  # a note's reference, as written in the code
+                out.append(piece.markdown)
         return "".join(out)
 
     def inline(self, paragraph: Element, props: TextProps) -> str:
@@ -383,8 +440,7 @@ class OdtRenderer:
                     (iter(item.children), current, link or item.get("xlink:href"), unknown)
                 )
             elif tag == "text:s":
-                count = item.get("text:c")
-                spaces = min(int(count), MAX_SPACES) if count.isdigit() else 1
+                spaces = int_attribute(item.get("text:c"), 1, cap=MAX_SPACES)
                 pieces.append(_Text(" " * spaces, current, link, literal=True))
             elif tag == "text:tab":
                 pieces.append(_Text("\t", current, link, literal=True))
@@ -398,13 +454,16 @@ class OdtRenderer:
                 if item.get("text:is-hidden") != "true":
                     pieces.append(_Text(item.get("text:string-value"), current, link))
             elif tag == "draw:frame":
-                pieces.append(_Raw(self._frame(item)))
+                shown = self._frame(item)
+                if shown:  # nothing to show (an empty formula): no piece between two spaces
+                    pieces.append(_Raw(shown))
             elif tag == "draw:a":  # a linked frame: the frame matters, its link never does
                 stack.append((iter(item.children), current, link, unknown))
             elif tag in DROPPED_INLINE:
                 continue
             elif tag in FIELDS:
-                stack.append((iter(item.children), current, link, unknown))
+                if item.get("text:display") != "none":
+                    stack.append((iter(item.children), current, link, unknown))
             else:
                 if not unknown:
                     self._unknown(tag)
@@ -415,8 +474,11 @@ class OdtRenderer:
         """An image as a placeholder, a formula as LaTeX, a text box as its text."""
         formula = frame.find("draw:object")
         if formula is not None:  # its draw:image is LibreOffice's replacement picture
-            return self._formula_markdown(formula, display=False)
-        if frame.find("draw:image") is not None:
+            shown = self._formula_markdown(formula, display=False)
+            if shown is not None:
+                return shown
+            # Not a formula (a chart, another embedded object): a placeholder, like an image.
+        if formula is not None or frame.find("draw:image") is not None:
             self.counts.images += 1
             title = frame.find("svg:title")
             description = frame.find("svg:desc")
@@ -435,16 +497,21 @@ class OdtRenderer:
             shown = f"{self._image_word}: {label}" if label else self._image_word
             return f"*{escape_text(shown)}*"
         box = frame.find("draw:text-box")
-        if box is not None:
-            texts = [
-                self.inline(p, TextProps()) for p in box.elements() if p.tag in {"text:p", "text:h"}
-            ]
-            return " ".join(text for text in texts if text)
+        if box is not None:  # its lists and tables too; never glued to the text around it
+            visible = [p for p in _own_paragraphs(box) if not self._hidden(p)]
+            texts = [self.inline(p, self._props(p)).replace(LINE_BREAK, " ") for p in visible]
+            joined = " ".join(text for text in texts if text)
+            return f" {joined} " if joined else ""
         self._unknown(frame.tag)
         return escape_text(" ".join(frame.text().split()))
 
-    def _formula_markdown(self, formula: Element, *, display: bool) -> str:
+    def _formula_markdown(self, formula: Element, *, display: bool) -> str | None:
+        """The formula's Markdown; ``None`` when the object is not a formula at all."""
         found = self._formula(formula) if self._formula is not None else FormulaResult(None)
+        if not found.formula:
+            return None
+        if found.latex is not None and not found.latex.strip():
+            return ""  # an empty formula: nothing to show, never a stray "$$"
         if found.latex is not None and not self._spend(len(found.latex)):
             found = FormulaResult(None, None)  # past the growth budget: no more copies
         if found.latex is None:
@@ -461,8 +528,10 @@ class OdtRenderer:
         self.footnotes.append("")  # its number is taken before notes nested in it get theirs
         body = note.find("text:note-body")
         paragraphs = _own_paragraphs(body) if body is not None else []
-        texts = [self.inline(p, TextProps()) for p in paragraphs]
-        self.footnotes[number - 1] = " ".join(text for text in texts if text)
+        shown = [p for p in paragraphs if not self._hidden(p)]
+        texts = [self.inline(p, self._props(p)).replace(LINE_BREAK, " ") for p in shown]
+        # An empty definition would not be one: the reference would show as text.
+        self.footnotes[number - 1] = " ".join(text for text in texts if text) or "…"
         return f"[^{number}]"
 
     def _normalize(self, pieces: list[_Piece]) -> list[_Piece]:
@@ -525,13 +594,16 @@ class OdtRenderer:
         return join_pieces(parts)
 
     def _link(self, url: str, group: list[_Text]) -> str:
-        text = _styled([_Text(g.text, g.props, None, g.literal) for g in group]).strip()
+        written = _styled([_Text(g.text, g.props, None, g.literal) for g in group])
+        lead, text, trail = _split(written)  # the spaces around the text stay outside the link
         url = url.strip()
         if not url:
-            return text
+            return written
         if not SAFE_LINK.match(url) or ENTITY.search(url):  # javascript: never becomes a link
-            return f"{text} ({inline_code(url)})" if text else inline_code(url)
-        return f"[{text or escape_text(url)}]({link_target(url)})"
+            shown = f"{text} ({inline_code(url)})" if text else inline_code(url)
+        else:
+            shown = f"[{text or escape_text(url)}]({link_target(url)})"
+        return lead + shown + trail
 
     def _unknown(self, tag: str) -> None:
         if tag in self.counts.unknown or len(self.counts.unknown) < MAX_UNKNOWN:

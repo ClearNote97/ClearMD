@@ -8,7 +8,7 @@ A loop in a parent chain stops; a missing style is plain.
 from dataclasses import dataclass, replace
 from enum import Enum
 
-from clearmd.backend.services.conversion.odt.xmltree import Element
+from clearmd.backend.services.conversion.odt.xmltree import Element, int_attribute
 
 MONOSPACE_FAMILIES = frozenset(
     {
@@ -60,7 +60,7 @@ class ListLevel:
 
 
 def _weight_is_bold(value: str) -> bool:
-    return value == "bold" or (value.isdigit() and int(value) >= 600)
+    return value == "bold" or int_attribute(value, 0) >= 600
 
 
 def _position(value: str) -> str:
@@ -175,7 +175,6 @@ class Styles:
         for entry in style.elements():
             if entry.get("text:level") == str(level):
                 if entry.tag == "text:list-level-style-number" and entry.get("style:num-format"):
-                    start = entry.get("text:start-value")
-                    return ListLevel(True, int(start) if start.isdigit() else 1)
+                    return ListLevel(True, int_attribute(entry.get("text:start-value"), 1))
                 return ListLevel(numbered=False)
         return ListLevel(numbered=False)
