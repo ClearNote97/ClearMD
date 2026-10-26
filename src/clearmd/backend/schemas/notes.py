@@ -18,6 +18,11 @@ class NoteKind(StrEnum):
     TABLE_KEPT_AS_LATEX = "table_kept_as_latex"
     ENCODING_GUESSED = "encoding_guessed"
     PARSE_RECOVERED = "parse_recovered"
+    ELEMENTS_SIMPLIFIED = "elements_simplified"
+    TABLE_SIMPLIFIED = "table_simplified"
+    REVISIONS_DROPPED = "revisions_dropped"
+    IMAGES_NOT_EXTRACTED = "images_not_extracted"
+    FORMULA_KEPT_AS_SOURCE = "formula_kept_as_source"
 
     @property
     def key(self) -> str:
@@ -42,6 +47,8 @@ class NoteReason(StrEnum):
     GROWTH = "growth"
     MADE_BY_MACRO = "made_by_macro"
     KEPT_AS_LATEX = "kept_as_latex"
+    COMMENTS = "comments"
+    TRACKED_CHANGES = "tracked_changes"
 
     @property
     def key(self) -> str:

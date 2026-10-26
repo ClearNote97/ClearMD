@@ -2,12 +2,18 @@
 
 from pathlib import Path
 
-from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.schemas.models import ConversionResult, Detection
+from clearmd.backend.services.conversion.odt.package import OdtPackage
+from clearmd.backend.services.conversion.odt.render import OdtRenderer
+from clearmd.backend.services.conversion.odt.styles import Styles
 
 
 class OdtConverter:
-    """Archive → parts → styles → render (built in feature 003, T04–T07)."""
+    """Archive → parts → styles → render; images and formulas join in T06 and T07."""
 
     def convert(self, source: Path, detection: Detection, target: Path) -> ConversionResult:
-        raise ConversionError(ErrorCode.CONVERSION_FAILED, "the .odt converter is not built yet")
+        with OdtPackage.open(source) as package:
+            content = package.content()
+            renderer = OdtRenderer(Styles(content, package.styles()))
+            markdown = renderer.document(content)
+        return ConversionResult(markdown, renderer.notes())

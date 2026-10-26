@@ -132,6 +132,11 @@ macro_limit_reached = "las macros del autor se expandieron solo hasta un límite
 table_kept_as_latex = "las tablas que no se pueden mostrar fielmente en Markdown quedaron como código LaTeX: {items}"
 encoding_guessed = "la codificación del texto no estaba declarada y se dedujo: {items}"
 parse_recovered = "el LaTeX tiene errores; se convirtió lo que se pudo leer: {items}"
+elements_simplified = "partes que ClearMD no convierte conservaron solo su texto: {items}"
+table_simplified = "las tablas con celdas combinadas se simplificaron (cada texto queda en su primera celda): {items}"
+revisions_dropped = "se dejaron fuera comentarios y cambios rastreados; el texto es el final: {items}"
+images_not_extracted = "las imágenes quedan dentro del documento y se muestran por su título: {items}"
+formula_kept_as_source = "las fórmulas que ClearMD no puede pasar a LaTeX se muestran con su fuente StarMath: {items}"
 and_more = " y {count} más"
 
 [note.reason]
@@ -150,6 +155,8 @@ nesting = "64 niveles de anidación"
 growth = "el texto crecería demasiado"
 made_by_macro = "la escribe una macro"
 kept_as_latex = "no se pudo leer: el archivo completo quedó como código LaTeX"
+comments = "comentarios"
+tracked_changes = "cambios rastreados"
 
 [settings]
 unknown_key = "Configuración: se ignoró el ajuste desconocido “{setting}”."

@@ -18,7 +18,7 @@ Goal: `clearmd report.odt` writes a faithful `report.md` through the worker, saf
       `OdtConverter` skeleton; the architecture test forbids non-stdlib imports in `odt/` (AC-01 – AC-03).
 - [x] **T04 — Reading safely.** `package.py` + `xmltree.py`: mimetype, encryption, size caps, the pyexpat tree
       with DOCTYPE refused and its limits (AC-04, AC-16, AC-17).
-- [ ] **T05 — Styles and the text subset.** `styles.py` + `render.py` + `tables.py`: headings, title,
+- [x] **T05 — Styles and the text subset.** `styles.py` + `render.py` + `tables.py`: headings, title,
       emphasis, lists, links, notes, quotations, code, spaces, fields, hidden and generated content, tables
       with merged cells, revisions, unknown elements; golden `report.md` (AC-05 – AC-09, AC-13 – AC-15).
 
