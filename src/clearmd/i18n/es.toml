@@ -5,7 +5,7 @@ message = "ClearMD no puede convertir este tipo de archivo."
 action = "Revisa los formatos compatibles en la ayuda."
 
 [error.password_protected]
-message = "Este PDF está protegido con contraseña."
+message = "Este archivo está protegido con contraseña."
 action = "Quítale la contraseña e inténtalo de nuevo."
 
 [error.corrupt_file]

@@ -597,4 +597,5 @@ def _styled(group: list[_Text]) -> str:
         pending = trail
     out.extend(_closer(key) for key in reversed(opened))
     out.append(pending)
-    return "".join(out)
+    # The same joining rules as between pieces: a backtick of the text never glues to a code span.
+    return join_pieces(out)

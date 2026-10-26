@@ -36,7 +36,9 @@ threats as any ZIP-based format (feature 001) plus XML's own (entity expansion, 
 - **Formulas (LibreOffice Math objects) become LaTeX:** their MathML is converted to `$…$`, or `$$…$$` when
   the formula is alone in its paragraph, for a defined subset (fractions, roots, scripts, Greek letters,
   operators with limits, fences, accents, simple matrices, text). A formula outside the subset is shown as
-  its StarMath source in inline code, with a note.
+  its StarMath source in inline code, with a note. Each formula object is read once however many times it is
+  referenced (a reference cannot multiply the work); at most 50,000 distinct objects (the ZIP entry limit)
+  and 1 MiB each (benchmark 003 showed a cap of 2,000 references was reached by an ordinary long document).
 - **Comments and tracked changes:** the text is the final one (changes accepted, comments removed), and a note
   says the document had them.
 - **Merged table cells:** Markdown has none; the content stays in the first cell, the covered ones are empty,

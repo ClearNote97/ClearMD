@@ -1,7 +1,7 @@
 """Resource limits for untrusted documents and the speed of each format (ADR-0015).
 
 Values measured by the benchmarks: ``docs/benchmarks/001-conversion-limits.md`` (markitdown's
-formats) and ``docs/benchmarks/002-tex-converter.md`` (ClearMD's own ``.tex`` converter).
+formats), ``002-tex-converter.md`` and ``003-odt-converter.md`` (ClearMD's own converters).
 """
 
 from collections.abc import Mapping
@@ -27,7 +27,7 @@ SECONDS_PER_MIB: Mapping[FormatId, float] = MappingProxyType(
         FormatId.IPYNB: 0.03,
         FormatId.TXT: 0.03,
         FormatId.TEX: 7.5,  # benchmark 002: 3.1 s/MiB at 1 MiB, 7.3 at 25 MiB (pylatexenc)
-        FormatId.ODT: 1.0,  # provisional until the benchmark of feature 003 (T09)
+        FormatId.ODT: 0.35,  # benchmark 003: 0.30 s per MiB of content.xml, linear
     }
 )
 
@@ -45,7 +45,7 @@ MEMORY_PER_MIB: Mapping[FormatId, float] = MappingProxyType(
         FormatId.IPYNB: 3.7,
         FormatId.EPUB: 3.2,
         FormatId.TEX: 90.0,  # benchmark 002: 40 plain, 88 with the author's macros
-        FormatId.ODT: 12.0,  # provisional until the benchmark of feature 003 (T09)
+        FormatId.ODT: 15.0,  # benchmark 003: 14.5 per MiB of content.xml
     }
 )
 

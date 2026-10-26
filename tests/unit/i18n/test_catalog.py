@@ -41,7 +41,7 @@ def test_password_message_matches_ac_22() -> None:
     catalog = load_catalog("en")
     code = ErrorCode.PASSWORD_PROTECTED
     assert catalog.error(code) == (
-        "This PDF is password-protected. Remove the password and try again."
+        "This file is password-protected. Remove the password and try again."
     )
 
 

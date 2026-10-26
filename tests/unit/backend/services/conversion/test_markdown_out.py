@@ -45,6 +45,12 @@ def test_a_line_the_document_wrote_is_never_a_block(line: str, expected: str) ->
     assert neutralize(f"text\n{line}") == f"text\n{expected}"
 
 
+def test_a_code_span_at_the_start_of_a_line_is_not_a_fence() -> None:
+    line = "``` ``<img src=x>! ``` after"
+    assert neutralize(f"text\n{line}") == f"text\n{line}"
+    assert neutralize("text\n```py") == "text\n\\```py"
+
+
 def test_clearmds_own_marked_lines_and_their_code_stay() -> None:
     text = f"{MARK}## h\n{MARK}```\n# inside code\n{MARK}```\n# after"
     assert neutralize(text) == "## h\n```\n# inside code\n```\n\\# after"

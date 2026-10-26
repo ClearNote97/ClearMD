@@ -1,6 +1,7 @@
 """Smoke test: the benchmark's generators and measurement still work, at tiny sizes."""
 
 import random
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -14,7 +15,11 @@ def test_every_generator_builds_a_document_of_about_the_requested_size(
     size = 64 * 1024 if case.kind != "docx_images" else 2 * bench.MIB
     path = tmp_path / f"{case.kind}{case.extension}"
     case.build(path, size, random.Random(bench.SEED))
-    assert size * 0.5 <= path.stat().st_size <= size * 3
+    built = path.stat().st_size
+    if case.extension == ".odt":  # what costs is the text inside, not the compressed file
+        with zipfile.ZipFile(path) as archive:
+            built = archive.getinfo("content.xml").file_size
+    assert size * 0.5 <= built <= size * 3
 
 
 def test_one_measurement_end_to_end(tmp_path: Path) -> None:
@@ -33,12 +38,12 @@ def test_one_measurement_end_to_end(tmp_path: Path) -> None:
     assert row.archive is not None and row.archive["total_ratio"] > 1
 
 
-@pytest.mark.parametrize("kind", ["tex", "tex_macros"])
-def test_the_tex_cases_measure_clearmds_converter_on_the_supported_subset(
+@pytest.mark.parametrize("kind", ["tex", "tex_macros", "odt"])
+def test_own_converter_cases_measure_real_work_on_the_supported_subset(
     kind: str, tmp_path: Path
 ) -> None:
     case = next(case for case in bench.CASES if case.kind == kind)
-    assert case.engine == "tex"
+    assert case.engine in {"tex", "odt"}
     tiny = bench.Case(case.kind, case.extension, case.build, (0.05,), case.engine)
     (row,) = bench.run(
         [tiny],

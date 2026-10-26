@@ -70,7 +70,7 @@ def test_ac_22_password_protected_pdf_has_a_human_message(
 ) -> None:
     source = put(workdir, "encrypted.pdf", "contract.pdf")
     assert main([str(source)]) == 1
-    message = "This PDF is password-protected. Remove the password and try again."
+    message = "This file is password-protected. Remove the password and try again."
     assert message in capsys.readouterr().err
 
 

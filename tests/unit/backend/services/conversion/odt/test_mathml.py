@@ -122,15 +122,22 @@ def test_formula_objects_are_bounded_in_number_and_size(
     from clearmd.backend.services.conversion import odt
 
     monkeypatch.setattr(odt, "MAX_FORMULAS", 2)
-    frame = '<draw:frame><draw:object xlink:href="./Object 1"/></draw:frame>'
-    body = f"<text:p>{frame} {frame} {frame}</text:p>"
+    frames = "".join(
+        f'<draw:frame><draw:object xlink:href="./Object {n}"/></draw:frame> ' for n in (1, 2, 3)
+    )
+    again = '<draw:frame><draw:object xlink:href="./Object 1"/></draw:frame>' * 50
     path = tmp_path / "t.odt"
+    objects = {
+        f"Object {n}/content.xml": f'<?xml version="1.0"?>{MATHML_SUBSET}'.encode()
+        for n in (1, 2, 3)
+    }
     path.write_bytes(
         odt_package(
-            _odt_xml("document-content", body),
-            extra={"Object 1/content.xml": f'<?xml version="1.0"?>{MATHML_SUBSET}'.encode()},
+            _odt_xml("document-content", f"<text:p>{frames}{again}</text:p>"), extra=objects
         )
     )
     markdown, found = convert(path)
-    assert markdown.count("\\frac{a}{b}") == 2 and "{a over b}" in markdown
+    # Three distinct objects, the limit at two: the third shows its source. The first one,
+    # referenced 50 more times, is read once and converted every time.
+    assert markdown.count("\\frac{a}{b}") == 52 and markdown.count("{a over b}") == 1
     assert found[NoteKind.FORMULA_KEPT_AS_SOURCE] == (NoteItem("1"),)

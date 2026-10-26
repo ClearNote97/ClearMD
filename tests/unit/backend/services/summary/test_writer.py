@@ -102,7 +102,7 @@ EXPECTED_EN = "\n".join(
         " Try splitting it into smaller files.",
         "",
         "## Failed",
-        "- `project/contract.pdf` — This PDF is password-protected."
+        "- `project/contract.pdf` — This file is password-protected."
         " Remove the password and try again.",
         "  <details><summary>Technical detail</summary>PDFPasswordIncorrect</details>",
         "",
@@ -143,7 +143,7 @@ def test_the_summary_in_spanish(tmp_path: Path) -> None:
         assert heading in text
     assert "| Origen | Resultado | Formato | Tiempo |" in text
     assert "DOCX, detectado por su contenido" in text
-    assert "Este PDF está protegido con contraseña." in text
+    assert "Este archivo está protegido con contraseña." in text
 
 
 def test_the_previous_batch_moves_into_the_history(tmp_path: Path) -> None:

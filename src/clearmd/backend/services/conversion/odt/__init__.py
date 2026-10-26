@@ -10,7 +10,9 @@ from clearmd.backend.services.conversion.odt.render import FormulaResult, OdtRen
 from clearmd.backend.services.conversion.odt.styles import Styles
 from clearmd.backend.services.conversion.odt.xmltree import Element
 
-MAX_FORMULAS = 2000  # formula objects read per document; past it, the StarMath source
+# Distinct formula objects read per document (as many as a ZIP may hold, ADR-0015); each one is
+# read once however many times it is referenced, so a reference cannot multiply the work.
+MAX_FORMULAS = 50_000
 MAX_FORMULA_BYTES = 1024**2  # one formula object's content.xml
 
 
@@ -22,35 +24,40 @@ def _meta_language(package: OdtPackage) -> str:
 
 
 class _Formulas:
-    """Formula objects read from the archive only, within their count and size limits."""
+    """Formula objects read from the archive only, each once, within the count and size limits."""
 
     def __init__(self, package: OdtPackage) -> None:
         self._package = package
-        self._read = 0
+        # Each object read: its tree, and whether it came within MAX_FORMULAS (past the limit an
+        # object is still read, for its StarMath source only).
+        self._seen: dict[str, tuple[Element | None, bool]] = {}
 
     def __call__(self, formula: Element) -> FormulaResult:
-        math = formula.find("math:math")  # a flat document keeps it inline
+        math, allowed = formula.find("math:math"), True  # a flat document keeps it inline
         if math is None:
-            math = self._object(formula.get("xlink:href"))
+            math, allowed = self._object(formula.get("xlink:href"))
         if math is None:
             return FormulaResult(None)
         source = starmath(math)
-        if self._read > MAX_FORMULAS:
+        if not allowed:
             return FormulaResult(None, source)
         try:
             return FormulaResult(to_latex(math), source)
         except Unsupported:
             return FormulaResult(None, source)
 
-    def _object(self, href: str) -> Element | None:
+    def _object(self, href: str) -> tuple[Element | None, bool]:
         name = object_part(href)
         if name is None:  # outside the archive: never read
-            return None
-        self._read += 1  # past MAX_FORMULAS it is still read, for its StarMath source only
-        try:
-            return self._package.part(name, max_bytes=MAX_FORMULA_BYTES)
-        except ConversionError:  # over its size, or not XML ClearMD reads
-            return None
+            return None, False
+        if name not in self._seen:
+            allowed = len(self._seen) < MAX_FORMULAS
+            try:
+                tree = self._package.part(name, max_bytes=MAX_FORMULA_BYTES)
+            except ConversionError:  # over its size, or not XML ClearMD reads
+                tree = None
+            self._seen[name] = (tree, allowed)
+        return self._seen[name]
 
 
 class OdtConverter:

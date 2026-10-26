@@ -30,9 +30,9 @@ Goal: `clearmd report.odt` writes a faithful `report.md` through the worker, saf
 
 ## Slice C — Measured and closed
 
-- [ ] **T08 — Guarantee and acceptance sweep.** The `.odt` corpus and fuzz in `test_output_guarantee.py`;
+- [x] **T08 — Guarantee and acceptance sweep.** The `.odt` corpus and fuzz in `test_output_guarantee.py`;
       `tests/acceptance/test_003_odt_converter.py`, one test per AC-01 … AC-20 (AC-18).
-- [ ] **T09 — Benchmark.** An `.odt` case in `run_benchmark.py`; measured factors in `limits.py`;
+- [x] **T09 — Benchmark.** An `.odt` case in `run_benchmark.py`; measured factors in `limits.py`;
       `docs/benchmarks/003-odt-converter.md` (AC-20).
 - [ ] **T10 — Close the feature.**
   - Real `.odt` files exported by LibreOffice (installed provisionally in the dev container, by the author's

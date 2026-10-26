@@ -1,0 +1,102 @@
+{
+ "machine": {
+  "python": "3.14.5",
+  "platform": "Linux-5.15.167.4-microsoft-standard-WSL2-x86_64-with-glibc2.36",
+  "cpus": 16,
+  "ram_mib": 15848,
+  "memory_cap_mib": 2048
+ },
+ "startup": {
+  "import_and_init_s": 0.9870432729949243,
+  "rss_after_markitdown_mib": 163.59765625,
+  "second_magika_mib": -10.8671875,
+  "sampled_peak_mib": 147.2578125,
+  "wall_s": 1.4586063269816805
+ },
+ "rows": [
+  {
+   "kind": "odt",
+   "size_mib": 1,
+   "file_mib": 0.23650646209716797,
+   "result": {
+    "ok": true,
+    "markdown_mib": 0.5809144973754883,
+    "notes": [],
+    "startup_s": 0.037396263011032715,
+    "seconds": 0.29759411700069904,
+    "baseline_mib": 26.01953125,
+    "peak_mib": 40.21875,
+    "sampled_peak_mib": 33.5625,
+    "wall_s": 0.7890733200183604
+   },
+   "archive": {
+    "uncompressed_mib": 1.0023527145385742,
+    "total_ratio": 4.238162059718946,
+    "worst_entry_ratio": 4.2499848280717085
+   }
+  },
+  {
+   "kind": "odt",
+   "size_mib": 5,
+   "file_mib": 1.172602653503418,
+   "result": {
+    "ok": true,
+    "markdown_mib": 2.9017982482910156,
+    "notes": [],
+    "startup_s": 0.03904623299604282,
+    "seconds": 1.4788163549965248,
+    "baseline_mib": 26.65234375,
+    "peak_mib": 98.1328125,
+    "sampled_peak_mib": 84.28515625,
+    "wall_s": 1.9450105330033693
+   },
+   "archive": {
+    "uncompressed_mib": 5.00130558013916,
+    "total_ratio": 4.26513240883143,
+    "worst_entry_ratio": 4.2675287999446585
+   }
+  },
+  {
+   "kind": "odt",
+   "size_mib": 10,
+   "file_mib": 2.3435516357421875,
+   "result": {
+    "ok": true,
+    "markdown_mib": 5.806474685668945,
+    "notes": [],
+    "startup_s": 0.040585765993455425,
+    "seconds": 2.7896690870111343,
+    "baseline_mib": 25.87890625,
+    "peak_mib": 169.8359375,
+    "sampled_peak_mib": 161.33984375,
+    "wall_s": 3.309197202004725
+   },
+   "archive": {
+    "uncompressed_mib": 10.000920295715332,
+    "total_ratio": 4.267420501084076,
+    "worst_entry_ratio": 4.268619909760137
+   }
+  },
+  {
+   "kind": "odt",
+   "size_mib": 25,
+   "file_mib": 5.857399940490723,
+   "result": {
+    "ok": true,
+    "markdown_mib": 14.525835037231445,
+    "notes": [],
+    "startup_s": 0.03762251100852154,
+    "seconds": 7.404108949005604,
+    "baseline_mib": 25.8671875,
+    "peak_mib": 388.93359375,
+    "sampled_peak_mib": 357.37890625,
+    "wall_s": 7.877014180005062
+   },
+   "archive": {
+    "uncompressed_mib": 25.001370429992676,
+    "total_ratio": 4.268339311639714,
+    "worst_entry_ratio": 4.26881922313279
+   }
+  }
+ ]
+}

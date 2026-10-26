@@ -159,6 +159,9 @@ def _neutral_line(line: str, after_blank: bool) -> str:
     found = _BLOCK_LINE.match(content)
     if found is None:
         return line
+    run = len(content) - len(content.lstrip("`"))
+    if run >= 3 and "`" in content[run:]:
+        return line  # not a fence (CommonMark): an inline code span at the start of the line
     if found.group("number") is not None:
         digits = found.group("number")
         return line[:indent] + digits + "\\" + content[len(digits) :]
