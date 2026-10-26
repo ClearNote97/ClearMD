@@ -88,20 +88,21 @@ class OdtPackage:
             raise ValueError("the package is closed")
         return self._archive
 
-    def _read(self, name: str) -> bytes | None:
+    def _read(self, name: str, max_bytes: int | None = None) -> bytes | None:
         archive = self._zip()
+        limit = min(self._max_part_bytes, max_bytes) if max_bytes else self._max_part_bytes
         try:
             info = archive.getinfo(name)
         except KeyError:
             return None
-        if info.file_size > self._max_part_bytes:
+        if info.file_size > limit:
             raise ConversionError(ErrorCode.CORRUPT_FILE, f"{name} is larger than allowed")
         try:
             with archive.open(info) as entry:
-                data = entry.read(self._max_part_bytes + 1)
+                data = entry.read(limit + 1)
         except (zipfile.BadZipFile, OSError, EOFError, ValueError, RuntimeError) as error:
             raise ConversionError(ErrorCode.CORRUPT_FILE, f"{name}: {error}") from error
-        if len(data) > self._max_part_bytes:  # the index lied about its size
+        if len(data) > limit:  # the index lied about its size
             raise ConversionError(ErrorCode.CORRUPT_FILE, f"{name} is larger than allowed")
         return data
 
@@ -126,9 +127,9 @@ class OdtPackage:
             ):
                 raise ConversionError(ErrorCode.PASSWORD_PROTECTED, "the content is encrypted")
 
-    def part(self, name: str) -> Element | None:
+    def part(self, name: str, *, max_bytes: int | None = None) -> Element | None:
         """The XML tree of an entry, ``None`` when it is not in the archive."""
-        data = self._read(name)
+        data = self._read(name, max_bytes)
         if data is None:
             return None
         try:

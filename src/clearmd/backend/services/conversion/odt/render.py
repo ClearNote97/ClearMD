@@ -3,7 +3,7 @@
 A paragraph is flattened into runs of text with their effective properties (paragraph style,
 spans and their parents), equal neighbours merged, and written with delimiters that open and
 close as the properties change (``**a*b***``), spaces kept outside them. Everything outside the
-subset keeps its text and is listed in a note. Images and formulas: T06 and T07.
+subset keeps its text and is listed in a note. Images become placeholders; formulas, LaTeX.
 """
 
 import re
@@ -17,12 +17,14 @@ from clearmd.backend.services.conversion.markdown_out import (
     MARK,
     SAFE_LINK,
     block,
+    escape_math,
     escape_text,
     fence_for,
     indent,
     inline_code,
     join_pieces,
     link_target,
+    math_line,
     neutralize,
     outside_code,
     tidy,
@@ -33,6 +35,7 @@ from clearmd.backend.services.conversion.odt.xmltree import Element
 
 LINE_BREAK = "  \n"
 IMAGE_WORD = {"es": "Imagen", "pt": "Imagem", "fr": "Image", "it": "Immagine", "de": "Bild"}
+FORMULA_WORD = {"es": "Fórmula", "pt": "Fórmula", "fr": "Formule", "it": "Formula", "de": "Formel"}
 MAX_SPACES = 256
 MAX_UNKNOWN = 1000
 _WHITESPACE = re.compile(r"[ \t\r\n]+")
@@ -123,13 +126,21 @@ def _closer(key: str) -> str:
     return _CLOSE[key]
 
 
-# A formula object → its Markdown, or ``None`` when it is not converted (feature 003, T07).
-FormulaHandler = Callable[[Element], str | None]
+# A formula object and whether it is alone in its paragraph → its LaTeX (without $), or ``None``
+# with the source to show instead (StarMath, or nothing) when it is not converted.
+FormulaHandler = Callable[[Element], "FormulaResult"]
+
+
+@dataclass(frozen=True)
+class FormulaResult:
+    latex: str | None
+    source: str | None = None
 
 
 @dataclass
 class _Counts:
     images: int = 0
+    formulas_kept: int = 0
     comments: int = 0
     changes: int = 0
     tables_simplified: int = 0
@@ -146,6 +157,7 @@ class OdtRenderer:
         self._formula = formula
         primary = (language or styles.language).split("-")[0]
         self._image_word = IMAGE_WORD.get(primary, "Image")
+        self._formula_word = FORMULA_WORD.get(primary, "Formula")
         self._top = 1
 
     # --- Document -------------------------------------------------------------------------
@@ -230,6 +242,9 @@ class OdtRenderer:
             if not text:
                 return ""
             return block(f"{MARK}# {text}" if role is Role.TITLE else f"{MARK}*{text}*")
+        alone = _sole_formula(paragraph)
+        if alone is not None:  # a formula alone in its paragraph is display math
+            return block(self._formula_markdown(alone, display=True))
         text = self.inline(paragraph, self.styles.paragraph_props(style))
         return block(text) if text else ""
 
@@ -384,8 +399,7 @@ class OdtRenderer:
         """An image as a placeholder, a formula as LaTeX, a text box as its text."""
         formula = frame.find("draw:object")
         if formula is not None:  # its draw:image is LibreOffice's replacement picture
-            converted = self._formula(formula) if self._formula is not None else None
-            return converted or ""
+            return self._formula_markdown(formula, display=False)
         if frame.find("draw:image") is not None:
             self.counts.images += 1
             title = frame.find("svg:title")
@@ -412,6 +426,14 @@ class OdtRenderer:
             return " ".join(text for text in texts if text)
         self._unknown(frame.tag)
         return escape_text(" ".join(frame.text().split()))
+
+    def _formula_markdown(self, formula: Element, *, display: bool) -> str:
+        found = self._formula(formula) if self._formula is not None else FormulaResult(None)
+        if found.latex is None:
+            self.counts.formulas_kept += 1
+            return inline_code(found.source) if found.source else f"*{self._formula_word}*"
+        latex = escape_math(found.latex)
+        return display_math(latex) if display else f"${latex}$"
 
     def _note(self, note: Element) -> str:
         body = note.find("text:note-body")
@@ -499,6 +521,9 @@ class OdtRenderer:
         if self.counts.images:
             count = NoteItem(str(self.counts.images))
             found.append(ConversionNote(NoteKind.IMAGES_NOT_EXTRACTED, (count,)))
+        if self.counts.formulas_kept:
+            count = NoteItem(str(self.counts.formulas_kept))
+            found.append(ConversionNote(NoteKind.FORMULA_KEPT_AS_SOURCE, (count,)))
         if self.counts.unknown:
             items = tuple(NoteItem(tag) for tag in self.counts.unknown)
             found.append(ConversionNote(NoteKind.ELEMENTS_SIMPLIFIED, items))
@@ -513,6 +538,29 @@ class OdtRenderer:
         if dropped:
             found.append(ConversionNote(NoteKind.REVISIONS_DROPPED, tuple(dropped)))
         return tuple(found)
+
+
+def _sole_formula(paragraph: Element) -> Element | None:
+    """The formula object of a paragraph that holds nothing else (spaces aside)."""
+    found: Element | None = None
+    for child in paragraph.children:
+        if isinstance(child, str):
+            if child.strip():
+                return None
+            continue
+        if child.tag in {"text:soft-page-break", "text:bookmark", "text:bookmark-start"}:
+            continue
+        formula = child.find("draw:object") if child.tag == "draw:frame" else None
+        if formula is None or found is not None:
+            return None
+        found = formula
+    return found
+
+
+def display_math(latex: str) -> str:
+    """``$$`` lines are ClearMD's; the math between them is never read as Markdown blocks."""
+    lines = "\n".join(math_line(line) for line in latex.split("\n"))
+    return f"{MARK}$$\n{lines}\n{MARK}$$"
 
 
 def _split(text: str) -> tuple[str, str, str]:
