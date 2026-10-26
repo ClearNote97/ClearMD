@@ -32,6 +32,7 @@ from clearmd.backend.services.conversion.odt.tables import table_to_markdown
 from clearmd.backend.services.conversion.odt.xmltree import Element
 
 LINE_BREAK = "  \n"
+IMAGE_WORD = {"es": "Imagen", "pt": "Imagem", "fr": "Image", "it": "Immagine", "de": "Bild"}
 MAX_SPACES = 256
 MAX_UNKNOWN = 1000
 _WHITESPACE = re.compile(r"[ \t\r\n]+")
@@ -122,8 +123,13 @@ def _closer(key: str) -> str:
     return _CLOSE[key]
 
 
+# A formula object → its Markdown, or ``None`` when it is not converted (feature 003, T07).
+FormulaHandler = Callable[[Element], str | None]
+
+
 @dataclass
 class _Counts:
+    images: int = 0
     comments: int = 0
     changes: int = 0
     tables_simplified: int = 0
@@ -131,11 +137,15 @@ class _Counts:
 
 
 class OdtRenderer:
-    def __init__(self, styles: Styles, frame: Callable[[Element], str] | None = None) -> None:
+    def __init__(
+        self, styles: Styles, *, formula: FormulaHandler | None = None, language: str = ""
+    ) -> None:
         self.styles = styles
         self.counts = _Counts()
         self.footnotes: list[str] = []
-        self._frame = frame
+        self._formula = formula
+        primary = (language or styles.language).split("-")[0]
+        self._image_word = IMAGE_WORD.get(primary, "Image")
         self._top = 1
 
     # --- Document -------------------------------------------------------------------------
@@ -356,8 +366,10 @@ class OdtRenderer:
             elif tag == "text:hidden-text":
                 if item.get("text:is-hidden") != "true":
                     pieces.append(_Text(item.get("text:string-value"), current, link))
-            elif tag == "draw:frame" and self._frame is not None:
+            elif tag == "draw:frame":
                 pieces.append(_Raw(self._frame(item)))
+            elif tag == "draw:a":  # a linked frame: the frame matters, its link never does
+                stack.append((iter(item.children), current, link, unknown))
             elif tag in DROPPED_INLINE:
                 continue
             elif tag in FIELDS:
@@ -367,6 +379,39 @@ class OdtRenderer:
                     self._unknown(tag)
                 stack.append((iter(item.children), current, link, True))  # its text is kept
         return pieces
+
+    def _frame(self, frame: Element) -> str:
+        """An image as a placeholder, a formula as LaTeX, a text box as its text."""
+        formula = frame.find("draw:object")
+        if formula is not None:  # its draw:image is LibreOffice's replacement picture
+            converted = self._formula(formula) if self._formula is not None else None
+            return converted or ""
+        if frame.find("draw:image") is not None:
+            self.counts.images += 1
+            title = frame.find("svg:title")
+            description = frame.find("svg:desc")
+            label = next(
+                (
+                    " ".join(text.split())
+                    for text in (
+                        title.text() if title is not None else "",
+                        description.text() if description is not None else "",
+                        frame.get("draw:name"),
+                    )
+                    if text.strip()
+                ),
+                "",
+            )
+            shown = f"{self._image_word}: {label}" if label else self._image_word
+            return f"*{escape_text(shown)}*"
+        box = frame.find("draw:text-box")
+        if box is not None:
+            texts = [
+                self.inline(p, TextProps()) for p in box.elements() if p.tag in {"text:p", "text:h"}
+            ]
+            return " ".join(text for text in texts if text)
+        self._unknown(frame.tag)
+        return escape_text(" ".join(frame.text().split()))
 
     def _note(self, note: Element) -> str:
         body = note.find("text:note-body")
@@ -451,6 +496,9 @@ class OdtRenderer:
 
     def notes(self) -> tuple[ConversionNote, ...]:
         found: list[ConversionNote] = []
+        if self.counts.images:
+            count = NoteItem(str(self.counts.images))
+            found.append(ConversionNote(NoteKind.IMAGES_NOT_EXTRACTED, (count,)))
         if self.counts.unknown:
             items = tuple(NoteItem(tag) for tag in self.counts.unknown)
             found.append(ConversionNote(NoteKind.ELEMENTS_SIMPLIFIED, items))

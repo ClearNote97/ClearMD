@@ -78,6 +78,7 @@ class Styles:
         self._paragraph: dict[str, Element] = {}
         self._lists: dict[str, Element] = {}
         self._mono_fonts: set[str] = set()
+        self.language = ""  # the document's, from its default paragraph style (fo:language)
         for root in (styles, content):  # content's automatic styles win over styles.xml
             if root is None:
                 continue
@@ -96,6 +97,10 @@ class Styles:
     def _collect(self, group: Element) -> None:
         for style in group.elements():
             name = style.get("style:name")
+            if style.tag == "style:default-style" and style.get("style:family") == "paragraph":
+                found = style.find("style:text-properties")
+                if found is not None and found.get("fo:language"):
+                    self.language = found.get("fo:language").lower()
             if style.tag == "style:style":
                 family = style.get("style:family")
                 if family == "text":

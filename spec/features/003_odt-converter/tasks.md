@@ -24,7 +24,7 @@ Goal: `clearmd report.odt` writes a faithful `report.md` through the worker, saf
 
 ## Slice B — Images and formulas
 
-- [ ] **T06 — Images.** Placeholders from title/description/name, the count note; nothing extracted (AC-10).
+- [x] **T06 — Images.** Placeholders from title/description/name, the count note; nothing extracted (AC-10).
 - [ ] **T07 — Formulas.** `mathml.py`: the subset to LaTeX, display vs inline, the StarMath fallback, object
       count and size limits, references inside the archive only (AC-11, AC-12, AC-19).
 
