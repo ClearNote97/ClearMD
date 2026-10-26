@@ -18,7 +18,9 @@ from clearmd.backend.services.conversion.tex.render import render_latex
 
 OK_LINK = "https://ok.example/page"
 # Links the document wrote with \href (ClearMD encodes a backtick in an address).
-ALLOWED_LINKS = frozenset({OK_LINK, "https://ok.example/a%60", "https://evil.example/x.png"})
+ALLOWED_LINKS = frozenset(
+    {OK_LINK, "https://ok.example/a%60", "https://evil.example/x.png", "%3Cimg%20src=x%3E", "a%0Ab"}
+)
 PARSER = MarkdownIt("commonmark", {"html": True}).enable("table")
 # Blocks a paragraph of hostile text may legitimately produce: ClearMD's own code.
 ALLOWED_BLOCKS = {"paragraph_open", "paragraph_close", "inline", "fence"}
@@ -189,6 +191,8 @@ ALPHABET = [
     "\\textbackslash",
     "\\textbackslash`",
     "\\footnote{n}",
+    "\\href{<img src=x>}{}",
+    "\\href{a\nb}{t}",
     "\\href{https://ok.example/a`}{t}",
     "\\href{https://evil.example/x.png}{t}",
     "\\texttt{<img src=x>}",

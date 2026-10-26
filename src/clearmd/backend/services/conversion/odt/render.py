@@ -199,8 +199,10 @@ class OdtRenderer:
         self._top = min(levels, default=1)
         rendered = self.blocks(list(text.elements()))
         if self.footnotes:
+            # A definition's text is block content to a footnote-aware viewer: neutralized first.
             notes = "\n".join(
-                f"{MARK}[^{n}]: {note}" for n, note in enumerate(self.footnotes, start=1)
+                f"{MARK}[^{n}]: {neutralize(note)}"
+                for n, note in enumerate(self.footnotes, start=1)
             )
             rendered += block(notes)
         return neutralize(tidy(rendered))
@@ -219,8 +221,10 @@ class OdtRenderer:
                 parts.append(self._quote(run) if role is Role.QUOTE else self._code(run))
             else:
                 parts.append(self._block(element))
-            if element.tag != "text:list" and parts[-1]:
-                self._last_list = None  # something stands between this list and the next
+            # Something written stands between this list and the next (a section passes through:
+            # its own blocks decide).
+            if element.tag not in {"text:list", "text:section"} and parts[-1].strip():
+                self._last_list = None
             index += 1
         return "".join(parts)
 
@@ -334,12 +338,13 @@ class OdtRenderer:
         number = self._numbers.get((style, level), kind.start - 1) + 1 if continues else kind.start
         # Two lists of the same kind one after the other would be one list to Markdown (a restart
         # lost): the second uses the other markers ("1)" for "1.", "*" for "-").
-        previous = self._last_list if level == 1 else None
-        alternate = previous is not None and previous == (kind.numbered, False) and not continues
+        previous = self._last_list
+        alternate = previous == (kind.numbered, False) and not continues
         delimiter = ")" if alternate else "."
         bullet = "* " if alternate else "- "
         lines: list[str] = []
         width = 0  # the marker width of the last item: a skipped level nests in it
+        written: tuple[bool, bool] | None = None  # the markers of the last line at this level
         for item in items:
             children = list(item.elements())
             if children and children[0].tag == "text:h":  # an outline-numbered heading
@@ -357,18 +362,19 @@ class OdtRenderer:
                 # A skipped level is one nesting step: inside the item before, or at this level.
                 if width:
                     separator = "\n" if _starts_tight(content) else "\n\n"
-                    lines[-1] += separator + _indent_all(content, width)
+                    lines[-1] += separator + self._indented(content, width)
                 else:
                     lines.append(content)
+                    written = self._last_list  # its markers are the ones at this level now
                 continue
             marker = f"{number}{delimiter} " if kind.numbered else bullet
             number += 1
             width = len(marker)
-            lines.append(MARK + marker + indent(content, len(marker)))
+            written = (kind.numbered, alternate)
+            lines.append(MARK + marker + self._indented(content, width, first=False))
         if kind.numbered:
             self._numbers[(style, level)] = number - 1
-        if level == 1:
-            self._last_list = (kind.numbered, alternate)
+        self._last_list = written
         return "\n".join(line for line in lines if line).strip("\n")
 
     def _item(self, children: list[Element], level: int, style: str) -> str:
@@ -377,11 +383,13 @@ class OdtRenderer:
         separated by a blank line, so it never merges into the paragraph before it."""
         parts: list[str] = []
         group: list[Element] = []
+        self._last_list = None  # sibling lists inside the item alternate too
 
         def flush() -> None:
             if group:
                 parts.append(self.blocks(list(group)).strip("\n"))
                 group.clear()
+                self._last_list = None
 
         for child in children:
             if child.tag == "text:list" and level >= MAX_LIST_LEVEL:
@@ -403,6 +411,16 @@ class OdtRenderer:
         # levels only indent it, and never read its indented lines again as document text (a
         # second pass would take a paragraph indented 4 columns after a blank for code).
         return "\n".join(_own_line(line) for line in neutralize(text, keep_marks=True).split("\n"))
+
+    def _indented(self, content: str, width: int, *, first: bool = True) -> str:
+        """``content`` indented by ``width`` (from its second line when not ``first``), the
+        indentation charged to the budget; past it, the lines stay where they are (each one is
+        ClearMD's, already neutralized: text kept, nesting lost)."""
+        lines = content.count("\n") + (1 if first else 0)
+        if not self._spend(width * lines):
+            self._unknown("text:list")
+            return content
+        return _indent_all(content, width) if first else indent(content, width)
 
     def _spend(self, size: int) -> bool:
         """Charge ``size`` characters to the document's growth budget; ``False`` past it."""
@@ -644,8 +662,17 @@ class OdtRenderer:
 
     def _style(self, group: list[_Text]) -> str:
         safe, dropped = _safe_emphasis(group)
+        written = _styled(safe)
+        if _unpaired_delimiters(written):  # the pairing itself fails (CommonMark's rule of 3…)
+            plain = [
+                _Text(p.text, _without(p.props, set(_EMPHASIS)), p.link, p.literal) for p in safe
+            ]
+            dropped += sum(
+                1 for old, new in zip(safe, plain, strict=True) if old.props != new.props
+            )
+            written = _styled(plain)
         self.counts.formatting_dropped += dropped
-        return _styled(safe)
+        return written
 
     def _link(self, url: str, group: list[_Text]) -> str:
         written = self._style([_Text(g.text, g.props, None, g.literal) for g in group])
@@ -819,13 +846,53 @@ def _without(props: TextProps, keys: set[str]) -> TextProps:
     )
 
 
+def _flanking(before: str, after: str, *, left: bool) -> bool:
+    """CommonMark's left- (``left``) or right-flanking delimiter run."""
+    near, far = (_kind(after), _kind(before)) if left else (_kind(before), _kind(after))
+    return near != "space" and (near != "punctuation" or far != "word")
+
+
+def _runs(
+    tokens: list[tuple[str, str, bool]], before: str, after: str
+) -> tuple[set[str], set[str]]:
+    """The keys whose delimiters at one boundary would show literally: (closing, opening). The
+    boundary's text is ``before``, the closers and openers ``tokens``, then ``after``; each
+    maximal run of the same delimiter character is judged by its real neighbours."""
+    chars = [before, *(text for text, _, _ in tokens), after]
+    closing: set[str] = set()
+    opening: set[str] = set()
+    position = 0
+    while position < len(tokens):
+        text, key, _ = tokens[position]
+        end = position
+        if key in _EMPHASIS:
+            while (
+                end + 1 < len(tokens)
+                and tokens[end + 1][1] in _EMPHASIS
+                and tokens[end + 1][0][0] == text[0]
+            ):
+                end += 1
+            run = tokens[position : end + 1]
+            left, right = chars[position][-1], chars[end + 2][0]
+            if any(not opens for *_, opens in run) and not _flanking(left, right, left=False):
+                closing.update(key for _, key, opens in run if not opens)
+            if any(opens for *_, opens in run) and not _flanking(left, right, left=True):
+                opening.update(key for _, key, opens in run if opens)
+        position = end + 1
+    return closing, opening
+
+
+MAX_EMPHASIS_PASSES = 8
+
+
 def _safe_emphasis(group: list[_Text]) -> tuple[list[_Text], int]:
-    """The group with the emphasis Markdown would show as literal ``*`` left out, and how many
-    times. A delimiter between two runs with no space opens only before a word character or after
-    punctuation (left-flanking), and closes only after a word character or before punctuation
-    (right-flanking): ``word**"quoted"**s`` shows its asterisks. Dropping a style moves its
-    delimiter to the next boundary, which is checked again (each style is dropped at most once
-    per run: linear)."""
+    """The group with the emphasis Markdown would show as literal ``*`` or ``~`` left out, and
+    how many runs lost a style. Each pass replays ``_styled`` (the same stack of open styles) and
+    judges every delimiter run between two touching runs of text by the characters actually
+    written around it: the text, ClearMD's own ``<u>`` or ``<sup>`` tags, other delimiters
+    (``word**"quoted"**s`` and ``**<u>a</u>**b`` show their asterisks). A failing style is
+    dropped from the run next to it, and the pass is repeated; after a few passes the group
+    loses its emphasis (plain text is always safe). Each pass is linear."""
     split = [_split(piece.text) for piece in group]
     cores = [index for index, (_, core, _) in enumerate(split) if core]
     if len(cores) < 2:
@@ -840,24 +907,36 @@ def _safe_emphasis(group: list[_Text]) -> tuple[list[_Text], int]:
     ]
     props = [group[i].props for i in cores]
     dropped = 0
-    pending = list(range(len(cores) - 1, 0, -1))
-    while pending:
-        k = pending.pop()
-        if not touching[k]:
-            continue
-        before, after = _kind(written[k - 1][-1]), _kind(written[k][0])
-        left = {key for key in _EMPHASIS if getattr(props[k - 1], key)}
-        right = {key for key in _EMPHASIS if getattr(props[k], key)}
-        if before == "punctuation" and after == "word" and left - right:  # closers fail
-            props[k - 1] = _without(props[k - 1], left - right)
+    for _ in range(MAX_EMPHASIS_PASSES):
+        failing: dict[int, set[str]] = {}
+        opened: list[str] = []
+        for k in range(len(cores)):
+            wanted = _active(props[k])
+            keep = 0
+            while keep < len(opened) and opened[keep] in wanted:
+                keep += 1
+            tokens = [(_closer(key), key, False) for key in reversed(opened[keep:])]
+            opened = opened[:keep]
+            for key in wanted:
+                if key not in opened:
+                    tokens.append((_opener(key), key, True))
+                    opened.append(key)
+            if k and touching[k] and tokens:
+                closing, opening = _runs(tokens, written[k - 1][-1], written[k][0])
+                if closing:
+                    failing.setdefault(k - 1, set()).update(closing)
+                if opening:
+                    failing.setdefault(k, set()).update(opening)
+        if not failing:
+            break
+        for k, keys in failing.items():
+            props[k] = _without(props[k], keys)
             dropped += 1
-            if k > 1:
-                pending.append(k - 1)
-        elif after == "punctuation" and before == "word" and right - left:  # openers fail
-            props[k] = _without(props[k], right - left)
-            dropped += 1
-            if k + 1 < len(cores):
-                pending.append(k + 1)
+    else:  # still failing: no emphasis at all in this group
+        for k, value in enumerate(props):
+            if any(getattr(value, key) for key in _EMPHASIS):
+                props[k] = _without(value, set(_EMPHASIS))
+                dropped += 1
     if not dropped:
         return group, 0
     safe = list(group)
@@ -865,3 +944,102 @@ def _safe_emphasis(group: list[_Text]) -> tuple[list[_Text], int]:
         piece = group[index]
         safe[index] = _Text(piece.text, props[k], piece.link, piece.literal)
     return safe, dropped
+
+
+_ASCII_PUNCTUATION = frozenset("!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~")
+
+
+def _code_span_end(text: str, start: int, end: int) -> int:
+    """Where the code span opened by the backtick run ``text[start:end]`` ends: after the next run
+    of the same length, or at ``end`` when there is none (the backticks are then text)."""
+    length = end - start
+    position = end
+    while position < len(text):
+        if text[position] != "`":
+            position += 1
+            continue
+        run_end = position
+        while run_end < len(text) and text[run_end] == "`":
+            run_end += 1
+        if run_end - position == length:
+            return run_end
+        position = run_end
+    return end
+
+
+def _unpaired_delimiters(text: str) -> bool:
+    """Whether a viewer would show one of ClearMD's own ``*`` or ``~`` literally in ``text`` (a
+    run of inline text as ``_styled`` writes it: the document's own ``*`` and ``~`` are escaped).
+
+    CommonMark's emphasis algorithm (spec 0.31, "process emphasis"), in the standard library:
+    delimiter runs with their flanking, the rule of three, openers bottom per kind; GFM's
+    strike-through pairs runs of exactly two tildes. Code spans and escapes are skipped."""
+    runs: list[list[Any]] = []  # [character, count, can_open, can_close, original count]
+    index = 0
+    while index < len(text):
+        char = text[index]
+        if char == "\\" and index + 1 < len(text) and text[index + 1] in _ASCII_PUNCTUATION:
+            index += 2
+            continue
+        if char == "`":
+            end = index
+            while end < len(text) and text[end] == "`":
+                end += 1
+            index = _code_span_end(text, index, end)
+            continue
+        if char in "*~":
+            end = index
+            while end < len(text) and text[end] == char:
+                end += 1
+            before = text[index - 1] if index else " "
+            after = text[end] if end < len(text) else " "
+            opens = _flanking(before, after, left=True)
+            closes = _flanking(before, after, left=False)
+            if char == "~" and end - index != 2:
+                return True  # GFM: one tilde is text, three or more are not strike-through
+            runs.append([char, end - index, opens, closes, end - index])
+            index = end
+            continue
+        index += 1
+    # The openers still unpaired, in order, with a sequence number; a closer pairs with the
+    # nearest compatible one. One further down would leave the ones above it unpaired (shown as
+    # written): the answer is already known. ``bottom`` keeps failed searches from rescanning.
+    stack: list[tuple[int, list[Any]]] = []
+    bottom: dict[tuple[str, bool, int], int] = {}
+    for sequence, run in enumerate(runs):
+        char, _, opens, closes, original = run
+        key = (char, opens, original % 3)
+        while closes and run[1]:
+            found = -1
+            position = len(stack) - 1
+            while position >= 0 and stack[position][0] >= bottom.get(key, 0):
+                candidate = stack[position][1]
+                if candidate[0] == char and _pairs(candidate, run):
+                    found = position
+                    break
+                position -= 1
+            if found == -1:
+                bottom[key] = sequence
+                break
+            if found != len(stack) - 1:
+                return True
+            opener = stack[-1][1]
+            use = 2 if run[1] >= 2 and opener[1] >= 2 else 1
+            opener[1] -= use
+            run[1] -= use
+            if not opener[1]:
+                stack.pop()
+        if run[1]:
+            if not opens:
+                return True  # a closer left over that cannot open
+            stack.append((sequence, run))
+    return bool(stack)
+
+
+def _pairs(opener: list[Any], closer: list[Any]) -> bool:
+    """CommonMark's rule of three for ``*``; GFM strike-through pairs equal runs of ``~``."""
+    if opener[0] == "~":
+        return bool(opener[1] == closer[1])
+    both = opener[3] or closer[2]
+    total = opener[4] + closer[4]
+    return not (both and total % 3 == 0 and not (opener[4] % 3 == 0 and closer[4] % 3 == 0))

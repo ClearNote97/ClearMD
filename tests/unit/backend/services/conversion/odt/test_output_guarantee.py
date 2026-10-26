@@ -33,6 +33,7 @@ BAD = [
     "\\`",
     "\\!",
     "a\\\\!",
+    "&#10;",
     "a\\",
     "&amp;#58;",
     "# forged",
@@ -80,6 +81,16 @@ PLACES: list[tuple[str, frozenset[str]]] = [
         "</text:span></text:p>",
         frozenset(),
     ),
+    (  # a code run with backticks opening a second paragraph of a list item: R3
+        '<text:list text:style-name="L1"><text:list-item><text:p>a</text:p>'
+        '<text:p><text:span text:style-name="T7">x``y</text:span>{t}</text:p></text:list-item>'
+        "</text:list><text:p>{t}</text:p>",
+        frozenset({"bullet_list_open"}),
+    ),
+    (
+        '<text:p><text:a xlink:href="x&#10;{t}">x</text:a></text:p>',
+        frozenset(),
+    ),
     (
         '<text:p><text:a xlink:href="https://ok.example/a`b\\c">x</text:a>'
         '<text:span text:style-name="T7">{t}</text:span>{t}</text:p>',
@@ -100,7 +111,9 @@ def _markdown(tmp_path: Path, body: str) -> str:
 def _check(tmp_path: Path, body: str, blocks: frozenset[str] = frozenset()) -> list[str]:
     markdown = _markdown(tmp_path, body)
     allowed = frozenset({OK_LINK, "https://ok.example/a%60b%5Cc"})
-    return broken_promises(markdown, allowed_links=allowed, blocks=blocks)
+    found = broken_promises(markdown, allowed_links=allowed, blocks=blocks)
+    # The document's own link whose address starts "x" and a line break (R1): a link, never HTML.
+    return [problem for problem in found if not problem.startswith(("link: 'x%0A", "link: 'x'"))]
 
 
 @pytest.mark.parametrize(("place", "blocks"), PLACES)

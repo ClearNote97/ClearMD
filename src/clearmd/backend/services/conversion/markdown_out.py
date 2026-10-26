@@ -26,6 +26,7 @@ _OWN_FENCE = re.compile(r"(`{3,}|~{3,})(.*)")
 
 ENTITY = re.compile(r"&[#A-Za-z]")
 _ENTITY_START = re.compile(r"&(?=[#A-Za-z])")
+_CONTROL = re.compile(r"[\x00-\x1f\x7f]")
 _ESCAPED_BANG = re.compile(r"(?<!\\)(?:\\\\)*\\!$")  # an odd run of backslashes before it
 
 
@@ -71,6 +72,12 @@ def indent(text: str, width: int) -> str:
     return "\n".join([lines[0], *[(" " * width + line) if line else "" for line in lines[1:]]])
 
 
+def _opens_fence(found: re.Match[str]) -> bool:
+    """CommonMark: a backtick fence's info string never holds a backtick (that line is an inline
+    code span, as ``inline_code`` writes one)."""
+    return not (found.group(1)[0] == "`" and "`" in found.group(2))
+
+
 def outside_code(text: str, fix: Callable[[str], str], *, blank_around: bool = False) -> str:
     """``fix`` applied to the text between fenced code blocks; the blocks stay as they are.
 
@@ -81,11 +88,7 @@ def outside_code(text: str, fix: Callable[[str], str], *, blank_around: bool = F
     fence: str | None = None
     for line in text.split("\n"):
         found = _FENCE_LINE.fullmatch(line)
-        if (
-            fence is None
-            and found is not None
-            and not (found.group(1)[0] == "`" and "`" in found.group(2))
-        ):
+        if fence is None and found is not None and _opens_fence(found):
             fence = found.group(1)
             pieces.append((True, [line]))
         elif fence is not None:
@@ -197,7 +200,7 @@ def neutralize(text: str, *, keep_marks: bool = False) -> str:
         stripped = line.lstrip(" \t")
         if stripped.startswith(MARK):
             own = _OWN_FENCE.match(stripped[1:])
-            if fence is None and own is not None:
+            if fence is None and own is not None and _opens_fence(own):
                 fence = own.group(1)
             elif fence is not None and own is not None and not own.group(2).strip():
                 if own.group(1)[0] == fence[0] and len(own.group(1)) >= len(fence):
@@ -217,6 +220,9 @@ def link_target(path: str) -> str:
     backtick or a backslash is encoded: a code span takes precedence over a link, and a
     backslash would escape what follows."""
     path = path.replace("\\", "%5C").replace("`", "%60")
+    # A control character (a line break above all) would end the destination: "<x\nonclick=…>"
+    # is then an HTML tag. Encoded, it is one more character of the address.
+    path = _CONTROL.sub(lambda found: f"%{ord(found.group()):02X}", path)
     if not re.search(r"[\s()<>]", path):
         return path
     return "<" + path.replace("<", "%3C").replace(">", "%3E") + ">"

@@ -36,7 +36,8 @@ PREFIXES = {
 _ENCODINGS = frozenset(
     {"utf-8", "utf8", "utf-16", "utf-16le", "utf-16be", "us-ascii", "iso-8859-1"}
 )
-_DECLARED = re.compile(rb"^\s*<\?xml[^>]*?encoding\s*=\s*[\"']([^\"']*)[\"']")
+_DECLARED = re.compile(rb"^(?:\xef\xbb\xbf)?\s*<\?xml\b([^>]*?)\?>")
+_ENCODING = re.compile(rb"encoding\s*=\s*[\"']([^\"']*)[\"']")
 
 
 class XmlRefused(Exception):
@@ -99,6 +100,19 @@ def int_attribute(value: str, default: int, *, cap: int = 1_000_000) -> int:
     return min(int(value), cap) if len(value) <= 9 else cap
 
 
+def _check_encoding(data: bytes) -> None:
+    """Only the encodings OpenDocument uses: the declaration is read whole (a BOM before it, or
+    padding inside it, never hides it)."""
+    if not data.lstrip(b"\xef\xbb\xbf \t\r\n").startswith(b"<?xml"):
+        return  # no declaration (UTF-8), or UTF-16, which expat reads by its BOM
+    declared = _DECLARED.match(data[:65_536])
+    if declared is None:
+        raise XmlRefused("an XML declaration ClearMD does not read")
+    encoding = _ENCODING.search(declared.group(1))
+    if encoding is not None and encoding.group(1).decode("latin-1").lower() not in _ENCODINGS:
+        raise XmlRefused("an encoding OpenDocument does not use")
+
+
 def _name(expat_name: str) -> str:
     uri, _, local = expat_name.rpartition(" ")
     if not uri:
@@ -110,9 +124,7 @@ def _name(expat_name: str) -> str:
 def parse_part(data: bytes, limits: XmlLimits | None = None) -> Element:
     """The root element of ``data``; ``XmlRefused`` for anything ClearMD does not read."""
     limits = limits or XmlLimits()
-    declared = _DECLARED.match(data[:512])
-    if declared is not None and declared.group(1).decode("latin-1").lower() not in _ENCODINGS:
-        raise XmlRefused("an encoding OpenDocument does not use")
+    _check_encoding(data)
     parser = pyexpat.ParserCreate(namespace_separator=" ")
     parser.SetParamEntityParsing(pyexpat.XML_PARAM_ENTITY_PARSING_NEVER)
     stack: list[Element] = []

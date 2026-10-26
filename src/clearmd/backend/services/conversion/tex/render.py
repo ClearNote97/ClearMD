@@ -489,14 +489,14 @@ class Renderer:
             # <…> is an autolink only with a scheme ("<texto>" would be an HTML tag); any other
             # \url is shown as code.
             absolute = re.match(r"(?:https?|ftp|mailto):", url, re.IGNORECASE)
-            if safe and absolute and not re.search(r"[\s<>]", url):
+            if safe and absolute and not re.search(r"[\s<>\x00-\x1f\x7f]", url):
                 return f"<{url}>"
             return inline_code(url)
         if not url:
             return text
         if not safe:  # javascript: and friends never become links
             return f"{text} ({inline_code(url)})" if text else inline_code(url)
-        return f"[{text or url}]({link_target(url)})"
+        return f"[{text or escape_text(url)}]({link_target(url)})"
 
     def _citation(self, node: Any) -> str:
         written = self._esc(raw(argument(node, 3)))
