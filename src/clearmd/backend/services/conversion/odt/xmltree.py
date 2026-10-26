@@ -7,6 +7,7 @@ explicit stack and walked without recursion.
 """
 
 import pyexpat
+import re
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 
@@ -29,6 +30,13 @@ PREFIXES = {
     "http://purl.org/dc/elements/1.1/": "dc",
     "http://www.w3.org/1998/Math/MathML": "math",
 }
+
+
+# The encodings OpenDocument allows (UTF-8, UTF-16) and the ones expat reads natively.
+_ENCODINGS = frozenset(
+    {"utf-8", "utf8", "utf-16", "utf-16le", "utf-16be", "us-ascii", "iso-8859-1"}
+)
+_DECLARED = re.compile(rb"^\s*<\?xml[^>]*?encoding\s*=\s*[\"']([^\"']*)[\"']")
 
 
 class XmlRefused(Exception):
@@ -102,6 +110,9 @@ def _name(expat_name: str) -> str:
 def parse_part(data: bytes, limits: XmlLimits | None = None) -> Element:
     """The root element of ``data``; ``XmlRefused`` for anything ClearMD does not read."""
     limits = limits or XmlLimits()
+    declared = _DECLARED.match(data[:512])
+    if declared is not None and declared.group(1).decode("latin-1").lower() not in _ENCODINGS:
+        raise XmlRefused("an encoding OpenDocument does not use")
     parser = pyexpat.ParserCreate(namespace_separator=" ")
     parser.SetParamEntityParsing(pyexpat.XML_PARAM_ENTITY_PARSING_NEVER)
     stack: list[Element] = []
@@ -114,6 +125,17 @@ def parse_part(data: bytes, limits: XmlLimits | None = None) -> Element:
     def refuse_external(*_: object) -> int:
         raise XmlRefused("an external entity")
 
+    def count_characters(size: int) -> None:
+        counts["characters"] += size
+        if counts["characters"] > limits.max_characters:
+            raise XmlRefused(f"more than {limits.max_characters} characters")
+
+    def namespace(prefix: str | None, uri: str | None) -> None:
+        counts["elements"] += 1  # a declaration costs like an attribute
+        if counts["elements"] > limits.max_elements:
+            raise XmlRefused(f"more than {limits.max_elements} elements and attributes")
+        count_characters(len(prefix or "") + len(uri or ""))
+
     def start(name: str, attributes: dict[str, str]) -> None:
         counts["elements"] += 1
         if counts["elements"] > limits.max_elements:
@@ -123,9 +145,8 @@ def parse_part(data: bytes, limits: XmlLimits | None = None) -> Element:
         counts["elements"] += len(attributes)  # an attribute costs like an element
         if counts["elements"] > limits.max_elements:
             raise XmlRefused(f"more than {limits.max_elements} elements and attributes")
-        counts["characters"] += sum(len(value) for value in attributes.values())
-        if counts["characters"] > limits.max_characters:
-            raise XmlRefused(f"more than {limits.max_characters} characters")
+        # Names count too (an element or attribute name can be as long as any text).
+        count_characters(len(name) + sum(len(k) + len(v) for k, v in attributes.items()))
         element = Element(
             _name(name), {_name(k): v.replace(_MARK, "") for k, v in attributes.items()}
         )
@@ -155,6 +176,7 @@ def parse_part(data: bytes, limits: XmlLimits | None = None) -> Element:
     parser.EntityDeclHandler = refuse
     parser.UnparsedEntityDeclHandler = refuse
     parser.ExternalEntityRefHandler = refuse_external
+    parser.StartNamespaceDeclHandler = namespace
     parser.StartElementHandler = start
     parser.EndElementHandler = end
     parser.CharacterDataHandler = characters
@@ -165,6 +187,8 @@ def parse_part(data: bytes, limits: XmlLimits | None = None) -> Element:
         raise XmlRefused(f"not well-formed XML: {error}") from None
     except RecursionError:
         raise XmlRefused("nested too deeply") from None
+    except (ValueError, LookupError) as error:  # an encoding expat or Python cannot read
+        raise XmlRefused(f"an encoding ClearMD does not read: {error}") from None
     if not roots:
         raise XmlRefused("no root element")
     return roots[0]

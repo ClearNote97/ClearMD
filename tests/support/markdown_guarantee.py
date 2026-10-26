@@ -29,8 +29,13 @@ def broken_promises(
 ) -> list[str]:
     """What breaks the guarantee in ``markdown`` (empty when it holds)."""
     found = []
-    if re.search(r"(?<!\\)!\[\^\d+\]", markdown):
+    # A live "!" (after an even run of backslashes) before a footnote reference is an image.
+    if re.search(r"(?<!\\)(?:\\\\)*!\[\^\d+\]", markdown):
         found.append("image: a footnote reference after '!'")
+    # Plain CommonMark reads the definitions as link references: no image may come of them.
+    for token in _tokens(markdown):
+        if token.type == "image":
+            found.append(f"image: {token.attrs.get('src')!r} (with the definitions)")
     # A viewer with footnotes reads ClearMD's definitions as footnotes: taken out before parsing.
     markdown = _FOOTNOTE_DEFINITION.sub("", markdown)
     for token in _tokens(markdown):
@@ -44,4 +49,6 @@ def broken_promises(
         allowed = ALLOWED_BLOCKS | blocks
         if token.nesting >= 0 and token.level == 0 and token.type not in allowed:
             found.append(f"block: {token.type}")
+        elif token.type in {"code_block", "html_block"} and token.level > 0:
+            found.append(f"block: {token.type} (nested)")  # ClearMD never writes either
     return [f"{problem} in {markdown!r}" for problem in found]

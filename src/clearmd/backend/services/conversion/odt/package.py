@@ -21,6 +21,8 @@ from clearmd.backend.services.conversion.safe_files import open_regular_file
 
 ODT_MIME = "application/vnd.oasis.opendocument.text"
 ODF_MIME_PREFIX = "application/vnd.oasis.opendocument."
+FORMULA_MIME = "application/vnd.oasis.opendocument.formula"
+MAX_MIMETYPE_BYTES = 256
 MAX_PART_BYTES = 256 * 1024**2  # one XML part, uncompressed
 _SCHEME_OR_DRIVE = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
 
@@ -37,12 +39,21 @@ def object_part(href: str) -> str | None:
     return "/".join(parts) + "/content.xml"
 
 
+def _entry_name(path: str) -> str:
+    """A manifest path as an archive name: "./content.xml" and "/content.xml" are "content.xml"."""
+    name = path.strip().replace("\\", "/")
+    while name.startswith(("./", "/")):
+        name = name[2:] if name.startswith("./") else name[1:]
+    return name.rstrip("/")
+
+
 class OdtPackage:
     def __init__(self, stream: IO[bytes], archive: zipfile.ZipFile, max_part_bytes: int) -> None:
         self._stream = stream
         self._archive: zipfile.ZipFile | None = archive
         self._max_part_bytes = max_part_bytes
         self._limits = XmlLimits()
+        self._media_types: dict[str, str] = {}  # manifest entry (no "./", "/" or trailing "/")
 
     @classmethod
     def open(cls, path: Path, *, max_part_bytes: int = MAX_PART_BYTES) -> "OdtPackage":
@@ -109,7 +120,10 @@ class OdtPackage:
         return data
 
     def _check(self) -> None:
-        mime = self._read("mimetype")
+        names = self._zip().namelist()
+        if len(names) != len(set(names)):  # readers disagree on which copy counts
+            raise ConversionError(ErrorCode.CORRUPT_FILE, "an entry name appears twice")
+        mime = self._read("mimetype", MAX_MIMETYPE_BYTES)
         if mime is None:
             raise ConversionError(ErrorCode.CORRUPT_FILE, "no mimetype entry")
         kind = mime.decode("ascii", errors="replace").strip()
@@ -124,10 +138,17 @@ class OdtPackage:
         if manifest is None:
             return
         for entry in manifest.elements("manifest:file-entry"):
-            if entry.get("manifest:full-path") in {"content.xml", "styles.xml"} and entry.find(
-                "manifest:encryption-data"
-            ):
+            path = _entry_name(entry.get("manifest:full-path"))
+            self._media_types[path] = entry.get("manifest:media-type")
+            encrypted = entry.find("manifest:encryption-data") is not None
+            if path in {"content.xml", "styles.xml"} and encrypted:
                 raise ConversionError(ErrorCode.PASSWORD_PROTECTED, "the content is encrypted")
+
+    def is_formula(self, part: str) -> bool:
+        """Whether the manifest declares the object of ``part`` (``Object 1/content.xml``) a
+        formula; used when the part itself cannot be read."""
+        folder = part.rpartition("/")[0]
+        return self._media_types.get(_entry_name(folder)) == FORMULA_MIME
 
     def part(self, name: str, *, max_bytes: int | None = None) -> Element | None:
         """The XML tree of an entry, ``None`` when it is not in the archive."""

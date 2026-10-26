@@ -792,6 +792,13 @@ def _odt_manifest(entries: list[str], *, encrypted: bool = False, mime: str = OD
         f"{encryption if encrypted and name == 'content.xml' else ''}</manifest:file-entry>"
         for name in entries
     )
+    # An embedded object's folder, as LibreOffice declares a formula's.
+    files += "".join(
+        f'<manifest:file-entry manifest:full-path="{name.rpartition("/")[0]}/" '
+        'manifest:media-type="application/vnd.oasis.opendocument.formula"/>'
+        for name in entries
+        if name.endswith("/content.xml")
+    )
     return (
         f'<?xml version="1.0" encoding="UTF-8"?><manifest:manifest {_MANIFEST_NS} '
         f'manifest:version="1.3"><manifest:file-entry manifest:full-path="/" '

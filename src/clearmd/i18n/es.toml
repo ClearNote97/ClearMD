@@ -137,6 +137,7 @@ table_simplified = "las tablas con celdas combinadas se simplificaron (cada text
 revisions_dropped = "se dejaron fuera comentarios y cambios rastreados; el texto es el final: {items}"
 images_not_extracted = "las imágenes quedan dentro del documento y se muestran por su título: {items}"
 formula_kept_as_source = "las fórmulas que ClearMD no puede pasar a LaTeX se muestran con su fuente StarMath: {items}"
+formatting_dropped = "la negrita, cursiva o tachado que Markdown no puede mostrar entre esos caracteres se omitió: {items}"
 and_more = " y {count} más"
 
 [note.reason]

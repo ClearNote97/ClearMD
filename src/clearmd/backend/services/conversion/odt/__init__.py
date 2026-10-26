@@ -42,8 +42,8 @@ class _Formulas:
             return FormulaResult(None)
         if name not in self._results:
             tree, allowed = self._object(name)
-            if tree is None:
-                result = FormulaResult(None)
+            if tree is None:  # too big or unreadable: the manifest says what it was
+                result = FormulaResult(None, formula=self._package.is_formula(name))
             elif tree.tag != "math:math":  # a chart or another embedded object
                 result = FormulaResult(None, formula=False)
             else:

@@ -34,7 +34,9 @@ made pylatexenc fail, so a whole thesis failed for one bad line, against AC-21.
   never replaced again; `##` is `#`), and an expansion's size is charged to the budget before it is built.
 - **The Markdown never does what the document did not write as LaTeX** (chosen after three verification rounds,
   checked with a CommonMark parser in `test_output_guarantee.py`). Inline: every path that copies document
-  text escapes `<`, `[`, `]` and backticks; pieces written next to each other never form `![` or `](`; math
+  text escapes `<`, `[`, `]` and backticks, a backslash before ASCII punctuation or at the end of a piece (so
+  the document's own `\` never cancels an escape — found by the audit of feature 003), and `*`, `_`, `~` (the
+  author's choice: the document's characters are never emphasis or strike-through); pieces written next to each other never form `![` or `](`; math
   gets only `< ` for an HTML-looking `<tag` and `&#96;` for a backtick (an escape with a backslash could be
   cancelled by the document's own backslash before it — found by the audit of feature 003). Blocks: ClearMD marks the block lines it
   writes (U+E000, stripped from the input), and a final pass neutralizes every other line a viewer would read as

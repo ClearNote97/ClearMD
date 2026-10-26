@@ -73,16 +73,30 @@ def table_to_markdown(
             simplified = True
             break
         grid.extend([line] * rows)
-    grid = [line for line in grid if any(line)]
+    # Trailing empty cells go, in one pass (a repeated row is the same list: trimmed once).
+    trimmed: dict[int, list[str]] = {}
+    for line in grid:
+        if id(line) not in trimmed:
+            end = len(line)
+            while end and not line[end - 1]:
+                end -= 1
+            trimmed[id(line)] = line[:end]
+    grid = [trimmed[id(line)] for line in grid if trimmed[id(line)]]
     if not grid:
         return Table("", simplified)
     width = max(len(line) for line in grid)
-    while width > 1 and not any(len(line) >= width and line[width - 1] for line in grid):
-        width -= 1  # trailing empty columns
+    # The header row and the rule set the columns; a shorter row is completed by the viewer,
+    # so the padding is written only while the budget pays for it, and the header only if so.
+    if not spend(8 * width):
+        grid = [[text for text in line if text] for line in grid]  # every text, fewer columns
+        width, simplified = max(len(line) for line in grid), True
+    padding = sum(3 * (width - len(line)) for line in grid[1:])
+    padded = spend(padding)
     lines = []
     for index, line in enumerate(grid):
-        padded = (line + [""] * width)[:width]
-        lines.append(MARK + "| " + " | ".join(padded) + " |")
+        if index == 0 or padded:
+            line = line + [""] * (width - len(line))
+        lines.append(MARK + "| " + " | ".join(line) + " |")
         if index == 0:
             lines.append(MARK + "|" + "---|" * width)
     return Table("\n".join(lines), simplified)

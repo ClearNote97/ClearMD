@@ -25,6 +25,8 @@ _OWN_FENCE = re.compile(r"(`{3,}|~{3,})(.*)")
 
 
 ENTITY = re.compile(r"&[#A-Za-z]")
+_ENTITY_START = re.compile(r"&(?=[#A-Za-z])")
+_ESCAPED_BANG = re.compile(r"(?<!\\)(?:\\\\)*\\!$")  # an odd run of backslashes before it
 
 
 # What Markdown reads as a block at the start of a line written by the document.
@@ -113,6 +115,8 @@ def escape_text(text: str) -> str:
     # only characters CommonMark lets a backslash escape) must not cancel an escape. Elsewhere it
     # stays single, so "\\section" reads as written.
     text = _ESCAPING_BACKSLASH.sub(r"\\\\", text.replace(MARK, "")).replace("`", "\\`")
+    # An entity the document wrote ("&lt;", "&copy;") shows as written, never decoded.
+    text = _ENTITY_START.sub("&amp;", text)
     # The document's own *, _ and ~ are characters, never emphasis or strike-through.
     text = text.replace("*", "\\*").replace("_", "\\_").replace("~", "\\~")
     return text.replace("<", "&lt;").replace("[", "&#91;").replace("]", "&#93;")
@@ -131,14 +135,17 @@ def escape_math(text: str) -> str:
 
 def join_pieces(parts: list[str]) -> str:
     """Pieces written next to each other never form a construct none of them wrote: a ``!``
-    before ClearMD's ``[`` (an image), a ``]`` before ``(``, ``[`` or ``:`` (a link, a
-    reference, a definition), two backtick runs glued into one (code spans that never close)."""
+    before ClearMD's ``[`` (an image), a ``]`` before ``(`` or ``:`` (a link, a definition),
+    two backtick runs glued into one (code spans that never close). A ``]`` before ``[`` stays:
+    the document's brackets are always entities, so both are ClearMD's (``[^1][t](u)`` is a
+    footnote and a link, ``[^1][^2]`` two references)."""
     pieces = [part for part in parts if part]
     for index in range(1, len(pieces)):
         left, right = pieces[index - 1], pieces[index]
-        if left.endswith("!") and right.startswith("[") and not left.endswith("\\!"):
+        # Escaped only after an odd run of backslashes: "\\\\!" is a backslash and a live "!".
+        if left.endswith("!") and right.startswith("[") and not _ESCAPED_BANG.search(left):
             pieces[index - 1] = left[:-1] + "\\!"
-        elif left.endswith("]") and right.startswith(("(", "[", ":")):
+        elif left.endswith("]") and right.startswith(("(", ":")):
             pieces[index] = "\\" + right
         elif left.endswith("`") and right.startswith("`"):  # two code spans, never one run
             pieces[index] = " " + right
@@ -206,7 +213,10 @@ def neutralize(text: str, *, keep_marks: bool = False) -> str:
 
 
 def link_target(path: str) -> str:
-    """A Markdown link destination that stays one destination whatever ``path`` holds."""
+    """A Markdown link destination that stays one destination whatever ``path`` holds. A
+    backtick or a backslash is encoded: a code span takes precedence over a link, and a
+    backslash would escape what follows."""
+    path = path.replace("\\", "%5C").replace("`", "%60")
     if not re.search(r"[\s()<>]", path):
         return path
     return "<" + path.replace("<", "%3C").replace(">", "%3E") + ">"

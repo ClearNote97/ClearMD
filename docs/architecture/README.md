@@ -1,4 +1,4 @@
-# docs/architecture — System design (as built, features 001–002)
+# docs/architecture — System design (as built, features 001–003)
 
 ClearMD follows a **ports and adapters** architecture (ADR-0001), laid out with the ClearNote_Dev template's
 `backend/` and `frontend/` folders inside the package (ADR-0014). The use cases know neither the interfaces nor
@@ -18,7 +18,7 @@ the conversion libraries; heavy and untrusted work runs in a separate worker pro
                                     └───────────────────────────────────────────────────────┼───┘
                                                                                             │ pipe
                                                        ┌────────────────────────────────────▼──┐
-                                                       │ worker: markitdown + magika + .tex    │
+                                                       │ worker: markitdown, magika, tex, odt  │
                                                        │ convert and detect, one file at a time │
                                                        └────────────────────────────────────────┘
 ```
@@ -51,6 +51,7 @@ a fresh process).
 | `services` | `worker/` | `WorkerRunner` (supervisor: `Ready` handshake, time and memory limits with psutil, cancellation, replacement) and the child process. |
 | | `conversion/` | The registry (`convert(source, detection, target)`), the markitdown adapter (exception mapping verified on fixtures), `safe_files` (no links, size cap). |
 | | `conversion/markdown_out.py` | The output guarantee shared by ClearMD's own converters (ADR-0023, ADR-0024): escaped copies, marked block lines, the final `neutralize` pass, joining rules, link targets. |
+| | `conversion/odt/` | ClearMD's own OpenDocument converter (feature 003, ADR-0024), standard library only: `package` (type, encryption, parts under size caps), `xmltree` (pyexpat tree: DOCTYPE refused, limits, the block mark stripped), `styles` (with parents), `render` + `tables` (the subset, the growth budget), `mathml` (MathML → LaTeX, StarMath fallback). |
 | | `conversion/tex/` | ClearMD's own LaTeX converter (feature 002, ADR-0006/0022): `source` (real encoding), `context` (pylatexenc specs), `includes` (inside the folder only), `macros` (budgeted expansion), `render` + `tables` (the subset, written through `markdown_out`), `nodes` (iterative walks), `images` (links from the output file), `document` (includes spliced in place, then one render). |
 | | `detection/` | Extension (CLI process), magika by content (worker), only for files without an extension. |
 | | `summary/` | `Resumen_ClearMD.md`: name table, sections (including “Converted with notes”), history, escaping of untrusted names. |

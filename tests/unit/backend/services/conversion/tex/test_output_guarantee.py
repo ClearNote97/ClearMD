@@ -7,16 +7,18 @@ construct and a dangerous suffix.
 """
 
 import itertools
-import re
 from collections.abc import Iterator
 from typing import Any
 
 import pytest
 from markdown_it import MarkdownIt
+from support.markdown_guarantee import broken_promises
 
 from clearmd.backend.services.conversion.tex.render import render_latex
 
 OK_LINK = "https://ok.example/page"
+# Links the document wrote with \href (ClearMD encodes a backtick in an address).
+ALLOWED_LINKS = frozenset({OK_LINK, "https://ok.example/a%60", "https://evil.example/x.png"})
 PARSER = MarkdownIt("commonmark", {"html": True}).enable("table")
 # Blocks a paragraph of hostile text may legitimately produce: ClearMD's own code.
 ALLOWED_BLOCKS = {"paragraph_open", "paragraph_close", "inline", "fence"}
@@ -105,28 +107,10 @@ def _blocks(markdown: str) -> Iterator[Any]:
     return iter(PARSER.parse(markdown))
 
 
-_FOOTNOTE_DEFINITION = re.compile(r"(?m)^\[\^\d+\]: .*$")
-
-
 def _broken_promises(latex: str) -> list[str]:
+    """The shared check (``support.markdown_guarantee``): the same rules for every converter."""
     markdown = render_latex(_doc(latex)).markdown
-    found = []
-    if re.search(r"(?<!\\)!\[\^\d+\]", markdown):
-        found.append("image: a footnote reference after '!'")
-    # A viewer with footnotes (GitHub, Obsidian) reads ClearMD's definitions as footnotes, not as
-    # link references; plain CommonMark has no footnotes, so they are taken out before parsing.
-    markdown = _FOOTNOTE_DEFINITION.sub("", markdown)
-    for token in _tokens(markdown):
-        if token.type in {"html_inline", "html_block"}:
-            found.append(f"html: {token.content!r}")
-        elif token.type == "image":
-            found.append(f"image: {token.attrs.get('src')!r}")
-        elif token.type == "link_open" and token.attrs.get("href") != OK_LINK:
-            found.append(f"link: {token.attrs.get('href')!r}")
-    for token in _blocks(markdown):
-        if token.nesting >= 0 and token.level == 0 and token.type not in ALLOWED_BLOCKS:
-            found.append(f"block: {token.type}")
-    return [f"{problem} in {markdown!r}" for problem in found]
+    return broken_promises(markdown, allowed_links=ALLOWED_LINKS)
 
 
 @pytest.mark.parametrize("latex", HOSTILE)
@@ -204,6 +188,11 @@ ALPHABET = [
     "\\textless",
     "\\textbackslash",
     "\\textbackslash`",
+    "\\footnote{n}",
+    "\\href{https://ok.example/a`}{t}",
+    "\\href{https://evil.example/x.png}{t}",
+    "\\texttt{<img src=x>}",
+    "a\\textbackslash!",
     "\\textasciitilde",
     "\\char96",
     '\\char"E000',

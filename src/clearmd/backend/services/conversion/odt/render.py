@@ -7,8 +7,9 @@ subset keeps its text and is listed in a note. Images become placeholders; formu
 """
 
 import re
+import unicodedata
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from clearmd.backend.schemas.notes import ConversionNote, NoteItem, NoteKind, NoteReason
@@ -42,6 +43,7 @@ IMAGE_WORD = {"es": "Imagen", "pt": "Imagem", "fr": "Image", "it": "Immagine", "
 FORMULA_WORD = {"es": "Fórmula", "pt": "Fórmula", "fr": "Formule", "it": "Formula", "de": "Formel"}
 MAX_SPACES = 256
 MAX_UNKNOWN = 1000
+MAX_LIST_LEVEL = 10  # LibreOffice's deepest; deeper lists are flattened into the tenth level
 _WHITESPACE = re.compile(r"[ \t\r\n]+")
 
 # Field elements: what matters is the text they show.
@@ -150,6 +152,7 @@ class _Counts:
     comments: int = 0
     changes: int = 0
     tables_simplified: int = 0
+    formatting_dropped: int = 0
     unknown: dict[str, None] = field(default_factory=dict)
 
 
@@ -172,6 +175,8 @@ class OdtRenderer:
         self._formula_word = FORMULA_WORD.get(primary, "Formula")
         self._top = 1
         self._numbers: dict[tuple[str, int], int] = {}  # last number of each list style and level
+        # The last top-level list written, if nothing came after it: (numbered, other markers).
+        self._last_list: tuple[bool, bool] | None = None
 
     # --- Document -------------------------------------------------------------------------
 
@@ -214,6 +219,8 @@ class OdtRenderer:
                 parts.append(self._quote(run) if role is Role.QUOTE else self._code(run))
             else:
                 parts.append(self._block(element))
+            if element.tag != "text:list" and parts[-1]:
+                self._last_list = None  # something stands between this list and the next
             index += 1
         return "".join(parts)
 
@@ -323,11 +330,16 @@ class OdtRenderer:
                 self.styles.list_style_of_paragraph(first.get("text:style-name")) if first else ""
             )
         kind = self.styles.list_level(style, level)
-        continues = element.get("text:continue-numbering") == "true" or element.get(
-            "text:continue-list"
-        )
+        continues = _continues(element)
         number = self._numbers.get((style, level), kind.start - 1) + 1 if continues else kind.start
+        # Two lists of the same kind one after the other would be one list to Markdown (a restart
+        # lost): the second uses the other markers ("1)" for "1.", "*" for "-").
+        previous = self._last_list if level == 1 else None
+        alternate = previous is not None and previous == (kind.numbered, False) and not continues
+        delimiter = ")" if alternate else "."
+        bullet = "* " if alternate else "- "
         lines: list[str] = []
+        width = 0  # the marker width of the last item: a skipped level nests in it
         for item in items:
             children = list(item.elements())
             if children and children[0].tag == "text:h":  # an outline-numbered heading
@@ -339,15 +351,24 @@ class OdtRenderer:
                 continue
             if item.tag == "text:list-header":  # no marker, its own block
                 lines.append("\n" + content + "\n")
+                width = 0
                 continue
-            if all(child.tag == "text:list" for child in children):  # a skipped level
-                lines.append(indent("\n" + content, 3).lstrip("\n"))
+            if all(child.tag == "text:list" for child in children):
+                # A skipped level is one nesting step: inside the item before, or at this level.
+                if width:
+                    separator = "\n" if _starts_tight(content) else "\n\n"
+                    lines[-1] += separator + _indent_all(content, width)
+                else:
+                    lines.append(content)
                 continue
-            marker = f"{number}. " if kind.numbered else "- "
+            marker = f"{number}{delimiter} " if kind.numbered else bullet
             number += 1
+            width = len(marker)
             lines.append(MARK + marker + indent(content, len(marker)))
         if kind.numbered:
             self._numbers[(style, level)] = number - 1
+        if level == 1:
+            self._last_list = (kind.numbered, alternate)
         return "\n".join(line for line in lines if line).strip("\n")
 
     def _item(self, children: list[Element], level: int, style: str) -> str:
@@ -363,7 +384,10 @@ class OdtRenderer:
                 group.clear()
 
         for child in children:
-            if child.tag == "text:list":
+            if child.tag == "text:list" and level >= MAX_LIST_LEVEL:
+                self._unknown("text:list")  # deeper than any editor writes: its paragraphs here
+                group.extend(self._own_paragraphs(child))
+            elif child.tag == "text:list":
                 flush()
                 parts.append(self._list(child, level + 1, style))
             else:
@@ -374,9 +398,11 @@ class OdtRenderer:
             if not text:
                 text = part
                 continue
-            starts_tight = re.match(rf"{MARK}(?:- |1\. )", part) is not None
-            text += ("\n" if starts_tight else "\n\n") + part
-        return neutralize(text, keep_marks=True)
+            text += ("\n" if _starts_tight(part) else "\n\n") + part
+        # Neutralized here, at the item's own column, then marked as ClearMD's: the enclosing
+        # levels only indent it, and never read its indented lines again as document text (a
+        # second pass would take a paragraph indented 4 columns after a blank for code).
+        return "\n".join(_own_line(line) for line in neutralize(text, keep_marks=True).split("\n"))
 
     def _spend(self, size: int) -> bool:
         """Charge ``size`` characters to the document's growth budget; ``False`` past it."""
@@ -393,7 +419,7 @@ class OdtRenderer:
         return block(found.markdown) if found.markdown else ""
 
     def _cell(self, cell: Element) -> str:
-        shown = [p for p in _own_paragraphs(cell) if not self._hidden(p)]
+        shown = [p for p in self._own_paragraphs(cell) if not self._hidden(p)]
         texts = [self.inline(p, self._props(p)) for p in shown]
         return " ".join(text.replace(LINE_BREAK, " ") for text in texts if text)
 
@@ -441,6 +467,8 @@ class OdtRenderer:
                 )
             elif tag == "text:s":
                 spaces = int_attribute(item.get("text:c"), 1, cap=MAX_SPACES)
+                if spaces > 1 and not self._spend(spaces):  # one element, many characters
+                    spaces = 1
                 pieces.append(_Text(" " * spaces, current, link, literal=True))
             elif tag == "text:tab":
                 pieces.append(_Text("\t", current, link, literal=True))
@@ -498,7 +526,7 @@ class OdtRenderer:
             return f"*{escape_text(shown)}*"
         box = frame.find("draw:text-box")
         if box is not None:  # its lists and tables too; never glued to the text around it
-            visible = [p for p in _own_paragraphs(box) if not self._hidden(p)]
+            visible = [p for p in self._own_paragraphs(box) if not self._hidden(p)]
             texts = [self.inline(p, self._props(p)).replace(LINE_BREAK, " ") for p in visible]
             joined = " ".join(text for text in texts if text)
             return f" {joined} " if joined else ""
@@ -513,10 +541,12 @@ class OdtRenderer:
         if found.latex is not None and not found.latex.strip():
             return ""  # an empty formula: nothing to show, never a stray "$$"
         if found.latex is not None and not self._spend(len(found.latex)):
-            found = FormulaResult(None, None)  # past the growth budget: no more copies
+            found = FormulaResult(None, found.source)  # past the growth budget
         if found.latex is None:
             self.counts.formulas_kept += 1
-            return inline_code(found.source) if found.source else f"*{self._formula_word}*"
+            if found.source and self._spend(len(found.source)):  # the source is charged too
+                return inline_code(found.source)
+            return f"*{self._formula_word}*"
         latex = escape_math(found.latex)
         return display_math(latex) if display else f"${latex}$"
 
@@ -527,7 +557,7 @@ class OdtRenderer:
         number = len(self.footnotes) + 1
         self.footnotes.append("")  # its number is taken before notes nested in it get theirs
         body = note.find("text:note-body")
-        paragraphs = _own_paragraphs(body) if body is not None else []
+        paragraphs = self._own_paragraphs(body) if body is not None else []
         shown = [p for p in paragraphs if not self._hidden(p)]
         texts = [self.inline(p, self._props(p)).replace(LINE_BREAK, " ") for p in shown]
         # An empty definition would not be one: the reference would show as text.
@@ -535,12 +565,13 @@ class OdtRenderer:
         return f"[^{number}]"
 
     def _normalize(self, pieces: list[_Piece]) -> list[_Piece]:
-        """ODF whitespace: runs collapse to one space, none at the start or the end."""
-        out: list[_Piece] = []
+        """ODF whitespace: runs collapse to one space, none at the start or the end; equal
+        neighbours are merged (their texts joined once: linear)."""
+        cleaned: list[_Piece] = []
         for piece in pieces:
             if isinstance(piece, _Text) and not piece.literal:
                 text = _WHITESPACE.sub(" ", piece.text)
-                previous = out[-1] if out else None
+                previous = cleaned[-1] if cleaned else None
                 ends_in_space = (
                     previous is None
                     or (isinstance(previous, _Raw) and previous.markdown == LINE_BREAK)
@@ -551,12 +582,30 @@ class OdtRenderer:
                 if not text:
                     continue
                 piece = _Text(text, piece.props, piece.link)
-            if out and isinstance(piece, _Text) and isinstance(out[-1], _Text):
-                last = out[-1]
-                if (last.props, last.link) == (piece.props, piece.link):
-                    out[-1] = _Text(last.text + piece.text, last.props, last.link, literal=True)
-                    continue
+            cleaned.append(piece)
+        out: list[_Piece] = []
+        merged: list[str] = []  # the texts that make out[-1], joined when the run ends
+
+        def close() -> None:
+            last = out[-1] if out else None
+            if merged and isinstance(last, _Text):
+                out[-1] = _Text("".join(merged), last.props, last.link, literal=True)
+            merged.clear()
+
+        for piece in cleaned:
+            last = out[-1] if out else None
+            if (
+                isinstance(piece, _Text)
+                and isinstance(last, _Text)
+                and (last.props, last.link) == (piece.props, piece.link)
+            ):
+                if not merged:
+                    merged.append(last.text)
+                merged.append(piece.text)
+                continue
+            close()
             out.append(piece)
+        close()
         while out and isinstance(out[-1], _Text) and not out[-1].text.strip():
             out.pop()
         if out and isinstance(out[-1], _Text):
@@ -587,23 +636,50 @@ class OdtRenderer:
                 ):
                     index += 1
                     group.append(pieces[index])  # type: ignore[arg-type]
-                parts.append(_styled(group))
+                parts.append(self._style(group))
             else:
                 parts.append(piece.markdown)
             index += 1
         return join_pieces(parts)
 
+    def _style(self, group: list[_Text]) -> str:
+        safe, dropped = _safe_emphasis(group)
+        self.counts.formatting_dropped += dropped
+        return _styled(safe)
+
     def _link(self, url: str, group: list[_Text]) -> str:
-        written = _styled([_Text(g.text, g.props, None, g.literal) for g in group])
+        written = self._style([_Text(g.text, g.props, None, g.literal) for g in group])
         lead, text, trail = _split(written)  # the spaces around the text stay outside the link
         url = url.strip()
-        if not url:
+        # Each piece of a link repeats its address: charged, and past the budget only the text.
+        if not url or not self._spend(len(url)):
             return written
         if not SAFE_LINK.match(url) or ENTITY.search(url):  # javascript: never becomes a link
             shown = f"{text} ({inline_code(url)})" if text else inline_code(url)
         else:
             shown = f"[{text or escape_text(url)}]({link_target(url)})"
         return lead + shown + trail
+
+    def _own_paragraphs(self, element: Element) -> list[Element]:
+        """The paragraphs and headings of ``element``, never those nested in them or in notes
+        (they are part of their parent's text), each written once, in one pass; hidden sections,
+        comments, deletions and generated content are left out, as ``_block`` does."""
+        found: list[Element] = []
+        pending = list(reversed(list(element.elements())))
+        while pending:
+            child = pending.pop()
+            tag = child.tag
+            if tag in {"text:p", "text:h"}:
+                found.append(child)
+            elif tag == "text:tracked-changes":
+                self.counts.changes += sum(1 for _ in child.elements("text:changed-region"))
+            elif tag == "office:annotation":
+                self.counts.comments += 1
+            elif tag == "text:section" and child.get("text:display") == "none":
+                continue
+            elif tag not in DROPPED_BLOCKS and tag != "text:note":
+                pending.extend(reversed(list(child.elements())))
+        return found
 
     def _unknown(self, tag: str) -> None:
         if tag in self.counts.unknown or len(self.counts.unknown) < MAX_UNKNOWN:
@@ -622,6 +698,9 @@ class OdtRenderer:
         if self.counts.unknown:
             items = tuple(NoteItem(tag) for tag in self.counts.unknown)
             found.append(ConversionNote(NoteKind.ELEMENTS_SIMPLIFIED, items))
+        if self.counts.formatting_dropped:
+            count = NoteItem(str(self.counts.formatting_dropped))
+            found.append(ConversionNote(NoteKind.FORMATTING_DROPPED, (count,)))
         if self.counts.tables_simplified:
             count = NoteItem(str(self.counts.tables_simplified))
             found.append(ConversionNote(NoteKind.TABLE_SIMPLIFIED, (count,)))
@@ -635,18 +714,27 @@ class OdtRenderer:
         return tuple(found)
 
 
-def _own_paragraphs(element: Element) -> list[Element]:
-    """The paragraphs and headings of ``element``, never those nested in them or in notes (they
-    are part of their parent's text): each one is written once, in one pass."""
-    found: list[Element] = []
-    pending = list(reversed(list(element.elements())))
-    while pending:
-        child = pending.pop()
-        if child.tag in {"text:p", "text:h"}:
-            found.append(child)
-        elif child.tag != "text:note":
-            pending.extend(reversed(list(child.elements())))
-    return found
+def _continues(element: Element) -> bool:
+    return element.get("text:continue-numbering") == "true" or bool(
+        element.get("text:continue-list")
+    )
+
+
+def _starts_tight(part: str) -> bool:
+    """A nested list Markdown lets follow a paragraph directly: bullets, or numbers from 1."""
+    return re.match(rf"{MARK}(?:[-*] |1[.)] )", part) is not None
+
+
+def _own_line(line: str) -> str:
+    """``line`` marked as ClearMD's, after its indentation (where ``outside_code`` looks)."""
+    content = line.lstrip(" \t")
+    if not content or content.startswith(MARK):
+        return line
+    return line[: len(line) - len(content)] + MARK + content
+
+
+def _indent_all(text: str, width: int) -> str:
+    return "\n".join(" " * width + line if line else "" for line in text.split("\n"))
 
 
 def _sole_formula(paragraph: Element) -> Element | None:
@@ -684,11 +772,11 @@ def _styled(group: list[_Text]) -> str:
     """Runs of text with their delimiters opened and closed as the properties change."""
     out: list[str] = []
     opened: list[str] = []
-    pending = ""
+    pending: list[str] = []  # spaces between two runs, joined once
     for piece in group:
         lead, core, trail = _split(piece.text)
         if not core:
-            pending += piece.text
+            pending.append(piece.text)
             continue
         wanted = _active(piece.props)
         keep = 0
@@ -696,15 +784,84 @@ def _styled(group: list[_Text]) -> str:
             keep += 1
         out.extend(_closer(key) for key in reversed(opened[keep:]))
         opened = opened[:keep]
-        out.append(pending + lead)
-        pending = ""
+        out.append("".join(pending) + lead)
+        pending.clear()
         for key in wanted:
             if key not in opened:
                 out.append(_opener(key))
                 opened.append(key)
         out.append(inline_code(core) if piece.props.mono else escape_text(core))
-        pending = trail
+        pending.append(trail)
     out.extend(_closer(key) for key in reversed(opened))
-    out.append(pending)
+    out.append("".join(pending))
     # The same joining rules as between pieces: a backtick of the text never glues to a code span.
     return join_pieces(out)
+
+
+# --- Emphasis Markdown can hold -------------------------------------------------------------
+
+_EMPHASIS = ("bold", "italic", "strike")
+
+
+def _kind(char: str) -> str:
+    """CommonMark's classes for the characters around a delimiter run."""
+    if char.isspace():
+        return "space"
+    return "punctuation" if unicodedata.category(char)[0] in "PS" else "word"
+
+
+def _without(props: TextProps, keys: set[str]) -> TextProps:
+    return replace(
+        props,
+        bold=props.bold and "bold" not in keys,
+        italic=props.italic and "italic" not in keys,
+        strike=props.strike and "strike" not in keys,
+    )
+
+
+def _safe_emphasis(group: list[_Text]) -> tuple[list[_Text], int]:
+    """The group with the emphasis Markdown would show as literal ``*`` left out, and how many
+    times. A delimiter between two runs with no space opens only before a word character or after
+    punctuation (left-flanking), and closes only after a word character or before punctuation
+    (right-flanking): ``word**"quoted"**s`` shows its asterisks. Dropping a style moves its
+    delimiter to the next boundary, which is checked again (each style is dropped at most once
+    per run: linear)."""
+    split = [_split(piece.text) for piece in group]
+    cores = [index for index, (_, core, _) in enumerate(split) if core]
+    if len(cores) < 2:
+        return group, 0
+    written = [
+        inline_code(split[i][1]) if group[i].props.mono else escape_text(split[i][1]) for i in cores
+    ]
+    touching = [False] + [
+        not (split[cores[k - 1]][2] or split[cores[k]][0])
+        and all(not group[i].text for i in range(cores[k - 1] + 1, cores[k]))
+        for k in range(1, len(cores))
+    ]
+    props = [group[i].props for i in cores]
+    dropped = 0
+    pending = list(range(len(cores) - 1, 0, -1))
+    while pending:
+        k = pending.pop()
+        if not touching[k]:
+            continue
+        before, after = _kind(written[k - 1][-1]), _kind(written[k][0])
+        left = {key for key in _EMPHASIS if getattr(props[k - 1], key)}
+        right = {key for key in _EMPHASIS if getattr(props[k], key)}
+        if before == "punctuation" and after == "word" and left - right:  # closers fail
+            props[k - 1] = _without(props[k - 1], left - right)
+            dropped += 1
+            if k > 1:
+                pending.append(k - 1)
+        elif after == "punctuation" and before == "word" and right - left:  # openers fail
+            props[k] = _without(props[k], right - left)
+            dropped += 1
+            if k + 1 < len(cores):
+                pending.append(k + 1)
+    if not dropped:
+        return group, 0
+    safe = list(group)
+    for k, index in enumerate(cores):
+        piece = group[index]
+        safe[index] = _Text(piece.text, props[k], piece.link, piece.literal)
+    return safe, dropped

@@ -31,6 +31,8 @@ BAD = [
     "| a | b |",
     "\\",
     "\\`",
+    "\\!",
+    "a\\\\!",
     "a\\",
     "&amp;#58;",
     "# forged",
@@ -72,6 +74,17 @@ PLACES: list[tuple[str, frozenset[str]]] = [
         frozenset({"bullet_list_open"}),
     ),
     ('<text:p text:style-name="P1">{t}</text:p>', frozenset({"blockquote_open"})),
+    (  # a note, then a link whose address holds the text, then a code run: N1 of the verification
+        "<text:p>{t}<text:note><text:note-body><text:p>n</text:p></text:note-body></text:note>"
+        f'<text:a xlink:href="{OK_LINK}">{{t}}</text:a><text:span text:style-name="T7">{{t}}'
+        "</text:span></text:p>",
+        frozenset(),
+    ),
+    (
+        '<text:p><text:a xlink:href="https://ok.example/a`b\\c">x</text:a>'
+        '<text:span text:style-name="T7">{t}</text:span>{t}</text:p>',
+        frozenset(),
+    ),
     ('<text:h text:outline-level="1">{t}</text:h>', frozenset({"heading_open"})),
 ]
 
@@ -86,7 +99,8 @@ def _markdown(tmp_path: Path, body: str) -> str:
 
 def _check(tmp_path: Path, body: str, blocks: frozenset[str] = frozenset()) -> list[str]:
     markdown = _markdown(tmp_path, body)
-    return broken_promises(markdown, allowed_links=frozenset({OK_LINK}), blocks=blocks)
+    allowed = frozenset({OK_LINK, "https://ok.example/a%60b%5Cc"})
+    return broken_promises(markdown, allowed_links=allowed, blocks=blocks)
 
 
 @pytest.mark.parametrize(("place", "blocks"), PLACES)
@@ -111,7 +125,7 @@ def test_a_backtick_next_to_a_code_run_never_reopens_it(tmp_path: Path) -> None:
 
 
 def test_dangerous_neighbours_across_runs_never_break_it(tmp_path: Path) -> None:
-    pieces = ["!", "]", "`", "(http://evil.example/b.png)", ": http://evil.example/r", "["]
+    pieces = ["!", "\\!", "]", "`", "(http://evil.example/b.png)", ": http://evil.example/r", "["]
     broken = {}
     for left, right in itertools.product(pieces, repeat=2):
         body = (

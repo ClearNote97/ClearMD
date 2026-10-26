@@ -34,6 +34,11 @@
 - Every error shows **what happened, in plain words, and what to do**: "This PDF is password-protected.
   Remove the password and try again." Never a traceback, an exception name or an error code alone.
   *(CLI too.)*
+- The same for every **rejection**, so the user knows how to fix it: a file that is skipped before converting
+  (in the batch plan and the summary) and a file that fails while converting both say **which kind** it is
+  (skipped / failed), **the precise reason** and **what to do**. When a limit is the reason, it says the
+  limit and the file's value ("42 MB; the limit is 25 MB"). A reason with nothing the user can do says so
+  ("ClearMD's own output folder: never converted"). *(CLI too.)*
 - Technical details (exception, stack) go to the batch report, under each failed file.
 - One failed file never stops the batch.
 

@@ -137,6 +137,7 @@ table_simplified = "tables with merged cells were simplified (each text stays in
 revisions_dropped = "comments and tracked changes were left out; the text is the final one: {items}"
 images_not_extracted = "images stay inside the document and are shown by their title: {items}"
 formula_kept_as_source = "formulas ClearMD cannot convert to LaTeX are shown as their StarMath source: {items}"
+formatting_dropped = "bold, italic or strike-through that Markdown cannot show between those characters was left out: {items}"
 and_more = " and {count} more"
 
 [note.reason]

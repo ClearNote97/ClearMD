@@ -23,6 +23,7 @@ class NoteKind(StrEnum):
     REVISIONS_DROPPED = "revisions_dropped"
     IMAGES_NOT_EXTRACTED = "images_not_extracted"
     FORMULA_KEPT_AS_SOURCE = "formula_kept_as_source"
+    FORMATTING_DROPPED = "formatting_dropped"
 
     @property
     def key(self) -> str:
