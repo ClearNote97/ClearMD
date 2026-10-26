@@ -17,11 +17,14 @@ from clearmd.backend.services.conversion.markdown_out import (
 
 def test_document_text_never_becomes_a_link_html_or_a_code_span() -> None:
     assert escape_text("<img> [a](b) `x`") == "&lt;img> &#91;a&#93;(b) \\`x\\`"
+    # A backslash is doubled only before what it could escape: "\\section" stays as written.
+    assert escape_text("\\` \\section \\|") == "\\\\\\` \\section \\\\|"
+    assert escape_text("a\\") + escape_text("`") == "a\\\\\\`"  # across pieces too
     assert MARK not in escape_text(f"a{MARK}b")
 
 
 def test_math_keeps_its_meaning_and_loses_its_markdown() -> None:
-    assert escape_math("a <img b ![x](y)") == "a < img b ! [x] (y)"
+    assert escape_math("a <img b ![x](y) `") == "a < img b ! [x] (y) &#96;"
     assert escape_math("a < b") == "a < b"
 
 

@@ -10,6 +10,9 @@ import pyexpat
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 
+# ClearMD's mark for its own block lines (markdown_out.MARK): a document can never carry it.
+_MARK = "\ue000"
+
 # Namespace URIs → the prefixes OpenDocument uses (MathML's default namespace gets "math").
 PREFIXES = {
     "urn:oasis:names:tc:opendocument:xmlns:office:1.0": "office",
@@ -109,7 +112,15 @@ def parse_part(data: bytes, limits: XmlLimits | None = None) -> Element:
             raise XmlRefused(f"more than {limits.max_elements} elements")
         if len(stack) >= limits.max_depth:
             raise XmlRefused(f"nested deeper than {limits.max_depth} levels")
-        element = Element(_name(name), {_name(k): v for k, v in attributes.items()})
+        counts["elements"] += len(attributes)  # an attribute costs like an element
+        if counts["elements"] > limits.max_elements:
+            raise XmlRefused(f"more than {limits.max_elements} elements and attributes")
+        counts["characters"] += sum(len(value) for value in attributes.values())
+        if counts["characters"] > limits.max_characters:
+            raise XmlRefused(f"more than {limits.max_characters} characters")
+        element = Element(
+            _name(name), {_name(k): v.replace(_MARK, "") for k, v in attributes.items()}
+        )
         if stack:
             stack[-1].children.append(element)
         else:
@@ -125,6 +136,7 @@ def parse_part(data: bytes, limits: XmlLimits | None = None) -> Element:
             raise XmlRefused(f"more than {limits.max_characters} characters")
         if not stack:
             return
+        text = text.replace(_MARK, "")
         children = stack[-1].children
         if children and isinstance(children[-1], str):
             children[-1] += text

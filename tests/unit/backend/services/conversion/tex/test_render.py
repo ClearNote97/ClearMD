@@ -136,8 +136,8 @@ def test_inline_and_display_math() -> None:
 
 
 def test_text_inside_math_is_never_touched() -> None:
-    # Only a backtick is escaped: it would pair with a code span of ClearMD's (ADR-0023).
-    assert "$a--b \\`\\`x'' \\%$" in md(doc("$a--b ``x'' \\%$"))
+    # Only a backtick changes, to an entity: it would pair with a code span of ClearMD's (ADR-0023).
+    assert "$a--b &#96;&#96;x'' \\%$" in md(doc("$a--b ``x'' \\%$"))
     assert "$a--b \\%$" in md(doc("$a--b \\%$"))
 
 

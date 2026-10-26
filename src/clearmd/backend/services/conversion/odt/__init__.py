@@ -31,13 +31,23 @@ class _Formulas:
         # Each object read: its tree, and whether it came within MAX_FORMULAS (past the limit an
         # object is still read, for its StarMath source only).
         self._seen: dict[str, tuple[Element | None, bool]] = {}
+        self._results: dict[str, FormulaResult] = {}  # each object translated once
 
     def __call__(self, formula: Element) -> FormulaResult:
-        math, allowed = formula.find("math:math"), True  # a flat document keeps it inline
-        if math is None:
-            math, allowed = self._object(formula.get("xlink:href"))
-        if math is None:
+        inline = formula.find("math:math")  # a flat document keeps it inline
+        if inline is not None:
+            return self._translate(inline, allowed=True)
+        name = object_part(formula.get("xlink:href"))
+        if name is None:  # outside the archive: never read
             return FormulaResult(None)
+        if name not in self._results:
+            math, allowed = self._object(name)
+            self._results[name] = (
+                self._translate(math, allowed=allowed) if math is not None else FormulaResult(None)
+            )
+        return self._results[name]
+
+    def _translate(self, math: Element, *, allowed: bool) -> FormulaResult:
         source = starmath(math)
         if not allowed:
             return FormulaResult(None, source)
@@ -46,10 +56,7 @@ class _Formulas:
         except Unsupported:
             return FormulaResult(None, source)
 
-    def _object(self, href: str) -> tuple[Element | None, bool]:
-        name = object_part(href)
-        if name is None:  # outside the archive: never read
-            return None, False
+    def _object(self, name: str) -> tuple[Element | None, bool]:
         if name not in self._seen:
             allowed = len(self._seen) < MAX_FORMULAS
             try:
@@ -71,6 +78,7 @@ class OdtConverter:
                 styles,
                 formula=_Formulas(package),
                 language=styles.language or _meta_language(package),
+                source_size=len(content.text()),
             )
             markdown = renderer.document(content)
         return ConversionResult(markdown, renderer.notes())

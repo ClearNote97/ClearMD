@@ -11,6 +11,8 @@ import re
 from collections.abc import Callable
 
 MARK = "\ue000"  # starts each block line ClearMD writes itself; stripped from every input
+# Before ASCII punctuation, or at the end of a piece (the next piece may start with some).
+_ESCAPING_BACKSLASH = re.compile(r"\\(?=[!-/:-@\[-`{-~]|$)")
 
 # ClearMD marks the start of every block line it writes itself (headings, list markers, quotes,
 # fences, math, table rows, footnotes); a final pass neutralizes any other line that Markdown
@@ -107,7 +109,10 @@ def outside_code(text: str, fix: Callable[[str], str], *, blank_around: bool = F
 def escape_text(text: str) -> str:
     """Text from the document never becomes a link, an image, a code span or raw HTML (blocks:
     neutralize; neighbours: ``join_pieces``)."""
-    text = text.replace(MARK, "").replace("`", "\\`")
+    # The backslash first: a document's own "\\" before a backtick (or any ASCII punctuation, the
+    # only characters CommonMark lets a backslash escape) must not cancel an escape. Elsewhere it
+    # stays single, so "\\section" reads as written.
+    text = _ESCAPING_BACKSLASH.sub(r"\\\\", text.replace(MARK, "")).replace("`", "\\`")
     return text.replace("<", "&lt;").replace("[", "&#91;").replace("]", "&#93;")
 
 
@@ -117,7 +122,9 @@ def escape_math(text: str) -> str:
     would pair with one of ClearMD's code spans: it is escaped (rare in math)."""
     text = _MATH_TAG.sub("< ", text.replace(MARK, ""))
     text = text.replace("![", "! [").replace("](", "] (")
-    return text.replace("`", "\\`")
+    # Not "\\`": in math a document's backslash before it would cancel the escape; an entity is
+    # never a code delimiter (rare in math, shown as written by a math-aware viewer).
+    return text.replace("`", "&#96;")
 
 
 def join_pieces(parts: list[str]) -> str:

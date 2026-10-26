@@ -202,6 +202,8 @@ ALPHABET = [
     f"\\url{{{OK_LINK}}}",
     "\\includegraphics{http://evil.example/i.png}",
     "\\textless",
+    "\\textbackslash",
+    "\\textbackslash`",
     "\\textasciitilde",
     "\\char96",
     '\\char"E000',

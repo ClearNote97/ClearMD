@@ -34,6 +34,11 @@ from clearmd.backend.services.conversion.odt.tables import table_to_markdown
 from clearmd.backend.services.conversion.odt.xmltree import Element
 
 LINE_BREAK = "  \n"
+MAX_NOTES = 10_000
+# What a document may make ClearMD write beyond its own size (repeated formulas, repeated table
+# cells): the same rule as the author's macros in .tex (ADR-0022), 4x the text plus 1 MiB.
+GROWTH_FACTOR = 4
+GROWTH_EXTRA = 1024**2
 IMAGE_WORD = {"es": "Imagen", "pt": "Imagem", "fr": "Image", "it": "Immagine", "de": "Bild"}
 FORMULA_WORD = {"es": "Fórmula", "pt": "Fórmula", "fr": "Formule", "it": "Formula", "de": "Formel"}
 MAX_SPACES = 256
@@ -149,9 +154,15 @@ class _Counts:
 
 class OdtRenderer:
     def __init__(
-        self, styles: Styles, *, formula: FormulaHandler | None = None, language: str = ""
+        self,
+        styles: Styles,
+        *,
+        formula: FormulaHandler | None = None,
+        language: str = "",
+        source_size: int = 0,
     ) -> None:
         self.styles = styles
+        self._room = GROWTH_FACTOR * source_size + GROWTH_EXTRA
         self.counts = _Counts()
         self.footnotes: list[str] = []
         self._formula = formula
@@ -313,17 +324,22 @@ class OdtRenderer:
         tight = outside_code(text, lambda part: re.sub(r"\n[ \t]*\n+", "\n", part))
         return neutralize(tight, keep_marks=True)
 
+    def _spend(self, size: int) -> bool:
+        """Charge ``size`` characters to the document's growth budget; ``False`` past it."""
+        if size > self._room:
+            self._room = 0
+            return False
+        self._room -= size
+        return True
+
     def _table(self, table: Element) -> str:
-        found = table_to_markdown(table, self._cell)
+        found = table_to_markdown(table, self._cell, self._spend)
         if found.simplified:
             self.counts.tables_simplified += 1
         return block(found.markdown) if found.markdown else ""
 
     def _cell(self, cell: Element) -> str:
-        texts = []
-        for child in cell.walk():
-            if child.tag in {"text:p", "text:h"}:
-                texts.append(self.inline(child, TextProps()))
+        texts = [self.inline(p, TextProps()) for p in _own_paragraphs(cell)]
         return " ".join(text.replace(LINE_BREAK, " ") for text in texts if text)
 
     # --- Inline ------------------------------------------------------------------------------
@@ -429,6 +445,8 @@ class OdtRenderer:
 
     def _formula_markdown(self, formula: Element, *, display: bool) -> str:
         found = self._formula(formula) if self._formula is not None else FormulaResult(None)
+        if found.latex is not None and not self._spend(len(found.latex)):
+            found = FormulaResult(None, None)  # past the growth budget: no more copies
         if found.latex is None:
             self.counts.formulas_kept += 1
             return inline_code(found.source) if found.source else f"*{self._formula_word}*"
@@ -436,11 +454,16 @@ class OdtRenderer:
         return display_math(latex) if display else f"${latex}$"
 
     def _note(self, note: Element) -> str:
+        if len(self.footnotes) >= MAX_NOTES:
+            self._unknown("text:note")
+            return ""
+        number = len(self.footnotes) + 1
+        self.footnotes.append("")  # its number is taken before notes nested in it get theirs
         body = note.find("text:note-body")
-        paragraphs = [p for p in body.walk() if p.tag == "text:p"] if body is not None else []
+        paragraphs = _own_paragraphs(body) if body is not None else []
         texts = [self.inline(p, TextProps()) for p in paragraphs]
-        self.footnotes.append(" ".join(text for text in texts if text))
-        return f"[^{len(self.footnotes)}]"
+        self.footnotes[number - 1] = " ".join(text for text in texts if text)
+        return f"[^{number}]"
 
     def _normalize(self, pieces: list[_Piece]) -> list[_Piece]:
         """ODF whitespace: runs collapse to one space, none at the start or the end."""
@@ -538,6 +561,20 @@ class OdtRenderer:
         if dropped:
             found.append(ConversionNote(NoteKind.REVISIONS_DROPPED, tuple(dropped)))
         return tuple(found)
+
+
+def _own_paragraphs(element: Element) -> list[Element]:
+    """The paragraphs and headings of ``element``, never those nested in them or in notes (they
+    are part of their parent's text): each one is written once, in one pass."""
+    found: list[Element] = []
+    pending = list(reversed(list(element.elements())))
+    while pending:
+        child = pending.pop()
+        if child.tag in {"text:p", "text:h"}:
+            found.append(child)
+        elif child.tag != "text:note":
+            pending.extend(reversed(list(child.elements())))
+    return found
 
 
 def _sole_formula(paragraph: Element) -> Element | None:

@@ -625,3 +625,10 @@ def test_expansions_scale_with_the_document() -> None:
     assert expansion_limit(1024**2) == 10 * 1024
     assert expansion_limit(2 * 1024**2) == 20 * 1024
     assert MacroExpander({}, 2 * 1024**2).max_expansions == 20 * 1024
+
+
+def test_s6_a_backslash_before_a_backtick_never_frees_it() -> None:
+    from support.markdown_guarantee import broken_promises
+
+    text = md(doc("a \\textbackslash` \\verb|<img src=x>| b"))
+    assert broken_promises(text) == []

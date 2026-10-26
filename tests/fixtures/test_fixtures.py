@@ -9,6 +9,7 @@ from build_fixtures import (
     BOMB_UNCOMPRESSED_BYTES,
     DOCUMENTS_DIR,
     FIXED_ZIP_TIME,
+    HTML_DIR,
     MARKERS,
     NON_DETERMINISTIC,
     ODT_DIR,
@@ -16,6 +17,7 @@ from build_fixtures import (
     PDF_PASSWORD,
     TEX_DIR,
     build,
+    build_html,
     build_odt,
     build_tex,
 )
@@ -162,3 +164,20 @@ def test_the_hostile_odt_fixtures_are_what_they_claim() -> None:
     with zipfile.ZipFile(ODT_DIR / "hostile" / "bomb.odt") as archive:
         info = archive.getinfo("content.xml")
         assert info.file_size / info.compress_size > 100
+
+
+def test_the_html_fixtures_are_committed_and_reproducible(tmp_path: Path) -> None:
+    rebuilt = build_html(tmp_path)
+    changed = [
+        name
+        for name, path in rebuilt.items()
+        if not (HTML_DIR / name).is_file() or path.read_bytes() != (HTML_DIR / name).read_bytes()
+    ]
+    assert changed == []
+
+
+def test_the_news_page_has_the_clutter_article_mode_removes() -> None:
+    page = (HTML_DIR / "news.html").read_text(encoding="utf-8")
+    for clutter in ("MENU-FIXTURE", "COOKIES-FIXTURE", "ASIDE-FIXTURE", "FOOTER-FIXTURE"):
+        assert clutter in page
+    assert "fixture-html-article" in page

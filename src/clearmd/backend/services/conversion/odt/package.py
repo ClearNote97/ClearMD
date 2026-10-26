@@ -95,6 +95,8 @@ class OdtPackage:
             info = archive.getinfo(name)
         except KeyError:
             return None
+        if info.flag_bits & 0x1:  # a ZIP-encrypted entry
+            raise ConversionError(ErrorCode.PASSWORD_PROTECTED, f"{name} is encrypted")
         if info.file_size > limit:
             raise ConversionError(ErrorCode.CORRUPT_FILE, f"{name} is larger than allowed")
         try:

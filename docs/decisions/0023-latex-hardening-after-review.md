@@ -35,7 +35,8 @@ made pylatexenc fail, so a whole thesis failed for one bad line, against AC-21.
 - **The Markdown never does what the document did not write as LaTeX** (chosen after three verification rounds,
   checked with a CommonMark parser in `test_output_guarantee.py`). Inline: every path that copies document
   text escapes `<`, `[`, `]` and backticks; pieces written next to each other never form `![` or `](`; math
-  gets only `< ` for an HTML-looking `<tag` and an escaped backtick. Blocks: ClearMD marks the block lines it
+  gets only `< ` for an HTML-looking `<tag` and `&#96;` for a backtick (an escape with a backslash could be
+  cancelled by the document's own backslash before it — found by the audit of feature 003). Blocks: ClearMD marks the block lines it
   writes (U+E000, stripped from the input), and a final pass neutralizes every other line a viewer would read as
   a heading, list, quote, table, fence, rule, setext underline or link reference definition; display-math lines
   that look like a block get a `{}`. Footnote definitions are ClearMD's: a viewer without footnotes may show a

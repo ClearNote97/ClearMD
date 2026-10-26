@@ -45,7 +45,12 @@ def _rows(table: Element) -> list[tuple[Element, bool]]:
     return rows
 
 
-def table_to_markdown(table: Element, render_cell: Callable[[Element], str]) -> Table:
+def table_to_markdown(
+    table: Element,
+    render_cell: Callable[[Element], str],
+    spend: Callable[[int], bool] = lambda _: True,
+) -> Table:
+    """``spend`` charges the characters that repeats add to the document's growth budget."""
     simplified = False
     grid: list[list[str]] = []  # header rows come first: the first row is the header
     cells = 0
@@ -60,14 +65,18 @@ def table_to_markdown(table: Element, render_cell: Callable[[Element], str]) -> 
                 simplified = True
             if cell.get("table:number-rows-spanned") not in {"", "1"}:
                 simplified = True
-            for _ in range(_repeat(cell, "table:number-columns-repeated", not text)):
-                line.append(_cell(text))
-                cells += 1
+            repeat = _repeat(cell, "table:number-columns-repeated", not text)
+            if repeat > 1 and not spend(len(text) * (repeat - 1)):
+                repeat, simplified = 1, True
+            line.extend([_cell(text)] * repeat)
+        rows = _repeat(row, "table:number-rows-repeated", not any(line))
+        if rows > 1 and not spend(sum(map(len, line)) * (rows - 1)):
+            rows, simplified = 1, True
+        cells += len(line) * rows
         if cells > MAX_CELLS:
             simplified = True
             break
-        for _ in range(_repeat(row, "table:number-rows-repeated", not any(line))):
-            grid.append(line)
+        grid.extend([line] * rows)
     grid = [line for line in grid if any(line)]
     if not grid:
         return Table("", simplified)

@@ -77,7 +77,8 @@ Each criterion has an acceptance test named after its id (`tests/acceptance/test
 - [x] **AC-09** Inline and display math are kept as written (`$…$`, `$$…$$`); `\[…\]` and `equation` become
   `$$…$$`; `align`-like environments become `aligned` inside `$$…$$`.
 - [x] **AC-10** Text inside math is never altered by text rules (no Unicode conversion, no escaping), except a
-  backtick (it would pair with a code span of ClearMD's) and an HTML-looking `<tag` (ADR-0023).
+  backtick (written `&#96;`: it would pair with a code span of ClearMD's) and an HTML-looking `<tag`
+  (ADR-0023).
 
 ### Tables and figures
 

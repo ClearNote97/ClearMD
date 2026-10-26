@@ -80,15 +80,16 @@ def _text(element: Element) -> str:
 
 
 def _join(parts: list[str]) -> str:
-    """Pieces of LaTeX in order; a control word never glues to the letter after it."""
-    out = ""
+    """Pieces of LaTeX in order; a control word never glues to the letter after it. Linear:
+    only the end of the previous piece is looked at."""
+    out: list[str] = []
     for part in parts:
         if not part:
             continue
-        if _CONTROL_WORD_END.search(out) and part[0].isalpha():
-            out += " "
-        out += part
-    return out
+        if out and part[0].isalpha() and _CONTROL_WORD_END.search(out[-1][-64:]):
+            out.append(" ")
+        out.append(part)
+    return "".join(out)
 
 
 def _group(latex: str) -> str:
