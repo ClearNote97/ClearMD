@@ -57,18 +57,21 @@ El valor está en el método — un producto pequeño construido como uno serio:
    presupuesto (una bomba de macros se detiene), y el Markdown nunca trae HTML, una imagen remota ni un enlace
    que el documento no escribió como LaTeX — lo comprueban en la suite un parser CommonMark y un fuzz. Un `.odt`
    se lee con un lector XML propio de ClearMD (sin `DOCTYPE`, con límites de tamaño y profundidad), con la misma
-   garantía y un presupuesto para que ningún archivo pequeño se multiplique en un Markdown enorme.
+   garantía y un presupuesto para que ningún archivo pequeño se multiplique en un Markdown enorme. Una página web
+   en **modo artículo** (`--html article`) conserva solo su artículo —sin menús, avisos de cookies ni pies de
+   página—, escrito por ClearMD con la misma garantía: sus imágenes nunca se descargan, y una página sin
+   artículo también la escribe ClearMD completa.
 5. **Medido, no adivinado.** Los benchmarks ([001](./docs/benchmarks/001-conversion-limits.md),
-   [002](./docs/benchmarks/002-tex-converter.md), [003](./docs/benchmarks/003-odt-converter.md)) fijaron los
-   límites y la velocidad de cada formato: el PDF es el cuello de botella por tiempo (~10 páginas/s), el xlsx por
+   [002](./docs/benchmarks/002-tex-converter.md), [003](./docs/benchmarks/003-odt-converter.md),
+   [004](./docs/benchmarks/004-html-article-mode.md)) fijaron los límites y la velocidad de cada formato: el PDF es el cuello de botella por tiempo (~10 páginas/s), el xlsx por
    memoria, una tesis de 300 páginas en LaTeX tarda ~3 s y un informe `.odt` de 300 páginas, menos de un
    segundo. Los
    archivos se convierten del más liviano al más pesado, y el tiempo restante se estima con la velocidad real del
    lote.
 6. **Revisado por ojos independientes.** Una revisión de código, una auditoría de seguridad y una verificación
    adversarial de los arreglos — que encontró huecos reales en la primera ronda, cerrados antes de publicar. Para los
-   conversores de LaTeX y de OpenDocument hicieron falta tres rondas en cada uno: todas están en el historial,
-   con el test que reproduce cada hallazgo.
+   conversores de LaTeX y de OpenDocument hicieron falta tres rondas en cada uno, para el modo artículo dos:
+   todas están en el historial, con el test que reproduce cada hallazgo.
 
 > 🤖 Trabajé esto con un agente de IA (**Claude Code**): yo dirijo — defino el problema, decido el diseño y
 > reviso cada paso; el agente ejecuta y deja todo trazado.
@@ -115,7 +118,7 @@ anteriores._
 | **001** Conversión por lotes — backend + CLI | ✅ lista | 512 tests · revisada |
 | **002** Conversor de `.tex` (con ecuaciones, sin pandoc) | ✅ lista | 807 tests en total · revisada |
 | **003** Conversor de `.odt` (solo librería estándar) | ✅ lista | 1085 tests en total · revisada |
-| **004** Modo artículo para HTML | ⏳ | |
+| **004** Modo artículo para HTML | ✅ lista | 1287 tests en total · revisada |
 | **005** Primera app de escritorio (ttkbootstrap) | ⏳ | |
 | **006** CI + ejecutables para Windows y Linux | ⏳ | |
 | **007–008** Apps en PySide6 y flet | ⏳ | |
@@ -138,6 +141,7 @@ clearmd ~/Documentos/proyecto                # una carpeta completa, con subcarp
 clearmd tesis/ --output-root ~/Escritorio    # resultados en ~/Escritorio/ClearMD_Output
 clearmd proyecto/ --dry-run                  # ver el plan sin escribir nada
 clearmd informe.pdf --lang es                # mensajes en español
+clearmd pagina_guardada.html --html article  # solo el artículo de la página
 ```
 
 | Opción | Qué hace |
@@ -147,13 +151,14 @@ clearmd informe.pdf --lang es                # mensajes en español
 | `--output-root DIR` | Crear `ClearMD_Output` dentro de `DIR`. |
 | `--dry-run` | Mostrar qué pasaría, sin escribir nada. |
 | `--open` | Abrir la carpeta de resultados al terminar. |
+| `--html {full,article}` | Páginas web: la página completa (por defecto) o solo su artículo. |
 | `--lang {en,es}` | Idioma de esta ejecución. |
 | `-q`, `--quiet` | Solo el resumen y los errores. |
 
 **Códigos de salida:** `0` todo convertido · `1` algún archivo falló o se detuvo · `2` error de uso o ninguna
 entrada válida · `3` hay resultados existentes y nadie puede responder · `130` cancelado. **Configuración**
 (opcional): `settings.toml` en tu carpeta de configuración de usuario (en Linux `~/.config/ClearMD/`) —
-`language = "es"`, `on_existing_output = "skip"`, `recursive = false`…
+`language = "es"`, `on_existing_output = "skip"`, `recursive = false`, `html_strategy = "article"`…
 
 > 🔒 ClearMD nunca usa internet. Si guardas los resultados en una carpeta de OneDrive, Google Drive o Dropbox,
 > esa aplicación sí puede subirlos a la nube — eso lo hace la app de sincronización, no ClearMD.

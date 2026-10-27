@@ -38,24 +38,24 @@ do not. Either way, nothing in the Markdown makes a viewer contact the page's se
 
 Each criterion has an acceptance test named after its id (`tests/acceptance/test_004_html_article_mode.py`).
 
-- [ ] **AC-01** With the default settings, an `.html` converts in full exactly as in feature 001.
-- [ ] **AC-02** With `html_strategy = "article"` in the settings, or `--html article` for one run, an `.html`
+- [x] **AC-01** With the default settings, an `.html` converts in full exactly as in feature 001.
+- [x] **AC-02** With `html_strategy = "article"` in the settings, or `--html article` for one run, an `.html`
   converts to its article only: the menu, the footer and the cookie banner of the fixture page are gone, its
   title and article text are there. `--html full` overrides an `article` setting.
-- [ ] **AC-03** The summary shows the strategy: `HTML (Article)`.
-- [ ] **AC-04** The article keeps headings, emphasis, lists (nested, ordered), links, quotes, code and tables, as
+- [x] **AC-03** The summary shows the strategy: `HTML (Article)`.
+- [x] **AC-04** The article keeps headings, emphasis, lists (nested, ordered), links, quotes, code and tables, as
   the table above says.
-- [ ] **AC-05** Images become placeholders with their alt text, counted in a note; nothing but the Markdown and the
+- [x] **AC-05** Images become placeholders with their alt text, counted in a note; nothing but the Markdown and the
   summary is written, and the Markdown links to no image.
-- [ ] **AC-06** A page where no article is found converts in full, written by ClearMD with the same guarantee, with
+- [x] **AC-06** A page where no article is found converts in full, written by ClearMD with the same guarantee, with
   a note saying so; the exit code stays 0.
-- [ ] **AC-07** The output guarantee of ADR-0023 holds for article mode (checked with a CommonMark parser and a
+- [x] **AC-07** The output guarantee of ADR-0023 holds for article mode (checked with a CommonMark parser and a
   seeded fuzz): hostile text, links with `javascript:` or entities, and raw HTML in the page never become
   links, images, HTML or block structure in the Markdown.
-- [ ] **AC-08** No network is used: converting in article mode works with the network guard of the tests on.
-- [ ] **AC-09** Notes are shown in the user's language (EN/ES).
-- [ ] **AC-10** The CLI process never imports trafilatura (it runs in the worker, as markitdown does).
-- [ ] **AC-11** The benchmark measures the article strategy and `schemas/limits.py` covers it.
+- [x] **AC-08** No network is used: converting in article mode works with the network guard of the tests on.
+- [x] **AC-09** Notes are shown in the user's language (EN/ES).
+- [x] **AC-10** The CLI process never imports trafilatura (it runs in the worker, as markitdown does).
+- [x] **AC-11** The benchmark measures the article strategy and `schemas/limits.py` covers it.
 
 ## Actors and data
 

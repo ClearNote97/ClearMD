@@ -57,16 +57,18 @@ The value is in the method — a small product built like a serious one:
    Markdown never holds HTML, a remote image or a link the document did not write as LaTeX — checked in the
    test suite by a CommonMark parser and a seeded fuzz. An `.odt` is read with ClearMD's own XML reader (no
    `DOCTYPE`, limits on size and depth), with the same guarantee and a budget so that no small file can
-   multiply into a huge Markdown.
+   multiply into a huge Markdown. A web page in **article mode** (`--html article`) keeps only its article —
+   no menus, cookie banners or footers — written by ClearMD with the same guarantee: its images are never
+   fetched, and a page with no article is written whole by ClearMD too.
 5. **Measured, not guessed.** Benchmarks ([001](./docs/benchmarks/001-conversion-limits.md),
-   [002](./docs/benchmarks/002-tex-converter.md), [003](./docs/benchmarks/003-odt-converter.md)) set the limits
-   and the speed of each format: PDF is the time bottleneck (~10 pages/s), xlsx the memory one, a 300-page
+   [002](./docs/benchmarks/002-tex-converter.md), [003](./docs/benchmarks/003-odt-converter.md),
+   [004](./docs/benchmarks/004-html-article-mode.md)) set the limits and the speed of each format: PDF is the time bottleneck (~10 pages/s), xlsx the memory one, a 300-page
    LaTeX thesis takes ~3 s and a 300-page `.odt` report under a second. Files are converted from
    the cheapest to the most expensive, and the time left is estimated from the real speed of the batch.
 6. **Reviewed by independent eyes.** A code review, a security audit and an adversarial verification of the
    fixes — which found real gaps in the first round of fixes, closed before shipping. For the LaTeX and the
-   OpenDocument converters it took three rounds each: every one is in the history, with the test that
-   reproduces every finding.
+   OpenDocument converters it took three rounds each, for the article mode two: every one is in the history,
+   with the test that reproduces every finding.
 
 > 🤖 I built this with an AI agent (**Claude Code**): I direct — I define the problem, decide the design and
 > review every step; the agent executes and leaves everything traced.
@@ -112,7 +114,7 @@ _Plus the failed and skipped files with a plain-words reason, and the history of
 | **001** Batch conversion — backend + CLI | ✅ done | 512 tests · reviewed |
 | **002** `.tex` converter (math preserved, no pandoc) | ✅ done | 807 tests in total · reviewed |
 | **003** `.odt` converter (standard library only) | ✅ done | 1085 tests in total · reviewed |
-| **004** HTML article mode | ⏳ | |
+| **004** HTML article mode | ✅ done | 1287 tests in total · reviewed |
 | **005** First desktop app (ttkbootstrap) | ⏳ | |
 | **006** CI + Windows/Linux executables | ⏳ | |
 | **007–008** PySide6 and flet apps | ⏳ | |
@@ -135,6 +137,7 @@ clearmd ~/Documents/project              # a whole folder, subfolders included
 clearmd thesis/ --output-root ~/Desktop  # results in ~/Desktop/ClearMD_Output
 clearmd project/ --dry-run               # see the plan, write nothing
 clearmd report.pdf --lang es             # messages in Spanish
+clearmd saved_page.html --html article   # only the page's article
 ```
 
 | Option | What it does |
@@ -144,13 +147,14 @@ clearmd report.pdf --lang es             # messages in Spanish
 | `--output-root DIR` | Create `ClearMD_Output` inside `DIR`. |
 | `--dry-run` | Show what would happen; write nothing. |
 | `--open` | Open the results folder when done. |
+| `--html {full,article}` | Web pages: the whole page (default) or only its article. |
 | `--lang {en,es}` | Language for this run. |
 | `-q`, `--quiet` | Only the summary and errors. |
 
 **Exit codes:** `0` all converted · `1` some file failed or was stopped · `2` usage error or no valid input ·
 `3` outputs exist and nobody can answer · `130` cancelled. **Settings** (optional): `settings.toml` in your
 user configuration folder (on Linux `~/.config/ClearMD/`) — `language = "es"`, `on_existing_output = "skip"`,
-`recursive = false`…
+`recursive = false`, `html_strategy = "article"`…
 
 > 🔒 ClearMD never uses the internet. If you save the results in a folder synced by OneDrive, Google Drive or
 > Dropbox, that app may upload them — that is the sync app, not ClearMD.

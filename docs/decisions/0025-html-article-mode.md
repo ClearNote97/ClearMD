@@ -1,6 +1,6 @@
 # ADR-0025: HTML article mode — trafilatura finds the article, ClearMD writes it
 
-- **Status:** accepted (decisions confirmed by the author, 2026-10-25)
+- **Status:** accepted (decisions confirmed by the author, 2026-10-25; refined after review, 2026-10-27)
 - **Date:** 2026-10-25
 - **Refines:** ADR-0006 (HTML "article mode"), ADR-0012 (the `html_strategy` setting).
 

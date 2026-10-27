@@ -10,6 +10,6 @@
       placeholders; the full-page fallback with its note (AC-02, AC-04 – AC-06, AC-09, AC-10).
 - [x] **T05 — Guarantee and acceptance.** The CommonMark check and fuzz for article mode;
       `tests/acceptance/test_004_html_article_mode.py` (AC-07, AC-08).
-- [ ] **T06 — Benchmark and close.** An article case in the benchmark and `limits.py` (AC-11); READMEs,
+- [x] **T06 — Benchmark and close.** An article case in the benchmark and `limits.py` (AC-11); READMEs,
       architecture, roadmap, spec ticked; gate; review by `code-reviewer` and a security audit with runnable
       proofs, then an adversarial verification of the fixes; ADR-0025 accepted.

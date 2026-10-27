@@ -26,10 +26,12 @@ already tested (ADR-0001).
 - [x] **003 — `.odt` converter** ([spec](./features/003_odt-converter/spec.md)): standard library only, XML
       read safely (pyexpat, DOCTYPE refused, limits), formulas as LaTeX, images as placeholders, the output
       guarantee shared with `.tex`, a growth budget for everything written again (ADR-0024).
+- [x] **004 — HTML article mode** ([spec](./features/004_html-article-mode/spec.md)): trafilatura finds the
+      article, ClearMD writes it with the shared guarantee (a page with no article too), `--html full|article`
+      and the `html_strategy` setting, the strategy in the plan and the summary (ADR-0025).
 
 ## Next
 
-- [ ] **004 — HTML article mode** (second strategy for `.html`).
 - [ ] **005 — Presenter (MVP) + ttkbootstrap GUI**, following `spec/contracts/ux.md`: help window, welcome,
       settings window, progress, splash, output folder choice (remembered).
 - [ ] **006 — CI:** tests on Linux and Windows (Python 3.12 and 3.14) + executables in GitHub Releases;
