@@ -42,15 +42,15 @@ def test_every_skip_reason_has_an_action_in_every_language(
     ("item", "expected"),
     [
         (SkippedItem(Path("a.pdf"), SkipReason.TOO_LARGE, measured=300 * MIB, limit=250 * MIB),
-         "too large (300 MB; the limit is 250 MB)"),
+         "too large (300 MB; limit 250 MB)"),
         (SkippedItem(Path("a.docx"), SkipReason.ARCHIVE_TOO_LARGE, measured=3 * GIB, limit=GIB),
-         "it would decompress to 3.0 GB; the limit is 1.0 GB"),
+         "would decompress to 3.0 GB; limit 1.0 GB"),
         (SkippedItem(Path("a.docx"), SkipReason.ARCHIVE_RATIO, measured=4210.4, limit=100),
-         "it would grow 4,210 times when decompressed; the limit is 100"),
+         "grows 4,210 times when decompressed; limit 100 (possible zip bomb)"),
         (SkippedItem(Path("a.docx"), SkipReason.ARCHIVE_ENTRIES, measured=80_000, limit=50_000),
-         "it holds 80,000 files inside; the limit is 50,000"),
+         "holds 80,000 files; limit 50,000"),
         (SkippedItem(Path("d"), SkipReason.TOO_DEEP, is_dir=True, measured=140, limit=100),
-         "folders nested too deeply (140 levels; the limit is 100)"),
+         "folders nested too deeply (140 levels; limit 100)"),
     ],
 )  # fmt: skip
 def test_a_limit_says_the_files_value_and_the_limit(item: SkippedItem, expected: str) -> None:
@@ -60,25 +60,27 @@ def test_a_limit_says_the_files_value_and_the_limit(item: SkippedItem, expected:
 def test_the_line_says_the_kind_the_reason_and_what_to_do() -> None:
     item = SkippedItem(Path("a.pdf"), SkipReason.TOO_LARGE, measured=300 * MIB, limit=250 * MIB)
     assert skipped_line(EN, item, "a.pdf") == (
-        "– Skipped: a.pdf — too large (300 MB; the limit is 250 MB). "
-        "Split it into smaller files and try again."
+        "– Skipped: a.pdf — too large (300 MB; limit 250 MB). Split it into smaller files."
     )
     assert skipped_line(ES, item, "a.pdf").startswith(
         "– Omitido: a.pdf — demasiado grande (300 MB;"
     )
 
 
-def test_nothing_to_do_is_said_too() -> None:
-    item = SkippedItem(Path("ClearMD_Output"), SkipReason.OUTPUT_FOLDER, is_dir=True)
-    assert "nothing to do" in skip_action(EN, item).lower()
+def test_an_unsupported_format_says_so_and_where_to_look() -> None:
+    item = SkippedItem(Path("a.xyz"), SkipReason.UNSUPPORTED_FORMAT)
+    assert skipped_line(ES, item, "a.xyz") == (
+        "– Omitido: a.xyz — formato no soportado por ClearMD."
+        " Revisa los formatos compatibles en la ayuda."
+    )
 
 
 def test_a_stop_says_the_limit_it_reached() -> None:
     item = _planned()
     timed = ConversionOutcome(item, OutcomeStatus.STOPPED, ErrorCode.TIMED_OUT, limit=600)
     memory = ConversionOutcome(item, OutcomeStatus.STOPPED, ErrorCode.OUT_OF_MEMORY, limit=4 * GIB)
-    assert "the limit of 10 min" in stopped_message(EN, timed)
-    assert "the limit of 4.0 GB" in stopped_message(EN, memory)
+    assert stopped_message(EN, timed) == "Exceeded the time limit (10 min)."
+    assert stopped_message(EN, memory) == "Exceeded the memory limit (4.0 GB)."
     assert "10 min" in stopped_message(ES, timed)
 
 

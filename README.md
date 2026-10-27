@@ -80,8 +80,8 @@ name, and a zip bomb disguised as a Word file:
 
 ```text
 $ clearmd Thesis/
-– Skipped: invoice.docx — it would grow 338 times when decompressed; the limit is 100. A file that grows
-  that much is how a zip bomb looks; if you trust it, open it in its program, save a new copy and try again.
+– Skipped: invoice.docx — grows 338 times when decompressed; limit 100 (possible zip bomb). If you trust
+  it, save a new copy from its program.
 [1/5] Report.docx
 [2/5] scan · less than a minute left
 [3/5] report.pdf · less than a minute left

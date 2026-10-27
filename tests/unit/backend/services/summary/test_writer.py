@@ -99,9 +99,8 @@ EXPECTED_EN = "\n".join(
         "| `project/scan` | `OutputMD/project/scan.md` | DOCX, detected by content | <1 s |",
         "",
         "## Stopped",
-        "- `project/manual.pdf` — Converting this file took longer than the limit of 10 min,"
-        " so it was stopped. It ran 10:00 (about 67% by the estimate)."
-        " Try splitting it into smaller files.",
+        "- `project/manual.pdf` — Exceeded the time limit (10 min). Estimated progress: 67% after"
+        " 10:00. Try splitting it into smaller files.",
         "",
         "## Failed",
         "- `project/contract.pdf` — This file is password-protected."
@@ -109,9 +108,8 @@ EXPECTED_EN = "\n".join(
         "  <details><summary>Technical detail</summary>PDFPasswordIncorrect</details>",
         "",
         "## Skipped",
-        "- `project/.cache/` — hidden. Nothing to do; if you want it converted, make it visible"
-        " first.",
-        "- `project/old.md` — already Markdown. Nothing to do: it is already Markdown.",
+        "- `project/.cache/` — hidden file. Make it visible to convert it.",
+        "- `project/old.md` — already Markdown. It needs no conversion.",
         "",
         "<!-- clearmd:history -->",
         "## History",

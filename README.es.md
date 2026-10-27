@@ -82,8 +82,8 @@ con el mismo nombre y una bomba ZIP disfrazada de Word:
 
 ```text
 $ clearmd Tesis/ --lang es
-– Omitido: factura.docx — al descomprimirse crecería 338 veces; el límite es 100. Un archivo que crece
-  tanto es como se ve una bomba ZIP; si confías en él, ábrelo en su programa, guarda una copia nueva e inténtalo de nuevo.
+– Omitido: factura.docx — crece 338 veces al descomprimirse; límite 100 (posible bomba ZIP). Si es
+  confiable, guarda una copia nueva desde su programa.
 [1/5] escaneado
 [2/5] Informe.docx · faltan menos de un minuto
 [3/5] informe.pdf · faltan menos de un minuto
