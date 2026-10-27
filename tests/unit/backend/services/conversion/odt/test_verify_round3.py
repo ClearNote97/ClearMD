@@ -11,8 +11,8 @@ from support.markdown_guarantee import broken_promises
 
 from clearmd.backend.services.conversion.markdown_out import link_target
 from clearmd.backend.services.conversion.odt import OdtConverter
-from clearmd.backend.services.conversion.odt.xmltree import XmlRefused, parse_part
 from clearmd.backend.services.conversion.tex.render import render_latex
+from clearmd.backend.services.conversion.xmltree import XmlRefused, parse_part
 
 PARSER = MarkdownIt("commonmark")
 MONO = '<text:span text:style-name="T7">{}</text:span>'

@@ -31,7 +31,7 @@ from clearmd.backend.services.conversion.markdown_out import (
 )
 from clearmd.backend.services.conversion.odt.styles import Role, Styles, TextProps
 from clearmd.backend.services.conversion.odt.tables import table_to_markdown
-from clearmd.backend.services.conversion.odt.xmltree import Element, int_attribute
+from clearmd.backend.services.conversion.xmltree import Element, int_attribute
 
 LINE_BREAK = "  \n"
 MAX_NOTES = 10_000

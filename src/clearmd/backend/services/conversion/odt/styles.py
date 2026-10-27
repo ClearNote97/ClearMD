@@ -8,7 +8,7 @@ A loop in a parent chain stops; a missing style is plain.
 from dataclasses import dataclass, replace
 from enum import Enum
 
-from clearmd.backend.services.conversion.odt.xmltree import Element, int_attribute
+from clearmd.backend.services.conversion.xmltree import Element, int_attribute
 
 MONOSPACE_FAMILIES = frozenset(
     {

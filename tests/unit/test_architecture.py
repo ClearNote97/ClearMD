@@ -7,7 +7,7 @@
 | clearmd.i18n                            | clearmd.i18n                                         |
 | clearmd.backend.services                | third-party; clearmd.backend (not api), clearmd.i18n |
 | …services.conversion.odt, .markdown_out | standard library only (ADR-0006, ADR-0024); odt also |
-|                                         | schemas, markdown_out, safe_files and itself         |
+| …services.conversion.xmltree            | schemas, markdown_out, safe_files, xmltree, itself   |
 | clearmd.backend.api                     | third-party; clearmd.backend, clearmd.i18n           |
 | clearmd.frontend                        | third-party; clearmd.backend.api, .schemas, i18n,    |
 |                                         | clearmd.frontend                                     |
@@ -53,10 +53,13 @@ RULES: dict[str, Rule] = {
             "clearmd.backend.schemas",
             "clearmd.backend.services.conversion.markdown_out",
             "clearmd.backend.services.conversion.safe_files",
+            "clearmd.backend.services.conversion.xmltree",
             "clearmd.backend.services.conversion.odt",
         ),
     ),
     "clearmd.backend.services.conversion.markdown_out": Rule(False, ()),
+    # The XML reader shared by .odt and the article mode (004): the standard library only.
+    "clearmd.backend.services.conversion.xmltree": Rule(False, ()),
     "clearmd.backend.api": Rule(True, ("clearmd.backend", "clearmd.i18n")),
     "clearmd.frontend": Rule(
         True, ("clearmd.backend.api", "clearmd.backend.schemas", "clearmd.i18n", "clearmd.frontend")

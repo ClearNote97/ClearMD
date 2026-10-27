@@ -7,7 +7,7 @@ formula falls back to its StarMath source: never half a formula. The depth is bo
 
 import re
 
-from clearmd.backend.services.conversion.odt.xmltree import Element
+from clearmd.backend.services.conversion.xmltree import Element
 
 MAX_DEPTH = 64
 STARMATH = "StarMath 5.0"

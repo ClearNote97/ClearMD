@@ -4,7 +4,7 @@ import time
 
 import pytest
 
-from clearmd.backend.services.conversion.odt.xmltree import (
+from clearmd.backend.services.conversion.xmltree import (
     Element,
     XmlLimits,
     XmlRefused,

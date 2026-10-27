@@ -1,7 +1,8 @@
 """A minimal element tree for untrusted XML, built by ``pyexpat`` under ClearMD's limits (ADR-0024).
 
-``xml.etree`` gives no hook to refuse a ``DOCTYPE`` before it is processed; here any document type
-or entity declaration refuses the part (OpenDocument never uses them), whatever the expat version.
+Shared by the ``.odt`` converter and the HTML article mode (ADR-0025). ``xml.etree`` gives no hook
+to refuse a ``DOCTYPE`` before it is processed; here any document type or entity declaration
+refuses the part (neither OpenDocument nor trafilatura's XML uses them), whatever the expat version.
 Elements, nesting depth and characters are counted while parsing; the tree is built with an
 explicit stack and walked without recursion.
 """

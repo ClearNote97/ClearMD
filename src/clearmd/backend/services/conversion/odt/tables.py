@@ -9,7 +9,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from clearmd.backend.services.conversion.markdown_out import MARK
-from clearmd.backend.services.conversion.odt.xmltree import Element, int_attribute
+from clearmd.backend.services.conversion.xmltree import Element, int_attribute
 
 MAX_REPEAT = 64
 MAX_CELLS = 100_000

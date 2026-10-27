@@ -11,13 +11,13 @@ from types import TracebackType
 from typing import IO, Self
 
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
-from clearmd.backend.services.conversion.odt.xmltree import (
+from clearmd.backend.services.conversion.safe_files import open_regular_file
+from clearmd.backend.services.conversion.xmltree import (
     Element,
     XmlLimits,
     XmlRefused,
     parse_part,
 )
-from clearmd.backend.services.conversion.safe_files import open_regular_file
 
 ODT_MIME = "application/vnd.oasis.opendocument.text"
 ODF_MIME_PREFIX = "application/vnd.oasis.opendocument."

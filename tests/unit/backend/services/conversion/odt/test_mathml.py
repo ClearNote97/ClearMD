@@ -9,7 +9,7 @@ from support import ODT_DIR
 from clearmd.backend.schemas.notes import NoteItem, NoteKind
 from clearmd.backend.services.conversion.odt import OdtConverter
 from clearmd.backend.services.conversion.odt.mathml import Unsupported, to_latex
-from clearmd.backend.services.conversion.odt.xmltree import parse_part
+from clearmd.backend.services.conversion.xmltree import parse_part
 
 NS = 'xmlns="http://www.w3.org/1998/Math/MathML"'
 

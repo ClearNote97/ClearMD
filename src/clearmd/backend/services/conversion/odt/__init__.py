@@ -8,7 +8,7 @@ from clearmd.backend.services.conversion.odt.mathml import Unsupported, starmath
 from clearmd.backend.services.conversion.odt.package import OdtPackage, object_part
 from clearmd.backend.services.conversion.odt.render import FormulaResult, OdtRenderer
 from clearmd.backend.services.conversion.odt.styles import Styles
-from clearmd.backend.services.conversion.odt.xmltree import Element
+from clearmd.backend.services.conversion.xmltree import Element
 
 # Distinct formula objects read per document (as many as a ZIP may hold, ADR-0015); each one is
 # read once however many times it is referenced, so a reference cannot multiply the work.
