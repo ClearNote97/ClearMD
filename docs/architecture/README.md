@@ -55,6 +55,7 @@ a fresh process).
 | | `conversion/tex/` | ClearMD's own LaTeX converter (feature 002, ADR-0006/0022): `source` (real encoding), `context` (pylatexenc specs), `includes` (inside the folder only), `macros` (budgeted expansion), `render` + `tables` (the subset, written through `markdown_out`), `nodes` (iterative walks), `images` (links from the output file), `document` (includes spliced in place, then one render). |
 | | `detection/` | Extension (CLI process), magika by content (worker), only for files without an extension. |
 | | `summary/` | `Resumen_ClearMD.md`: name table, sections (including “Converted with notes”), history, escaping of untrusted names. |
+| | `rejections` | How a rejection is told (UX contract §3): its kind, the precise reason with the file's value and the limit, and what to do; one wording for the CLI, the summary and the GUIs (exported by the facade). |
 | | `settings_store`, `clock` | `settings.toml` on each OS (platformdirs); the system clock. |
 | `frontend` | `cli/app.py` | Arguments, settings and language, prompt, dry run, progress, Ctrl+C, summary, `--open`, exit codes. |
 | `i18n` | | EN/ES catalogs, plain-word durations, stopwatch time, gigabytes per language. |

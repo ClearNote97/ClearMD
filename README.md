@@ -80,13 +80,14 @@ name, and a zip bomb disguised as a Word file:
 
 ```text
 $ clearmd Thesis/
-– invoice.docx — this file looks damaged or unsafe
+– Skipped: invoice.docx — it would grow 338 times when decompressed; the limit is 100. A file that grows
+  that much is how a zip bomb looks; if you trust it, open it in its program, save a new copy and try again.
 [1/5] Report.docx
 [2/5] scan · less than a minute left
 [3/5] report.pdf · less than a minute left
 [4/5] data.xlsx · less than a minute left
 [5/5] contract.pdf · less than a minute left
-✗ contract.pdf — This file is password-protected. Remove the password and try again.
+✗ Failed: contract.pdf — This file is password-protected. Remove the password and try again.
 4 converted · 1 skipped · 1 failed
 Results: ClearMD_Output
 ```

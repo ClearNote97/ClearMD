@@ -16,7 +16,15 @@ from importlib.metadata import version
 from pathlib import Path
 from typing import TextIO
 
-from clearmd.backend.api import CancelToken, load_settings, plan_batch, run_batch
+from clearmd.backend.api import (
+    CancelToken,
+    failed_line,
+    load_settings,
+    plan_batch,
+    run_batch,
+    skipped_line,
+    stopped_message,
+)
 from clearmd.backend.schemas.errors import ErrorCode
 from clearmd.backend.schemas.events import BatchEvent, ConversionFinished, ConversionStarted
 from clearmd.backend.schemas.models import (
@@ -24,7 +32,6 @@ from clearmd.backend.schemas.models import (
     BatchReport,
     OutcomeStatus,
     PlannedConversion,
-    SkippedItem,
 )
 from clearmd.backend.schemas.settings import SettingsWarning
 from clearmd.i18n import (
@@ -133,13 +140,13 @@ class _Progress:
                 line = self._catalog.text(
                     "cli.stopped",
                     name=name,
+                    message=stopped_message(self._catalog, outcome),
                     elapsed=self._catalog.clock(outcome.seconds),
                     percent=outcome.share_done,
                     action=self._catalog.text(outcome.error.action_key),
                 )
             else:
-                message = self._catalog.error(outcome.error)
-                line = self._catalog.text("cli.failed", name=name, message=message)
+                line = failed_line(self._catalog, outcome, name)
             print(line, file=self._stream)
             if outcome.error is ErrorCode.PERMISSION_DENIED and not self._hinted:
                 self._hinted = True
@@ -179,24 +186,12 @@ def _shown(path: Path, is_dir: bool) -> str:
     return _p(f"{path.name}/" if is_dir else path.name)
 
 
-def _skip_reason(catalog: Catalog, item: SkippedItem) -> str:
-    if item.needed_memory is not None and item.memory_limit is not None:
-        return catalog.text(
-            item.reason.key,
-            needed=catalog.gigabytes(item.needed_memory),
-            limit=catalog.gigabytes(item.memory_limit),
-        )
-    return catalog.text(item.reason.key)
-
-
 def _print_plan_notes(catalog: Catalog, plan: BatchPlan, *, quiet: bool, stream: TextIO) -> None:
     for problem in plan.input_errors:
         print(catalog.text("cli.input_not_found", path=_p(problem.path)), file=stream)
     if not quiet:
         for item in plan.skipped:
-            name = _shown(item.path, item.is_dir)
-            line = catalog.text("cli.skipped", name=name, reason=_skip_reason(catalog, item))
-            print(line, file=stream)
+            print(skipped_line(catalog, item, _shown(item.path, item.is_dir)), file=stream)
     for warning in plan.warnings:
         line = catalog.text(
             "cli.warning_slow",

@@ -86,9 +86,26 @@ class _Scanner:
         self.skipped: list[SkippedItem] = []
         self.errors: list[InputError] = []
 
-    def _skip(self, path: Path, reason: SkipReason, origin: Path, *, is_dir: bool = False) -> None:
+    def _skip(
+        self,
+        path: Path,
+        reason: SkipReason,
+        origin: Path,
+        *,
+        is_dir: bool = False,
+        measured: float | None = None,
+        limit: float | None = None,
+    ) -> None:
         self.skipped.append(
-            SkippedItem(path, reason, is_dir=is_dir, input=origin, input_is_dir=origin.is_dir())
+            SkippedItem(
+                path,
+                reason,
+                is_dir=is_dir,
+                measured=measured,
+                limit=limit,
+                input=origin,
+                input_is_dir=origin.is_dir(),
+            )
         )
 
     def add_input(self, source: Path) -> None:
@@ -113,7 +130,9 @@ class _Scanner:
         self, path: Path, origin: Path, relative: Path, size: int, *, input_is_dir: bool
     ) -> None:
         reason = _file_rule(path, size, self.limits)
-        if reason is not None:
+        if reason is SkipReason.TOO_LARGE:
+            self._skip(path, reason, origin, measured=size, limit=self.limits.max_file_size)
+        elif reason is not None:
             self._skip(path, reason, origin)
         else:
             self.candidates.append(Candidate(path, origin, relative, input_is_dir, size))
@@ -124,7 +143,15 @@ class _Scanner:
         while pending:
             folder, relative = pending.pop()
             if len(relative.parts) > MAX_DEPTH:
-                self._skip(folder, SkipReason.TOO_DEEP, origin, is_dir=True)
+                depth = len(relative.parts)  # the file's value and the limit (UX contract §3)
+                self._skip(
+                    folder,
+                    SkipReason.TOO_DEEP,
+                    origin,
+                    is_dir=True,
+                    measured=depth,
+                    limit=MAX_DEPTH,
+                )
                 continue
             subfolders = self._scan_folder(origin, folder, relative)
             pending.extend(reversed(subfolders))

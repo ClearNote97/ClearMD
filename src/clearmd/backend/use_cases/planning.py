@@ -20,7 +20,7 @@ from clearmd.backend.schemas.models import (
     PlanWarning,
     SkippedItem,
 )
-from clearmd.backend.use_cases.archive import inspect_archive, is_unsafe
+from clearmd.backend.use_cases.archive import inspect_archive, unsafe_reason
 from clearmd.backend.use_cases.paths import (
     NameRequest,
     keeps_output_inside,
@@ -81,9 +81,13 @@ def build_plan(
         if detection.format in ZIP_BASED:
             archive = inspect_archive(candidate.path, limits.max_zip_entries)
             if archive is not None:
-                if is_unsafe(archive, limits):
+                unsafe = unsafe_reason(archive, limits)
+                if unsafe is not None:
+                    reason, measured, limit = unsafe
                     skipped.append(
-                        SkippedItem(candidate.path, SkipReason.UNSAFE_ARCHIVE, output_root=root)
+                        SkippedItem(
+                            candidate.path, reason, measured=measured, limit=limit, output_root=root
+                        )
                     )
                     continue
                 size = archive.text_bytes
@@ -96,8 +100,8 @@ def build_plan(
                 SkippedItem(
                     candidate.path,
                     SkipReason.TOO_MUCH_MEMORY,
-                    needed_memory=needed,
-                    memory_limit=limits.worker_memory,
+                    measured=needed,
+                    limit=limits.worker_memory,
                     output_root=root,
                 )
             )

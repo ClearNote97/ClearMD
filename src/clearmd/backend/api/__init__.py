@@ -16,12 +16,30 @@ from clearmd.backend.schemas.models import (
 )
 from clearmd.backend.schemas.settings import Settings, SettingsWarning
 from clearmd.backend.services import settings_store
+from clearmd.backend.services.rejections import (
+    failed_line,
+    skip_action,
+    skip_reason,
+    skipped_line,
+    stopped_message,
+)
 from clearmd.backend.use_cases.cancel import CancelToken
 from clearmd.backend.use_cases.execution import execute_plan
 from clearmd.backend.use_cases.planning import build_plan
 from clearmd.backend.use_cases.reporting import by_output_root
 
-__all__ = ["CancelToken", "load_settings", "plan_batch", "run_batch", "settings_path"]
+__all__ = [
+    "CancelToken",
+    "failed_line",
+    "load_settings",
+    "plan_batch",
+    "run_batch",
+    "settings_path",
+    "skip_action",
+    "skip_reason",
+    "skipped_line",
+    "stopped_message",
+]
 
 
 def load_settings() -> tuple[Settings, tuple[SettingsWarning, ...]]:

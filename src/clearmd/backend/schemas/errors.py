@@ -39,7 +39,9 @@ class SkipReason(StrEnum):
     TOO_LARGE = "too_large"
     ALREADY_MARKDOWN = "already_markdown"
     ZIP_ARCHIVE = "zip_archive"
-    UNSAFE_ARCHIVE = "unsafe_archive"
+    ARCHIVE_TOO_LARGE = "archive_too_large"  # the checks of a ZIP-based file (ADR-0015)
+    ARCHIVE_RATIO = "archive_ratio"
+    ARCHIVE_ENTRIES = "archive_entries"
     UNSUPPORTED_FORMAT = "unsupported_format"
     EXISTING_OUTPUT = "existing_output"
     UNREADABLE = "unreadable"
@@ -54,10 +56,11 @@ class SkipReason(StrEnum):
 class ConversionError(Exception):
     """A conversion failed for a known reason; ``detail`` is technical and goes to the summary."""
 
-    def __init__(self, code: ErrorCode, detail: str = "") -> None:
+    def __init__(self, code: ErrorCode, detail: str = "", *, limit: float | None = None) -> None:
         super().__init__(f"{code.value}: {detail}" if detail else code.value)
         self.code = code
         self.detail = detail
+        self.limit = limit  # the limit a stop reached: seconds (time) or bytes (memory)
 
 
 class Cancelled(Exception):

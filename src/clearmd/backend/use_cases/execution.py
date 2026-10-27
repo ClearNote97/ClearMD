@@ -59,7 +59,7 @@ def _convert_one(
         result = runner.convert(item, cancel)
     except ConversionError as error:
         status = OutcomeStatus.STOPPED if error.code in STOPPING_CODES else OutcomeStatus.FAILED
-        return ConversionOutcome(item, status, error.code, error.detail)
+        return ConversionOutcome(item, status, error.code, error.detail, limit=error.limit)
     try:
         atomic_write(item.target, result.markdown, inside=item.output_root)
     except OSError as error:  # this file only: disk full, name too long, locked, a folder...

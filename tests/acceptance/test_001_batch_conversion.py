@@ -165,7 +165,7 @@ def test_ac_08_markdown_and_zip_are_skipped_with_their_reason(
     assert main([str(workdir / "notes.md"), str(workdir / "bundle.zip")]) == 0
     err = capsys.readouterr().err
     assert "already Markdown" in err
-    assert "ZIP archives are not supported — extract them first" in err
+    assert "a ZIP archive (its files are not converted from inside it). Extract it" in err
 
 
 def test_ac_09_a_zip_bomb_is_skipped_before_converting(
@@ -174,7 +174,9 @@ def test_ac_09_a_zip_bomb_is_skipped_before_converting(
     bomb = put(workdir, "zip_bomb.docx", "contract.docx")
     good = put(workdir, "sample.txt", "good.txt")
     assert main([str(bomb), str(good)]) == 0
-    assert "this file looks damaged or unsafe" in capsys.readouterr().err
+    # The check that failed, with the file's value and the limit, and what to do (UX §3).
+    assert "Skipped: contract.docx — it would grow" in (err := capsys.readouterr().err)
+    assert "the limit is 100. A file that grows that much is how a zip bomb looks" in err
     assert not (workdir / "ClearMD_Output" / "OutputMD" / "contract.md").exists()
     assert (workdir / "ClearMD_Output" / "OutputMD" / "good.md").is_file()
 
@@ -191,7 +193,7 @@ def test_ac_10_documents_without_extension_are_detected_by_content(
     assert MARKERS["sample.docx"] in (output / "scan.md").read_text(encoding="utf-8")
     assert MARKERS["sample.txt"] in (output / "README.md").read_text(encoding="utf-8")
     assert not (output / "report.md").exists()
-    assert "report.dat — unsupported format" in capsys.readouterr().err
+    assert "Skipped: report.dat — a format ClearMD does not convert" in capsys.readouterr().err
 
 
 def test_ac_11_an_unsupported_file_is_skipped_and_the_batch_continues(
@@ -201,7 +203,7 @@ def test_ac_11_an_unsupported_file_is_skipped_and_the_batch_continues(
     script.write_text("import sys\n\ndef main():\n    print(sys.argv)\n", encoding="utf-8")
     good = put(workdir, "sample.txt", "good.txt")
     assert main([str(script), str(good)]) == 0
-    assert "tool.py — unsupported format" in capsys.readouterr().err
+    assert "Skipped: tool.py — a format ClearMD does not convert" in capsys.readouterr().err
     assert (workdir / "ClearMD_Output" / "OutputMD" / "good.md").is_file()
 
 
@@ -282,7 +284,7 @@ def test_ac_42_a_file_that_would_not_fit_in_memory_is_skipped_before_converting(
     assert main([str(workdir / "sales.xlsx")]) == 0
     err = capsys.readouterr().err
     assert "sales.xlsx — too big to convert (it would need about" in err
-    assert "the limit is 0.1 GB" in err
+    assert "the limit is 100 MB). Split it into smaller files" in err
     assert not (workdir / "ClearMD_Output").exists()
 
 
@@ -310,7 +312,8 @@ def test_ac_23_and_ac_44_a_file_over_the_time_limit_is_stopped_not_failed(
     monkeypatch.setattr(composition, "default_limits", lambda: limits)
     assert main([str(workdir / "quick.txt"), str(workdir / "manual.pdf")]) == 1
     captured = capsys.readouterr()
-    assert "⏹ manual.pdf — stopped after 0:00 (about" in captured.err
+    assert "⏹ Stopped: manual.pdf — Converting this file took longer than the limit" in captured.err
+    assert "It ran 0:00 (about" in captured.err
     assert not (workdir / "ClearMD_Output" / "OutputMD" / "manual.md").exists()
     assert (workdir / "ClearMD_Output" / "OutputMD" / "quick.md").is_file()
     assert "Try splitting it into smaller files." in captured.err
@@ -611,7 +614,7 @@ def test_ac_24_a_worker_over_the_memory_limit_is_stopped_and_replaced(
     monkeypatch.setattr(composition, "default_limits", lambda: limits)
     assert main([str(workdir / "sales.xlsx"), str(after)]) == 1
     err = capsys.readouterr().err
-    assert "⏹ sales.xlsx — stopped after" in err
+    assert "⏹ Stopped: sales.xlsx — This file needed more memory than the limit of" in err
     assert "close other programs" in err
     assert (workdir / "ClearMD_Output" / "OutputMD" / "zz_after.md").is_file()  # new worker
 

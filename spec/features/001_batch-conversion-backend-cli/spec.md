@@ -61,7 +61,8 @@ Each criterion has an acceptance test named after its id (`tests/acceptance/test
 - [x] **AC-08** `.md` / `.markdown` files are skipped as "already Markdown"; `.zip` files are skipped with
   "ZIP archives are not supported — extract them first".
 - [x] **AC-09** A ZIP-based document whose contents would expand to more than 1 GiB, or whose uncompressed
-  total is more than 100 times its file size, is skipped as "this file looks damaged or unsafe". It is checked
+  total is more than 100 times its file size, is skipped, saying which check failed, the file's value and the limit, and what to do (wording of the UX
+  contract §3, 2026-10-26; first "this file looks damaged or unsafe"). It is checked
   from the archive's index, without decompressing anything. (Real documents measured 1–5:1; single entries can
   reach 43:1, so the rule never applies per entry.)
 

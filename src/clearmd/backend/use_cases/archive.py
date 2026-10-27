@@ -9,6 +9,7 @@ import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 
+from clearmd.backend.schemas.errors import SkipReason
 from clearmd.backend.schemas.limits import Limits
 
 # Entries that hold the document's text; images and other media are not processed by the converters.
@@ -76,9 +77,16 @@ def inspect_archive(path: Path, max_entries: int = 50_000) -> ArchiveInfo | None
     )
 
 
+def unsafe_reason(info: ArchiveInfo, limits: Limits) -> tuple[SkipReason, float, float] | None:
+    """The first check the archive fails, with its value and the limit; ``None`` when it passes."""
+    if info.entries > limits.max_zip_entries:
+        return SkipReason.ARCHIVE_ENTRIES, info.entries, limits.max_zip_entries
+    if info.uncompressed > limits.max_uncompressed:
+        return SkipReason.ARCHIVE_TOO_LARGE, info.uncompressed, limits.max_uncompressed
+    if info.ratio > limits.max_ratio:
+        return SkipReason.ARCHIVE_RATIO, info.ratio, limits.max_ratio
+    return None
+
+
 def is_unsafe(info: ArchiveInfo, limits: Limits) -> bool:
-    return (
-        info.entries > limits.max_zip_entries
-        or info.uncompressed > limits.max_uncompressed
-        or info.ratio > limits.max_ratio
-    )
+    return unsafe_reason(info, limits) is not None

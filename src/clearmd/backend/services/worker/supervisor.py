@@ -152,9 +152,11 @@ class WorkerRunner:
                 except EOFError:
                     raise self._crashed(process) from None
                 if isinstance(response, Failed):
+                    limit = None
                     if response.code == ErrorCode.OUT_OF_MEMORY.value:
                         self._stop()  # after a MemoryError the worker's heap is not trusted
-                    raise ConversionError(ErrorCode(response.code), response.detail)
+                        limit = self._limits.worker_memory
+                    raise ConversionError(ErrorCode(response.code), response.detail, limit=limit)
                 return response
             if cancel.is_set():
                 self._stop()
@@ -163,7 +165,9 @@ class WorkerRunner:
             if elapsed > self._limits.time_per_file:
                 self._stop()
                 raise ConversionError(
-                    ErrorCode.TIMED_OUT, f"stopped after {self._limits.time_per_file:g} s"
+                    ErrorCode.TIMED_OUT,
+                    f"stopped after {self._limits.time_per_file:g} s",
+                    limit=self._limits.time_per_file,
                 )
             rss = _memory_of(process)
             if rss is not None and rss > self._limits.worker_memory:
@@ -172,6 +176,7 @@ class WorkerRunner:
                 raise ConversionError(
                     ErrorCode.OUT_OF_MEMORY,
                     f"worker used {rss // 1024**2} MiB, limit {limit_mib} MiB",
+                    limit=self._limits.worker_memory,
                 )
             if not process.is_alive():
                 raise self._crashed(process)

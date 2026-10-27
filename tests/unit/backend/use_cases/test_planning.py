@@ -98,7 +98,11 @@ def test_an_unsafe_archive_is_skipped_while_planning(tmp_path: Path) -> None:
     shutil.copyfile(DOCUMENTS_DIR / "zip_bomb.docx", bomb)
     plan = build_plan([bomb], detector=TableDetector(), limits=Limits())
     assert plan.is_empty
-    assert [item.reason for item in plan.skipped] == [SkipReason.UNSAFE_ARCHIVE]
+    (skipped,) = plan.skipped
+    # The check that failed, with the file's value and the limit (UX contract §3).
+    assert skipped.reason is SkipReason.ARCHIVE_RATIO
+    assert skipped.limit == Limits().max_ratio
+    assert skipped.measured is not None and skipped.measured > skipped.limit
 
 
 def test_the_cost_of_a_zip_document_counts_its_text_not_its_images(tmp_path: Path) -> None:
@@ -165,8 +169,8 @@ def test_a_file_that_would_not_fit_in_memory_is_skipped_with_the_numbers(tmp_pat
     assert plan.is_empty
     (skipped,) = plan.skipped
     assert skipped.reason is SkipReason.TOO_MUCH_MEMORY
-    assert skipped.needed_memory == limits.estimated_memory(FormatId.PDF, 1004)
-    assert skipped.memory_limit == 100 * MIB
+    assert skipped.measured == limits.estimated_memory(FormatId.PDF, 1004)
+    assert skipped.limit == 100 * MIB
 
 
 def test_a_file_that_may_take_too_long_is_planned_with_a_warning(tmp_path: Path) -> None:

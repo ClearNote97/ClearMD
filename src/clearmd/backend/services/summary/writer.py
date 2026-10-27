@@ -13,6 +13,7 @@ from clearmd.backend.schemas.models import (
     SkippedItem,
 )
 from clearmd.backend.schemas.notes import ConversionNote
+from clearmd.backend.services.rejections import skip_action, skip_reason, stopped_message
 from clearmd.backend.use_cases.output_files import UnsafeOutput, atomic_write, read_regular_file
 from clearmd.i18n import Catalog, printable
 
@@ -177,6 +178,7 @@ class MarkdownSummaryWriter:
         assert outcome.error is not None
         return self._catalog.text(
             "summary.stopped_line",
+            message=stopped_message(self._catalog, outcome),
             elapsed=self._catalog.clock(outcome.seconds),
             percent=outcome.share_done,
             action=self._catalog.text(outcome.error.action_key),
@@ -195,12 +197,5 @@ class MarkdownSummaryWriter:
 
     def _skipped(self, item: SkippedItem, base: Path) -> str:
         shown = _relative(item.path, base) + ("/" if item.is_dir else "")
-        if item.needed_memory is not None and item.memory_limit is not None:
-            reason = self._catalog.text(
-                item.reason.key,
-                needed=self._catalog.gigabytes(item.needed_memory),
-                limit=self._catalog.gigabytes(item.memory_limit),
-            )
-        else:
-            reason = self._catalog.text(item.reason.key)
-        return f"- {_code(shown)} — {reason}"
+        reason = skip_reason(self._catalog, item)
+        return f"- {_code(shown)} — {reason}. {skip_action(self._catalog, item)}"

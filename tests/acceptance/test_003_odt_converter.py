@@ -59,7 +59,7 @@ def test_ac_03_an_odt_zip_bomb_is_skipped_before_anything_is_read(
 ) -> None:
     bomb, good = copy_odt(workdir, "hostile/bomb.odt", "report.odt")
     assert main([str(bomb), str(good)]) == 0
-    assert "this file looks damaged or unsafe" in capsys.readouterr().err
+    assert "Skipped: bomb.odt — it would" in capsys.readouterr().err
     assert not (workdir / "ClearMD_Output" / "OutputMD" / "bomb.md").exists()
     assert (workdir / "ClearMD_Output" / "OutputMD" / "report.md").is_file()
 
@@ -202,7 +202,7 @@ def test_ac_17_parts_over_the_limits_are_refused_quickly(
     started = time.monotonic()
     main([str(deep), str(wide)])
     assert time.monotonic() - started < 60
-    assert "deep.odt — this file looks damaged or unsafe" in capsys.readouterr().err
+    assert "Skipped: deep.odt — it would" in capsys.readouterr().err
     assert not (workdir / "ClearMD_Output" / "OutputMD" / "deep.md").exists()
 
 

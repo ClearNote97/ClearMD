@@ -69,6 +69,7 @@ def _report(parent: Path, *, started_at: datetime = NOW) -> OutputRootReport:
                 ErrorCode.TIMED_OUT,
                 "stopped after 600 s",
                 seconds=600,
+                limit=600,
             ),
             ConversionOutcome(
                 _item(parent, "project/contract.pdf", "project/contract.md", pdf),
@@ -98,7 +99,8 @@ EXPECTED_EN = "\n".join(
         "| `project/scan` | `OutputMD/project/scan.md` | DOCX, detected by content | <1 s |",
         "",
         "## Stopped",
-        "- `project/manual.pdf` — stopped after 10:00 (about 67% by the estimate)."
+        "- `project/manual.pdf` — Converting this file took longer than the limit of 10 min,"
+        " so it was stopped. It ran 10:00 (about 67% by the estimate)."
         " Try splitting it into smaller files.",
         "",
         "## Failed",
@@ -107,8 +109,9 @@ EXPECTED_EN = "\n".join(
         "  <details><summary>Technical detail</summary>PDFPasswordIncorrect</details>",
         "",
         "## Skipped",
-        "- `project/.cache/` — hidden",
-        "- `project/old.md` — already Markdown",
+        "- `project/.cache/` — hidden. Nothing to do; if you want it converted, make it visible"
+        " first.",
+        "- `project/old.md` — already Markdown. Nothing to do: it is already Markdown.",
         "",
         "<!-- clearmd:history -->",
         "## History",

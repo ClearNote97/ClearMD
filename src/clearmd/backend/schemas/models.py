@@ -42,9 +42,10 @@ class SkippedItem:
     path: Path
     reason: SkipReason
     is_dir: bool = False
-    # Only for SkipReason.TOO_MUCH_MEMORY (AC-42): bytes the file would need, and the limit.
-    needed_memory: int | None = None
-    memory_limit: int | None = None
+    # When a limit is the reason (UX contract §3): the file's value and the limit, in the unit of
+    # the reason (bytes for sizes and memory, a count for entries and levels, a ratio).
+    measured: float | None = None
+    limit: float | None = None
     # The input it was found under, and the output root whose summary lists it (set by planning).
     input: Path | None = None
     input_is_dir: bool = False
@@ -117,6 +118,7 @@ class ConversionOutcome:
     detail: str = ""
     seconds: float = 0.0
     notes: tuple[ConversionNote, ...] = ()
+    limit: float | None = None  # for a stop: the limit it reached (seconds or bytes)
 
     @property
     def share_done(self) -> int:

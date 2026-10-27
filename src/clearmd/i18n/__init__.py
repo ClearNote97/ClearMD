@@ -76,6 +76,16 @@ class Catalog:
         value = f"{size / 1024**3:.1f}"
         return f"{value.replace('.', self.text('number.decimal_mark'))} GB"
 
+    def size(self, size: int) -> str:
+        """A size as a person reads it: ``300 MB`` under a gigabyte, else ``1.5 GB``."""
+        if size < 1024**3:
+            return f"{self.count(max(1, round(size / 1024**2)))} MB"
+        return self.gigabytes(size)
+
+    def count(self, number: int) -> str:
+        """``80,000`` / ``80.000``: the thousands mark follows the language."""
+        return f"{number:,}".replace(",", self.text("number.thousands_mark"))
+
 
 def flatten(table: Mapping[str, Any], prefix: str = "") -> dict[str, str]:
     """TOML tables to flat dotted keys: ``{"a": {"b": "x"}}`` → ``{"a.b": "x"}``."""

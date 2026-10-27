@@ -82,13 +82,14 @@ con el mismo nombre y una bomba ZIP disfrazada de Word:
 
 ```text
 $ clearmd Tesis/ --lang es
-– factura.docx — este archivo parece dañado o inseguro
+– Omitido: factura.docx — al descomprimirse crecería 338 veces; el límite es 100. Un archivo que crece
+  tanto es como se ve una bomba ZIP; si confías en él, ábrelo en su programa, guarda una copia nueva e inténtalo de nuevo.
 [1/5] escaneado
 [2/5] Informe.docx · faltan menos de un minuto
 [3/5] informe.pdf · faltan menos de un minuto
 [4/5] datos.xlsx · faltan menos de un minuto
 [5/5] contrato.pdf · faltan menos de un minuto
-✗ contrato.pdf — Este archivo está protegido con contraseña. Quítale la contraseña e inténtalo de nuevo.
+✗ Falló: contrato.pdf — Este archivo está protegido con contraseña. Quítale la contraseña e inténtalo de nuevo.
 4 convertidos · 1 omitidos · 1 con error
 Resultados: ClearMD_Output
 ```
