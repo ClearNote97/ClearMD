@@ -563,9 +563,8 @@ def _convert_with(engine: str, extension: str) -> Callable[[str], dict[str, Any]
         from clearmd.backend.schemas.formats import FormatId
         from clearmd.backend.schemas.models import Detection, DetectionMethod
         from clearmd.backend.services.conversion.html import ArticleConverter
-        from clearmd.backend.services.conversion.markitdown_adapter import MarkItDownConverter
 
-        article = ArticleConverter(full_page=MarkItDownConverter())
+        article = ArticleConverter()
         page = Detection(FormatId.HTML, DetectionMethod.EXTENSION)
 
         def convert_article(path: str) -> dict[str, Any]:

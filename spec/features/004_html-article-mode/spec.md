@@ -47,7 +47,8 @@ Each criterion has an acceptance test named after its id (`tests/acceptance/test
   the table above says.
 - [ ] **AC-05** Images become placeholders with their alt text, counted in a note; nothing but the Markdown and the
   summary is written, and the Markdown links to no image.
-- [ ] **AC-06** A page where no article is found converts in full, with a note saying so; the exit code stays 0.
+- [ ] **AC-06** A page where no article is found converts in full, written by ClearMD with the same guarantee, with
+  a note saying so; the exit code stays 0.
 - [ ] **AC-07** The output guarantee of ADR-0023 holds for article mode (checked with a CommonMark parser and a
   seeded fuzz): hostile text, links with `javascript:` or entities, and raw HTML in the page never become
   links, images, HTML or block structure in the Markdown.

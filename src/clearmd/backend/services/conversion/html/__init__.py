@@ -1,9 +1,9 @@
 """HTML article mode (ADR-0025): trafilatura finds the article, ClearMD writes it.
 
 trafilatura is given the page's bytes only (it never fetches anything: ADR-0005) and returns the
-article's tree, read again by ClearMD's limited XML reader and written by ``render``. No article,
-or one with less than ``MIN_ARTICLE_CHARACTERS`` of text, converts the whole page (markitdown)
-with a note.
+article's tree, converted to ClearMD's own and written by ``render``. No article (or one with
+less than ``MIN_ARTICLE_CHARACTERS`` of text, or a page too complex for trafilatura): the whole
+page, written by ClearMD too (``page``), with a note.
 Imported only inside the worker.
 """
 
@@ -18,8 +18,8 @@ from trafilatura.utils import detect_encoding
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.schemas.models import ConversionResult, Detection
 from clearmd.backend.schemas.notes import ConversionNote, NoteKind
+from clearmd.backend.services.conversion.html.page import page_tree
 from clearmd.backend.services.conversion.html.render import ArticleRenderer
-from clearmd.backend.services.conversion.registry import DocumentConverter
 from clearmd.backend.services.conversion.safe_files import NotARegularFile, read_regular_file
 from clearmd.backend.services.conversion.xmltree import Element, XmlLimits
 
@@ -37,9 +37,6 @@ _BOMS = ((b"\xef\xbb\xbf", "utf-8"), (b"\xff\xfe", "utf-16"), (b"\xfe\xff", "utf
 
 
 class ArticleConverter:
-    def __init__(self, full_page: DocumentConverter) -> None:
-        self._full_page = full_page
-
     def convert(self, source: Path, detection: Detection, target: Path) -> ConversionResult:
         try:
             page = read_regular_file(source, MAX_PAGE_BYTES)
@@ -50,23 +47,30 @@ class ArticleConverter:
         # trafilatura is given text (it never decompresses anything), with no character its XML
         # tree refuses: one would lose the whole article (audit of 004).
         text = _xml_safe(_decode(page))
-        if len(_TAG.findall(text)) > MAX_ARTICLE_ELEMENTS:
-            whole = self._full_page.convert(source, detection, target)
-            note = ConversionNote(NoteKind.ARTICLE_TOO_COMPLEX, ())
-            return ConversionResult(whole.markdown, (note, *whole.notes))
-        main = _article(text)
-        if main is None or len(main.text().strip()) < MIN_ARTICLE_CHARACTERS:
-            whole = self._full_page.convert(source, detection, target)
-            note = ConversionNote(NoteKind.ARTICLE_NOT_FOUND, ())
-            return ConversionResult(whole.markdown, (note, *whole.notes))
         head = text[:65_536]
+        found = _TITLE.search(head)
+        title = html.unescape(found.group(1)) if found else ""
         language = _LANGUAGE.search(head)
-        title = _TITLE.search(head)
         renderer = ArticleRenderer(
-            language=language.group(1) if language else "en", source_size=len(main.text())
+            language=language.group(1) if language else "en", source_size=len(text)
         )
-        markdown = renderer.document(main, title=html.unescape(title.group(1)) if title else "")
-        return ConversionResult(markdown, renderer.notes())
+        reason = None
+        main = None
+        if len(_TAG.findall(text)) > MAX_ARTICLE_ELEMENTS:
+            reason = NoteKind.ARTICLE_TOO_COMPLEX
+        else:
+            main = _article(text)
+            if main is None or len(main.text().strip()) < MIN_ARTICLE_CHARACTERS:
+                reason, main = NoteKind.ARTICLE_NOT_FOUND, None
+        if main is None:
+            # The whole page, written by ClearMD with the same guarantee (the author's choice):
+            # article mode never hands a page's own markup or remote images to the Markdown.
+            main = page_tree(text) or Element("body")
+        markdown = renderer.document(main, title=title)
+        notes = renderer.notes()
+        if reason is not None:
+            notes = (ConversionNote(reason, ()), *notes)
+        return ConversionResult(markdown, notes)
 
 
 _FORBIDDEN = re.compile("[\x00-\x08\x0b\x0c\x0e-\x1f\ufffe\uffff\ud800-\udfff]")

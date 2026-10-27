@@ -24,11 +24,6 @@ BLOCKS = frozenset({"heading_open", "bullet_list_open", "blockquote_open"})
 REMOTE = "http://evil.example/t.png"
 
 
-class _FullPage:
-    def convert(self, source: Path, detection: Detection, target: Path) -> ConversionResult:
-        return ConversionResult("FULL\n", ())
-
-
 def convert(tmp_path: Path, article: str) -> ConversionResult:
     filler = "".join(f"<p>{FILLER} {n}.</p>" for n in range(3))
     path = tmp_path / "p.html"
@@ -37,7 +32,7 @@ def convert(tmp_path: Path, article: str) -> ConversionResult:
         "</body></html>",
         encoding="utf-8",
     )
-    return ArticleConverter(_FullPage()).convert(path, DETECTION, path.with_suffix(".md"))
+    return ArticleConverter().convert(path, DETECTION, path.with_suffix(".md"))
 
 
 @pytest.mark.parametrize(
@@ -64,7 +59,7 @@ def test_f2_a_character_xml_forbids_never_turns_the_article_off(
     reference: str, tmp_path: Path
 ) -> None:
     result = convert(tmp_path, f"<p>{reference} {FILLER}</p><img src='{REMOTE}'>")
-    assert result.markdown != "FULL\n" and REMOTE not in result.markdown
+    assert REMOTE not in result.markdown and "\ufffd" in result.markdown
     assert NoteKind.ARTICLE_NOT_FOUND not in {note.kind for note in result.notes}
 
 
@@ -78,7 +73,7 @@ def test_f3_runs_of_formatting_stay_within_memory(tmp_path: Path) -> None:
 
 def test_f4_a_page_with_too_many_elements_is_converted_in_full(tmp_path: Path) -> None:
     result = convert(tmp_path, "<p>" + "<span>x</span>" * 60_000 + "</p>")
-    assert result.markdown == "FULL\n"
+    assert "x" * 1000 in result.markdown  # the whole page, written by ClearMD
     assert NoteKind.ARTICLE_TOO_COMPLEX in {note.kind for note in result.notes}
 
 

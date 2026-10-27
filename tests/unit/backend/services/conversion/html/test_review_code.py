@@ -12,7 +12,6 @@ from clearmd.backend.schemas.formats import FormatId, Strategy
 from clearmd.backend.schemas.limits import Limits
 from clearmd.backend.schemas.models import (
     ConversionOutcome,
-    ConversionResult,
     Detection,
     DetectionMethod,
     OutcomeStatus,
@@ -35,11 +34,6 @@ FILLER = (
 DETECTION = Detection(FormatId.HTML, DetectionMethod.EXTENSION)
 
 
-class _FullPage:
-    def convert(self, source: Path, detection: Detection, target: Path) -> ConversionResult:
-        return ConversionResult("FULL\n", ())
-
-
 def render(body: str, *, title: str = "", language: str = "en") -> str:
     renderer = ArticleRenderer(language=language, source_size=len(body))
     return renderer.document(parse_part(f"<body>{body}</body>".encode()), title=title)
@@ -53,7 +47,7 @@ def page(tmp_path: Path, article: str, *, head: str = "", before: str = "") -> s
         f"<article>{article}{filler}</article></body></html>",
         encoding="utf-8",
     )
-    return ArticleConverter(_FullPage()).convert(path, DETECTION, path.with_suffix(".md")).markdown
+    return ArticleConverter().convert(path, DETECTION, path.with_suffix(".md")).markdown
 
 
 # --- High ----------------------------------------------------------------------------------------
@@ -115,8 +109,10 @@ def test_m5_a_compressed_page_is_never_decompressed(tmp_path: Path) -> None:
     path.write_bytes(
         gzip.compress(f"<html><body><article>{filler}</article></body></html>".encode())
     )
-    result = ArticleConverter(_FullPage()).convert(path, DETECTION, path.with_suffix(".md"))
-    assert result.markdown == "FULL\n"  # no article in the bytes as they are on disk
+    result = ArticleConverter().convert(path, DETECTION, path.with_suffix(".md"))
+    # Nothing is decompressed: no article in the bytes as they are on disk, and none of its text.
+    assert NoteKind.ARTICLE_NOT_FOUND in {note.kind for note in result.notes}
+    assert "párrafo largo" not in result.markdown
 
 
 def test_m6_a_page_too_big_for_the_article_is_planned_in_full(tmp_path: Path) -> None:
@@ -193,7 +189,7 @@ def test_l12_data_lang_is_not_the_page_language(tmp_path: Path) -> None:
         f"{filler}</article></body></html>",
         encoding="utf-8",
     )
-    result = ArticleConverter(_FullPage()).convert(path, DETECTION, path.with_suffix(".md"))
+    result = ArticleConverter().convert(path, DETECTION, path.with_suffix(".md"))
     assert "*Imagen: foto*" in result.markdown
 
 
@@ -217,6 +213,6 @@ def test_m8_a_failure_inside_trafilatura_falls_back_to_the_full_page(
     monkeypatch.setattr(trafilatura, "bare_extraction", broken)
     path = tmp_path / "p.html"
     path.write_text("<p>x</p>", encoding="utf-8")
-    result = ArticleConverter(_FullPage()).convert(path, DETECTION, path.with_suffix(".md"))
-    assert result.markdown == "FULL\n"
+    result = ArticleConverter().convert(path, DETECTION, path.with_suffix(".md"))
+    assert result.markdown == "x\n"  # the whole page, written by ClearMD
     assert NoteKind.ARTICLE_NOT_FOUND in {note.kind for note in result.notes}

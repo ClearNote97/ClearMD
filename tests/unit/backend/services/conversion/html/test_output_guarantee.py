@@ -74,11 +74,6 @@ PLACES = [
 ]
 
 
-class _FullPage:
-    def convert(self, source: Path, detection: Detection, target: Path) -> ConversionResult:
-        return ConversionResult("", ())
-
-
 def _page(body: str, title: str = "Un artículo") -> str:
     paragraphs = "".join(f"<p>{FILLER} {n}.</p>" for n in range(3))
     return (
@@ -91,7 +86,7 @@ def _convert(tmp_path: Path, page: str) -> ConversionResult:
     path = tmp_path / "p.html"
     path.write_text(page, encoding="utf-8")
     detection = Detection(FormatId.HTML, DetectionMethod.EXTENSION)
-    return ArticleConverter(_FullPage()).convert(path, detection, path.with_suffix(".md"))
+    return ArticleConverter().convert(path, detection, path.with_suffix(".md"))
 
 
 def _structure(markdown: str) -> Counter[str]:
@@ -142,3 +137,32 @@ def test_a_seeded_fuzz_of_places_and_text_never_breaks_it(tmp_path: Path) -> Non
         if found := _problems(tmp_path, place, text):
             broken[(place, text)] = found
     assert dict(itertools.islice(broken.items(), 3)) == {}
+
+
+def _whole_page(tmp_path: Path, body: str) -> ConversionResult:
+    """A page with no article: the whole page, written by ClearMD."""
+    path = tmp_path / "w.html"
+    path.write_text(
+        f"<html><head><title>Página</title></head><body>{body}</body></html>", encoding="utf-8"
+    )
+    return ArticleConverter().convert(
+        path, Detection(FormatId.HTML, DetectionMethod.EXTENSION), path
+    )
+
+
+@pytest.mark.parametrize("place", PLACES)
+def test_the_whole_page_written_by_clearmd_keeps_the_guarantee(place: str, tmp_path: Path) -> None:
+    short = place.replace(" " + FILLER, "")
+    harmless = _structure(_whole_page(tmp_path, short.format(t="texto")).markdown)
+    broken = {}
+    for text in BAD_TEXT:
+        result = _whole_page(tmp_path, short.format(t=html.escape(text, quote=True)))
+        assert NoteKind.ARTICLE_NOT_FOUND in {note.kind for note in result.notes}
+        found = broken_promises(
+            result.markdown, allowed_links=PAGE_LINKS, blocks=CLEARMD_BLOCKS | {"fence"}
+        )
+        if _structure(result.markdown) != harmless:
+            found.append(f"structure in {result.markdown!r}")
+        if found:
+            broken[text] = found
+    assert broken == {}

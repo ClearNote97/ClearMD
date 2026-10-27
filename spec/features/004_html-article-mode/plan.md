@@ -32,7 +32,7 @@ src/clearmd/backend/
 3. **The converter**: `trafilatura.extract(html, output_format="xml", include_links=True,
    include_images=True, include_tables=True, include_formatting=True, with_metadata=True, favor_precision=…)`
    on the decoded text (read with `safe_files`, size-capped); `None` or an article under a minimum of text →
-   the full page through markitdown + `ARTICLE_NOT_FOUND`.
+   the whole page written by ClearMD (`html/page.py`, the same renderer) + `ARTICLE_NOT_FOUND`.
 4. **The renderer**: the subset of the spec, iterative, every text through `escape_text`, ClearMD's block
    lines marked, links through the shared link rules, images as placeholders; `neutralize` + `tidy`.
 5. **Guarantee, acceptance, benchmark, close** as in features 002–003.

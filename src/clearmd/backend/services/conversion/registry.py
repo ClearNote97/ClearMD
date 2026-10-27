@@ -65,7 +65,7 @@ def build_registry() -> ConverterRegistry:
     converters: dict[FormatId, DocumentConverter] = dict.fromkeys(markitdown.converters, markitdown)
     converters[FormatId.TEX] = TexConverter()
     converters[FormatId.ODT] = OdtConverter()
-    article = ArticleConverter(full_page=markitdown)  # no article: the whole page, as before
+    article = ArticleConverter()  # no article: the whole page, written by ClearMD too
     return ConverterRegistry(
         converters,
         content_detector=MagikaDetector(),

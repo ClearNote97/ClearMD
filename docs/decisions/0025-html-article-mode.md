@@ -25,10 +25,14 @@ Markdown link to them makes the viewer fetch them when the file is opened.
   the safe schemes.
 - **Images are placeholders** with their alt text (`*Image: …*`), counted in a note, as in `.odt`: an article
   converted by ClearMD never makes the viewer fetch anything. The page's title becomes `# Title`.
-- **No article found** (trafilatura returns nothing, or almost nothing): the page is converted in full by
-  markitdown and a note says so. The file is never left out because of the strategy.
-- trafilatura's own network functions are never called (it is given the HTML text; ADR-0005), and the XML it
-  returns is parsed by the same limited `pyexpat` tree as OpenDocument (moved to the conversion package).
+- **No article found** (trafilatura returns nothing, or almost nothing): the page is converted in full and a
+  note says so. The file is never left out because of the strategy. *Refined on 2026-10-27 (the author's
+  choice, after the security audit of 004):* the whole page is written by ClearMD itself (`html/page.py`: lxml
+  parses it, its elements map to the same tree, the same renderer writes it), not by markitdown, so a page
+  cannot switch the guarantee off by having no article.
+- trafilatura's own network functions are never called (it is given the page's text, decoded by ClearMD, so it
+  never decompresses anything either; ADR-0005), and the tree it returns is converted to ClearMD's own under
+  the XML reader's limits.
 
 ### Decided while building it (2026-10-26)
 
@@ -46,6 +50,18 @@ Markdown link to them makes the viewer fetch them when the file is opened.
   were published days before (`lxml-html-clean` 0.4.6, `tzlocal` 5.4.5): `[tool.uv] constraint-dependencies`
   keeps their previous release until they are two weeks old. `tld` is triple-licensed (MPL-1.1 / GPL-2.0 /
   LGPL-2.1+): ClearMD uses it under MPL-1.1, unmodified, compatible with MIT.
+
+### After the code review and the security audit (2026-10-27)
+
+- A page whose article would need more memory than the worker allows is planned in full, with a warning
+  (never left out); one with more than 50,000 elements is written in full by ClearMD, with its own note
+  (trafilatura's extraction grows faster than linear); characters XML forbids become U+FFFD before trafilatura
+  (one would lose the whole article); line endings are "\n" everywhere (a "&#13;" in a code block could
+  leave its list).
+- **Not recovered (trafilatura 2.3.1 drops them before ClearMD sees the article):** figure captions, lists
+  inside table cells, an ordered list's start number, merged cells, a `<pre>` without code-like markers
+  (written as a one-line quote), and a page nested deeper than 256 levels (libxml2 stops there). A Latin-1 page
+  without a declared charset may be decoded as another single-byte encoding.
 
 ## Consequences
 
