@@ -30,6 +30,23 @@ Markdown link to them makes the viewer fetch them when the file is opened.
 - trafilatura's own network functions are never called (it is given the HTML text; ADR-0005), and the XML it
   returns is parsed by the same limited `pyexpat` tree as OpenDocument (moved to the conversion package).
 
+### Decided while building it (2026-10-26)
+
+- **What counts as no article:** trafilatura returns nothing, or an article with less than 200 characters of
+  text (a login page has about 50; a short news piece, 500 or more).
+- **The summary always says `HTML (Article)` / `HTML (Artículo)`** for a page converted with this strategy, also
+  when the whole page was used: the note says why (the author's choice, "para ser claros").
+- **Images get their own note:** "images are not downloaded; each is shown by its description" (an `.odt`'s
+  images stay inside the file; a page's are on remote servers). The placeholder word follows the page's
+  `lang` (`*Imagen: …*`).
+- **Shared writing:** the inline writer of `.odt` (escaping, emphasis Markdown can hold, links, the growth
+  budget) moved to `conversion/inline.py`, and the XML reader to `conversion/xmltree.py`, so the article is
+  written with the same guarantees. Containers nested deeper than 32 levels are written as their text.
+- **Dependencies:** `trafilatura==2.3.1` (pinned: its extraction decides the output). Two packages it brings
+  were published days before (`lxml-html-clean` 0.4.6, `tzlocal` 5.4.5): `[tool.uv] constraint-dependencies`
+  keeps their previous release until they are two weeks old. `tld` is triple-licensed (MPL-1.1 / GPL-2.0 /
+  LGPL-2.1+): ClearMD uses it under MPL-1.1, unmodified, compatible with MIT.
+
 ## Consequences
 
 - **Gains:** the Strategy pattern ADR-0006 promised, with one guarantee for every Markdown ClearMD writes

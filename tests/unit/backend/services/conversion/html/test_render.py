@@ -11,14 +11,14 @@ PARSER = MarkdownIt("commonmark").enable("table")
 
 
 def render(main: str, title: str = "T", language: str = "en") -> tuple[str, set[NoteKind]]:
-    tree = parse_part(f'<doc title="{title}"><main>{main}</main></doc>'.encode())
+    tree = parse_part(f'<body><head rend="h1">{title}</head>{main}</body>'.encode())
     renderer = ArticleRenderer(language=language, source_size=len(main))
     markdown = renderer.document(tree)
     return markdown, {note.kind for note in renderer.notes()}
 
 
 def test_the_title_and_headings_the_shallowest_at_level_two() -> None:
-    markdown, _ = render('<head rend="h1">T</head><head rend="h2">A</head><head rend="h3">B</head>')
+    markdown, _ = render('<head rend="h2">A</head><head rend="h3">B</head>')
     assert markdown == "# T\n\n## A\n\n### B\n"
 
 

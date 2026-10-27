@@ -78,5 +78,15 @@ def test_the_cli_flag_overrides_the_setting_for_one_run(
 
 def test_the_summary_names_the_strategy() -> None:
     catalog = load_catalog("en")
-    assert catalog.text("summary.strategy.article", format="HTML") == "HTML (article)"
-    assert load_catalog("es").text("summary.strategy.article", format="HTML") == "HTML (artículo)"
+    assert catalog.text("summary.strategy.article", format="HTML") == "HTML (Article)"
+    assert load_catalog("es").text("summary.strategy.article", format="HTML") == "HTML (Artículo)"
+
+
+def test_the_article_strategy_is_estimated_with_its_own_factors(tmp_path: Path) -> None:
+    plan = _plan(tmp_path, Strategy.ARTICLE)
+    page = next(item for item in plan.conversions if item.source.name == "page.html")
+    limits = Limits()
+    assert page.cost == limits.estimated_seconds(
+        FormatId.HTML, page.source.stat().st_size, Strategy.ARTICLE
+    )
+    assert limits.weight(FormatId.HTML, Strategy.ARTICLE) > 10 * limits.weight(FormatId.HTML)

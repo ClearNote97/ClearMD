@@ -6,6 +6,8 @@ Run inside the container (takes several minutes; results to a JSON file):
     uv run python tests/benchmark/run_benchmark.py --only tex tex_macros \
         --out docs/benchmarks/002-results.json
     uv run python tests/benchmark/run_benchmark.py --only odt --out docs/benchmarks/003-results.json
+    uv run python tests/benchmark/run_benchmark.py --only html_article \\
+        --out docs/benchmarks/004-results.json
 
 Every measurement runs its converter (markitdown, or ClearMD's own for ``.tex`` and ``.odt``) in a
 fresh *spawn* process, like the worker of ADR-0015. The
@@ -92,6 +94,39 @@ def make_html(path: Path, size: int, rng: random.Random) -> None:
         while out.tell() < size:
             out.write(f"<h2>{_words(rng, 3)}</h2><p>{_words(rng, 120)}</p>\n")
         out.write("</body></html>\n")
+
+
+def make_html_article(path: Path, size: int, rng: random.Random) -> None:
+    """A news page for the article mode (004): menu, cookie banner, aside and footer around an
+    article with every construct of the subset (headings, emphasis, links, lists, quotes, tables,
+    code, images)."""
+    with path.open("w", encoding="utf-8") as out:
+        out.write(
+            "<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><title>bench</title></head>"
+            "<body><nav><a href='/'>Inicio</a> <a href='/x'>Sección</a></nav>"
+            "<div class='cookies'>Usamos cookies. <button>Aceptar</button></div>"
+            f"<main><article><h1>{_words(rng, 6)}</h1>"
+        )
+        number = 0
+        while out.tell() < size:
+            number += 1
+            out.write(
+                f"<h2>{_words(rng, 3)}</h2><p>{_words(rng, 40)} <strong>{_words(rng, 2)}</strong>"
+                f" {_words(rng, 30)} <em>{_words(rng, 2)}</em> <a href='https://example.org/{number}'>"
+                f"{_words(rng, 3)}</a> {_words(rng, 40)}</p>"
+                f"<ul><li>{_words(rng, 5)}</li><li>{_words(rng, 5)}<ul><li>{_words(rng, 4)}</li>"
+                f"</ul></li></ul><blockquote><p>{_words(rng, 20)}</p></blockquote>"
+                f"<table><tr><th>{_words(rng, 1)}</th><th>{_words(rng, 1)}</th></tr>"
+                f"<tr><td>{number}</td><td>{_words(rng, 2)}</td></tr></table>"
+                f"<pre><code>x = {number}</code></pre>"
+                f"<figure><img src='https://cdn.example/{number}.jpg'"
+                f" alt='{_words(rng, 3)}'></figure>"
+                f"<p>{_words(rng, 60)}</p>\n"
+            )
+        out.write(
+            "</article><aside>Te puede interesar</aside></main>"
+            "<footer>© 2026</footer></body></html>\n"
+        )
 
 
 def _pdf_page_stream(rng: random.Random) -> bytes:
@@ -494,7 +529,7 @@ class Case:
     extension: str
     build: Callable[[Path, int, random.Random], None]
     sizes_mib: tuple[float, ...]
-    engine: str = "markitdown"  # or "tex" / "odt": ClearMD's own converters (002, 003)
+    engine: str = "markitdown"  # or "tex" / "odt" / "article": ClearMD's own (002, 003, 004)
 
 
 CASES = [
@@ -511,6 +546,7 @@ CASES = [
     Case("tex", ".tex", make_tex, (1, 5, 10, 25), "tex"),
     Case("tex_macros", ".tex", make_tex_macros, (1, 5, 10, 25), "tex"),
     Case("odt", ".odt", make_odt, (1, 5, 10, 25), "odt"),
+    Case("html_article", ".html", make_html_article, (1, 5, 10, 25), "article"),
 ]
 
 
@@ -523,6 +559,21 @@ def _peak_rss_mib() -> float:
 
 
 def _convert_with(engine: str, extension: str) -> Callable[[str], dict[str, Any]]:
+    if engine == "article":
+        from clearmd.backend.schemas.formats import FormatId
+        from clearmd.backend.schemas.models import Detection, DetectionMethod
+        from clearmd.backend.services.conversion.html import ArticleConverter
+        from clearmd.backend.services.conversion.markitdown_adapter import MarkItDownConverter
+
+        article = ArticleConverter(full_page=MarkItDownConverter())
+        page = Detection(FormatId.HTML, DetectionMethod.EXTENSION)
+
+        def convert_article(path: str) -> dict[str, Any]:
+            result = article.convert(Path(path), page, Path(path).with_suffix(".md"))
+            notes = [note.kind.value for note in result.notes]
+            return {"ok": True, "markdown_mib": len(result.markdown) / MIB, "notes": notes}
+
+        return convert_article
     if engine == "odt":
         from clearmd.backend.schemas.formats import FormatId
         from clearmd.backend.schemas.models import Detection, DetectionMethod

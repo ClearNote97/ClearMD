@@ -192,4 +192,4 @@ invalid_value = "Configuración: valor no válido para “{setting}”; se usa s
 unreadable = "Configuración: no se pudo leer {setting}; se usan los valores por defecto."
 
 [summary.strategy]
-article = "{format} (artículo)"
+article = "{format} (Artículo)"

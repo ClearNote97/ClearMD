@@ -1,0 +1,94 @@
+{
+ "machine": {
+  "python": "3.14.5",
+  "platform": "Linux-5.15.167.4-microsoft-standard-WSL2-x86_64-with-glibc2.36",
+  "cpus": 16,
+  "ram_mib": 15848,
+  "memory_cap_mib": 2048
+ },
+ "startup": {
+  "import_and_init_s": 0.8362313869874924,
+  "rss_after_markitdown_mib": 161.57421875,
+  "second_magika_mib": -9.421875,
+  "sampled_peak_mib": 161.57421875,
+  "wall_s": 1.217603134980891
+ },
+ "rows": [
+  {
+   "kind": "html_article",
+   "size_mib": 1,
+   "file_mib": 1.0009269714355469,
+   "result": {
+    "ok": true,
+    "markdown_mib": 0.8705101013183594,
+    "notes": [
+     "images_not_downloaded"
+    ],
+    "startup_s": 1.2473398260190152,
+    "seconds": 1.150378605001606,
+    "baseline_mib": 143.33203125,
+    "peak_mib": 185.20703125,
+    "sampled_peak_mib": 182.5234375,
+    "wall_s": 2.922366601997055
+   },
+   "archive": null
+  },
+  {
+   "kind": "html_article",
+   "size_mib": 5,
+   "file_mib": 5.0009050369262695,
+   "result": {
+    "ok": true,
+    "markdown_mib": 4.3494157791137695,
+    "notes": [
+     "images_not_downloaded"
+    ],
+    "startup_s": 0.948549524997361,
+    "seconds": 8.808203400985803,
+    "baseline_mib": 143.10546875,
+    "peak_mib": 333.9375,
+    "sampled_peak_mib": 333.16796875,
+    "wall_s": 10.095914182020351
+   },
+   "archive": null
+  },
+  {
+   "kind": "html_article",
+   "size_mib": 10,
+   "file_mib": 10.001460075378418,
+   "result": {
+    "ok": true,
+    "markdown_mib": 8.69835376739502,
+    "notes": [
+     "images_not_downloaded"
+    ],
+    "startup_s": 1.0590574739908334,
+    "seconds": 23.794853975996375,
+    "baseline_mib": 145.296875,
+    "peak_mib": 529.01953125,
+    "sampled_peak_mib": 527.7421875,
+    "wall_s": 25.232374405983137
+   },
+   "archive": null
+  },
+  {
+   "kind": "html_article",
+   "size_mib": 25,
+   "file_mib": 25.001267433166504,
+   "result": {
+    "ok": true,
+    "markdown_mib": 21.74098491668701,
+    "notes": [
+     "images_not_downloaded"
+    ],
+    "startup_s": 0.9701574619975872,
+    "seconds": 141.8798953589867,
+    "baseline_mib": 143.51953125,
+    "peak_mib": 1099.6640625,
+    "sampled_peak_mib": 1099.6640625,
+    "wall_s": 143.18266528999084
+   },
+   "archive": null
+  }
+ ]
+}

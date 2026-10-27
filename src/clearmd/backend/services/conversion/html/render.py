@@ -60,22 +60,22 @@ class ArticleRenderer:
 
     # --- Document --------------------------------------------------------------------------
 
-    def document(self, doc: Element) -> str:
-        main = doc.find("main")
-        if main is None:
-            return ""
-        title = " ".join(doc.get("title").split())
+    def document(self, main: Element) -> str:
+        """``main``: the article's tree. Its first ``h1`` is the title (``# Title``); the other
+        headings start at ``##``."""
         children = list(main.children)
         first = next((c for c in children if isinstance(c, Element)), None)
-        if first is not None and first.tag == "head" and " ".join(first.text().split()) == title:
-            children.remove(first)  # the article's own h1 repeats the title
+        title = ""
+        if first is not None and first.tag == "head" and first.get("rend") == "h1":
+            title = self._inline_of(first.children, TextProps()).replace(LINE_BREAK, " ")
+            children.remove(first)
         levels = [
             int_attribute(head.get("rend")[1:], 2, cap=6)
             for head in main.walk()
             if head.tag == "head" and head is not first
         ]
         self._top = min(levels, default=2)
-        parts = [block(f"{MARK}# {escape_text(title)}")] if title else []
+        parts = [block(f"{MARK}# {title}")] if title else []
         parts.append(self.blocks(children))
         return neutralize(tidy("".join(parts)))
 

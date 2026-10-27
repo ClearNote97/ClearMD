@@ -1,14 +1,15 @@
 """Resource limits for untrusted documents and the speed of each format (ADR-0015).
 
 Values measured by the benchmarks: ``docs/benchmarks/001-conversion-limits.md`` (markitdown's
-formats), ``002-tex-converter.md`` and ``003-odt-converter.md`` (ClearMD's own converters).
+formats), ``002-tex-converter.md`` and ``003-odt-converter.md`` (ClearMD's own converters),
+``004-html-article-mode.md`` (the article strategy of HTML).
 """
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
 
-from clearmd.backend.schemas.formats import FormatId
+from clearmd.backend.schemas.formats import FormatId, Strategy
 
 MIB = 1024**2
 GIB = 1024**3
@@ -50,6 +51,12 @@ MEMORY_PER_MIB: Mapping[FormatId, float] = MappingProxyType(
 )
 
 
+# The article strategy of HTML (benchmark 004): trafilatura, then ClearMD's renderer. Slightly
+# faster than linear growth inside trafilatura: the factor is the one measured at 25 MiB (5.7).
+ARTICLE_SECONDS_PER_MIB = 6.0
+ARTICLE_MEMORY_PER_MIB = 42.0  # 38-42 per MiB of HTML
+
+
 @dataclass(frozen=True)
 class Limits:
     max_file_size: int = 250 * MIB
@@ -68,12 +75,25 @@ class Limits:
     worker_base_memory: int = 160 * MIB
     weights: Mapping[FormatId, float] = field(default_factory=lambda: SECONDS_PER_MIB)
     memory_per_mib: Mapping[FormatId, float] = field(default_factory=lambda: MEMORY_PER_MIB)
+    article_seconds_per_mib: float = ARTICLE_SECONDS_PER_MIB
+    article_memory_per_mib: float = ARTICLE_MEMORY_PER_MIB
 
-    def weight(self, format_id: FormatId) -> float:
+    def weight(self, format_id: FormatId, strategy: Strategy = Strategy.FULL) -> float:
+        if strategy is Strategy.ARTICLE:
+            return self.article_seconds_per_mib
         return self.weights[format_id]
 
-    def estimated_seconds(self, format_id: FormatId, size: int) -> float:
-        return size / MIB * self.weight(format_id)
+    def estimated_seconds(
+        self, format_id: FormatId, size: int, strategy: Strategy = Strategy.FULL
+    ) -> float:
+        return size / MIB * self.weight(format_id, strategy)
 
-    def estimated_memory(self, format_id: FormatId, size: int) -> int:
-        return self.worker_base_memory + round(size * self.memory_per_mib[format_id])
+    def estimated_memory(
+        self, format_id: FormatId, size: int, strategy: Strategy = Strategy.FULL
+    ) -> int:
+        per_mib = (
+            self.article_memory_per_mib
+            if strategy is Strategy.ARTICLE
+            else self.memory_per_mib[format_id]
+        )
+        return self.worker_base_memory + round(size * per_mib)

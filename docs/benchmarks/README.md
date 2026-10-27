@@ -8,3 +8,4 @@ Each benchmark has a write-up (`NNN-*.md`: what was measured, results, conclusio
 | [`001-conversion-limits.md`](./001-conversion-limits.md) | Time and memory per format and size; sets the limits and speeds of ADR-0015. |
 | [`002-tex-converter.md`](./002-tex-converter.md) | Time and memory of ClearMD's own `.tex` converter, with and without the author's macros. |
 | [`003-odt-converter.md`](./003-odt-converter.md) | Time and memory of ClearMD's own `.odt` converter, formulas included. |
+| [`004-html-article-mode.md`](./004-html-article-mode.md) | Time and memory of the HTML article mode (trafilatura and ClearMD's renderer). |

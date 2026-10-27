@@ -95,7 +95,8 @@ def build_plan(
                 # markitdown's docx pre-processing reads every entry into memory (review of 001).
                 if detection.format is FormatId.DOCX:
                     memory_size = archive.uncompressed
-        needed = limits.estimated_memory(detection.format, memory_size)
+        strategy = html_strategy if detection.format in WITH_STRATEGIES else Strategy.FULL
+        needed = limits.estimated_memory(detection.format, memory_size, strategy)
         if needed > limits.worker_memory:
             skipped.append(
                 SkippedItem(
@@ -109,7 +110,7 @@ def build_plan(
             continue
         target = target_for(candidate.path, root, _relative_dir(candidate))
         drafts.append(
-            (candidate, detection, root, limits.estimated_seconds(detection.format, size))
+            (candidate, detection, root, limits.estimated_seconds(detection.format, size, strategy))
         )
         requests.append(NameRequest(candidate.path, target, _label(candidate, detection)))
     conversions = [

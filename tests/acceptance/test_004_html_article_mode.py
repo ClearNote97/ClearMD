@@ -69,7 +69,7 @@ def test_ac_02_the_setting_or_the_flag_chooses_the_article(workdir: Path) -> Non
 
 
 def test_ac_03_the_summary_shows_the_strategy(workdir: Path, article_md: str) -> None:
-    assert "| `news.html` | `OutputMD/news.md` | HTML (article) |" in summary(workdir)
+    assert "| `news.html` | `OutputMD/news.md` | HTML (Article) |" in summary(workdir)
 
 
 def test_ac_04_the_article_keeps_its_structure(article_md: str) -> None:
@@ -131,7 +131,7 @@ def test_ac_09_notes_in_the_users_language(workdir: Path) -> None:
     assert "no se encontró un artículo en la página; se convirtió la página completa" in summary(
         workdir
     )
-    assert "| HTML (artículo) |" in summary(workdir)
+    assert "| HTML (Artículo) |" in summary(workdir)
 
 
 def test_ac_10_the_cli_process_never_imports_trafilatura(workdir: Path) -> None:
@@ -149,4 +149,15 @@ def test_ac_10_the_cli_process_never_imports_trafilatura(workdir: Path) -> None:
 
 
 def test_ac_11_the_benchmark_measures_the_article_strategy() -> None:
-    pytest.skip("measured in T06 (benchmark 004)")
+    from clearmd.backend.schemas.limits import ARTICLE_MEMORY_PER_MIB, ARTICLE_SECONDS_PER_MIB
+
+    results = Path(__file__).parents[2] / "docs" / "benchmarks" / "004-results.json"
+    rows = [row for row in json.loads(results.read_text("utf-8"))["rows"] if row["result"]["ok"]]
+    assert max(row["size_mib"] for row in rows) >= 25
+    speed = max(row["result"]["seconds"] / row["size_mib"] for row in rows)
+    memory = max(
+        (row["result"]["peak_mib"] - row["result"]["baseline_mib"]) / row["size_mib"]
+        for row in rows
+    )
+    assert speed <= ARTICLE_SECONDS_PER_MIB <= 1.5 * speed
+    assert memory <= ARTICLE_MEMORY_PER_MIB <= 1.5 * memory

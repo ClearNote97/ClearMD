@@ -192,4 +192,4 @@ invalid_value = "Settings: invalid value for “{setting}”; using its default.
 unreadable = "Settings: {setting} could not be read; using the defaults."
 
 [summary.strategy]
-article = "{format} (article)"
+article = "{format} (Article)"
