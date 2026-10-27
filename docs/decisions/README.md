@@ -43,3 +43,4 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 | [0023](./0023-latex-hardening-after-review.md) | LaTeX: includes as inserted text, images never fetched, a file never fails whole | accepted |
 | [0024](./0024-opendocument-converter.md) | OpenDocument text: XML read safely, images as placeholders, formulas as LaTeX | accepted |
 | [0025](./0025-html-article-mode.md) | HTML article mode: trafilatura finds the article, ClearMD writes it | accepted; refined after review |
+| [0026](./0026-presenter-and-ttk-gui.md) | The presenter and the first GUI (ttkbootstrap) | proposed |
