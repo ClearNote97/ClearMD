@@ -16,6 +16,7 @@ class ConvertRequest:
     format: str
     method: str
     target: str  # where the Markdown will be written: links to images start there
+    strategy: str = "full"  # Strategy: HTML may be converted to its article only (004)
 
 
 @dataclass(frozen=True)

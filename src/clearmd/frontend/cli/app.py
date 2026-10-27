@@ -18,6 +18,7 @@ from typing import TextIO
 
 from clearmd.backend.api import (
     CancelToken,
+    Strategy,
     failed_line,
     load_settings,
     plan_batch,
@@ -68,6 +69,9 @@ def build_parser(catalog: Catalog) -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--output-root", type=Path, metavar="DIR", help=help_("cli.help.output_root")
+    )
+    parser.add_argument(
+        "--html", choices=[strategy.value for strategy in Strategy], help=help_("cli.help.html")
     )
     parser.add_argument("--dry-run", action="store_true", help=help_("cli.help.dry_run"))
     parser.add_argument("--open", action="store_true", help=help_("cli.help.open"))
@@ -333,7 +337,12 @@ def _main(argv: Sequence[str] | None) -> int:
         "overwrite" if args.overwrite else "skip" if args.skip else settings.on_existing_output
     )
     try:
-        plan = plan_batch(args.paths, recursive=recursive, output_root=args.output_root)
+        plan = plan_batch(
+            args.paths,
+            recursive=recursive,
+            output_root=args.output_root,
+            html_strategy=Strategy(args.html or settings.html_strategy),
+        )
     except KeyboardInterrupt:
         print(catalog.text("cli.cancelled_before_start"), file=err)
         return EXIT_CANCELLED

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Protocol
 
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
-from clearmd.backend.schemas.formats import FormatId
+from clearmd.backend.schemas.formats import FormatId, Strategy
 from clearmd.backend.schemas.models import Detection, DetectionMethod
 from clearmd.backend.services.conversion.registry import DocumentConverter
 from clearmd.backend.services.worker.protocol import (
@@ -23,7 +23,9 @@ from clearmd.backend.services.worker.protocol import (
 
 
 class _Registry(Protocol):
-    def for_format(self, format_id: FormatId) -> DocumentConverter: ...
+    def for_format(
+        self, format_id: FormatId, strategy: Strategy = Strategy.FULL
+    ) -> DocumentConverter: ...
 
     def detect_content(self, path: Path) -> Detection | None: ...
 
@@ -65,7 +67,7 @@ def handle(
     format_id = FormatId(request.format)
     detection = Detection(format_id, DetectionMethod(request.method))
     try:
-        converter = registry.for_format(format_id)
+        converter = registry.for_format(format_id, Strategy(request.strategy))
         result = converter.convert(Path(request.source), detection, Path(request.target))
     except ConversionError as error:
         return Failed(error.code.value, error.detail)

@@ -2,8 +2,8 @@
 
 > Executable steps, in order. Test first. Plan: [`plan.md`](./plan.md) · Criteria: [`spec.md`](./spec.md).
 
-- [ ] **T01 — Fixtures.** `tests/fixtures/html/`: `news.html`, `no_article.html`, `hostile.html`; reproducible.
-- [ ] **T02 — The strategy through the pipeline.** Strategy in the plan, the request, the registry, the CLI
+- [x] **T01 — Fixtures.** `tests/fixtures/html/`: `news.html`, `no_article.html`, `hostile.html`; reproducible.
+- [x] **T02 — The strategy through the pipeline.** Strategy in the plan, the request, the registry, the CLI
       flag, the setting and the summary; full stays the default and nothing else moves (AC-01, AC-03).
 - [ ] **T03 — Shared XML tree.** `xmltree.py` to `conversion/`; odt unchanged.
 - [ ] **T04 — The article converter.** trafilatura's XML rendered through `markdown_out`; images as

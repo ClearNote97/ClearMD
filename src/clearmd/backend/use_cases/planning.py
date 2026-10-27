@@ -11,7 +11,7 @@ from pathlib import Path
 
 from clearmd.backend.schemas.errors import SkipReason
 from clearmd.backend.schemas.events import BatchEvent, PlanReady
-from clearmd.backend.schemas.formats import ZIP_BASED, FormatId
+from clearmd.backend.schemas.formats import WITH_STRATEGIES, ZIP_BASED, FormatId, Strategy
 from clearmd.backend.schemas.limits import Limits
 from clearmd.backend.schemas.models import (
     BatchPlan,
@@ -55,6 +55,7 @@ def build_plan(
     recursive: bool = True,
     output_root: Path | None = None,
     on_event: Callable[[BatchEvent], None] | None = None,
+    html_strategy: Strategy = Strategy.FULL,
 ) -> BatchPlan:
     unique_inputs = list(dict.fromkeys(inputs))  # "a.pdf a.pdf" is one file, converted once
     scanned = scan(unique_inputs, recursive=recursive, limits=limits, on_progress=on_event)
@@ -119,6 +120,7 @@ def build_plan(
             detection=detection,
             exists=target.exists(),
             cost=cost,
+            strategy=html_strategy if detection.format in WITH_STRATEGIES else Strategy.FULL,
         )
         for (candidate, detection, root, cost), target in zip(
             drafts, resolve_names(requests), strict=True

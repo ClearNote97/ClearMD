@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Protocol
 
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
-from clearmd.backend.schemas.formats import FormatId
+from clearmd.backend.schemas.formats import FormatId, Strategy
 from clearmd.backend.schemas.models import ConversionResult, Detection
 
 
@@ -29,20 +29,28 @@ class ConverterRegistry:
         self,
         converters: Mapping[FormatId, DocumentConverter],
         content_detector: ContentDetector | None = None,
+        strategies: Mapping[tuple[FormatId, Strategy], DocumentConverter] | None = None,
     ) -> None:
         self._converters = dict(converters)
         self._content_detector = content_detector
+        self._strategies = dict(strategies or {})  # the converters of a non-default strategy
 
     def detect_content(self, path: Path) -> Detection | None:
         return self._content_detector.detect(path) if self._content_detector else None
 
-    def for_format(self, format_id: FormatId) -> DocumentConverter:
-        try:
-            return self._converters[format_id]
-        except KeyError:
+    def for_format(
+        self, format_id: FormatId, strategy: Strategy = Strategy.FULL
+    ) -> DocumentConverter:
+        found = (
+            self._converters.get(format_id)
+            if strategy is Strategy.FULL
+            else self._strategies.get((format_id, strategy))
+        )
+        if found is None:
             raise ConversionError(
-                ErrorCode.UNSUPPORTED_FORMAT, f"no converter for {format_id}"
-            ) from None
+                ErrorCode.UNSUPPORTED_FORMAT, f"no converter for {format_id} ({strategy})"
+            )
+        return found
 
 
 def build_registry() -> ConverterRegistry:

@@ -64,6 +64,7 @@ class WorkerRunner:
             item.detection.format.value,
             item.detection.method.value,
             str(item.target),
+            item.strategy.value,
         )
         response = self._request(request, cancel)
         if not isinstance(response, Converted):

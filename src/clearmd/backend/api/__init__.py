@@ -8,6 +8,7 @@ from pathlib import Path
 from clearmd.backend.api import composition
 from clearmd.backend.schemas.errors import ErrorCode
 from clearmd.backend.schemas.events import BatchEvent
+from clearmd.backend.schemas.formats import Strategy
 from clearmd.backend.schemas.models import (
     BatchPlan,
     BatchReport,
@@ -30,6 +31,7 @@ from clearmd.backend.use_cases.reporting import by_output_root
 
 __all__ = [
     "CancelToken",
+    "Strategy",
     "failed_line",
     "load_settings",
     "plan_batch",
@@ -61,6 +63,7 @@ def plan_batch(
     recursive: bool = True,
     output_root: Path | None = None,
     on_event: Callable[[BatchEvent], None] | None = None,
+    html_strategy: Strategy = Strategy.FULL,
 ) -> BatchPlan:
     """Everything that would happen, computed without writing anything.
 
@@ -77,6 +80,7 @@ def plan_batch(
             recursive=recursive,
             output_root=Path(os.path.abspath(output_root.expanduser())) if output_root else None,
             on_event=on_event,
+            html_strategy=html_strategy,
         )
     finally:
         worker.close()

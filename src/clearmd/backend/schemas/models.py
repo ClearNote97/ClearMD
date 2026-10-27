@@ -6,7 +6,7 @@ from enum import StrEnum
 from pathlib import Path
 
 from clearmd.backend.schemas.errors import ErrorCode, SkipReason
-from clearmd.backend.schemas.formats import FormatId
+from clearmd.backend.schemas.formats import FormatId, Strategy
 from clearmd.backend.schemas.notes import ConversionNote
 
 
@@ -35,6 +35,7 @@ class PlannedConversion:
     detection: Detection
     exists: bool
     cost: float
+    strategy: Strategy = Strategy.FULL
 
 
 @dataclass(frozen=True)

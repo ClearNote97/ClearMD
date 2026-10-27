@@ -21,6 +21,17 @@ class FormatId(StrEnum):
     ODT = "odt"  # ClearMD's own converter, standard library only (feature 003)
 
 
+class Strategy(StrEnum):
+    """How a format is converted when there is more than one way (ADR-0006, ADR-0025): HTML only."""
+
+    FULL = "full"  # the whole page (markitdown)
+    ARTICLE = "article"  # only the main content: trafilatura finds it, ClearMD writes it
+
+
+# The formats that have more than one strategy; every other one is always FULL.
+WITH_STRATEGIES: frozenset[FormatId] = frozenset({FormatId.HTML})
+
+
 EXTENSIONS: Mapping[str, FormatId] = MappingProxyType(
     {
         ".pdf": FormatId.PDF,

@@ -5,7 +5,7 @@ import re
 from collections.abc import Iterable
 from pathlib import Path
 
-from clearmd.backend.schemas.formats import SUMMARY_NAME
+from clearmd.backend.schemas.formats import SUMMARY_NAME, Strategy
 from clearmd.backend.schemas.models import (
     ConversionOutcome,
     OutcomeStatus,
@@ -161,6 +161,8 @@ class MarkdownSummaryWriter:
     def _row(self, outcome: ConversionOutcome, base: Path, root: Path) -> str:
         detection = outcome.item.detection
         fmt = detection.format.value.upper()
+        if outcome.item.strategy is not Strategy.FULL:
+            fmt = self._catalog.text(f"summary.strategy.{outcome.item.strategy}", format=fmt)
         if detection.by_content:
             fmt = self._catalog.text("summary.by_content", format=fmt)
         source = _cell(_relative(outcome.item.source, base))
