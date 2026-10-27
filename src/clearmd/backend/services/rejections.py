@@ -8,7 +8,14 @@ from clearmd.backend.schemas.models import ConversionOutcome, SkippedItem
 from clearmd.i18n import Catalog
 
 # The reasons whose value and limit are sizes in bytes; the others are counts or a ratio.
-_SIZES = frozenset({SkipReason.TOO_LARGE, SkipReason.ARCHIVE_TOO_LARGE, SkipReason.TOO_MUCH_MEMORY})
+_SIZES = frozenset(
+    {
+        SkipReason.TOO_LARGE,
+        SkipReason.ARCHIVE_TOO_LARGE,
+        SkipReason.TOO_MUCH_MEMORY,
+        SkipReason.TOO_MUCH_MEMORY_FOR_ARTICLE,
+    }
+)
 
 
 def skip_reason(catalog: Catalog, item: SkippedItem) -> str:

@@ -19,7 +19,6 @@ from clearmd.backend.schemas.models import (
     PlannedConversion,
     PlanWarning,
     SkippedItem,
-    StrategyWarning,
 )
 from clearmd.backend.use_cases.archive import inspect_archive, unsafe_reason
 from clearmd.backend.use_cases.paths import (
@@ -61,7 +60,6 @@ def build_plan(
     unique_inputs = list(dict.fromkeys(inputs))  # "a.pdf a.pdf" is one file, converted once
     scanned = scan(unique_inputs, recursive=recursive, limits=limits, on_progress=on_event)
     drafts: list[tuple[Candidate, Detection, Path, float, Strategy]] = []
-    fallbacks: list[tuple[Path, int]] = []  # article → full page: the article's memory
     requests: list[NameRequest] = []
     skipped: list[SkippedItem] = [
         replace(
@@ -99,17 +97,16 @@ def build_plan(
                     memory_size = archive.uncompressed
         strategy = html_strategy if detection.format in WITH_STRATEGIES else Strategy.FULL
         needed = limits.estimated_memory(detection.format, memory_size, strategy)
-        if needed > limits.worker_memory and strategy is not Strategy.FULL:
-            # Never left out because of the strategy (ADR-0025): the whole page, if it fits.
-            full = limits.estimated_memory(detection.format, memory_size)
-            if full <= limits.worker_memory:
-                fallbacks.append((candidate.path, needed))
-                strategy, needed = Strategy.FULL, full
         if needed > limits.worker_memory:
+            # In article mode the reason says so, and what to do: --html full (ADR-0025: never
+            # handed to markitdown behind the user's back, where the guarantee does not hold).
+            article = strategy is not Strategy.FULL
             skipped.append(
                 SkippedItem(
                     candidate.path,
-                    SkipReason.TOO_MUCH_MEMORY,
+                    SkipReason.TOO_MUCH_MEMORY_FOR_ARTICLE
+                    if article
+                    else SkipReason.TOO_MUCH_MEMORY,
                     measured=needed,
                     limit=limits.worker_memory,
                     output_root=root,
@@ -140,13 +137,7 @@ def build_plan(
         for item in ordered
         if item.cost > limits.time_per_file
     )
-    needed_by = dict(fallbacks)
-    strategy_warnings = tuple(
-        StrategyWarning(item, needed_by[item.source], limits.worker_memory)
-        for item in ordered
-        if item.source in needed_by
-    )
-    plan = BatchPlan(ordered, tuple(skipped), scanned.input_errors, warnings, strategy_warnings)
+    plan = BatchPlan(ordered, tuple(skipped), scanned.input_errors, warnings)
     if on_event is not None:
         on_event(PlanReady(plan))
     return plan

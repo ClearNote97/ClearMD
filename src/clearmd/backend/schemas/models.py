@@ -73,16 +73,6 @@ class PlanWarning:
 
 
 @dataclass(frozen=True)
-class StrategyWarning:
-    """An HTML page planned in full because its article would need more memory than allowed
-    (ADR-0025: never left out because of the strategy)."""
-
-    item: PlannedConversion
-    article_memory: int
-    memory_limit: int
-
-
-@dataclass(frozen=True)
 class BatchPlan:
     """Everything computed before writing anything, already in execution order."""
 
@@ -90,7 +80,6 @@ class BatchPlan:
     skipped: tuple[SkippedItem, ...]
     input_errors: tuple[InputError, ...]
     warnings: tuple[PlanWarning, ...] = ()
-    strategy_warnings: tuple[StrategyWarning, ...] = ()
 
     @property
     def is_empty(self) -> bool:

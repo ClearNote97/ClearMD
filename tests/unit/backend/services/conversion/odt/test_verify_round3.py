@@ -161,3 +161,14 @@ def test_r5_the_emphasis_check_agrees_with_a_commonmark_parser() -> None:
         ):
             wrong.append(text)
     assert wrong == []
+
+
+def test_n1_of_004_a_list_item_starting_with_code_never_frees_later_blocks(tmp_path: Path) -> None:
+    markdown = md(
+        tmp_path,
+        '<text:list text:style-name="L1"><text:list-item><text:p text:style-name="P2">code</text:p>'
+        "</text:list-item></text:list><text:p># Forged</text:p><text:p>Setext</text:p>"
+        "<text:p>===</text:p>",
+    )
+    found = [token.type for token in MarkdownIt("commonmark").parse(markdown)]
+    assert "heading_open" not in found and "fence" in found

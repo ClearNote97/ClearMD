@@ -28,10 +28,12 @@ from clearmd.backend.services.conversion.markdown_out import (
     fence_for,
     heading_text,
     indent,
+    indent_all,
     neutralize,
     outside_code,
     own_line,
     starts_tight,
+    starts_with_fence,
     tidy,
 )
 from clearmd.backend.services.conversion.xmltree import Element, int_attribute
@@ -69,10 +71,11 @@ class ArticleRenderer:
         (``# Title``); without one, ``title`` (the page's ``<title>``). Other headings start at
         ``##``."""
         heading, parent = _first_h1(main)
-        if heading is not None and parent is not None:
-            parent.children.remove(heading)
+        written = ""
+        if heading is not None and parent is not None and heading.text().strip():
+            parent.children.remove(heading)  # a logo (only an image) is not the title
             written = _one_line(self._inline_of(heading.children))
-        else:
+        if not written:
             written = escape_text(" ".join(title.split()))
         levels = [
             int_attribute(head.get("rend")[1:], 2, cap=6)
@@ -169,7 +172,7 @@ class ArticleRenderer:
         delimiter, bullet = (")", "* ") if alternate else (".", "- ")
         lines: list[str] = []
         number = 1
-        for item in element.elements("item"):
+        for item in _items(element):
             content = self._item(item, level)
             if not content:
                 continue
@@ -178,17 +181,21 @@ class ArticleRenderer:
             if not self._spend(len(marker) * (content.count("\n") + 1)):
                 lines.append(MARK + marker + content.replace("\n", " "))
                 continue
-            lines.append(MARK + marker + indent(content, len(marker)))
+            if starts_with_fence(content):
+                lines.append(MARK + marker.rstrip() + "\n" + indent_all(content, len(marker)))
+            else:
+                lines.append(MARK + marker + indent(content, len(marker)))
         self._last_list = (numbered, alternate)
         return "\n".join(lines)
 
     def _definitions(self, element: Element) -> str:
-        """A definition list: each term a bold item, its definitions nested under it."""
+        """A definition list: each term a bold item, its definitions nested under it; their text
+        neutralized like any other (a "# x" definition is never a heading)."""
         lines: list[str] = []
-        for item in element.elements("item"):
+        for item in _items(element):
             term = item.get("rend").startswith("dt")
             props = TextProps(bold=True) if term else TextProps()
-            text = _one_line(self._inline_of(item.children, props))
+            text = neutralize(_one_line(self._inline_of(item.children, props)))
             if not text:
                 continue
             lines.append(f"{MARK}- {text}" if term or not lines else f"  {MARK}- {text}")
@@ -237,31 +244,37 @@ class ArticleRenderer:
     def _table(self, element: Element) -> str:
         grid: list[list[str]] = []
         plain: list[str] = []  # the cells' text, for a table the budget cannot pay for
+        overflow: list[str] = []  # the text of the rows past MAX_CELLS
         cells = 0
-        for row in element.elements("row"):
+        for row in _rows(element):
+            if cells > MAX_CELLS:
+                overflow.append(" ".join(row.text().split()))
+                continue
             line = []
-            for cell in row.elements("cell"):
+            for cell in _cells(row):
                 line.append(_one_line(self._inline_of(cell.children)).replace("|", "\\|"))
                 plain.append(" ".join(cell.text().split()))
             cells += len(line)
             if cells > MAX_CELLS:
-                self._tables_simplified += 1
-                break
+                self._note_unknown("table")  # its text follows the table, as a paragraph
+                overflow.append(" ".join(row.text().split()))
+                continue
             while line and not line[-1]:
                 line.pop()
             if line:
                 grid.append(line)
+        after = block(escape_text(" ".join(t for t in overflow if t))) if overflow else ""
         if not grid:
-            return ""
+            return after
         width = max(len(line) for line in grid)
         caption = ""
         if len(grid) > 1 and len(grid[0]) == 1 and width > 1:  # a caption, not the header
             caption = block(grid.pop(0)[0])
         if not self._spend(8 * width + sum(3 * (width - len(line)) for line in grid)):
-            return block(escape_text(" ".join(text for text in plain if text)))
+            return block(escape_text(" ".join(text for text in plain if text))) + after
         rows = [MARK + "| " + " | ".join(line + [""] * (width - len(line))) + " |" for line in grid]
         rows.insert(1, MARK + "|" + "---|" * width)
-        return caption + block("\n".join(rows))
+        return caption + block("\n".join(rows)) + after
 
     # --- Inline ------------------------------------------------------------------------------
 
@@ -296,7 +309,7 @@ class ArticleRenderer:
                 pieces.append(Text(self._image(item), _with(current, {"italic": True}), link))
             elif tag == "code":
                 stack.append((iter(item.children), _with(current, {"mono": True}), link))
-            elif tag == "quote":  # a short quotation inside a sentence
+            elif tag in {"quote", "q"}:  # a short quotation inside a sentence
                 stack.append((iter(item.children), current, link))
             else:
                 if tag not in BLOCKS and tag not in {"item", "row", "cell"}:
@@ -362,20 +375,78 @@ def _is_block(
     child: Element | str, children: list[Element | str], index: int, loose: list[Element | str]
 ) -> bool:
     """Whether ``child`` is written as a block. trafilatura writes inline code and short
-    quotations (``<q>``) with the same tags as blocks: one with text around it is inline, unless
-    it holds lines (a code block) or blocks."""
+    quotations (``<q>``) with the same tags as blocks: one with text or inline elements around it
+    is inline, unless it holds lines (a code block) or blocks. The whole page's ``<pre>`` and
+    ``<blockquote>`` are always blocks."""
     if not isinstance(child, Element) or child.tag not in BLOCKS:
         return False
-    if child.tag not in {"code", "quote"}:
+    if child.tag not in {"code", "quote"} or child.get("rend") in {"pre", "block"}:
         return True
-    if child.tag == "code" and (child.find("code") is not None or child.find("lb") is not None):
+    if child.tag == "code" and (
+        child.find("code") is not None
+        or child.find("lb") is not None
+        or "\n" in child.text().strip("\n")
+    ):
         return True
     if child.tag == "quote" and any(c.tag in BLOCKS for c in child.elements()):
         return True
     before = any(not isinstance(node, str) or node.strip() for node in loose)
-    following = children[index + 1] if index + 1 < len(children) else None
-    after = isinstance(following, str) and bool(following.strip())
+    following = next(
+        (node for node in children[index + 1 :] if not isinstance(node, str) or node.strip()), None
+    )
+    after = isinstance(following, str) or (
+        isinstance(following, Element) and following.tag not in BLOCKS
+    )
     return not (before or after)
+
+
+def _items(element: Element) -> list[Element]:
+    """A list's items, through what wraps them (``<dl><div><dt>``, ``<ul><a><li>``); text or an
+    element with no item inside becomes an item of its own, never lost."""
+    found: list[Element] = []
+    pending: list[Element | str] = list(reversed(element.children))
+    while pending:
+        node = pending.pop()
+        if isinstance(node, str):
+            if node.strip():
+                found.append(Element("item", {}, [node]))
+        elif node.tag == "item":
+            found.append(node)
+        elif node.tag != "list" and node.find("item") is not None:
+            pending.extend(reversed(node.children))  # a wrapper: its items, in order
+        else:
+            found.append(Element("item", {}, [node]))  # a nested list, a paragraph…
+    return found
+
+
+def _rows(table: Element) -> list[Element]:
+    """A table's rows, through what wraps them (``<table><form><tr>``); a bare cell or text
+    becomes a row of its own. Nested tables are their cells' content, not rows here."""
+    found: list[Element] = []
+    pending: list[Element | str] = list(reversed(table.children))
+    while pending:
+        node = pending.pop()
+        if isinstance(node, str):
+            if node.strip():
+                found.append(Element("row", {}, [Element("cell", {}, [node])]))
+        elif node.tag == "row":
+            found.append(node)
+        elif node.tag == "cell":
+            found.append(Element("row", {}, [node]))
+        elif node.tag != "table":
+            pending.extend(reversed(node.children))
+    return found
+
+
+def _cells(row: Element) -> list[Element]:
+    """A row's cells; text beside them becomes a cell of its own."""
+    cells = []
+    for node in row.children:
+        if isinstance(node, Element) and node.tag == "cell":
+            cells.append(node)
+        elif isinstance(node, str) and node.strip() or isinstance(node, Element):
+            cells.append(Element("cell", {}, [node]))
+    return cells
 
 
 def _code_text(element: Element) -> str:

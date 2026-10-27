@@ -56,6 +56,7 @@ existing_output = "result already exists (kept)"
 unreadable = "cannot be read"
 too_deep = "folders nested too deeply ({measured} levels; limit {limit})"
 too_much_memory = "needs about {measured} of memory; limit {limit}"
+too_much_memory_for_article = "needs about {measured} of memory in article mode; limit {limit}"
 
 [skip_action]
 output_folder = "ClearMD does not convert its own results."
@@ -73,6 +74,7 @@ existing_output = "Choose overwrite to replace it (CLI: --overwrite)."
 unreadable = "Check that it exists and that you can open it."
 too_deep = "Move it to a shallower folder."
 too_much_memory = "Split it into smaller files."
+too_much_memory_for_article = "Convert it with --html full (the whole page, as markitdown writes it)."
 
 [stop]
 timed_out = "Exceeded the time limit ({limit})."
@@ -117,7 +119,6 @@ summary_not_written = "⚠ The summary in {path} could not be written (is the di
 unexpected_error = "Something unexpected went wrong and ClearMD stopped: {detail}. Your files were not changed; please report this."
 time_left = "{duration} left"
 warning_slow = "⚠ {name} — may take more than {limit} ({estimate}) and be stopped"
-warning_article_memory = "⚠ {name} — needs about {needed} of memory in article mode (limit {limit}): converted in full"
 
 [time]
 under_a_minute = "less than a minute"
@@ -166,6 +167,7 @@ formula_kept_as_source = "formulas ClearMD cannot convert to LaTeX are shown as 
 formatting_dropped = "bold, italic or strike-through that Markdown cannot show between those characters was left out: {items}"
 article_not_found = "no article was found in the page, so the whole page was converted"
 article_too_complex = "the page has too many elements for article mode, so the whole page was converted"
+page_cut = "the page is too large to write whole; its first part was kept"
 images_not_downloaded = "images not downloaded (each shown by its description): {items}"
 and_more = " and {count} more"
 

@@ -52,6 +52,14 @@ def block(text: str) -> str:
     return f"\n\n{text.strip(chr(10))}\n\n"
 
 
+def starts_with_fence(content: str) -> bool:
+    """Whether a list item's content opens with a code fence: the marker then goes on its own
+    line ("-" and the fence below), because ``neutralize`` and ``outside_code`` read a fence at
+    the start of a line only, and one after "- " would be missed (verification of 004)."""
+    first = content.split("\n", 1)[0].lstrip(" \t").lstrip(MARK)
+    return _OWN_FENCE.match(first) is not None
+
+
 def heading_text(text: str) -> str:
     """A heading's text whose final "#" is never read as the optional closing sequence."""
     return text[:-1] + "\\#" if text.endswith("#") and not text.endswith("\\#") else text

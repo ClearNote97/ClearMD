@@ -53,8 +53,10 @@ Markdown link to them makes the viewer fetch them when the file is opened.
 
 ### After the code review and the security audit (2026-10-27)
 
-- A page whose article would need more memory than the worker allows is planned in full, with a warning
-  (never left out); one with more than 50,000 elements is written in full by ClearMD, with its own note
+- A page whose article would need more memory than the worker allows is skipped, saying so and what to do
+  (`--html full`): handing it to markitdown would switch the guarantee off behind the user's back
+  (verification of 004); one with more than 25,000 elements is written in full by ClearMD, with its own note; a page past the
+  XML reader's limits is cut, its first part kept, with a note
   (trafilatura's extraction grows faster than linear); characters XML forbids become U+FFFD before trafilatura
   (one would lose the whole article); line endings are "\n" everywhere (a "&#13;" in a code block could
   leave its list).

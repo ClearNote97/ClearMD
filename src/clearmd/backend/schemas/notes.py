@@ -26,6 +26,7 @@ class NoteKind(StrEnum):
     FORMATTING_DROPPED = "formatting_dropped"
     ARTICLE_NOT_FOUND = "article_not_found"
     ARTICLE_TOO_COMPLEX = "article_too_complex"
+    PAGE_CUT = "page_cut"
     IMAGES_NOT_DOWNLOADED = "images_not_downloaded"
 
     @property

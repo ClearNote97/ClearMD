@@ -71,6 +71,8 @@ PLACES = [
     "<h2>{t}</h2>",
     '<figure><img src="https://cdn.example/x.jpg" alt="{t}"></figure>',
     "<pre><code>{t}</code></pre>",
+    "<ul><li><pre><code>{t}\nmore</code></pre></li></ul><p>{t} " + FILLER + "</p>",
+    "<dl><dt>{t}</dt><dd>{t}</dd></dl>",
 ]
 
 

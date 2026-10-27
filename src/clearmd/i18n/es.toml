@@ -56,6 +56,7 @@ existing_output = "el resultado ya existe (se conserva)"
 unreadable = "no se puede leer"
 too_deep = "carpetas demasiado profundas ({measured} niveles; límite {limit})"
 too_much_memory = "requiere unos {measured} de memoria; límite {limit}"
+too_much_memory_for_article = "en modo artículo requiere unos {measured} de memoria; límite {limit}"
 
 [skip_action]
 output_folder = "ClearMD no convierte sus propios resultados."
@@ -73,6 +74,7 @@ existing_output = "Elige sobrescribir para reemplazarlo (CLI: --overwrite)."
 unreadable = "Verifica que exista y que puedas abrirlo."
 too_deep = "Muévelo a una carpeta menos profunda."
 too_much_memory = "Divídelo en archivos más pequeños."
+too_much_memory_for_article = "Conviértelo con --html full (la página completa, como la escribe markitdown)."
 
 [stop]
 timed_out = "Superó el límite de tiempo ({limit})."
@@ -117,7 +119,6 @@ summary_not_written = "⚠ No se pudo escribir el resumen en {path} (¿el disco 
 unexpected_error = "Ocurrió algo inesperado y ClearMD se detuvo: {detail}. Tus archivos no se modificaron; por favor repórtalo."
 time_left = "faltan {duration}"
 warning_slow = "⚠ {name} — podría tardar más de {limit} ({estimate}) y detenerse"
-warning_article_memory = "⚠ {name} — en modo artículo requiere unos {needed} de memoria (límite {limit}): se convierte completo"
 
 [time]
 under_a_minute = "menos de un minuto"
@@ -166,6 +167,7 @@ formula_kept_as_source = "las fórmulas que ClearMD no puede pasar a LaTeX se mu
 formatting_dropped = "la negrita, cursiva o tachado que Markdown no puede mostrar entre esos caracteres se omitió: {items}"
 article_not_found = "no se encontró un artículo en la página; se convirtió la página completa"
 article_too_complex = "la página tiene demasiados elementos para el modo artículo; se convirtió la página completa"
+page_cut = "la página es demasiado grande para escribirla completa; se conservó su primera parte"
 images_not_downloaded = "imágenes no descargadas (cada una se muestra con su descripción): {items}"
 and_more = " y {count} más"
 

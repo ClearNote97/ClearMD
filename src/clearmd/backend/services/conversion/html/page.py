@@ -36,20 +36,20 @@ CONTAINERS = frozenset(
     {
         "body", "div", "section", "article", "main", "header", "footer", "nav", "aside",
         "figure", "figcaption", "address", "details", "summary", "center", "form", "fieldset",
-        "legend", "hgroup", "caption",
+        "legend", "hgroup",
     }
 )  # fmt: skip
 
 
-def page_tree(page: str) -> Element | None:
-    """The page as an article-like tree (``body`` → ``head``, ``p``, ``list``…); ``None`` when
-    lxml finds nothing."""
+def page_tree(page: str) -> tuple[Element | None, bool]:
+    """The page as an article-like tree (``head``, ``p``, ``list``…), the whole document (text
+    after ``</body>`` too; ``<head>`` is dropped), and whether it was cut at the XML reader's
+    limits; ``None`` when lxml finds nothing."""
     try:
         document = lxml_html.document_fromstring(_DECLARATION.sub("", page))
     except Exception:  # noqa: BLE001 -- lxml refuses it (empty, binary): nothing to write
-        return None
-    body = document.find("body")
-    return _convert(body if body is not None else document)
+        return None, False
+    return _convert(document)
 
 
 def _mapped(node: Any) -> Element | None:
@@ -79,10 +79,14 @@ def _mapped(node: Any) -> Element | None:
         return Element("item")
     if tag in {"dt", "dd"}:
         return Element("item", {"rend": f"{tag}-1"})
-    if tag in {"blockquote", "q"}:
-        return Element("quote")
+    if tag == "blockquote":
+        return Element("quote", {"rend": "block"})
+    if tag == "q":
+        return Element("q")
     if tag == "pre":
-        return Element("code")
+        return Element("code", {"rend": "pre"})
+    if tag == "caption":  # a row of one cell: written before the table
+        return Element("cell", {"role": "head"})
     if tag == "table":
         return Element("table")
     if tag == "tr":
@@ -96,7 +100,7 @@ def _mapped(node: Any) -> Element | None:
     return None  # span, small, mark, abbr, time, label, thead, tbody…: their content only
 
 
-def _convert(root: Any) -> Element | None:
+def _convert(root: Any) -> tuple[Element, bool]:
     limits = XmlLimits()
     budget = {"elements": 0, "characters": 0}
 
@@ -121,7 +125,7 @@ def _convert(root: Any) -> Element | None:
             continue
         budget["elements"] += 1
         if budget["elements"] > limits.max_elements or budget["characters"] > limits.max_characters:
-            return None
+            return top, True  # what was read so far: cut, never empty
         name = tag.lower()
         in_pre = bool(extra)
         element = None if node is root or (in_pre and name == "code") else _mapped(node)
@@ -132,4 +136,4 @@ def _convert(root: Any) -> Element | None:
             target.children.append(clean(node.text))
         for child in reversed(list(node)):
             pending.append((child, target, in_pre or name == "pre"))
-    return top
+    return top, False

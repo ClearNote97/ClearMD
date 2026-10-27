@@ -8,6 +8,7 @@ Imported only inside the worker.
 """
 
 import html
+import itertools
 import re
 from pathlib import Path
 from typing import Any
@@ -27,8 +28,8 @@ _MARK = "\ue000"  # ClearMD's mark for its own block lines (markdown_out.MARK)
 MIN_ARTICLE_CHARACTERS = 200  # the fixture's login page has about 50; a short article, 500+
 MAX_PAGE_BYTES = 256 * 1024**2
 # trafilatura's extraction grows faster than linear in the number of elements (audit of 004:
-# 40,000 spans take 88 s); a page with more is converted in full, with a note.
-MAX_ARTICLE_ELEMENTS = 50_000
+# 40,000 spans take 88 s, 45,000 up to 187 s); a page with more is written in full, with a note.
+MAX_ARTICLE_ELEMENTS = 25_000  # about a minute at most (verification of 004)
 _TAG = re.compile(r"<[A-Za-z]")
 _LANGUAGE = re.compile(r"<html\b[^>]*?\slang\s*=\s*[\"']?([A-Za-z]{2,3})", re.IGNORECASE)
 _TITLE = re.compile(r"<title\b[^>]*>(.*?)</title>", re.IGNORECASE | re.DOTALL)
@@ -56,7 +57,10 @@ class ArticleConverter:
         )
         reason = None
         main = None
-        if len(_TAG.findall(text)) > MAX_ARTICLE_ELEMENTS:
+        cut = False
+        if sum(1 for _ in itertools.islice(_TAG.finditer(text), MAX_ARTICLE_ELEMENTS + 1)) > (
+            MAX_ARTICLE_ELEMENTS
+        ):
             reason = NoteKind.ARTICLE_TOO_COMPLEX
         else:
             main = _article(text)
@@ -65,23 +69,29 @@ class ArticleConverter:
         if main is None:
             # The whole page, written by ClearMD with the same guarantee (the author's choice):
             # article mode never hands a page's own markup or remote images to the Markdown.
-            main = page_tree(text) or Element("body")
+            tree, cut = page_tree(text)
+            main = tree or Element("body")
         markdown = renderer.document(main, title=title)
         notes = renderer.notes()
+        if cut:
+            notes = (ConversionNote(NoteKind.PAGE_CUT, ()), *notes)
         if reason is not None:
             notes = (ConversionNote(reason, ()), *notes)
         return ConversionResult(markdown, notes)
 
 
 _FORBIDDEN = re.compile("[\x00-\x08\x0b\x0c\x0e-\x1f\ufffe\uffff\ud800-\udfff]")
-_REFERENCE = re.compile(r"&#(?:[xX]([0-9A-Fa-f]{1,8})|([0-9]{1,10}));?")
+_REFERENCE = re.compile(r"&#(?:[xX]([0-9A-Fa-f]+)|([0-9]+));?")
 
 
 def _xml_safe(text: str) -> str:
     """Characters XML 1.0 forbids, written or as references, become U+FFFD (shown, harmless)."""
 
     def reference(found: re.Match[str]) -> str:
-        code = int(found.group(1), 16) if found.group(1) else int(found.group(2))
+        digits = (found.group(1) or found.group(2)).lstrip("0") or "0"  # leading zeros allowed
+        if len(digits) > 8:
+            return "\ufffd"
+        code = int(digits, 16) if found.group(1) else int(digits)
         allowed = (
             code in (0x9, 0xA, 0xD)
             or 0x20 <= code <= 0xD7FF

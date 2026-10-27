@@ -46,6 +46,7 @@ class SkipReason(StrEnum):
     EXISTING_OUTPUT = "existing_output"
     UNREADABLE = "unreadable"
     TOO_MUCH_MEMORY = "too_much_memory"
+    TOO_MUCH_MEMORY_FOR_ARTICLE = "too_much_memory_for_article"  # HTML in article mode (004)
     TOO_DEEP = "too_deep"
 
     @property

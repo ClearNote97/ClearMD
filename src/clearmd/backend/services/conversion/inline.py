@@ -3,6 +3,7 @@ mode): runs of text with their properties, joined and escaped through ``markdown
 emphasis Markdown can hold only (an exact check of CommonMark's emphasis algorithm), links by the
 rules of ADR-0023, and a growth budget for what a link repeats. Standard library only."""
 
+import html
 import re
 import unicodedata
 from collections.abc import Callable
@@ -182,7 +183,9 @@ class InlineWriter:
         # Each piece of a link repeats its address: charged, and past the budget only the text.
         if not url or not self._spend(len(url)):
             return written
-        if not SAFE_LINK.match(url):  # javascript: never becomes a link (entities: link_target)
+        # javascript: never becomes a link, written as it is or with entities ("&colon;"), even
+        # though link_target keeps them from being decoded (a viewer might).
+        if not SAFE_LINK.match(url) or not SAFE_LINK.match(html.unescape(url)):
             shown = f"{text} ({inline_code(url)})" if text else inline_code(url)
         else:
             shown = f"[{text or escape_text(url)}]({link_target(url)})"

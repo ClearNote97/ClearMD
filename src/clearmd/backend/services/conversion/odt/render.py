@@ -35,6 +35,7 @@ from clearmd.backend.services.conversion.markdown_out import (
     neutralize,
     own_line,
     starts_tight,
+    starts_with_fence,
     tidy,
 )
 from clearmd.backend.services.conversion.odt.styles import Role, Styles
@@ -334,7 +335,10 @@ class OdtRenderer:
             number += 1
             width = len(marker)
             written = (kind.numbered, alternate)
-            lines.append(MARK + marker + self._indented(content, width, first=False))
+            if starts_with_fence(content):  # the marker alone, the fence below it
+                lines.append(MARK + marker.rstrip() + "\n" + self._indented(content, width))
+            else:
+                lines.append(MARK + marker + self._indented(content, width, first=False))
         if kind.numbered:
             self._numbers[(style, level)] = number - 1
         self._last_list = written

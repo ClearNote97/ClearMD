@@ -8,8 +8,7 @@ import pytest
 from markdown_it import MarkdownIt
 
 from clearmd.backend.schemas.errors import ErrorCode
-from clearmd.backend.schemas.formats import FormatId, Strategy
-from clearmd.backend.schemas.limits import Limits
+from clearmd.backend.schemas.formats import FormatId
 from clearmd.backend.schemas.models import (
     ConversionOutcome,
     Detection,
@@ -23,7 +22,6 @@ from clearmd.backend.services.conversion.html.render import ArticleRenderer
 from clearmd.backend.services.conversion.markdown_out import link_target
 from clearmd.backend.services.conversion.xmltree import parse_part
 from clearmd.backend.services.rejections import stopped_message
-from clearmd.backend.use_cases.planning import build_plan
 from clearmd.i18n import load_catalog
 
 PARSER = MarkdownIt("commonmark").enable(["table", "strikethrough"])
@@ -113,21 +111,6 @@ def test_m5_a_compressed_page_is_never_decompressed(tmp_path: Path) -> None:
     # Nothing is decompressed: no article in the bytes as they are on disk, and none of its text.
     assert NoteKind.ARTICLE_NOT_FOUND in {note.kind for note in result.notes}
     assert "párrafo largo" not in result.markdown
-
-
-def test_m6_a_page_too_big_for_the_article_is_planned_in_full(tmp_path: Path) -> None:
-    (tmp_path / "big.html").write_bytes(b"<p>" + b"x" * 3 * 1024**2 + b"</p>")
-
-    class _Html:
-        def detect(self, path: Path) -> Detection:
-            return DETECTION
-
-    limits = Limits(worker_memory=150 * 1024**2 + 1)  # the full page fits, the article does not
-    limits = Limits(worker_memory=limits.estimated_memory(FormatId.HTML, 3 * 1024**2 + 7) + 1)
-    plan = build_plan([tmp_path], detector=_Html(), limits=limits, html_strategy=Strategy.ARTICLE)
-    (item,) = plan.conversions
-    assert item.strategy is Strategy.FULL and not plan.skipped
-    assert [warning.item for warning in plan.strategy_warnings] == [item]
 
 
 # --- Low -----------------------------------------------------------------------------------------
