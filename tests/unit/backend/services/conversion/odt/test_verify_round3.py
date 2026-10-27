@@ -172,3 +172,15 @@ def test_n1_of_004_a_list_item_starting_with_code_never_frees_later_blocks(tmp_p
     )
     found = [token.type for token in MarkdownIt("commonmark").parse(markdown)]
     assert "heading_open" not in found and "fence" in found
+
+
+def test_r1_of_004_code_opening_an_item_stays_in_the_item(tmp_path: Path) -> None:
+    markdown = md(
+        tmp_path,
+        '<text:list text:style-name="L2"><text:list-item text:start-value="10">'
+        '<text:p text:style-name="P2">a</text:p><text:p text:style-name="P2">b</text:p>'
+        "</text:list-item><text:list-item><text:p>second</text:p></text:list-item></text:list>",
+    )
+    tokens = MarkdownIt("commonmark").parse(markdown)
+    assert [token.level for token in tokens if token.type == "fence"][0] > 0
+    assert "code_block" not in [token.type for token in tokens]

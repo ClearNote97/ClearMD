@@ -74,7 +74,7 @@ existing_output = "Choose overwrite to replace it (CLI: --overwrite)."
 unreadable = "Check that it exists and that you can open it."
 too_deep = "Move it to a shallower folder."
 too_much_memory = "Split it into smaller files."
-too_much_memory_for_article = "Convert it with --html full (the whole page, as markitdown writes it)."
+too_much_memory_for_article = "Convert it with --html full (markitdown's whole page, without this mode's guarantee)."
 
 [stop]
 timed_out = "Exceeded the time limit ({limit})."

@@ -74,7 +74,7 @@ existing_output = "Elige sobrescribir para reemplazarlo (CLI: --overwrite)."
 unreadable = "Verifica que exista y que puedas abrirlo."
 too_deep = "Muévelo a una carpeta menos profunda."
 too_much_memory = "Divídelo en archivos más pequeños."
-too_much_memory_for_article = "Conviértelo con --html full (la página completa, como la escribe markitdown)."
+too_much_memory_for_article = "Conviértelo con --html full (la página completa de markitdown, sin la garantía de este modo)."
 
 [stop]
 timed_out = "Superó el límite de tiempo ({limit})."

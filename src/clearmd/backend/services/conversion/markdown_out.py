@@ -22,6 +22,7 @@ _FENCE_LINE = re.compile(r"[ \t]*" + MARK + r"(`{3,}|~{3,})(.*)")
 
 
 _OWN_FENCE = re.compile(r"(`{3,}|~{3,})(.*)")
+_BARE_MARKER = re.compile(r"[ \t]*" + MARK + r"(?:[-*+]|\d{1,9}[.)])")  # a list marker alone
 
 
 ENTITY = re.compile(r"&[#A-Za-z]")
@@ -134,12 +135,20 @@ def outside_code(text: str, fix: Callable[[str], str], *, blank_around: bool = F
         return "\n".join(
             "\n".join(lines) if is_code else fix("\n".join(lines)) for is_code, lines in pieces
         )
-    # Exactly one blank line between a code block and the text around it.
+    # Exactly one blank line between a code block and the text around it, except right after a
+    # list marker alone on its line: the fence is that item's content (a blank line there would
+    # leave the item empty and the code outside the list).
     parts = [
         "\n".join(lines) if is_code else fix("\n".join(lines)).strip("\n")
         for is_code, lines in pieces
     ]
-    return "\n\n".join(part for part in parts if part)
+    out: list[str] = []
+    for part in (p for p in parts if p):
+        if out:
+            last_line = out[-1].rsplit("\n", 1)[-1]
+            out.append("\n" if _BARE_MARKER.fullmatch(last_line) else "\n\n")
+        out.append(part)
+    return "".join(out)
 
 
 def escape_text(text: str) -> str:
