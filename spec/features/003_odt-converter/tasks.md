@@ -34,7 +34,7 @@ Goal: `clearmd report.odt` writes a faithful `report.md` through the worker, saf
       `tests/acceptance/test_003_odt_converter.py`, one test per AC-01 … AC-20 (AC-18).
 - [x] **T09 — Benchmark.** An `.odt` case in `run_benchmark.py`; measured factors in `limits.py`;
       `docs/benchmarks/003-odt-converter.md` (AC-20).
-- [ ] **T10 — Close the feature.**
+- [x] **T10 — Close the feature.**
   - Real `.odt` files exported by LibreOffice (installed provisionally in the dev container, by the author's
     decision) convert as expected; they stay committed as fixtures. **Uninstall LibreOffice from the container.**
   - `docs/architecture/README.md` and both READMEs (formats, status table); roadmap and spec ticked.

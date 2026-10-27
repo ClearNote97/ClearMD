@@ -41,4 +41,5 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 | [0021](./0021-content-detection-only-without-extension.md) | Content detection only for files without an extension | accepted |
 | [0022](./0022-latex-includes-macros-and-notes.md) | LaTeX: includes, the author's macros and conversion notes | accepted; refined by 0023 |
 | [0023](./0023-latex-hardening-after-review.md) | LaTeX: includes as inserted text, images never fetched, a file never fails whole | accepted |
-| [0024](./0024-opendocument-converter.md) | OpenDocument text: XML read safely, images as placeholders, formulas as LaTeX | proposed |
+| [0024](./0024-opendocument-converter.md) | OpenDocument text: XML read safely, images as placeholders, formulas as LaTeX | accepted |
+| [0025](./0025-html-article-mode.md) | HTML article mode: trafilatura finds the article, ClearMD writes it | accepted |

@@ -7,11 +7,11 @@
   "memory_cap_mib": 2048
  },
  "startup": {
-  "import_and_init_s": 0.9870432729949243,
-  "rss_after_markitdown_mib": 163.59765625,
-  "second_magika_mib": -10.8671875,
-  "sampled_peak_mib": 147.2578125,
-  "wall_s": 1.4586063269816805
+  "import_and_init_s": 0.7759118189860601,
+  "rss_after_markitdown_mib": 161.37890625,
+  "second_magika_mib": -9.1796875,
+  "sampled_peak_mib": 161.53125,
+  "wall_s": 1.118720222992124
  },
  "rows": [
   {
@@ -22,12 +22,12 @@
     "ok": true,
     "markdown_mib": 0.5809144973754883,
     "notes": [],
-    "startup_s": 0.037396263011032715,
-    "seconds": 0.29759411700069904,
-    "baseline_mib": 26.01953125,
-    "peak_mib": 40.21875,
-    "sampled_peak_mib": 33.5625,
-    "wall_s": 0.7890733200183604
+    "startup_s": 0.031347401993116364,
+    "seconds": 0.3275081609899644,
+    "baseline_mib": 26.3359375,
+    "peak_mib": 40.42578125,
+    "sampled_peak_mib": 39.13671875,
+    "wall_s": 0.6625980719982181
    },
    "archive": {
     "uncompressed_mib": 1.0023527145385742,
@@ -43,12 +43,12 @@
     "ok": true,
     "markdown_mib": 2.9017982482910156,
     "notes": [],
-    "startup_s": 0.03904623299604282,
-    "seconds": 1.4788163549965248,
-    "baseline_mib": 26.65234375,
-    "peak_mib": 98.1328125,
-    "sampled_peak_mib": 84.28515625,
-    "wall_s": 1.9450105330033693
+    "startup_s": 0.0349132530100178,
+    "seconds": 1.6877601359738037,
+    "baseline_mib": 27.18359375,
+    "peak_mib": 99.80859375,
+    "sampled_peak_mib": 84.55078125,
+    "wall_s": 2.0333790199947543
    },
    "archive": {
     "uncompressed_mib": 5.00130558013916,
@@ -64,12 +64,12 @@
     "ok": true,
     "markdown_mib": 5.806474685668945,
     "notes": [],
-    "startup_s": 0.040585765993455425,
-    "seconds": 2.7896690870111343,
-    "baseline_mib": 25.87890625,
-    "peak_mib": 169.8359375,
-    "sampled_peak_mib": 161.33984375,
-    "wall_s": 3.309197202004725
+    "startup_s": 0.042285411996999756,
+    "seconds": 3.2860045339912176,
+    "baseline_mib": 27.05859375,
+    "peak_mib": 173.8515625,
+    "sampled_peak_mib": 162.06640625,
+    "wall_s": 3.6898833330196794
    },
    "archive": {
     "uncompressed_mib": 10.000920295715332,
@@ -85,12 +85,12 @@
     "ok": true,
     "markdown_mib": 14.525835037231445,
     "notes": [],
-    "startup_s": 0.03762251100852154,
-    "seconds": 7.404108949005604,
-    "baseline_mib": 25.8671875,
-    "peak_mib": 388.93359375,
-    "sampled_peak_mib": 357.37890625,
-    "wall_s": 7.877014180005062
+    "startup_s": 0.03277146999607794,
+    "seconds": 8.258038350002607,
+    "baseline_mib": 26.23046875,
+    "peak_mib": 397.9921875,
+    "sampled_peak_mib": 365.6640625,
+    "wall_s": 8.587383844977012
    },
    "archive": {
     "uncompressed_mib": 25.001370429992676,

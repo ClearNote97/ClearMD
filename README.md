@@ -4,7 +4,7 @@
 
 **Turn your documents into Markdown — 100% local: ClearMD never uses the internet.**
 
-_PDF, Word, PowerPoint, Excel, HTML, CSV, EPUB, notebooks and LaTeX (equations kept) → clean Markdown, a whole
+_PDF, Word, OpenDocument, PowerPoint, Excel, HTML, CSV, EPUB, notebooks and LaTeX (equations kept) → clean Markdown, a whole
 folder at once,
 built first for people who never open a terminal._
 
@@ -55,14 +55,18 @@ The value is in the method — a small product built like a serious one:
    from the OS); a link planted in the output folder cannot redirect a write; Ctrl+C stops at once. A LaTeX
    thesis is followed only inside its folder and its macros expand within a budget (a macro bomb stops), and the
    Markdown never holds HTML, a remote image or a link the document did not write as LaTeX — checked in the
-   test suite by a CommonMark parser and a seeded fuzz.
+   test suite by a CommonMark parser and a seeded fuzz. An `.odt` is read with ClearMD's own XML reader (no
+   `DOCTYPE`, limits on size and depth), with the same guarantee and a budget so that no small file can
+   multiply into a huge Markdown.
 5. **Measured, not guessed.** Benchmarks ([001](./docs/benchmarks/001-conversion-limits.md),
-   [002](./docs/benchmarks/002-tex-converter.md)) set the limits and the speed of each format: PDF is the time
-   bottleneck (~10 pages/s), xlsx the memory one, a 300-page LaTeX thesis takes ~3 s. Files are converted from
+   [002](./docs/benchmarks/002-tex-converter.md), [003](./docs/benchmarks/003-odt-converter.md)) set the limits
+   and the speed of each format: PDF is the time bottleneck (~10 pages/s), xlsx the memory one, a 300-page
+   LaTeX thesis takes ~3 s and a 300-page `.odt` report under a second. Files are converted from
    the cheapest to the most expensive, and the time left is estimated from the real speed of the batch.
 6. **Reviewed by independent eyes.** A code review, a security audit and an adversarial verification of the
-   fixes — which found real gaps in the first round of fixes, closed before shipping. For the LaTeX converter it
-   took three rounds: each one is in the history, with the test that reproduces every finding.
+   fixes — which found real gaps in the first round of fixes, closed before shipping. For the LaTeX and the
+   OpenDocument converters it took three rounds each: every one is in the history, with the test that
+   reproduces every finding.
 
 > 🤖 I built this with an AI agent (**Claude Code**): I direct — I define the problem, decide the design and
 > review every step; the agent executes and leaves everything traced.
@@ -106,7 +110,7 @@ _Plus the failed and skipped files with a plain-words reason, and the history of
 |---|---|---|
 | **001** Batch conversion — backend + CLI | ✅ done | 512 tests · reviewed |
 | **002** `.tex` converter (math preserved, no pandoc) | ✅ done | 807 tests in total · reviewed |
-| **003** `.odt` converter (standard library only) | ⏳ | |
+| **003** `.odt` converter (standard library only) | ✅ done | 1085 tests in total · reviewed |
 | **004** HTML article mode | ⏳ | |
 | **005** First desktop app (ttkbootstrap) | ⏳ | |
 | **006** CI + Windows/Linux executables | ⏳ | |
@@ -176,7 +180,7 @@ ClearMD_Output/          next to what you chose (or in --output-root)
 │   ├── frontend/cli/    # the command-line interface (the GUIs arrive here, one folder each)
 │   └── i18n/            # EN/ES message catalogs
 ├── spec/                # ★ Spec-Driven Development: constitution, roadmap, feature specs, UX contract
-├── docs/                # architecture, 23 ADRs, benchmarks
+├── docs/                # architecture, 25 ADRs, benchmarks
 ├── tests/               # unit (mirror of src) · acceptance (one per criterion) · fixtures · benchmark
 └── .devcontainer/       # reproducible environment (non-root, uv)
 ```

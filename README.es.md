@@ -4,7 +4,7 @@
 
 **Convierte tus documentos a Markdown — 100% local: ClearMD nunca usa internet.**
 
-_PDF, Word, PowerPoint, Excel, HTML, CSV, EPUB, notebooks y LaTeX (con sus ecuaciones) → Markdown limpio, una
+_PDF, Word, OpenDocument, PowerPoint, Excel, HTML, CSV, EPUB, notebooks y LaTeX (con sus ecuaciones) → Markdown limpio, una
 carpeta entera de una vez,
 pensado primero para quienes nunca abren una terminal._
 
@@ -55,17 +55,20 @@ El valor está en el método — un producto pequeño construido como uno serio:
    del sistema operativo); un enlace plantado en la carpeta de salida no puede desviar una escritura; Ctrl+C
    detiene al instante. Una tesis en LaTeX se sigue solo dentro de su carpeta y sus macros se expanden con un
    presupuesto (una bomba de macros se detiene), y el Markdown nunca trae HTML, una imagen remota ni un enlace
-   que el documento no escribió como LaTeX — lo comprueban en la suite un parser CommonMark y un fuzz.
+   que el documento no escribió como LaTeX — lo comprueban en la suite un parser CommonMark y un fuzz. Un `.odt`
+   se lee con un lector XML propio de ClearMD (sin `DOCTYPE`, con límites de tamaño y profundidad), con la misma
+   garantía y un presupuesto para que ningún archivo pequeño se multiplique en un Markdown enorme.
 5. **Medido, no adivinado.** Los benchmarks ([001](./docs/benchmarks/001-conversion-limits.md),
-   [002](./docs/benchmarks/002-tex-converter.md)) fijaron los límites y la velocidad de cada formato: el PDF es el
-   cuello de botella por tiempo (~10 páginas/s), el xlsx por memoria, y una tesis de 300 páginas en LaTeX tarda
-   ~3 s. Los
+   [002](./docs/benchmarks/002-tex-converter.md), [003](./docs/benchmarks/003-odt-converter.md)) fijaron los
+   límites y la velocidad de cada formato: el PDF es el cuello de botella por tiempo (~10 páginas/s), el xlsx por
+   memoria, una tesis de 300 páginas en LaTeX tarda ~3 s y un informe `.odt` de 300 páginas, menos de un
+   segundo. Los
    archivos se convierten del más liviano al más pesado, y el tiempo restante se estima con la velocidad real del
    lote.
 6. **Revisado por ojos independientes.** Una revisión de código, una auditoría de seguridad y una verificación
-   adversarial de los arreglos — que encontró huecos reales en la primera ronda, cerrados antes de publicar. Para el
-   conversor de LaTeX hicieron falta tres rondas: cada una está en el historial, con el test que reproduce cada
-   hallazgo.
+   adversarial de los arreglos — que encontró huecos reales en la primera ronda, cerrados antes de publicar. Para los
+   conversores de LaTeX y de OpenDocument hicieron falta tres rondas en cada uno: todas están en el historial,
+   con el test que reproduce cada hallazgo.
 
 > 🤖 Trabajé esto con un agente de IA (**Claude Code**): yo dirijo — defino el problema, decido el diseño y
 > reviso cada paso; el agente ejecuta y deja todo trazado.
@@ -110,7 +113,7 @@ anteriores._
 |---|---|---|
 | **001** Conversión por lotes — backend + CLI | ✅ lista | 512 tests · revisada |
 | **002** Conversor de `.tex` (con ecuaciones, sin pandoc) | ✅ lista | 807 tests en total · revisada |
-| **003** Conversor de `.odt` (solo librería estándar) | ⏳ | |
+| **003** Conversor de `.odt` (solo librería estándar) | ✅ lista | 1085 tests en total · revisada |
 | **004** Modo artículo para HTML | ⏳ | |
 | **005** Primera app de escritorio (ttkbootstrap) | ⏳ | |
 | **006** CI + ejecutables para Windows y Linux | ⏳ | |
@@ -180,7 +183,7 @@ ClearMD_Output/          junto a lo que elegiste (o en --output-root)
 │   ├── frontend/cli/    # la línea de comandos (las GUIs llegan aquí, una carpeta cada una)
 │   └── i18n/            # catálogos de mensajes EN/ES
 ├── spec/                # ★ Spec-Driven Development: constitución, roadmap, specs, contrato de UX
-├── docs/                # arquitectura, 23 ADRs, benchmarks
+├── docs/                # arquitectura, 25 ADRs, benchmarks
 ├── tests/               # unit (espejo de src) · aceptación (uno por criterio) · fixtures · benchmark
 └── .devcontainer/       # entorno reproducible (sin root, uv)
 ```

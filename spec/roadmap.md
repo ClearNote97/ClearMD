@@ -23,11 +23,12 @@ already tested (ADR-0001).
 - [x] **002 — `.tex` converter** ([spec](./features/002_tex-converter/spec.md)): the subset, math preserved,
       includes inside the document folder, the author's macros expanded with limits, honest conversion notes
       (ADR-0022).
+- [x] **003 — `.odt` converter** ([spec](./features/003_odt-converter/spec.md)): standard library only, XML
+      read safely (pyexpat, DOCTYPE refused, limits), formulas as LaTeX, images as placeholders, the output
+      guarantee shared with `.tex`, a growth budget for everything written again (ADR-0024).
 
 ## Next
 
-- [ ] **003 — `.odt` converter** ([spec](./features/003_odt-converter/spec.md)): standard library only, XML
-      read safely, formulas as LaTeX, images as placeholders, the output guarantee shared with `.tex` (ADR-0024).
 - [ ] **004 — HTML article mode** (second strategy for `.html`).
 - [ ] **005 — Presenter (MVP) + ttkbootstrap GUI**, following `spec/contracts/ux.md`: help window, welcome,
       settings window, progress, splash, output folder choice (remembered).

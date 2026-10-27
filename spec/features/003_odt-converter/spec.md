@@ -64,59 +64,59 @@ Each criterion has an acceptance test named after its id (`tests/acceptance/test
 
 ### Through the pipeline
 
-- [ ] **AC-01** An `.odt` file converts through the CLI exactly like the formats of features 001–002: into
+- [x] **AC-01** An `.odt` file converts through the CLI exactly like the formats of features 001–002: into
   `ClearMD_Output/OutputMD/<name>.md`, listed in `Resumen_ClearMD.md` with format `ODT`, in cost order, under
   the worker's limits.
-- [ ] **AC-02** An `.odt` without extension is detected by its content (magika `odt`) and converted.
-- [ ] **AC-03** The archive check of feature 001 applies: an `.odt` zip bomb is skipped before anything is read.
-- [ ] **AC-04** Another OpenDocument type renamed to `.odt` (a spreadsheet) fails with "unsupported format"; an
+- [x] **AC-02** An `.odt` without extension is detected by its content (magika `odt`) and converted.
+- [x] **AC-03** The archive check of feature 001 applies: an `.odt` zip bomb is skipped before anything is read.
+- [x] **AC-04** Another OpenDocument type renamed to `.odt` (a spreadsheet) fails with "unsupported format"; an
   encrypted `.odt` fails with "password-protected"; a damaged one with "damaged file". The batch goes on.
 
 ### Structure and text
 
-- [ ] **AC-05** Title and subtitle styles become `#` and an italic line; outline headings become headings with
+- [x] **AC-05** Title and subtitle styles become `#` and an italic line; outline headings become headings with
   the shallowest level present at `##`.
-- [ ] **AC-06** Bold, italic, underline, strike-through, superscript, subscript and monospace follow the table,
+- [x] **AC-06** Bold, italic, underline, strike-through, superscript, subscript and monospace follow the table,
   from automatic styles, named styles and their parents.
-- [ ] **AC-07** Lists (nested, bullet and numbered, with a start value), links, footnotes and endnotes, quotations
+- [x] **AC-07** Lists (nested, bullet and numbered, with a start value), links, footnotes and endnotes, quotations
   and preformatted paragraphs follow the table.
-- [ ] **AC-08** Spaces (`text:s` with a count), tabs, line breaks and fields keep the text readable; hidden text,
+- [x] **AC-08** Spaces (`text:s` with a count), tabs, line breaks and fields keep the text readable; hidden text,
   generated tables of contents and layout-only elements disappear.
 
 ### Tables, images and formulas
 
-- [ ] **AC-09** A table becomes a Markdown table with its header row; a table with merged cells keeps every cell's
+- [x] **AC-09** A table becomes a Markdown table with its header row; a table with merged cells keeps every cell's
   text in place and is reported as simplified.
-- [ ] **AC-10** An image becomes an italic placeholder with its title or description; the note counts the images
+- [x] **AC-10** An image becomes an italic placeholder with its title or description; the note counts the images
   not extracted; nothing but the Markdown and the summary is written.
-- [ ] **AC-11** A formula inside the MathML subset becomes LaTeX (`$\frac{a}{b}$`, `$x^{2}$`, `$\sqrt{x}$`,
+- [x] **AC-11** A formula inside the MathML subset becomes LaTeX (`$\frac{a}{b}$`, `$x^{2}$`, `$\sqrt{x}$`,
   `$\sum_{i=1}^{n} i$`, `$\alpha$`), display math when alone in its paragraph.
-- [ ] **AC-12** A formula outside the subset is shown as its StarMath source in inline code, with a note.
+- [x] **AC-12** A formula outside the subset is shown as its StarMath source in inline code, with a note.
 
 ### Honesty
 
-- [ ] **AC-13** Comments are removed and tracked changes resolved to the final text; a note says the document had
+- [x] **AC-13** Comments are removed and tracked changes resolved to the final text; a note says the document had
   them.
-- [ ] **AC-14** Elements outside the subset keep their text and are listed in a note (at most 20 shown, then
+- [x] **AC-14** Elements outside the subset keep their text and are listed in a note (at most 20 shown, then
   "and N more"); the exit code stays 0.
-- [ ] **AC-15** Notes are shown in the user's language (EN/ES).
+- [x] **AC-15** Notes are shown in the user's language (EN/ES).
 
 ### Safety
 
-- [ ] **AC-16** An XML part with a `DOCTYPE` or an entity declaration refuses the file as damaged; nothing is
+- [x] **AC-16** An XML part with a `DOCTYPE` or an entity declaration refuses the file as damaged; nothing is
   expanded.
-- [ ] **AC-17** XML parts over the element, depth or character limits are refused as damaged quickly, without
+- [x] **AC-17** XML parts over the element, depth or character limits are refused as damaged quickly, without
   exhausting the worker; deep nesting never crashes the converter.
-- [ ] **AC-18** The output guarantee of ADR-0023 holds for `.odt`: for hostile text, the Markdown holds no HTML,
+- [x] **AC-18** The output guarantee of ADR-0023 holds for `.odt`: for hostile text, the Markdown holds no HTML,
   image, link or block structure the document did not write as such (checked with a CommonMark parser and a
   seeded fuzz, as for `.tex`).
-- [ ] **AC-19** Object and image references point inside the archive only (`../`, absolute paths and URLs are
+- [x] **AC-19** Object and image references point inside the archive only (`../`, absolute paths and URLs are
   never followed); formula objects over their count limit fall back to their StarMath source, and objects over
   their size limit (never read) to the formula placeholder, with a note.
 
 ### Measured
 
-- [ ] **AC-20** The benchmark measures `.odt` (speed and memory per MiB of text parts) and `schemas/limits.py`
+- [x] **AC-20** The benchmark measures `.odt` (speed and memory per MiB of text parts) and `schemas/limits.py`
   uses the measured values.
 
 ## Actors and data
@@ -127,9 +127,9 @@ Each criterion has an acceptance test named after its id (`tests/acceptance/test
 
 ## Risks / open questions
 
-- **No LibreOffice in the dev container:** fixtures are generated to the ODF 1.3 schema; a real file exported by
-  LibreOffice (on the author's Windows machine, with no private content) should join the fixtures before the
-  feature closes.
+- **No LibreOffice in the dev container:** fixtures are generated to the ODF 1.3 schema; real files saved by
+  LibreOffice 7.4 (installed provisionally in the container, then removed) joined the fixtures
+  (`tests/fixtures/odt/real/`).
 - **Style inference:** a document may fake headings with big bold paragraphs; only real headings
   (`text:h`) and the title styles become headings.
 - **MathML from other editors** (Word's equations exported to ODT) may use constructs outside the subset; they

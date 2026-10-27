@@ -1,6 +1,6 @@
 # ADR-0024: OpenDocument text — XML read safely, images as placeholders, formulas as LaTeX
 
-- **Status:** proposed
+- **Status:** accepted (refined after review, 2026-10-26)
 - **Date:** 2026-10-25
 - **Refines:** ADR-0006 (the `.odt` converter).
 
@@ -50,6 +50,25 @@ threats as any ZIP-based format (feature 001) plus XML's own (entity expansion, 
 - **The output guarantee of ADR-0023 applies to every converter ClearMD writes:** the code that escapes
   document text, marks ClearMD's own block lines and neutralizes the rest moves out of the LaTeX package into a
   shared module, and the `.odt` converter uses it. The CommonMark-parser test and the fuzz get an `.odt` corpus.
+
+### Refinements after review (code review, security audit, three adversarial verifications)
+
+- **Encodings:** only those OpenDocument uses (UTF-8, UTF-16; plus ASCII and Latin-1, which expat reads
+  natively). Any other declared encoding refuses the part as damaged; a formula part refused this way shows the
+  formula placeholder and the rest of the document converts (the author's choice).
+- **The archive:** an entry name that appears twice is a damaged file (readers disagree on which copy counts);
+  `mimetype` is read up to 256 bytes; an embedded object is a formula only when its tree is MathML, or, when
+  it cannot be read, when the manifest declares it a formula (a chart is an image placeholder).
+- **A growth budget** (4 × the text + 1 MiB) is charged for everything a reference or a repeat writes again:
+  formula LaTeX and StarMath sources, a link's address on each piece, table repeats and padding, repeated
+  spaces, list indentation. Past it, the text stays and the copy or the layout goes.
+- **Emphasis Markdown cannot hold:** bold, italic or strike-through whose delimiters a viewer would show as
+  literal `*` or `~` (between punctuation and a letter, or unpaired by CommonMark's rules) is dropped and a
+  note says so (the author's choice); an exact check of CommonMark's emphasis algorithm decides it.
+- **Lists:** two lists of the same kind one after the other use the other markers (`1)`, `*`), so a restart
+  stays a list of its own; lists deeper than 10 levels (LibreOffice's maximum) are flattened into the tenth.
+- **Not converted, by design:** a footnote reference inside a code block is not a link (nothing in a code
+  block is).
 
 ## Consequences
 

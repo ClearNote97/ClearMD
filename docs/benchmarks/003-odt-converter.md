@@ -21,17 +21,21 @@ running.
 
 | `content.xml` | File | Time | Speed | Peak memory | Memory per MiB |
 |---|---|---|---|---|---|
-| 1 MiB | 0.24 MiB | 0.30 s | 0.30 s/MiB | 40 MiB | 14.2 |
-| 5 MiB | 1.17 MiB | 1.48 s | 0.30 s/MiB | 98 MiB | 14.3 |
-| 10 MiB | 2.34 MiB | 2.79 s | 0.28 s/MiB | 170 MiB | 14.4 |
-| 25 MiB | 5.86 MiB | 7.40 s | 0.30 s/MiB | 389 MiB | 14.5 |
+| 1 MiB | 0.24 MiB | 0.33 s | 0.33 s/MiB | 40 MiB | 14.1 |
+| 5 MiB | 1.17 MiB | 1.69 s | 0.34 s/MiB | 100 MiB | 14.5 |
+| 10 MiB | 2.34 MiB | 3.29 s | 0.33 s/MiB | 174 MiB | 14.7 |
+| 25 MiB | 5.86 MiB | 8.26 s | 0.33 s/MiB | 398 MiB | 14.9 |
+
+Measured again on 2026-10-26, after the three rounds of review fixes (the output guarantee, the growth
+budget charging every write, the exact emphasis check): about 10% slower than the first run (0.30 s/MiB), still
+within the values used.
 
 ## Conclusions
 
-1. **Linear and fast.** 0.3 s per MiB of text whatever the size: a 300-page report (about 1–2 MiB of
+1. **Linear and fast.** About 0.33 s per MiB of text whatever the size: a 300-page report (about 1–2 MiB of
    `content.xml`) converts in under a second. pyexpat does the parsing in C; the tree and the rendering are
    linear by construction (no recursion, no quadratic joins).
-2. **Memory is about 14.5 MiB per MiB of `content.xml`** (the element tree of a whole document). With the
+2. **Memory is about 15 MiB per MiB of `content.xml`** (the element tree of a whole document). With the
    4 GiB worker, a document with more than about 270 MiB of text would be skipped as "too much memory" — the
    1 GiB uncompressed limit of feature 001 stays far above any real document.
 3. **Values used** (`schemas/limits.py`): `SECONDS_PER_MIB[ODT] = 0.35` and `MEMORY_PER_MIB[ODT] = 15`. A test
