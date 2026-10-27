@@ -19,6 +19,7 @@ from clearmd.backend.schemas.models import (
     PlannedConversion,
     PlanWarning,
     SkippedItem,
+    StrategyWarning,
 )
 from clearmd.backend.use_cases.archive import inspect_archive, unsafe_reason
 from clearmd.backend.use_cases.paths import (
@@ -59,7 +60,8 @@ def build_plan(
 ) -> BatchPlan:
     unique_inputs = list(dict.fromkeys(inputs))  # "a.pdf a.pdf" is one file, converted once
     scanned = scan(unique_inputs, recursive=recursive, limits=limits, on_progress=on_event)
-    drafts: list[tuple[Candidate, Detection, Path, float]] = []
+    drafts: list[tuple[Candidate, Detection, Path, float, Strategy]] = []
+    fallbacks: list[tuple[Path, int]] = []  # article → full page: the article's memory
     requests: list[NameRequest] = []
     skipped: list[SkippedItem] = [
         replace(
@@ -97,6 +99,12 @@ def build_plan(
                     memory_size = archive.uncompressed
         strategy = html_strategy if detection.format in WITH_STRATEGIES else Strategy.FULL
         needed = limits.estimated_memory(detection.format, memory_size, strategy)
+        if needed > limits.worker_memory and strategy is not Strategy.FULL:
+            # Never left out because of the strategy (ADR-0025): the whole page, if it fits.
+            full = limits.estimated_memory(detection.format, memory_size)
+            if full <= limits.worker_memory:
+                fallbacks.append((candidate.path, needed))
+                strategy, needed = Strategy.FULL, full
         if needed > limits.worker_memory:
             skipped.append(
                 SkippedItem(
@@ -109,9 +117,8 @@ def build_plan(
             )
             continue
         target = target_for(candidate.path, root, _relative_dir(candidate))
-        drafts.append(
-            (candidate, detection, root, limits.estimated_seconds(detection.format, size, strategy))
-        )
+        cost = limits.estimated_seconds(detection.format, size, strategy)
+        drafts.append((candidate, detection, root, cost, strategy))
         requests.append(NameRequest(candidate.path, target, _label(candidate, detection)))
     conversions = [
         PlannedConversion(
@@ -121,9 +128,9 @@ def build_plan(
             detection=detection,
             exists=target.exists(),
             cost=cost,
-            strategy=html_strategy if detection.format in WITH_STRATEGIES else Strategy.FULL,
+            strategy=strategy,
         )
-        for (candidate, detection, root, cost), target in zip(
+        for (candidate, detection, root, cost, strategy), target in zip(
             drafts, resolve_names(requests), strict=True
         )
     ]
@@ -133,7 +140,13 @@ def build_plan(
         for item in ordered
         if item.cost > limits.time_per_file
     )
-    plan = BatchPlan(ordered, tuple(skipped), scanned.input_errors, warnings)
+    needed_by = dict(fallbacks)
+    strategy_warnings = tuple(
+        StrategyWarning(item, needed_by[item.source], limits.worker_memory)
+        for item in ordered
+        if item.source in needed_by
+    )
+    plan = BatchPlan(ordered, tuple(skipped), scanned.input_errors, warnings, strategy_warnings)
     if on_event is not None:
         on_event(PlanReady(plan))
     return plan

@@ -9,6 +9,7 @@ from typing import BinaryIO
 
 _NO_FOLLOW = getattr(os, "O_NOFOLLOW", 0)
 _BINARY = getattr(os, "O_BINARY", 0)
+_NON_BLOCKING = getattr(os, "O_NONBLOCK", 0)  # a FIFO opens at once (and is then refused)
 
 
 class NotARegularFile(OSError):
@@ -17,7 +18,7 @@ class NotARegularFile(OSError):
 
 def open_regular_file(path: Path) -> BinaryIO:
     """Open ``path`` for reading without following a symbolic link (where the OS allows it)."""
-    descriptor = os.open(path, os.O_RDONLY | _NO_FOLLOW | _BINARY)
+    descriptor = os.open(path, os.O_RDONLY | _NO_FOLLOW | _BINARY | _NON_BLOCKING)
     if not stat.S_ISREG(os.fstat(descriptor).st_mode) or path.is_symlink():
         os.close(descriptor)
         raise NotARegularFile(f"not a regular file: {path}")

@@ -52,6 +52,11 @@ def block(text: str) -> str:
     return f"\n\n{text.strip(chr(10))}\n\n"
 
 
+def heading_text(text: str) -> str:
+    """A heading's text whose final "#" is never read as the optional closing sequence."""
+    return text[:-1] + "\\#" if text.endswith("#") and not text.endswith("\\#") else text
+
+
 def fence_for(code: str) -> str:
     longest = max((len(run) for run in re.findall("`+", code)), default=0)
     return "`" * max(3, longest + 1)
@@ -207,10 +212,16 @@ def _neutral_line(line: str, after_blank: bool) -> str:
     return line[:indent] + "\\" + content
 
 
+def line_endings(text: str) -> str:
+    """CommonMark ends a line at "\n", "\r" or "\r\n": everything here splits on "\n" only."""
+    return text.replace("\r\n", "\n").replace("\r", "\n")
+
+
 def neutralize(text: str, *, keep_marks: bool = False) -> str:
     """Every line the document wrote that Markdown would read as a block becomes plain text;
     ClearMD's own marked lines (and the code inside its fences) stay; the marks go (or stay,
     for a part that is marked again as a whole: a list item, a quote)."""
+    text = line_endings(text)
     out: list[str] = []
     fence: str | None = None
     after_blank = True
@@ -238,6 +249,9 @@ def link_target(path: str) -> str:
     backtick or a backslash is encoded: a code span takes precedence over a link, and a
     backslash would escape what follows."""
     path = path.replace("\\", "%5C").replace("`", "%60")
+    # "&" as a character: a query string stays one (?a=1&b=2), and no entity is ever decoded in
+    # it ("javascript&colon;" stays a harmless relative path).
+    path = path.replace("&", "\\&")
     # A control character (a line break above all) would end the destination: "<x\nonclick=…>"
     # is then an HTML tag. Encoded, it is one more character of the address.
     path = _CONTROL.sub(lambda found: f"%{ord(found.group()):02X}", path)
@@ -254,6 +268,8 @@ def ends_a_line(parts: list[str]) -> bool:
 
 
 def tidy(text: str) -> str:
+    text = line_endings(text)
+
     def tidy(part: str) -> str:
         # Trailing spaces go, except a hard line break ("  ") after real text.
         lines = [

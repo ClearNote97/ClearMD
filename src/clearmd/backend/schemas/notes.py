@@ -25,6 +25,7 @@ class NoteKind(StrEnum):
     FORMULA_KEPT_AS_SOURCE = "formula_kept_as_source"
     FORMATTING_DROPPED = "formatting_dropped"
     ARTICLE_NOT_FOUND = "article_not_found"
+    ARTICLE_TOO_COMPLEX = "article_too_complex"
     IMAGES_NOT_DOWNLOADED = "images_not_downloaded"
 
     @property

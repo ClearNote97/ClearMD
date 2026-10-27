@@ -3,7 +3,7 @@ the summary: its kind (skipped before converting, failed or stopped while conver
 precise reason (with the file's value and the limit when a limit is the reason) and what to do,
 or that there is nothing to do."""
 
-from clearmd.backend.schemas.errors import SkipReason
+from clearmd.backend.schemas.errors import ErrorCode, SkipReason
 from clearmd.backend.schemas.models import ConversionOutcome, SkippedItem
 from clearmd.i18n import Catalog
 
@@ -36,12 +36,13 @@ def skipped_line(catalog: Catalog, item: SkippedItem, name: str) -> str:
 
 def stopped_message(catalog: Catalog, outcome: ConversionOutcome) -> str:
     """What stopped the file, with the limit it reached."""
-    assert outcome.error is not None
+    if outcome.error is None:
+        raise ValueError("a stopped outcome has an error code")
     if outcome.limit is None:
         return catalog.text(outcome.error.message_key)
-    if outcome.error.value == "timed_out" and outcome.limit < 60:
+    if outcome.error is ErrorCode.TIMED_OUT and outcome.limit % 60:
         limit = catalog.text("time.seconds", seconds=round(outcome.limit))
-    elif outcome.error.value == "timed_out":
+    elif outcome.error is ErrorCode.TIMED_OUT:
         limit = catalog.text("time.exact_minutes", minutes=round(outcome.limit / 60))
     else:
         limit = catalog.size(int(outcome.limit))
@@ -49,5 +50,6 @@ def stopped_message(catalog: Catalog, outcome: ConversionOutcome) -> str:
 
 
 def failed_line(catalog: Catalog, outcome: ConversionOutcome, name: str) -> str:
-    assert outcome.error is not None
+    if outcome.error is None:
+        raise ValueError("a failed outcome has an error code")
     return catalog.text("cli.failed", name=name, message=catalog.error(outcome.error))

@@ -54,6 +54,10 @@ BAD_HTML = [
     '<iframe src="https://evil.example/f"></iframe>',
     "<b><i>nested</b></i>",
     "<code>&lt;img src=x&gt;</code>",
+    # A carriage return in a code block inside a list or a quote (F1 of the audit of 004).
+    "</p><ul><li><p>i</p><pre><code>a&#13;# f&#13;&lt;img src=x&gt;&#13;</code></pre></li></ul><p>",
+    "</p><blockquote><pre><code>a&#13;- f&#13;&lt;b&gt;x&#13;</code></pre></blockquote><p>",
+    "&#1; &#xFFFE; &#11;",  # characters XML forbids (F2)
 ]
 # Where text reaches the article ({t}): every construct of the subset.
 PLACES = [
@@ -95,6 +99,8 @@ def _structure(markdown: str) -> Counter[str]:
 
 
 def _problems(tmp_path: Path, place: str, text: str, *, raw: bool = False) -> list[str]:
+    """Inline problems, and a block structure other than the same page's with harmless text
+    (for raw markup, which brings blocks of its own: one heading, the title, and no other)."""
     inserted = text if raw else html.escape(text, quote=True)
     result = _convert(tmp_path, _page(place.format(t=inserted)))
     # Every page here has an article: a fallback would leave the case untested.
@@ -103,8 +109,9 @@ def _problems(tmp_path: Path, place: str, text: str, *, raw: bool = False) -> li
     found = broken_promises(
         result.markdown, allowed_links=PAGE_LINKS, blocks=CLEARMD_BLOCKS | {"fence"}
     )
-    if _structure(result.markdown) != _structure(harmless.markdown):
-        found.append(f"structure {_structure(result.markdown)} in {result.markdown!r}")
+    structure = _structure(result.markdown)
+    if (structure["heading_open"] != 1) if raw else (structure != _structure(harmless.markdown)):
+        found.append(f"structure {structure} in {result.markdown!r}")
     return found
 
 

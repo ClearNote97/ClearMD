@@ -196,6 +196,14 @@ def _print_plan_notes(catalog: Catalog, plan: BatchPlan, *, quiet: bool, stream:
     if not quiet:
         for item in plan.skipped:
             print(skipped_line(catalog, item, _shown(item.path, item.is_dir)), file=stream)
+    for fallback in plan.strategy_warnings:
+        line = catalog.text(
+            "cli.warning_article_memory",
+            name=_p(fallback.item.source.name),
+            needed=catalog.size(fallback.article_memory),
+            limit=catalog.size(fallback.memory_limit),
+        )
+        print(line, file=stream)
     for warning in plan.warnings:
         line = catalog.text(
             "cli.warning_slow",

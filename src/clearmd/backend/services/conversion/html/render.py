@@ -3,10 +3,11 @@
 trafilatura finds the article; this renderer writes it with the same guarantee as ClearMD's other
 converters: every text through ``inline`` and ``markdown_out`` (escaped, emphasis Markdown can
 hold, links by the rules of ADR-0023), ClearMD's own block lines marked and the rest neutralized,
-images as placeholders, a growth budget. Standard library only; containers nested deeper than
-``MAX_NESTING`` are written as their text.
+images as placeholders, a growth budget. Standard library only; blocks nested deeper than
+``MAX_NESTING``, and lists deeper than ``MAX_LIST_LEVEL``, are written as their text.
 """
 
+import re
 from dataclasses import replace
 from typing import Any
 
@@ -25,8 +26,10 @@ from clearmd.backend.services.conversion.markdown_out import (
     block,
     escape_text,
     fence_for,
+    heading_text,
     indent,
     neutralize,
+    outside_code,
     own_line,
     starts_tight,
     tidy,
@@ -35,7 +38,8 @@ from clearmd.backend.services.conversion.xmltree import Element, int_attribute
 
 GROWTH_FACTOR = 4
 GROWTH_EXTRA = 1024**2
-MAX_NESTING = 32  # quotes, lists and divisions inside each other
+MAX_NESTING = 32  # quotes, tables and divisions inside each other
+MAX_LIST_LEVEL = 10  # a list nested deeper is written as its text
 MAX_CELLS = 100_000
 MAX_UNKNOWN = 1000
 # hi@rend → the property it sets.
@@ -60,23 +64,24 @@ class ArticleRenderer:
 
     # --- Document --------------------------------------------------------------------------
 
-    def document(self, main: Element) -> str:
-        """``main``: the article's tree. Its first ``h1`` is the title (``# Title``); the other
-        headings start at ``##``."""
-        children = list(main.children)
-        first = next((c for c in children if isinstance(c, Element)), None)
-        title = ""
-        if first is not None and first.tag == "head" and first.get("rend") == "h1":
-            title = self._inline_of(first.children, TextProps()).replace(LINE_BREAK, " ")
-            children.remove(first)
+    def document(self, main: Element, *, title: str = "") -> str:
+        """``main``: the article's tree. Its first ``h1``, wherever it is, is the title
+        (``# Title``); without one, ``title`` (the page's ``<title>``). Other headings start at
+        ``##``."""
+        heading, parent = _first_h1(main)
+        if heading is not None and parent is not None:
+            parent.children.remove(heading)
+            written = _one_line(self._inline_of(heading.children))
+        else:
+            written = escape_text(" ".join(title.split()))
         levels = [
             int_attribute(head.get("rend")[1:], 2, cap=6)
             for head in main.walk()
-            if head.tag == "head" and head is not first
+            if head.tag == "head" and head.get("rend")
         ]
         self._top = min(levels, default=2)
-        parts = [block(f"{MARK}# {title}")] if title else []
-        parts.append(self.blocks(children))
+        parts = [block(f"{MARK}# {heading_text(written)}")] if written else []
+        parts.append(self.blocks(list(main.children)))
         return neutralize(tidy("".join(parts)))
 
     def blocks(self, children: list[Element | str]) -> str:
@@ -91,8 +96,9 @@ class ArticleRenderer:
                     self._last_list = None
                 loose.clear()
 
-        for child in children:
-            if isinstance(child, Element) and child.tag in BLOCKS:
+        for index, child in enumerate(children):
+            if _is_block(child, children, index, loose):
+                assert isinstance(child, Element)
                 flush()
                 written = self._block(child)
                 if child.tag != "list" and written.strip():
@@ -129,30 +135,35 @@ class ArticleRenderer:
             self._depth -= 1
 
     def _heading(self, element: Element) -> str:
-        text = self._inline_of(element.children, TextProps()).replace(LINE_BREAK, " ")
+        if not element.get("rend"):  # a heading without a level (a summary): bold, not a heading
+            text = _one_line(self._inline_of(element.children, TextProps(bold=True)))
+            return block(text) if text else ""
+        text = _one_line(self._inline_of(element.children))
         if not text:
             return ""
         level = int_attribute(element.get("rend")[1:], self._top, cap=6)
         hashes = "#" * min(6, 2 + max(0, level - self._top))
-        return block(f"{MARK}{hashes} {text}")
+        return block(f"{MARK}{hashes} {heading_text(text)}")
 
     def _quote(self, element: Element) -> str:
         inner = self.blocks(list(element.children)).strip("\n")
+        inner = outside_code(inner, lambda part: re.sub(r"\n{3,}", "\n\n", part))
         if not inner:
             return ""
         lines = neutralize(inner, keep_marks=True).split("\n")
-        return block(
-            "\n".join(f"{MARK}> {own_line(line)}" if line else f"{MARK}>" for line in lines)
-        )
+        quoted = (f"{MARK}> {own_line(line)}" if line else f"{MARK}>" for line in lines)
+        return block("\n".join(quoted))
 
     def _code(self, element: Element) -> str:
-        code = element.text().strip("\n")
+        code = _code_text(element).strip("\n")
         if not code.strip() or not self._spend(len(code)):
             return ""
         fence = fence_for(code)
         return block(f"{MARK}{fence}\n{code}\n{MARK}{fence}")
 
     def _list(self, element: Element, level: int) -> str:
+        if element.get("rend") == "dl":
+            return self._definitions(element)
         numbered = element.get("rend") == "ol"
         alternate = self._last_list == (numbered, False)
         delimiter, bullet = (")", "* ") if alternate else (".", "- ")
@@ -171,9 +182,23 @@ class ArticleRenderer:
         self._last_list = (numbered, alternate)
         return "\n".join(lines)
 
+    def _definitions(self, element: Element) -> str:
+        """A definition list: each term a bold item, its definitions nested under it."""
+        lines: list[str] = []
+        for item in element.elements("item"):
+            term = item.get("rend").startswith("dt")
+            props = TextProps(bold=True) if term else TextProps()
+            text = _one_line(self._inline_of(item.children, props))
+            if not text:
+                continue
+            lines.append(f"{MARK}- {text}" if term or not lines else f"  {MARK}- {text}")
+        self._last_list = (False, False)
+        return "\n".join(lines)
+
     def _item(self, item: Element, level: int) -> str:
         """An item's text, then its blocks (nested lists, paragraphs, quotes, code), neutralized
-        at the item's own column and marked as ClearMD's (the enclosing levels only indent)."""
+        at the item's own column and marked as ClearMD's (the enclosing levels only indent). A
+        list nested deeper than ``MAX_LIST_LEVEL`` is written as its text."""
         parts: list[str] = []
         loose: list[Element | str] = []
         self._last_list = None
@@ -186,29 +211,38 @@ class ArticleRenderer:
                 loose.clear()
                 self._last_list = None
 
-        for child in item.children:
-            if isinstance(child, Element) and child.tag == "list" and level < 10:
+        children = list(item.children)
+        for index, child in enumerate(children):
+            if isinstance(child, Element) and child.tag == "list" and level >= MAX_LIST_LEVEL:
+                self._note_unknown("list")
+                loose.append(child)  # flattened: its items' text, in the item's text
+            elif isinstance(child, Element) and child.tag == "list":
                 flush()
                 parts.append(self._list(child, level + 1))
-            elif isinstance(child, Element) and child.tag in BLOCKS:
+            elif _is_block(child, children, index, loose):
+                assert isinstance(child, Element)
                 flush()
                 parts.append(self._block(child).strip("\n"))
             else:
                 loose.append(child)
         flush()
-        text = ""
+        joined: list[str] = []
         for part in (p for p in parts if p):
-            text = part if not text else text + ("\n" if starts_tight(part) else "\n\n") + part
-        return "\n".join(own_line(line) for line in neutralize(text, keep_marks=True).split("\n"))
+            if joined:
+                joined.append("\n" if starts_tight(part) else "\n\n")
+            joined.append(part)
+        text = neutralize("".join(joined), keep_marks=True)
+        return "\n".join(own_line(line) for line in text.split("\n"))
 
     def _table(self, element: Element) -> str:
         grid: list[list[str]] = []
+        plain: list[str] = []  # the cells' text, for a table the budget cannot pay for
         cells = 0
         for row in element.elements("row"):
-            line = [
-                self._inline_of(cell.children).replace(LINE_BREAK, " ").replace("|", "\\|")
-                for cell in row.elements("cell")
-            ]
+            line = []
+            for cell in row.elements("cell"):
+                line.append(_one_line(self._inline_of(cell.children)).replace("|", "\\|"))
+                plain.append(" ".join(cell.text().split()))
             cells += len(line)
             if cells > MAX_CELLS:
                 self._tables_simplified += 1
@@ -220,11 +254,14 @@ class ArticleRenderer:
         if not grid:
             return ""
         width = max(len(line) for line in grid)
+        caption = ""
+        if len(grid) > 1 and len(grid[0]) == 1 and width > 1:  # a caption, not the header
+            caption = block(grid.pop(0)[0])
         if not self._spend(8 * width + sum(3 * (width - len(line)) for line in grid)):
-            return block(escape_text(" ".join(" ".join(line) for line in grid)))
+            return block(escape_text(" ".join(text for text in plain if text)))
         rows = [MARK + "| " + " | ".join(line + [""] * (width - len(line))) + " |" for line in grid]
         rows.insert(1, MARK + "|" + "---|" * width)
-        return block("\n".join(rows))
+        return caption + block("\n".join(rows))
 
     # --- Inline ------------------------------------------------------------------------------
 
@@ -255,9 +292,12 @@ class ArticleRenderer:
             elif tag == "lb":
                 pieces.append(Raw(LINE_BREAK))
             elif tag == "graphic":
-                pieces.append(Raw(self._image(item)))
+                # Text the emphasis checks see: next to a word in italics it never shows "**".
+                pieces.append(Text(self._image(item), _with(current, {"italic": True}), link))
             elif tag == "code":
                 stack.append((iter(item.children), _with(current, {"mono": True}), link))
+            elif tag == "quote":  # a short quotation inside a sentence
+                stack.append((iter(item.children), current, link))
             else:
                 if tag not in BLOCKS and tag not in {"item", "row", "cell"}:
                     self._note_unknown(tag)
@@ -268,8 +308,7 @@ class ArticleRenderer:
     def _image(self, graphic: Element) -> str:
         self._images += 1
         label = " ".join((graphic.get("alt") or graphic.get("title")).split())
-        shown = f"{self._image_word}: {label}" if label else self._image_word
-        return f"*{escape_text(shown)}*"
+        return f"{self._image_word}: {label}" if label else self._image_word
 
     # --- Budget and notes --------------------------------------------------------------------
 
@@ -304,3 +343,56 @@ class ArticleRenderer:
 
 def _with(props: TextProps, changes: dict[str, Any]) -> TextProps:
     return replace(props, **changes)
+
+
+def _first_h1(main: Element) -> tuple[Element | None, Element | None]:
+    """The first ``head rend="h1"`` under ``main`` and its parent (document order)."""
+    pending: list[tuple[Element, Element]] = [
+        (child, main) for child in reversed(list(main.elements()))
+    ]
+    while pending:
+        element, parent = pending.pop()
+        if element.tag == "head" and element.get("rend") == "h1":
+            return element, parent
+        pending.extend((child, element) for child in reversed(list(element.elements())))
+    return None, None
+
+
+def _is_block(
+    child: Element | str, children: list[Element | str], index: int, loose: list[Element | str]
+) -> bool:
+    """Whether ``child`` is written as a block. trafilatura writes inline code and short
+    quotations (``<q>``) with the same tags as blocks: one with text around it is inline, unless
+    it holds lines (a code block) or blocks."""
+    if not isinstance(child, Element) or child.tag not in BLOCKS:
+        return False
+    if child.tag not in {"code", "quote"}:
+        return True
+    if child.tag == "code" and (child.find("code") is not None or child.find("lb") is not None):
+        return True
+    if child.tag == "quote" and any(c.tag in BLOCKS for c in child.elements()):
+        return True
+    before = any(not isinstance(node, str) or node.strip() for node in loose)
+    following = children[index + 1] if index + 1 < len(children) else None
+    after = isinstance(following, str) and bool(following.strip())
+    return not (before or after)
+
+
+def _code_text(element: Element) -> str:
+    """A code block's text as written, a line break for each ``lb``."""
+    out: list[str] = []
+    pending: list[Element | str] = [element]
+    while pending:
+        node = pending.pop()
+        if isinstance(node, str):
+            out.append(node)
+        elif node.tag == "lb":
+            out.append("\n")
+        else:
+            pending.extend(reversed(node.children))
+    return "".join(out)
+
+
+def _one_line(text: str) -> str:
+    """Text whose hard line breaks become one space (a heading, a cell, the title)."""
+    return re.sub(r" *  \n *", " ", text)

@@ -117,6 +117,7 @@ summary_not_written = "⚠ No se pudo escribir el resumen en {path} (¿el disco 
 unexpected_error = "Ocurrió algo inesperado y ClearMD se detuvo: {detail}. Tus archivos no se modificaron; por favor repórtalo."
 time_left = "faltan {duration}"
 warning_slow = "⚠ {name} — podría tardar más de {limit} ({estimate}) y detenerse"
+warning_article_memory = "⚠ {name} — en modo artículo requiere unos {needed} de memoria (límite {limit}): se convierte completo"
 
 [time]
 under_a_minute = "menos de un minuto"
@@ -164,7 +165,8 @@ images_not_extracted = "las imágenes quedan dentro del documento y se muestran 
 formula_kept_as_source = "las fórmulas que ClearMD no puede pasar a LaTeX se muestran con su fuente StarMath: {items}"
 formatting_dropped = "la negrita, cursiva o tachado que Markdown no puede mostrar entre esos caracteres se omitió: {items}"
 article_not_found = "no se encontró un artículo en la página; se convirtió la página completa"
-images_not_downloaded = "las imágenes no se descargan; cada una se muestra con su descripción: {items}"
+article_too_complex = "la página tiene demasiados elementos para el modo artículo; se convirtió la página completa"
+images_not_downloaded = "imágenes no descargadas (cada una se muestra con su descripción): {items}"
 and_more = " y {count} más"
 
 [note.reason]

@@ -91,7 +91,7 @@ def test_ac_05_images_are_placeholders_and_nothing_else_is_written(
 ) -> None:
     assert "*Imagen: Una estación junto al río*" in article_md
     assert "cdn.example.org" not in article_md and "![" not in article_md
-    assert "images are not downloaded; each is shown by its description: `1`" in summary(workdir)
+    assert "images not downloaded (each shown by its description): `1`" in summary(workdir)
     written = sorted(p.relative_to(workdir).as_posix() for p in workdir.rglob("*") if p.is_file())
     assert written == [
         "ClearMD_Output/OutputMD/news.md",

@@ -10,7 +10,6 @@ from dataclasses import dataclass, replace
 from typing import Any
 
 from clearmd.backend.services.conversion.markdown_out import (
-    ENTITY,
     SAFE_LINK,
     escape_text,
     inline_code,
@@ -183,7 +182,7 @@ class InlineWriter:
         # Each piece of a link repeats its address: charged, and past the budget only the text.
         if not url or not self._spend(len(url)):
             return written
-        if not SAFE_LINK.match(url) or ENTITY.search(url):  # javascript: never becomes a link
+        if not SAFE_LINK.match(url):  # javascript: never becomes a link (entities: link_target)
             shown = f"{text} ({inline_code(url)})" if text else inline_code(url)
         else:
             shown = f"[{text or escape_text(url)}]({link_target(url)})"

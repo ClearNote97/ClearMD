@@ -12,7 +12,7 @@ do not. Either way, nothing in the Markdown makes a viewer contact the page's se
   - A second strategy for HTML (ADR-0006, ADR-0025): `article`, with `trafilatura` finding the main content and
     ClearMD writing it through the shared output guarantee (`markdown_out`).
   - Choosing it: the `html_strategy` setting (ADR-0012), and `--html full|article` on the CLI for one run.
-  - The strategy in the plan, the worker request and the summary (`HTML (article)`).
+  - The strategy in the plan, the worker request and the summary (`HTML (Article)`).
   - The fallback to the full page with a note when no article is found.
   - A benchmark case, so the HTML speed and memory factors cover both strategies.
 - **Does not include:** fetching pages from the web (never, ADR-0005); keeping images (placeholders, as in
@@ -42,7 +42,7 @@ Each criterion has an acceptance test named after its id (`tests/acceptance/test
 - [ ] **AC-02** With `html_strategy = "article"` in the settings, or `--html article` for one run, an `.html`
   converts to its article only: the menu, the footer and the cookie banner of the fixture page are gone, its
   title and article text are there. `--html full` overrides an `article` setting.
-- [ ] **AC-03** The summary shows the strategy: `HTML (article)`.
+- [ ] **AC-03** The summary shows the strategy: `HTML (Article)`.
 - [ ] **AC-04** The article keeps headings, emphasis, lists (nested, ordered), links, quotes, code and tables, as
   the table above says.
 - [ ] **AC-05** Images become placeholders with their alt text, counted in a note; nothing but the Markdown and the

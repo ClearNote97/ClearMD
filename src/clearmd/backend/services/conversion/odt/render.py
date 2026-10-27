@@ -16,16 +16,10 @@ from clearmd.backend.services.conversion.inline import (
     IMAGE_WORD,
     LINE_BREAK,
     InlineWriter,
+    Piece,
+    Raw,
+    Text,
     TextProps,
-)
-from clearmd.backend.services.conversion.inline import (
-    Piece as _Piece,
-)
-from clearmd.backend.services.conversion.inline import (
-    Raw as _Raw,
-)
-from clearmd.backend.services.conversion.inline import (
-    Text as _Text,
 )
 from clearmd.backend.services.conversion.markdown_out import (
     MARK,
@@ -33,6 +27,7 @@ from clearmd.backend.services.conversion.markdown_out import (
     escape_math,
     escape_text,
     fence_for,
+    heading_text,
     indent,
     indent_all,
     inline_code,
@@ -267,7 +262,7 @@ class OdtRenderer:
             return ""
         number = int_attribute(heading.get("text:outline-level"), self._top, cap=10)
         hashes = "#" * min(6, 2 + max(0, number - self._top))
-        return block(f"{MARK}{hashes} {text}")
+        return block(f"{MARK}{hashes} {heading_text(text)}")
 
     def _quote(self, paragraphs: list[Element]) -> str:
         lines = []
@@ -369,12 +364,12 @@ class OdtRenderer:
             else:
                 group.append(child)
         flush()
-        text = ""
+        joined: list[str] = []
         for part in (p for p in parts if p):
-            if not text:
-                text = part
-                continue
-            text += ("\n" if starts_tight(part) else "\n\n") + part
+            if joined:
+                joined.append("\n" if starts_tight(part) else "\n\n")
+            joined.append(part)
+        text = "".join(joined)
         # Neutralized here, at the item's own column, then marked as ClearMD's: the enclosing
         # levels only indent it, and never read its indented lines again as document text (a
         # second pass would take a paragraph indented 4 columns after a blank for code).
@@ -415,7 +410,7 @@ class OdtRenderer:
         """A code paragraph's text as written: no escaping, spaces and tabs kept."""
         out = []
         for piece in self._pieces(paragraph, TextProps()):
-            if isinstance(piece, _Text):
+            if isinstance(piece, Text):
                 out.append(piece.text if piece.literal else _WHITESPACE.sub(" ", piece.text))
             elif piece.markdown == LINE_BREAK:
                 out.append("\n")
@@ -426,8 +421,8 @@ class OdtRenderer:
     def inline(self, paragraph: Element, props: TextProps) -> str:
         return self._writer.write(self._writer.normalize(self._pieces(paragraph, props)))
 
-    def _pieces(self, element: Element, props: TextProps) -> list[_Piece]:
-        pieces: list[_Piece] = []
+    def _pieces(self, element: Element, props: TextProps) -> list[Piece]:
+        pieces: list[Piece] = []
         # Each level: its children, the properties, the link, and whether it is inside an unknown
         # element (only the outermost unknown element is listed in the note).
         stack: list[tuple[Any, TextProps, str | None, bool]] = [
@@ -440,7 +435,7 @@ class OdtRenderer:
                 stack.pop()
                 continue
             if isinstance(item, str):
-                pieces.append(_Text(item, current, link))
+                pieces.append(Text(item, current, link))
                 continue
             tag = item.tag
             if tag in SPAN_LIKE:
@@ -455,22 +450,22 @@ class OdtRenderer:
                 spaces = int_attribute(item.get("text:c"), 1, cap=MAX_SPACES)
                 if spaces > 1 and not self._spend(spaces):  # one element, many characters
                     spaces = 1
-                pieces.append(_Text(" " * spaces, current, link, literal=True))
+                pieces.append(Text(" " * spaces, current, link, literal=True))
             elif tag == "text:tab":
-                pieces.append(_Text("\t", current, link, literal=True))
+                pieces.append(Text("\t", current, link, literal=True))
             elif tag == "text:line-break":
-                pieces.append(_Raw(LINE_BREAK))
+                pieces.append(Raw(LINE_BREAK))
             elif tag == "text:note":
-                pieces.append(_Raw(self._note(item)))
+                pieces.append(Raw(self._note(item)))
             elif tag == "office:annotation":
                 self.counts.comments += 1
             elif tag == "text:hidden-text":
                 if item.get("text:is-hidden") != "true":
-                    pieces.append(_Text(item.get("text:string-value"), current, link))
+                    pieces.append(Text(item.get("text:string-value"), current, link))
             elif tag == "draw:frame":
                 shown = self._frame(item)
                 if shown:  # nothing to show (an empty formula): no piece between two spaces
-                    pieces.append(_Raw(shown))
+                    pieces.append(Raw(shown))
             elif tag == "draw:a":  # a linked frame: the frame matters, its link never does
                 stack.append((iter(item.children), current, link, unknown))
             elif tag in DROPPED_INLINE:

@@ -117,6 +117,7 @@ summary_not_written = "⚠ The summary in {path} could not be written (is the di
 unexpected_error = "Something unexpected went wrong and ClearMD stopped: {detail}. Your files were not changed; please report this."
 time_left = "{duration} left"
 warning_slow = "⚠ {name} — may take more than {limit} ({estimate}) and be stopped"
+warning_article_memory = "⚠ {name} — needs about {needed} of memory in article mode (limit {limit}): converted in full"
 
 [time]
 under_a_minute = "less than a minute"
@@ -164,7 +165,8 @@ images_not_extracted = "images stay inside the document and are shown by their t
 formula_kept_as_source = "formulas ClearMD cannot convert to LaTeX are shown as their StarMath source: {items}"
 formatting_dropped = "bold, italic or strike-through that Markdown cannot show between those characters was left out: {items}"
 article_not_found = "no article was found in the page, so the whole page was converted"
-images_not_downloaded = "images are not downloaded; each is shown by its description: {items}"
+article_too_complex = "the page has too many elements for article mode, so the whole page was converted"
+images_not_downloaded = "images not downloaded (each shown by its description): {items}"
 and_more = " and {count} more"
 
 [note.reason]

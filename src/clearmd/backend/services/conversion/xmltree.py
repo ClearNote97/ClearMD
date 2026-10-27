@@ -178,7 +178,8 @@ def parse_part(data: bytes, limits: XmlLimits | None = None) -> Element:
             raise XmlRefused(f"more than {limits.max_characters} characters")
         if not stack:
             return
-        text = text.replace(_MARK, "")
+        # A CR (from "&#13;") ends a line to CommonMark: one line ending, "\n" (audit of 004).
+        text = text.replace(_MARK, "").replace("\r\n", "\n").replace("\r", "\n")
         children = stack[-1].children
         if children and isinstance(children[-1], str):
             children[-1] += text
