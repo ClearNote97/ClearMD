@@ -8,6 +8,7 @@ A loop in a parent chain stops; a missing style is plain.
 from dataclasses import dataclass, replace
 from enum import Enum
 
+from clearmd.backend.services.conversion.inline import TextProps
 from clearmd.backend.services.conversion.xmltree import Element, int_attribute
 
 MONOSPACE_FAMILIES = frozenset(
@@ -40,17 +41,6 @@ CHARACTER_NAMES = {
     "Strong_20_Emphasis": {"bold": True},
     "Source_20_Text": {"mono": True},
 }
-
-
-@dataclass(frozen=True)
-class TextProps:
-    bold: bool = False
-    italic: bool = False
-    underline: bool = False
-    strike: bool = False
-    position: str = ""  # "super", "sub" or ""
-    mono: bool = False
-    hidden: bool = False
 
 
 @dataclass(frozen=True)

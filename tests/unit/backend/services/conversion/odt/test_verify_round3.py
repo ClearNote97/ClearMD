@@ -141,7 +141,9 @@ def test_r5_the_emphasis_check_agrees_with_a_commonmark_parser() -> None:
     import random
     import re
 
-    from clearmd.backend.services.conversion.odt.render import _unpaired_delimiters
+    from clearmd.backend.services.conversion.inline import (
+        unpaired_delimiters as _unpaired_delimiters,
+    )
 
     parser = MarkdownIt("commonmark", {"html": True}).enable("strikethrough")
     units = ["*", "**", "~~", "a", ".", "(", "<u>", "</u>", " ", '"', "é"]

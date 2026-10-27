@@ -7,7 +7,8 @@
 | clearmd.i18n                            | clearmd.i18n                                         |
 | clearmd.backend.services                | third-party; clearmd.backend (not api), clearmd.i18n |
 | …services.conversion.odt, .markdown_out | standard library only (ADR-0006, ADR-0024); odt also |
-| …services.conversion.xmltree            | schemas, markdown_out, safe_files, xmltree, itself   |
+| …services.conversion.xmltree, .inline   | schemas, markdown_out, safe_files, xmltree, inline,  |
+|                                         | itself (inline: markdown_out only)                   |
 | clearmd.backend.api                     | third-party; clearmd.backend, clearmd.i18n           |
 | clearmd.frontend                        | third-party; clearmd.backend.api, .schemas, i18n,    |
 |                                         | clearmd.frontend                                     |
@@ -54,8 +55,13 @@ RULES: dict[str, Rule] = {
             "clearmd.backend.services.conversion.markdown_out",
             "clearmd.backend.services.conversion.safe_files",
             "clearmd.backend.services.conversion.xmltree",
+            "clearmd.backend.services.conversion.inline",
             "clearmd.backend.services.conversion.odt",
         ),
+    ),
+    # Inline text as ClearMD's own converters write it: the standard library and markdown_out.
+    "clearmd.backend.services.conversion.inline": Rule(
+        False, ("clearmd.backend.services.conversion.markdown_out",)
     ),
     "clearmd.backend.services.conversion.markdown_out": Rule(False, ()),
     # The XML reader shared by .odt and the article mode (004): the standard library only.

@@ -19,9 +19,11 @@ dependencies = [
     "psutil>=7.0",
     # Own .tex converter (ADR-0006, feature 002).
     "pylatexenc>=2.11,<3",
+    # HTML article mode: finds the main content; ClearMD writes it (ADR-0025, feature 004). Pinned:
+    # its extraction decides the output, as markitdown's does.
+    "trafilatura==2.3.1",
 ]
-# Only what is used: trafilatura (article mode, 004), the GUIs and PyInstaller arrive in their
-# own feature, not before (ADR-0009).
+# Only what is used: the GUIs and PyInstaller arrive in their own feature, not before (ADR-0009).
 
 [project.scripts]
 clearmd = "clearmd.frontend.cli:main"
@@ -38,6 +40,11 @@ dev = [
 [build-system]
 requires = ["uv_build>=0.11.13,<0.14"]
 build-backend = "uv_build"
+
+[tool.uv]
+# Supply chain: no release younger than two weeks enters the lock (2026-10-26: these two were
+# published days before trafilatura was added; their previous release is used).
+constraint-dependencies = ["lxml-html-clean<0.4.6", "tzlocal<5.4.5"]
 
 [tool.uv.build-backend]
 # One README per folder, as in the template, but not inside the wheel (ADR-0014).
