@@ -8,6 +8,7 @@ from typing import Any
 DOCUMENTS_DIR = Path(__file__).parent.parent / "fixtures" / "documents"
 TEX_DIR = Path(__file__).parent.parent / "fixtures" / "tex"
 ODT_DIR = Path(__file__).parent.parent / "fixtures" / "odt"
+HTML_DIR = Path(__file__).parent.parent / "fixtures" / "html"
 
 
 class NetworkBlockedError(RuntimeError):

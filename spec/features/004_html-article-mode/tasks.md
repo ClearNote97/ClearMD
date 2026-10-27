@@ -8,7 +8,7 @@
 - [x] **T03 — Shared XML tree.** `xmltree.py` to `conversion/`; odt unchanged.
 - [x] **T04 — The article converter.** trafilatura's XML rendered through `markdown_out`; images as
       placeholders; the full-page fallback with its note (AC-02, AC-04 – AC-06, AC-09, AC-10).
-- [ ] **T05 — Guarantee and acceptance.** The CommonMark check and fuzz for article mode;
+- [x] **T05 — Guarantee and acceptance.** The CommonMark check and fuzz for article mode;
       `tests/acceptance/test_004_html_article_mode.py` (AC-07, AC-08).
 - [ ] **T06 — Benchmark and close.** An article case in the benchmark and `limits.py` (AC-11); READMEs,
       architecture, roadmap, spec ticked; gate; review by `code-reviewer` and a security audit with runnable
