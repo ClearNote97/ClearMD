@@ -13,6 +13,7 @@ from typing import Any
 
 from clearmd.backend.schemas.notes import ConversionNote, NoteItem, NoteKind, NoteReason
 from clearmd.backend.services.conversion.inline import (
+    IMAGE_WORD,
     LINE_BREAK,
     InlineWriter,
     TextProps,
@@ -33,9 +34,12 @@ from clearmd.backend.services.conversion.markdown_out import (
     escape_text,
     fence_for,
     indent,
+    indent_all,
     inline_code,
     math_line,
     neutralize,
+    own_line,
+    starts_tight,
     tidy,
 )
 from clearmd.backend.services.conversion.odt.styles import Role, Styles
@@ -47,7 +51,6 @@ MAX_NOTES = 10_000
 # cells): the same rule as the author's macros in .tex (ADR-0022), 4x the text plus 1 MiB.
 GROWTH_FACTOR = 4
 GROWTH_EXTRA = 1024**2
-IMAGE_WORD = {"es": "Imagen", "pt": "Imagem", "fr": "Image", "it": "Immagine", "de": "Bild"}
 FORMULA_WORD = {"es": "Fórmula", "pt": "Fórmula", "fr": "Formule", "it": "Formula", "de": "Formel"}
 MAX_SPACES = 256
 MAX_UNKNOWN = 1000
@@ -326,7 +329,7 @@ class OdtRenderer:
             if all(child.tag == "text:list" for child in children):
                 # A skipped level is one nesting step: inside the item before, or at this level.
                 if width:
-                    separator = "\n" if _starts_tight(content) else "\n\n"
+                    separator = "\n" if starts_tight(content) else "\n\n"
                     lines[-1] += separator + self._indented(content, width)
                 else:
                     lines.append(content)
@@ -371,11 +374,11 @@ class OdtRenderer:
             if not text:
                 text = part
                 continue
-            text += ("\n" if _starts_tight(part) else "\n\n") + part
+            text += ("\n" if starts_tight(part) else "\n\n") + part
         # Neutralized here, at the item's own column, then marked as ClearMD's: the enclosing
         # levels only indent it, and never read its indented lines again as document text (a
         # second pass would take a paragraph indented 4 columns after a blank for code).
-        return "\n".join(_own_line(line) for line in neutralize(text, keep_marks=True).split("\n"))
+        return "\n".join(own_line(line) for line in neutralize(text, keep_marks=True).split("\n"))
 
     def _indented(self, content: str, width: int, *, first: bool = True) -> str:
         """``content`` indented by ``width`` (from its second line when not ``first``), the
@@ -385,7 +388,7 @@ class OdtRenderer:
         if not self._spend(width * lines):
             self._unknown("text:list")
             return content
-        return _indent_all(content, width) if first else indent(content, width)
+        return indent_all(content, width) if first else indent(content, width)
 
     def _spend(self, size: int) -> bool:
         """Charge ``size`` characters to the document's growth budget; ``False`` past it."""
@@ -605,23 +608,6 @@ def _continues(element: Element) -> bool:
     return element.get("text:continue-numbering") == "true" or bool(
         element.get("text:continue-list")
     )
-
-
-def _starts_tight(part: str) -> bool:
-    """A nested list Markdown lets follow a paragraph directly: bullets, or numbers from 1."""
-    return re.match(rf"{MARK}(?:[-*] |1[.)] )", part) is not None
-
-
-def _own_line(line: str) -> str:
-    """``line`` marked as ClearMD's, after its indentation (where ``outside_code`` looks)."""
-    content = line.lstrip(" \t")
-    if not content or content.startswith(MARK):
-        return line
-    return line[: len(line) - len(content)] + MARK + content
-
-
-def _indent_all(text: str, width: int) -> str:
-    return "\n".join(" " * width + line if line else "" for line in text.split("\n"))
 
 
 def _sole_formula(paragraph: Element) -> Element | None:

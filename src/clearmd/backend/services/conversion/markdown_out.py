@@ -78,6 +78,24 @@ def _opens_fence(found: re.Match[str]) -> bool:
     return not (found.group(1)[0] == "`" and "`" in found.group(2))
 
 
+def starts_tight(part: str) -> bool:
+    """A nested list Markdown lets follow a paragraph directly: bullets, or numbers from 1."""
+    return re.match(rf"{MARK}(?:[-*] |1[.)] )", part) is not None
+
+
+def own_line(line: str) -> str:
+    """``line`` marked as ClearMD's, after its indentation (where ``outside_code`` looks)."""
+    content = line.lstrip(" \t")
+    if not content or content.startswith(MARK):
+        return line
+    return line[: len(line) - len(content)] + MARK + content
+
+
+def indent_all(text: str, width: int) -> str:
+    """Every non-empty line of ``text`` indented by ``width`` (``indent`` skips the first)."""
+    return "\n".join(" " * width + line if line else "" for line in text.split("\n"))
+
+
 def outside_code(text: str, fix: Callable[[str], str], *, blank_around: bool = False) -> str:
     """``fix`` applied to the text between fenced code blocks; the blocks stay as they are.
 

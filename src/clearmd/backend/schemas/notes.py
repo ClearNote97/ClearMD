@@ -24,6 +24,8 @@ class NoteKind(StrEnum):
     IMAGES_NOT_EXTRACTED = "images_not_extracted"
     FORMULA_KEPT_AS_SOURCE = "formula_kept_as_source"
     FORMATTING_DROPPED = "formatting_dropped"
+    ARTICLE_NOT_FOUND = "article_not_found"
+    IMAGES_NOT_DOWNLOADED = "images_not_downloaded"
 
     @property
     def key(self) -> str:

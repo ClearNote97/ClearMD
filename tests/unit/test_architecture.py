@@ -59,6 +59,16 @@ RULES: dict[str, Rule] = {
             "clearmd.backend.services.conversion.odt",
         ),
     ),
+    # The article renderer: trafilatura's XML in, ClearMD's Markdown out; the standard library.
+    "clearmd.backend.services.conversion.html.render": Rule(
+        False,
+        (
+            "clearmd.backend.schemas",
+            "clearmd.backend.services.conversion.markdown_out",
+            "clearmd.backend.services.conversion.inline",
+            "clearmd.backend.services.conversion.xmltree",
+        ),
+    ),
     # Inline text as ClearMD's own converters write it: the standard library and markdown_out.
     "clearmd.backend.services.conversion.inline": Rule(
         False, ("clearmd.backend.services.conversion.markdown_out",)

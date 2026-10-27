@@ -19,6 +19,8 @@ from clearmd.backend.services.conversion.markdown_out import (
 )
 
 LINE_BREAK = "  \n"
+# The image placeholder's word in the document's language (English otherwise).
+IMAGE_WORD = {"es": "Imagen", "pt": "Imagem", "fr": "Image", "it": "Immagine", "de": "Bild"}
 _WHITESPACE = re.compile(r"[ \t\r\n]+")
 
 
