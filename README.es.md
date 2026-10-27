@@ -194,7 +194,9 @@ ClearMD_Output/          junto a lo que elegiste (o en --output-root)
 ## 🛠️ Stack
 
 **Python 3.12–3.14** · **[markitdown](https://github.com/microsoft/markitdown)** (conversión) ·
-**[magika](https://github.com/google/magika)** (detección por contenido) · **psutil** (límites del worker) ·
+**[magika](https://github.com/google/magika)** (detección por contenido) ·
+**[trafilatura](https://github.com/adbar/trafilatura)** (encontrar el artículo de una página) ·
+**[pylatexenc](https://github.com/phfaist/pylatexenc)** (lectura de LaTeX) · **psutil** (límites del worker) ·
 **platformdirs** · **pytest · ruff · mypy --strict** · **uv** · **Dev Container + Docker**.
 
 **Plantilla base:** [ClearNote_Dev](https://github.com/ClearNote97/ClearNote_Dev) — mi plantilla insignia de
@@ -211,8 +213,19 @@ web — una herramienta de escritorio ([ADR-0009](./docs/decisions/0009-template
 - **Autor:** MSc. Nicolás Enrique Valencia Santiago.
 - **Par de trabajo:** agente de IA (Claude / Claude Code, en el marco [Helix](https://github.com/ftuga/helix_asisten)
   de [ftuga](https://github.com/ftuga)).
-- **Conversión:** [markitdown](https://github.com/microsoft/markitdown) (MIT) · **Detección:**
-  [magika](https://github.com/google/magika) (Apache-2.0).
+- **Construido sobre estas librerías, con agradecimiento a sus autores.** El trabajo propio de ClearMD es lo que
+  sale: el Markdown que escribe, su garantía y sus notas; ellas encuentran y leen el contenido.
+
+  | Librería | Qué hace en ClearMD | Licencia |
+  |---|---|---|
+  | [markitdown](https://github.com/microsoft/markitdown) (Microsoft) | convierte PDF, Word, PowerPoint, Excel, HTML, CSV, EPUB y notebooks | MIT |
+  | [magika](https://github.com/google/magika) (Google) | detecta el formato de los archivos sin extensión | Apache-2.0 |
+  | [trafilatura](https://github.com/adbar/trafilatura) (Adrien Barbaresi) | encuentra el artículo de una página web (modo artículo) | Apache-2.0 |
+  | [pylatexenc](https://github.com/phfaist/pylatexenc) (Philippe Faist) | lee el LaTeX para el conversor propio de `.tex` | MIT |
+  | [psutil](https://github.com/giampaolo/psutil) (Giampaolo Rodolà) | mide la memoria del worker | BSD-3-Clause |
+  | [platformdirs](https://github.com/tox-dev/platformdirs) | ubica los ajustes en cada sistema | MIT |
+
+  Cada una trae sus propias dependencias, con sus licencias (todas permisivas); `uv.lock` las lista.
 
 ## ⚖️ Licencia
 

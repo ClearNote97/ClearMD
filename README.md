@@ -191,7 +191,9 @@ ClearMD_Output/          next to what you chose (or in --output-root)
 ## 🛠️ Stack
 
 **Python 3.12–3.14** · **[markitdown](https://github.com/microsoft/markitdown)** (conversion) ·
-**[magika](https://github.com/google/magika)** (detection by content) · **psutil** (worker limits) ·
+**[magika](https://github.com/google/magika)** (detection by content) ·
+**[trafilatura](https://github.com/adbar/trafilatura)** (finding a page's article) ·
+**[pylatexenc](https://github.com/phfaist/pylatexenc)** (reading LaTeX) · **psutil** (worker limits) ·
 **platformdirs** · **pytest · ruff · mypy --strict** · **uv** · **Dev Container + Docker**.
 
 **Base template:** [ClearNote_Dev](https://github.com/ClearNote97/ClearNote_Dev) — my flagship template for
@@ -208,8 +210,19 @@ backend — a desktop tool ([ADR-0009](./docs/decisions/0009-template-pruning.md
 - **Author:** MSc. Nicolás Enrique Valencia Santiago.
 - **Work partner:** AI agent (Claude / Claude Code, within the [Helix](https://github.com/ftuga/helix_asisten)
   framework by [ftuga](https://github.com/ftuga)).
-- **Conversion:** [markitdown](https://github.com/microsoft/markitdown) (MIT) · **Detection:**
-  [magika](https://github.com/google/magika) (Apache-2.0).
+- **Built on these libraries, with thanks to their authors.** ClearMD's own work is what comes out: the
+  Markdown it writes, its guarantee and its notes; these find and read the content.
+
+  | Library | What it does in ClearMD | License |
+  |---|---|---|
+  | [markitdown](https://github.com/microsoft/markitdown) (Microsoft) | converts PDF, Word, PowerPoint, Excel, HTML, CSV, EPUB and notebooks | MIT |
+  | [magika](https://github.com/google/magika) (Google) | detects the format of files without an extension | Apache-2.0 |
+  | [trafilatura](https://github.com/adbar/trafilatura) (Adrien Barbaresi) | finds the article of a web page (article mode) | Apache-2.0 |
+  | [pylatexenc](https://github.com/phfaist/pylatexenc) (Philippe Faist) | reads LaTeX for ClearMD's `.tex` converter | MIT |
+  | [psutil](https://github.com/giampaolo/psutil) (Giampaolo Rodolà) | measures the worker's memory | BSD-3-Clause |
+  | [platformdirs](https://github.com/tox-dev/platformdirs) | finds where the settings live on each system | MIT |
+
+  Each one brings its own dependencies, under their own licenses (all permissive); `uv.lock` lists them.
 
 ## ⚖️ License
 
