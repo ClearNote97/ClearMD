@@ -26,6 +26,8 @@ dependencies = [
     # Pinned to releases at least two weeks old.
     "ttkbootstrap==2.2.3",
     "tkinterdnd2==0.6.4",
+    # The window's rounded shapes and the file icons (ADR-0027); ttkbootstrap requires it already.
+    "pillow>=12.3,<13",
 ]
 # Only what is used: the GUIs and PyInstaller arrive in their own feature, not before (ADR-0009).
 

@@ -34,6 +34,7 @@ from clearmd.backend.schemas.models import (
     PlannedConversion,
 )
 from clearmd.backend.schemas.settings import Settings
+from clearmd.frontend.presenter.icons import FOLDER, icon_for, icon_of_format
 from clearmd.frontend.presenter.models import (
     InputRow,
     OutputChoice,
@@ -47,7 +48,7 @@ from clearmd.frontend.presenter.models import (
     StateView,
 )
 from clearmd.frontend.presenter.ports import ApiBackend, Backend, View
-from clearmd.frontend.presenter.state import AppState, enabled_actions
+from clearmd.frontend.presenter.state import AppState, enabled_actions, step_of
 from clearmd.frontend.presenter.system_theme import detect_system_theme
 from clearmd.i18n import Catalog, load_catalog, printable, resolve_language
 
@@ -342,14 +343,16 @@ class Presenter:
             has_results=bool(self._result_folders()),
         )
         label = self.catalog.text(f"gui.state.{state.value}")
-        self._view.show_state(StateView(state, label, enabled))
+        self._view.show_state(StateView(state, label, enabled, step_of(state)))
 
     def _show_inputs(self) -> None:
-        rows = tuple(
-            InputRow(path, path.name or str(path), str(path.parent), path.is_dir())
-            for path in self._inputs
-        )
-        self._view.show_inputs(rows)
+        rows = []
+        for path in self._inputs:
+            is_folder = path.is_dir()
+            name = path.name or str(path)
+            icon = icon_for(path, is_folder=is_folder)
+            rows.append(InputRow(path, name, str(path.parent), is_folder, icon))
+        self._view.show_inputs(tuple(rows))
 
     def _show_output(self) -> None:
         remembered = self.settings.last_output_folder
@@ -387,19 +390,20 @@ class Presenter:
         rows: list[PlanRow] = []
         for item in plan.conversions:
             kind = RowKind.EXISTS if item.exists else RowKind.CONVERT
-            rows.append(
-                PlanRow(kind, item.source.name, str(item.source.parent), self._format(item))
-            )
+            icon = icon_of_format(item.detection.format)
+            source = item.source
+            rows.append(PlanRow(kind, source.name, str(source.parent), self._format(item), icon))
         for skipped in plan.skipped:
             reason = skip_reason(self.catalog, skipped)
             detail = f"{reason}. {skip_action(self.catalog, skipped)}"
             name = skipped.path.name + ("/" if skipped.is_dir else "")
-            rows.append(PlanRow(RowKind.SKIPPED, name, str(skipped.path.parent), detail))
+            icon = icon_for(skipped.path, is_folder=skipped.is_dir)
+            rows.append(PlanRow(RowKind.SKIPPED, name, str(skipped.path.parent), detail, icon))
         for missing in plan.input_errors:
             detail = self.catalog.text("gui.plan.not_found")
-            rows.append(
-                PlanRow(RowKind.MISSING, missing.path.name, str(missing.path.parent), detail)
-            )
+            path = missing.path
+            icon = icon_for(path, is_folder=False)  # it is not there: its name is all we know
+            rows.append(PlanRow(RowKind.MISSING, path.name, str(path.parent), detail, icon))
         existing = len(plan.existing)
         summary = self.catalog.text(
             "gui.plan.summary",
@@ -431,15 +435,16 @@ class Presenter:
                 detail = self.catalog.text("gui.result.kept")
             else:
                 continue
-            rows.append(ResultRow(source.name, str(source.parent), detail))
+            icon = icon_of_format(outcome.item.detection.format)
+            rows.append(ResultRow(source.name, str(source.parent), detail, icon))
         for skipped in report.skipped:
             reason = skip_reason(self.catalog, skipped)
             detail = f"{reason}. {skip_action(self.catalog, skipped)}"
-            rows.append(ResultRow(skipped.path.name, str(skipped.path.parent), detail))
+            icon = icon_for(skipped.path, is_folder=skipped.is_dir)
+            rows.append(ResultRow(skipped.path.name, str(skipped.path.parent), detail, icon))
         for root in report.unwritten_summaries:
-            rows.append(
-                ResultRow(root.name, str(root.parent), self.catalog.text("gui.result.no_summary"))
-            )
+            detail = self.catalog.text("gui.result.no_summary")
+            rows.append(ResultRow(root.name, str(root.parent), detail, FOLDER))
         counts = self.catalog.text(
             "cli.summary",
             converted=count[OutcomeStatus.CONVERTED],

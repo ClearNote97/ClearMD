@@ -280,6 +280,7 @@ source = { editable = "." }
 dependencies = [
     { name = "charset-normalizer" },
     { name = "markitdown", extra = ["docx", "pdf", "pptx", "xlsx"] },
+    { name = "pillow" },
     { name = "platformdirs" },
     { name = "psutil" },
     { name = "pylatexenc" },
@@ -301,6 +302,7 @@ dev = [
 requires-dist = [
     { name = "charset-normalizer", specifier = ">=3.4" },
     { name = "markitdown", extras = ["pdf", "docx", "pptx", "xlsx"], specifier = "==0.1.9" },
+    { name = "pillow", specifier = ">=12.3,<13" },
     { name = "platformdirs", specifier = ">=4.13" },
     { name = "psutil", specifier = ">=7.0" },
     { name = "pylatexenc", specifier = ">=2.11,<3" },

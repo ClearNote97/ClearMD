@@ -241,6 +241,24 @@ not_saved = "ClearMD no pudo guardar los ajustes. Tus cambios aplican hasta que 
 [gui.app]
 title = "ClearMD"
 subtitle = "Documentos a Markdown, en tu computador"
+local = "100 % local · nada sale de tu equipo"
+
+[gui.steps]
+choose = "Elegir"
+review = "Revisar"
+convert = "Convertir"
+results = "Resultados"
+counter = "Paso {step} de {total}"
+
+[gui.page]
+choose_title = "Elige qué convertir"
+choose_subtitle = "Archivos o carpetas: ClearMD los convierte a Markdown sin salir de tu computador."
+review_title = "Revisa antes de convertir"
+review_subtitle = "Nada se escribe hasta que confirmes."
+convert_title = "Convirtiendo"
+convert_subtitle = "Puedes cancelar cuando quieras; lo que ya está hecho se conserva."
+results_title = "Resultados"
+results_subtitle = "Qué pasó con cada archivo y dónde encontrar los resultados."
 
 [gui.main]
 add_files = "Agregar archivos"

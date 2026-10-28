@@ -12,10 +12,16 @@ SMALL = -14  # never below the body size (UX §5: minimum 14 px)
 TITLE = -24
 SUBTITLE = -16
 
-MIN_WIDTH = 720
-MIN_HEIGHT = 560
+STRONG = -14  # body size, bold: buttons, headings
+EYEBROW = -14  # the step counter, bold
+WORDMARK = -20  # Clear·MD on the rail
 
-THEMES = {"light": "bootstrap-light", "dark": "bootstrap-dark"}
+MIN_WIDTH = 960
+MIN_HEIGHT = 640
+START_SIZE = "1080x720"
+
+RADIUS = 12  # cards and buttons (ADR-0027)
+RAIL_WIDTH = 216
 
 
 def on_grid(value: int) -> bool:

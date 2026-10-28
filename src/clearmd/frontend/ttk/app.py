@@ -1,4 +1,4 @@
-"""The ttkbootstrap GUI: one window that draws what the presenter gives it (ADR-0026).
+"""The ttkbootstrap GUI: one window that draws what the presenter gives it (ADR-0026, ADR-0027).
 
 ``TtkApp`` implements the presenter's ``View``: every text and state comes from the presenter; the
 window only lays it out and forwards the user's intents (buttons, keys, dropped files).
@@ -8,10 +8,11 @@ import tkinter as tk
 import tkinter.font as tkfont
 from collections.abc import Callable
 from pathlib import Path
-from tkinter import filedialog
-from typing import Any
+from tkinter import filedialog, ttk
+from typing import Any, Literal
 
 import ttkbootstrap as tb
+from PIL import ImageTk
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
 from clearmd.backend.schemas.formats import EXTENSIONS
@@ -25,22 +26,28 @@ from clearmd.frontend.presenter.models import (
     StateView,
 )
 from clearmd.frontend.presenter.ports import Backend
+from clearmd.frontend.presenter.state import STEPS
+from clearmd.frontend.ttk import art
+from clearmd.frontend.ttk.brand import LIGHT, PALETTES, WARNING, Look, Palette, register_themes
+from clearmd.frontend.ttk.components.rail import Rail
+from clearmd.frontend.ttk.components.surface import Surface
 from clearmd.frontend.ttk.layout import (
     BODY,
-    GAP,
-    MARGIN,
+    EYEBROW,
     MIN_HEIGHT,
     MIN_WIDTH,
     SPACE,
-    SUBTITLE,
-    THEMES,
+    START_SIZE,
+    STRONG,
     TITLE,
+    WORDMARK,
 )
 from clearmd.frontend.ttk.scheduler import Scheduler
 from clearmd.frontend.ttk.views.main import MainView
 from clearmd.i18n import Catalog
 
 _NAMED_FONTS = ("TkDefaultFont", "TkTextFont", "TkMenuFont", "TkHeadingFont", "TkCaptionFont")
+_APP_ICON_SIZES = (16, 32, 48, 64, 128, 256)
 
 
 class TtkApp:
@@ -51,54 +58,64 @@ class TtkApp:
         self.root: Any = root or TkinterDnD.Tk()
         self.root.withdraw()  # shown once laid out, in its theme (no flash of the wrong one)
         self.root.minsize(MIN_WIDTH, MIN_HEIGHT)
+        self.root.geometry(START_SIZE)
         _forget_dead_style()
         self.style = tb.Style()
-        self._fonts()
+        register_themes(self.style)
+        self.fonts = self._fonts()
+        self.look = Look(self.style, self.root, self.fonts)
+        self.palette: Palette = LIGHT
+        self.look.use(self.palette)  # the styles exist before the widgets that use them
         self.scheduler = Scheduler(self.root)
         self.catalog: Catalog | None = None
         self.state: StateView | None = None
         self.last_plan: PlanView | None = None
         self.last_progress: ProgressView | None = None
         self.last_result: ResultView | None = None
+        self._scan: str | None = None
         self._build()
         self.presenter = Presenter(self, backend)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
 
     # --- Building ------------------------------------------------------------------------------
 
-    def _fonts(self) -> None:
+    def _fonts(self) -> dict[str, tkfont.Font]:
         for name in _NAMED_FONTS:
             tkfont.nametofont(name, root=self.root).configure(size=BODY)
         family = tkfont.nametofont("TkDefaultFont", root=self.root).actual("family")
-        self.title_font = tkfont.Font(root=self.root, family=family, size=TITLE, weight="bold")
-        self.subtitle_font = tkfont.Font(root=self.root, family=family, size=SUBTITLE)
-        self.state_font = tkfont.Font(root=self.root, family=family, size=BODY, weight="bold")
+
+        def font(size: int, weight: Literal["normal", "bold"] = "normal") -> tkfont.Font:
+            return tkfont.Font(root=self.root, family=family, size=size, weight=weight)
+
+        return {
+            "body": tkfont.nametofont("TkDefaultFont", root=self.root),
+            "strong": font(STRONG, "bold"),
+            "eyebrow": font(EYEBROW, "bold"),
+            "title": font(TITLE, "bold"),
+            "wordmark": font(WORDMARK, "bold"),
+        }
 
     def _build(self) -> None:
-        self.frame = tb.Frame(self.root, padding=MARGIN)
-        self.frame.pack(fill="both", expand=True)
+        icons = [
+            ImageTk.PhotoImage(art.logo(f"clearmd-app-{size}"), master=self.root)
+            for size in _APP_ICON_SIZES
+        ]
+        self._icons = icons  # Tk forgets an image Python does not hold
+        self.root.iconphoto(True, *icons)
 
-        header = tb.Frame(self.frame)
-        header.pack(fill="x")
-        titles = tb.Frame(header)
-        titles.pack(side="left", fill="x", expand=True)
-        self.title = tb.Label(titles, font=self.title_font)
-        self.title.pack(anchor="w")
-        self.subtitle = tb.Label(titles, font=self.subtitle_font, bootstyle="secondary")
-        self.subtitle.pack(anchor="w")
-        self.help_button = tb.Button(header, command=self.show_help, bootstyle="secondary-outline")
-        self.help_button.pack(side="right")
-        self.settings_button = tb.Button(
-            header, command=self.show_settings, bootstyle="secondary-outline"
+        self.rail = Rail(
+            self.root, fonts=self.fonts, on_settings=self.show_settings, on_help=self.show_help
         )
-        self.settings_button.pack(side="right", padx=(0, SPACE))
-        self.state_label = tb.Label(self.frame, font=self.state_font)
-        self.state_label.pack(anchor="w", pady=(GAP, 0))
+        self.rail.pack(side="left", fill="y")
+        self.surface = Surface(self.root, fonts=self.fonts)
+        self.surface.pack(side="left", fill="both", expand=True)
+        page = self.surface.page
 
-        self.pages = tb.Frame(self.frame)
-        self.pages.pack(fill="both", expand=True, pady=(GAP, 0))
+        self.message = ttk.Label(page, style=WARNING, anchor="w")
+        self.message.pack(side="bottom", fill="x", pady=(SPACE, 0))
         self.main = MainView(
-            self.pages,
+            page,
+            fonts=self.fonts,
             on_add_files=self.add_files,
             on_add_folder=self.add_folder,
             on_remove=lambda path: self.presenter.remove_input(path),
@@ -109,9 +126,6 @@ class TtkApp:
         )
         self.main.pack(fill="both", expand=True)
 
-        self.message = tb.Label(self.frame, anchor="w", bootstyle="warning", wraplength=MIN_WIDTH)
-        self.message.pack(fill="x", pady=(SPACE, 0))
-
         # Files and folders dropped anywhere on the window (tkinterdnd2, ADR-0026).
         self.root.drop_target_register(DND_FILES)
         self.root.dnd_bind("<<Drop>>", self._dropped)
@@ -120,6 +134,8 @@ class TtkApp:
     # --- Intents ---------------------------------------------------------------------------------
 
     def add_files(self) -> None:
+        if self.state is not None and Action.ADD not in self.state.enabled:
+            return
         catalog = self._catalog()
         patterns = " ".join(f"*{extension}" for extension in sorted(EXTENSIONS))
         chosen = filedialog.askopenfilenames(
@@ -185,7 +201,10 @@ class TtkApp:
 
     def show_state(self, state: StateView) -> None:
         self.state = state
-        self.state_label.configure(text=state.label)
+        if state.state is not AppState.ANALYZING:
+            self._scan = None
+        self.rail.show_step(state.step)
+        self._header()
         main = self.main
         for button, action in (
             (main.add_files, Action.ADD),
@@ -196,10 +215,10 @@ class TtkApp:
             (main.in_folder, Action.CHOOSE_OUTPUT),
             (main.pick, Action.CHOOSE_OUTPUT),
             (main.convert, Action.CONVERT),
-            (self.settings_button, Action.SETTINGS),
-            (self.help_button, Action.HELP),
+            (self.rail.settings, Action.SETTINGS),
+            (self.rail.help, Action.HELP),
         ):
-            button.configure(state="normal" if action in state.enabled else "disabled")
+            button.state(["!disabled"] if action in state.enabled else ["disabled"])
 
     def show_inputs(self, rows: tuple[InputRow, ...]) -> None:
         self.main.show_inputs(rows)
@@ -208,7 +227,8 @@ class TtkApp:
         self.main.show_output_choice(choice)
 
     def show_scan(self, text: str) -> None:
-        self.state_label.configure(text=text)
+        self._scan = text
+        self._header()
 
     def show_plan(self, plan: PlanView) -> None:
         self.last_plan = plan  # drawn by the plan view (T05)
@@ -226,16 +246,33 @@ class TtkApp:
         """The welcome dialog (T06)."""
 
     def apply_theme(self, theme: str) -> None:
-        self.style.theme_use(THEMES.get(theme, THEMES["light"]))
+        self.palette = PALETTES.get(theme, LIGHT)
+        self.look.use(self.palette)
+        self.root.configure(background=self.palette.ground)
+        self.rail.apply_palette(self.palette)
+        self.surface.apply_palette(self.palette)
+        self.main.apply_palette(self.palette)
 
     def apply_language(self, catalog: Catalog) -> None:
         self.catalog = catalog
         self.root.title(catalog.text("gui.app.title"))
-        self.title.configure(text=catalog.text("gui.app.title"))
-        self.subtitle.configure(text=catalog.text("gui.app.subtitle"))
-        self.help_button.configure(text=catalog.text("gui.main.help"))
-        self.settings_button.configure(text=catalog.text("gui.main.settings"))
+        self.rail.apply_language(catalog)
         self.main.apply_language(catalog)
+        self._header()
+
+    def _header(self) -> None:
+        if self.catalog is None or self.state is None:
+            return
+        catalog, state = self.catalog, self.state
+        step = STEPS[state.step - 1]
+        eyebrow = catalog.text("gui.steps.counter", step=state.step, total=len(STEPS))
+        if state.state is not AppState.READY:
+            eyebrow = f"{eyebrow} · {state.label}"
+        self.surface.show_header(
+            eyebrow=eyebrow,
+            title=catalog.text(f"gui.page.{step}_title"),
+            subtitle=self._scan or catalog.text(f"gui.page.{step}_subtitle"),
+        )
 
     def _catalog(self) -> Catalog:
         if self.catalog is None:

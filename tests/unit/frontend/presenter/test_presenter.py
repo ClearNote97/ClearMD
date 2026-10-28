@@ -453,3 +453,18 @@ def test_settings_problems_at_start_are_told_in_plain_words() -> None:
     warnings = (SettingsWarning("colour", SettingsProblem.UNKNOWN_KEY),)
     _, view, _, _ = make(FakeBackend(warnings=warnings))
     assert "colour" in view.last("message")
+
+
+def test_rows_carry_their_file_icon_and_the_state_its_step(tmp_path: Path) -> None:
+    (tmp_path / "a.pdf").write_bytes(b"%PDF")
+    presenter, view, _, _ = make()
+    assert view.last("state").step == 1
+    presenter.add_paths([tmp_path / "a.pdf", tmp_path])
+    assert [row.icon for row in view.last("inputs")] == ["pdf", "folder"]
+    presenter.analyze()
+    view.drain()
+    assert view.last("state").step == 2
+    assert all(row.icon for row in view.last("plan").rows)
+    presenter.confirm()
+    view.drain()
+    assert view.last("state").step == 4

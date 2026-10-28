@@ -18,7 +18,7 @@
 
 - [x] **T04 — The ttk shell and the main view.** Theme, layout constants, Add files / Add folder / drag and drop
       / input list / output choice / Convert / "?" / settings; `clearmd-ttk` (AC-05, AC-16, AC-17, AC-20).
-- [ ] **T04b — The visual identity (ADR-0027).** `make_assets.py` (logo SVG/PNG, app icon, file icons) and a
+- [x] **T04b — The visual identity (ADR-0027).** `make_assets.py` (logo SVG/PNG, app icon, file icons) and a
       test that the committed assets match it; the presenter's icon per row; the `clearmd-light/-dark`
       themes; rounded buttons and cards (image elements); the rail (logo, Clear·MD, the four steps, Settings,
       Help); the main view redone on it with the numbered, iconed list; the window icon (AC-22, AC-23).

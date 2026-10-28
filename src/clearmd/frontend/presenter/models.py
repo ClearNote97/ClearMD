@@ -12,6 +12,7 @@ class StateView:
     state: AppState
     label: str
     enabled: frozenset[Action]
+    step: int  # 1 Choose, 2 Review, 3 Convert, 4 Results (ADR-0027: the rail highlights it)
 
 
 @dataclass(frozen=True)
@@ -20,6 +21,7 @@ class InputRow:
     name: str
     location: str  # the folder it is in, as the user would read it
     is_folder: bool
+    icon: str  # an asset name under frontend/assets/icons (presenter.icons)
 
 
 class OutputMode(StrEnum):
@@ -48,6 +50,7 @@ class PlanRow:
     name: str
     location: str
     detail: str  # the format, or why it is skipped and what to do
+    icon: str
 
 
 @dataclass(frozen=True)
@@ -72,6 +75,7 @@ class ResultRow:
     name: str
     location: str
     detail: str  # what happened and what to do
+    icon: str
 
 
 @dataclass(frozen=True)

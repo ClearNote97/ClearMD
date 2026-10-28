@@ -44,3 +44,17 @@ def enabled_actions(
     if state is AppState.WAITING_DECISION:
         return frozenset({Action.BACK, Action.HELP} | ({Action.CONFIRM} if can_confirm else set()))
     return _FINISHED if has_results else _FINISHED - {Action.OPEN_RESULTS}
+
+
+STEPS = ("choose", "review", "convert", "results")  # the flow, as the rail shows it (ADR-0027)
+
+
+def step_of(state: AppState) -> int:
+    """Which of the four steps a state belongs to (1-based)."""
+    if state is AppState.READY:
+        return 1
+    if state in {AppState.ANALYZING, AppState.WAITING_DECISION}:
+        return 2
+    if state is AppState.CONVERTING:
+        return 3
+    return 4

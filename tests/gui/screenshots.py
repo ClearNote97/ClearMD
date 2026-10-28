@@ -10,6 +10,7 @@ The window is filled through the presenter with a fake backend: no document is c
 import argparse
 import os
 import sys
+import tempfile
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -23,13 +24,26 @@ from support.gui_fakes import FakeBackend  # noqa: E402
 from clearmd.backend.schemas.settings import Settings  # noqa: E402
 from clearmd.frontend.ttk import TtkApp  # noqa: E402
 
-WIDTH, HEIGHT = 960, 720
+WIDTH, HEIGHT = 1080, 720
+# Real files and folders (a folder must exist to be shown as one), under a temporary home.
+DEMO = Path(tempfile.gettempdir()) / "Usuarios" / "ana"
 INPUTS = [
-    Path("/home/ana/Documentos/Informe anual 2026.pdf"),
-    Path("/home/ana/Documentos/Tesis"),
-    Path("/home/ana/Descargas/Contrato de arriendo.docx"),
-    Path("/home/ana/Descargas/Notas de clase.odt"),
+    DEMO / "Documentos" / "Informe anual 2026.pdf",
+    DEMO / "Documentos" / "Tesis",
+    DEMO / "Descargas" / "Contrato de arriendo.docx",
+    DEMO / "Documentos" / "Finanzas" / "Ventas 2026.xlsx",
+    DEMO / "Descargas" / "Notas de clase.odt",
+    DEMO / "Documentos" / "Tesis" / "Artículo.tex",
 ]
+
+
+def demo_files() -> None:
+    for path in INPUTS:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if path.suffix:
+            path.write_bytes(b"")
+        else:
+            path.mkdir(exist_ok=True)
 
 
 def settle(app: TtkApp, seconds: float = 0.3) -> None:
@@ -67,6 +81,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Screenshots of the ttk GUI")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
+    demo_files()
     with virtual_display(WIDTH + 64, HEIGHT + 64) as display:
         if display is None:
             print("no display and no Xvfb", file=sys.stderr)
