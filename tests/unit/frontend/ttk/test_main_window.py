@@ -9,7 +9,7 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
-from support.gui_fakes import FakeBackend, planned
+from support.gui_fakes import FakeBackend, MemoryBackend, planned
 
 from clearmd.backend.schemas.errors import SkipReason
 from clearmd.backend.schemas.models import BatchPlan, OutcomeStatus, SkippedItem
@@ -17,6 +17,7 @@ from clearmd.backend.schemas.settings import Settings
 from clearmd.frontend.presenter import AppState
 from clearmd.frontend.ttk import TtkApp
 from clearmd.frontend.ttk.layout import BODY, on_grid
+from clearmd.frontend.ttk.views.dialogs import SettingsDialog, WelcomeDialog
 
 
 @pytest.fixture
@@ -248,5 +249,102 @@ def test_problems_are_listed_in_the_results(display: str, tmp_path: Path) -> Non
         assert not app.results.all_good.winfo_ismapped()
         app.results.open.invoke()
         assert fake.opened
+    finally:
+        app.close()
+
+
+# --- Help, welcome, settings (T06) ---------------------------------------------------------------
+
+
+def test_help_opens_from_the_rail_and_esc_closes_it(app: TtkApp) -> None:
+    app.rail.help.invoke()
+    pump(app, seconds=0.2)
+    assert app.dialog is not None
+    assert app.dialog.title() == "How to use ClearMD"
+    texts = [child.cget("text") for child in app.dialog.body.winfo_children()]
+    assert "Your privacy" in texts and "What it converts" in texts
+    app.dialog.focus_force()
+    pump(app, seconds=0.1)
+    app.dialog.event_generate("<Escape>", when="tail")
+    pump(app, until=lambda: app.dialog is None, seconds=1.0)
+    assert app.dialog is None
+
+
+def test_the_welcome_appears_once_and_can_be_dismissed_for_good(display: str) -> None:
+    fake = FakeBackend(settings=Settings(show_welcome=True))
+    app = TtkApp(fake)
+    try:
+        app.start()
+        pump(app, until=lambda: app.dialog is not None)
+        assert isinstance(app.dialog, WelcomeDialog)
+        app.dialog.dont_show.set(True)
+        app.dialog.close()
+        assert app.dialog is None
+        assert fake.saved[-1].show_welcome is False
+    finally:
+        app.close()
+
+
+def test_settings_save_applies_the_language_and_theme(app: TtkApp) -> None:
+    app.rail.settings.invoke()
+    pump(app, seconds=0.2)
+    dialog = app.dialog
+    assert isinstance(dialog, SettingsDialog)
+    assert set(dialog.values) == {
+        "language", "theme", "open_output_when_done", "on_existing_output", "recursive",
+        "html_strategy", "show_welcome",
+    }  # fmt: skip
+    dialog.values["language"].set("Español")
+    dialog.values["theme"].set("Dark")
+    dialog.values["recursive"].set(False)
+    dialog.save()
+    pump(app, seconds=0.2)
+    assert app.dialog is None
+    assert app.presenter.settings.language == "es" and not app.presenter.settings.recursive
+    assert app.style.theme_use() == "clearmd-dark"
+    assert app.main.convert.cget("text") == "Convertir"
+
+
+def test_restore_defaults_resets_the_controls_until_saved(app: TtkApp) -> None:
+    app.presenter.save_settings(Settings(language="es", show_welcome=False, recursive=False))
+    app.rail.settings.invoke()
+    pump(app, seconds=0.2)
+    dialog = app.dialog
+    assert isinstance(dialog, SettingsDialog)
+    dialog.restore()
+    assert dialog.chosen() == Settings()
+    dialog.close()
+    assert app.presenter.settings.language == "es"  # nothing saved without Save
+
+
+# --- A real batch through the window (AC-20) -----------------------------------------------------
+
+FIXTURES = Path(__file__).resolve().parents[3] / "fixtures" / "documents"
+
+
+def test_a_real_batch_through_the_window_writes_the_markdown(display: str, tmp_path: Path) -> None:
+    folder = tmp_path / "Documentos"
+    folder.mkdir()
+    for name in ("sample.docx", "sample.csv", "sample.txt", "encrypted.pdf"):
+        (folder / name).write_bytes((FIXTURES / name).read_bytes())
+    (folder / "notas.md").write_text("# ya es Markdown\n", encoding="utf-8")
+    backend = MemoryBackend(Settings(show_welcome=False))
+    app = TtkApp(backend)
+    try:
+        app.start()
+        app.presenter.add_paths([folder])
+        app.main.convert.invoke()
+        pump(app, until=lambda: app.presenter.state is AppState.WAITING_DECISION, seconds=30)
+        assert app.review.stats.figures()[:2] == [("To convert", "4"), ("Skipped", "1")]
+        app.review.confirm.invoke()
+        finished = {AppState.FINISHED, AppState.FINISHED_WITH_PROBLEMS}
+        pump(app, until=lambda: app.presenter.state in finished, seconds=120)
+        assert app.presenter.state is AppState.FINISHED_WITH_PROBLEMS  # the encrypted PDF
+        assert app.last_result is not None
+        (output,) = app.last_result.folders  # ClearMD_Output, next to the chosen folder
+        assert output == tmp_path / "ClearMD_Output"
+        assert len(list(output.rglob("*.md"))) == 4  # three documents and the summary
+        assert set(app.results.problems.names()) == {"encrypted.pdf", "notas.md"}
+        assert backend.opened == [output]
     finally:
         app.close()

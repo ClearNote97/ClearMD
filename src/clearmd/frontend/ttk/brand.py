@@ -99,6 +99,7 @@ PAGE = "Page.ClearMD.TFrame"  # the working area's ground
 MUTED = "Muted.ClearMD.TLabel"  # secondary text on a card
 WARNING = "Warning.ClearMD.TLabel"  # a message on the ground
 ON_PAGE = "OnPage.ClearMD.TLabel"  # text on the ground
+CHECK_ON_PAGE = "OnPage.ClearMD.TCheckbutton"  # a check box on the ground
 
 _BUTTON_HEIGHT = 44  # a comfortable target (UX §5)
 
@@ -231,6 +232,8 @@ class Look:
         style.configure(WARNING, background=p.ground, foreground=p.warning)
 
         style.configure("TRadiobutton", background=p.card, foreground=p.text)
+        style.configure("TCheckbutton", background=p.card, foreground=p.text)
+        style.configure(CHECK_ON_PAGE, background=p.ground, foreground=p.text)
         style.configure("TLabel", background=p.card, foreground=p.text)
         style.configure(
             "Treeview",
@@ -251,4 +254,6 @@ class Look:
             padding=(8, 8),
         )
         style.map("Treeview.Heading", background=[("active", p.card)])
+        # A soft tint for the selection: the row's number, icon and text stay readable on it.
+        style.map("Treeview", background=[("selected", p.shape)], foreground=[("selected", p.text)])
         style.configure("Horizontal.TProgressbar", thickness=8)

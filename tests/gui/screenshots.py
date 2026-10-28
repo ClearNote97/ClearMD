@@ -89,9 +89,9 @@ def capture(app: TtkApp, target: Path) -> None:
     print(f"{target}  {width}x{height}")
 
 
-def window(language: str, theme: str, fake: FakeBackend) -> TtkApp:
+def window(language: str, theme: str, fake: FakeBackend, *, welcome: bool = False) -> TtkApp:
     fake.settings = Settings(
-        language=language, theme=theme, show_welcome=False, open_output_when_done=False
+        language=language, theme=theme, show_welcome=welcome, open_output_when_done=False
     )
     app = TtkApp(fake)
     app.root.geometry(f"{WIDTH}x{HEIGHT}+0+0")
@@ -113,6 +113,19 @@ def to_results(app: TtkApp) -> None:
     to_review(app)
     app.presenter.confirm(overwrite=False)
     settle(app, until=partial(converted, app))
+
+
+def help_window(app: TtkApp) -> None:
+    app.presenter.add_paths(INPUTS)
+    app.show_help()
+
+
+def settings_window(app: TtkApp) -> None:
+    app.show_settings()
+
+
+def welcome(app: TtkApp) -> None:
+    settle(app, until=lambda: app.dialog is not None)
 
 
 def converted(app: TtkApp) -> bool:
@@ -157,11 +170,19 @@ def main() -> int:
                     ("4-results-all-good", FakeBackend(plan=BatchPlan(PLAN.conversions, (), ())),
                      to_results),
                 ]  # fmt: skip
+                shots += [
+                    ("5-help", FakeBackend(plan=PLAN), help_window),
+                    ("6-settings", FakeBackend(plan=PLAN), settings_window),
+                ]
                 for name, fake, prepare in shots:
                     app = window(language, theme, fake)
                     prepare(app)
                     capture(app, args.out / f"{name}-{theme}-{language}.png")
                     app.close()
+                app = window(language, theme, FakeBackend(plan=PLAN), welcome=True)
+                welcome(app)
+                capture(app, args.out / f"0-welcome-{theme}-{language}.png")
+                app.close()
                 held = Held()
                 app = window(language, theme, FakeBackend(plan=PLAN, before_finish=held))
                 converting(app, held)

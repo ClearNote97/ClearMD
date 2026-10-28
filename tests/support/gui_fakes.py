@@ -19,6 +19,7 @@ from clearmd.backend.schemas.models import (
     PlannedConversion,
 )
 from clearmd.backend.schemas.settings import Settings, SettingsWarning
+from clearmd.frontend.presenter.ports import ApiBackend
 
 NOW = datetime(2026, 10, 27, 12, 0)
 
@@ -102,3 +103,21 @@ class FakeBackend:
         return BatchReport(
             NOW, NOW, tuple(outcomes), plan.skipped, plan.input_errors, kwargs["cancel"].is_set()
         )
+
+
+class MemoryBackend(ApiBackend):
+    """The real backend (plans and converts for real) with settings kept in memory: a test or a
+    screenshot never reads or writes the user's settings file."""
+
+    def __init__(self, settings: Settings) -> None:
+        self.settings = settings
+        self.opened: list[Path] = []
+
+    def load_settings(self) -> tuple[Settings, tuple[SettingsWarning, ...]]:
+        return self.settings, ()
+
+    def save_settings(self, settings: Settings) -> None:
+        self.settings = settings
+
+    def open_folder(self, path: Path) -> None:
+        self.opened.append(path)

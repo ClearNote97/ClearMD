@@ -29,6 +29,7 @@ from clearmd.frontend.presenter.ports import Backend
 from clearmd.frontend.presenter.state import STEPS
 from clearmd.frontend.ttk import art
 from clearmd.frontend.ttk.brand import LIGHT, PALETTES, WARNING, Look, Palette, register_themes
+from clearmd.frontend.ttk.components.dialog import Dialog
 from clearmd.frontend.ttk.components.rail import Rail
 from clearmd.frontend.ttk.components.surface import Surface
 from clearmd.frontend.ttk.layout import (
@@ -43,6 +44,7 @@ from clearmd.frontend.ttk.layout import (
     WORDMARK,
 )
 from clearmd.frontend.ttk.scheduler import Scheduler
+from clearmd.frontend.ttk.views.dialogs import SettingsDialog, WelcomeDialog, help_dialog
 from clearmd.frontend.ttk.views.main import MainView
 from clearmd.frontend.ttk.views.plan import ReviewView
 from clearmd.frontend.ttk.views.progress import ConvertView
@@ -76,6 +78,7 @@ class TtkApp:
         self.last_progress: ProgressView | None = None
         self.last_result: ResultView | None = None
         self._scan: str | None = None
+        self.dialog: Dialog | None = None  # the open dialog: one at a time
         self._build()
         self.presenter = Presenter(self, backend)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
@@ -204,15 +207,53 @@ class TtkApp:
             self.presenter.open_results()
 
     def show_help(self) -> None:
-        """The help window (T06)."""
+        """The "?" window: always available (UX §4)."""
+        if self.dialog is None:
+            self._open(
+                help_dialog(self.root, self._catalog(), self.palette, self.fonts, self._closed)
+            )
 
     def show_settings(self) -> None:
-        """The settings window (T06)."""
+        if self.dialog is not None or self.state is None:
+            return
+        if Action.SETTINGS not in self.state.enabled:
+            return
+        dialog = SettingsDialog(
+            self.root,
+            self._catalog(),
+            self.palette,
+            self.fonts,
+            self.presenter.settings,
+            on_save=self.presenter.save_settings,
+            on_close=self._closed,
+        )
+        self._open(dialog)
+
+    def _welcome(self, steps: tuple[str, ...]) -> None:
+        if self.dialog is not None:
+            return
+
+        def done(show_again: bool) -> None:
+            self._closed()
+            self.presenter.dismiss_welcome(show_again=show_again)
+
+        dialog = WelcomeDialog(self.root, self._catalog(), self.palette, self.fonts, steps, done)
+        self._open(dialog)
+
+    def _open(self, dialog: Dialog) -> None:
+        self.dialog = dialog
+        dialog.open()
+
+    def _closed(self) -> None:
+        self.dialog = None
 
     def close(self) -> None:
         """Closing while working cancels first (the summary is still written), then closes."""
         if self.state is not None and self.state.state in {AppState.ANALYZING, AppState.CONVERTING}:
             self.presenter.cancel()
+        if self.dialog is not None:
+            self.dialog.destroy()
+            self.dialog = None
         self.scheduler.close()
         self.root.update_idletasks()  # Tk's own idle work (a theme change) runs before the end
         self.root.destroy()
@@ -289,7 +330,8 @@ class TtkApp:
         self.message.configure(text=text)
 
     def show_welcome(self, steps: tuple[str, ...]) -> None:
-        """The welcome dialog (T06)."""
+        # Once the window is on screen: the presenter asks for it while starting.
+        self.scheduler.after(0, lambda: self._welcome(steps))
 
     def apply_theme(self, theme: str) -> None:
         self.palette = PALETTES.get(theme, LIGHT)
