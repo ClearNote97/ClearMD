@@ -238,6 +238,34 @@ def folder_png(size: int) -> Image.Image:
     return _render(size, paint)
 
 
+# --- The executable: its icon and the splash shown while it unpacks (feature 006) ---------------
+
+SPLASH = (480, 200)
+WORDMARK_FONT_SIZE = 40
+
+
+def ico_bytes() -> bytes:
+    out = io.BytesIO()
+    app_png(256).save(out, format="ICO", sizes=[(size, size) for size in APP_SIZES])
+    return out.getvalue()
+
+
+def splash_png() -> Image.Image:
+    """The app icon and Clear·MD on the rail's ink, the dot in the "Clear" tone."""
+    width, height = SPLASH
+    image = Image.new("RGBA", SPLASH, _rgba(INK))
+    icon = app_png(96)
+    image.alpha_composite(icon, (40, (height - icon.height) // 2))
+    draw = ImageDraw.Draw(image)
+    font = _font(WORDMARK_FONT_SIZE)
+    x: float = 40 + icon.width + 28
+    middle = height / 2
+    for part, colour in (("Clear", "#F3F5F7"), ("·", CLEAR_BRIGHT), ("MD", "#F3F5F7")):
+        draw.text((x, middle), part, fill=_rgba(colour), font=font, anchor="lm")
+        x += draw.textlength(part, font=font)
+    return image
+
+
 # --- Everything, as {relative path: bytes} ---------------------------------------------------
 
 
@@ -255,6 +283,8 @@ def assets() -> dict[str, bytes]:
         for size in MARK_SIZES:
             files[f"logo/clearmd-{colours.name}-{size}.png"] = _png_bytes(mark_png(colours, size))
     files["logo/clearmd-app.svg"] = app_svg().encode()
+    files["logo/clearmd.ico"] = ico_bytes()
+    files["logo/splash.png"] = _png_bytes(splash_png())
     for size in APP_SIZES:
         files[f"logo/clearmd-app-{size}.png"] = _png_bytes(app_png(size))
     for icon in FILE_ICONS:

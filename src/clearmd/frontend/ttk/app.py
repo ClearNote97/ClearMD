@@ -4,9 +4,11 @@
 window only lays it out and forwards the user's intents (buttons, keys, dropped files).
 """
 
+import sys
+import time
 import tkinter as tk
 import tkinter.font as tkfont
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from tkinter import filedialog, ttk
 from typing import Any, Literal
@@ -79,6 +81,7 @@ class TtkApp:
         self.last_result: ResultView | None = None
         self._scan: str | None = None
         self.dialog: Dialog | None = None  # the open dialog: one at a time
+        self._closing_since: float | None = None  # closed while converting: waiting for the end
         self._build()
         self.presenter = Presenter(self, backend)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
@@ -117,7 +120,8 @@ class TtkApp:
         self.surface.pack(side="left", fill="both", expand=True)
         page = self.surface.page
 
-        self.message = ttk.Label(page, style=WARNING, anchor="w")
+        self.message = ttk.Label(page, style=WARNING, anchor="w", justify="left")
+        page.bind("<Configure>", lambda event: self.message.configure(wraplength=event.width))
         self.message.pack(side="bottom", fill="x", pady=(SPACE, 0))
         self.main = MainView(
             page,
@@ -171,6 +175,8 @@ class TtkApp:
             self.presenter.add_paths([Path(path) for path in chosen])
 
     def add_folder(self) -> None:
+        if self.state is not None and Action.ADD not in self.state.enabled:
+            return
         chosen = filedialog.askdirectory(
             parent=self.root, title=self._catalog().text("gui.main.pick_folder_title")
         )
@@ -178,6 +184,8 @@ class TtkApp:
             self.presenter.add_paths([Path(chosen)])
 
     def pick_output_folder(self) -> None:
+        if self.state is not None and Action.CHOOSE_OUTPUT not in self.state.enabled:
+            return
         suggestion = self.presenter.settings.last_output_folder or None
         chosen = filedialog.askdirectory(
             parent=self.root,
@@ -248,12 +256,31 @@ class TtkApp:
         self.dialog = None
 
     def close(self) -> None:
-        """Closing while working cancels first (the summary is still written), then closes."""
-        if self.state is not None and self.state.state in {AppState.ANALYZING, AppState.CONVERTING}:
-            self.presenter.cancel()
+        """Closing while converting cancels, hides the window and waits for the batch to end, so
+        the summary of what was done is still written (AC-10); then the window closes."""
+        if self._closing_since is not None:
+            return
         if self.dialog is not None:
-            self.dialog.destroy()
-            self.dialog = None
+            self.dialog.close()  # its answer counts ("Don't show again")
+        if self.state is not None and self.state.state is AppState.CONVERTING:
+            self._closing_since = time.monotonic()
+            self.presenter.cancel()
+            self.root.withdraw()
+            self.root.after(CLOSE_POLL_MS, self._close_when_done)
+            return
+        if self.state is not None and self.state.state is AppState.ANALYZING:
+            self.presenter.cancel()
+        self._destroy()
+
+    def _close_when_done(self) -> None:
+        converting = self.state is not None and self.state.state is AppState.CONVERTING
+        waited = time.monotonic() - (self._closing_since or 0.0)
+        if converting and waited < CLOSE_WAIT_SECONDS:
+            self.root.after(CLOSE_POLL_MS, self._close_when_done)
+            return
+        self._destroy()
+
+    def _destroy(self) -> None:
         self.scheduler.close()
         self.root.update_idletasks()  # Tk's own idle work (a theme change) runs before the end
         self.root.destroy()
@@ -390,11 +417,30 @@ def _forget_dead_style() -> None:
         tb.Style.instance = None
 
 
-def main() -> None:
-    """``clearmd-ttk``: the window, until it is closed."""
+CLOSE_POLL_MS = 50
+CLOSE_WAIT_SECONDS = 60  # closing while converting: at most this long for the batch to stop
+SMOKE_SECONDS = 3  # ``--smoke``: the executable's own check in CI (ADR-0028)
+
+
+def main(argv: Sequence[str] | None = None) -> None:
+    """``clearmd-ttk``: the window, until it is closed. ``--smoke`` opens it and closes it after
+    a few seconds: CI checks that the executable starts (its data, its toolkit)."""
     import multiprocessing
 
     multiprocessing.freeze_support()  # a no-op unless running as a packaged executable
+    arguments = sys.argv[1:] if argv is None else list(argv)
     app = TtkApp()
     app.start()
+    _close_splash()
+    if "--smoke" in arguments:
+        app.root.after(SMOKE_SECONDS * 1000, app.close)
     app.root.mainloop()
+
+
+def _close_splash() -> None:
+    """The executable shows a splash while it unpacks (PyInstaller); the window replaces it."""
+    try:
+        import pyi_splash  # type: ignore[import-not-found,import-untyped,unused-ignore]  # frozen only
+    except ImportError:
+        return
+    pyi_splash.close()

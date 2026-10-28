@@ -76,10 +76,12 @@ def plan_batch(
     output_root: Path | None = None,
     on_event: Callable[[BatchEvent], None] | None = None,
     html_strategy: Strategy = Strategy.FULL,
+    cancel: CancelToken | None = None,
 ) -> BatchPlan:
     """Everything that would happen, computed without writing anything.
 
-    The worker starts only if a file needs detection by content.
+    The worker starts only if a file needs detection by content. A cancelled ``cancel`` stops
+    the scan and the detection early: the plan is then incomplete, for the caller to drop.
     """
     limits = composition.default_limits()
     worker = composition.build_runner(limits)
@@ -93,6 +95,7 @@ def plan_batch(
             output_root=Path(os.path.abspath(output_root.expanduser())) if output_root else None,
             on_event=on_event,
             html_strategy=html_strategy,
+            cancel=cancel,
         )
     finally:
         worker.close()

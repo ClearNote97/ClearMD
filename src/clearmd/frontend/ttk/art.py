@@ -4,6 +4,7 @@ Everything is drawn larger and reduced, so edges are smooth; the results become 
 ``brand`` and the components.
 """
 
+from functools import cache
 from importlib.resources import files
 
 from PIL import Image, ImageDraw, ImageFont
@@ -106,8 +107,10 @@ def surface(width: int, height: int, ground: str, shape: str) -> Image.Image:
     return big.resize((width, height), Image.Resampling.LANCZOS)
 
 
+@cache
 def icon(name: str, *, double: bool = False) -> Image.Image:
-    """A file icon from ``frontend/assets/icons`` (28 px; 56 px with ``double``)."""
+    """A file icon from ``frontend/assets/icons`` (28 px; 56 px with ``double``), read once.
+    Shared: callers compose it onto new images, never draw on it."""
     resource = ASSETS / "icons" / (f"{name}@2x.png" if double else f"{name}.png")
     with resource.open("rb") as stream:
         image = Image.open(stream)

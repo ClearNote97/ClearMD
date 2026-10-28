@@ -61,9 +61,18 @@ class FileList(ttk.Frame):
         self.empty.configure(text=empty)
 
     def apply_palette(self, palette: Palette) -> None:
+        if palette == self._palette:
+            return
         self._palette = palette
         self.tree.tag_configure("warning", foreground=palette.warning)
-        self.show(self._rows)
+        children = self.tree.get_children()
+        selected = [children.index(item) for item in self.tree.selection()]
+        focus = children.index(self.tree.focus()) if self.tree.focus() in children else None
+        self.show(self._rows)  # the row pictures carry the palette's colour: drawn again
+        children = self.tree.get_children()
+        self.tree.selection_set([children[i] for i in selected if i < len(children)])
+        if focus is not None and focus < len(children):
+            self.tree.focus(children[focus])
 
     # --- Rows ----------------------------------------------------------------------------------
 

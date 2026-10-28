@@ -1,16 +1,15 @@
 """Parse and serialize settings.toml. A bad file never stops the app (ADR-0012, AC-33)."""
 
 import tomllib
-import unicodedata
 from dataclasses import fields, replace
 
 from clearmd.backend.schemas.settings import (
     CHOICES,
-    MAX_PATH_LENGTH,
     PATH_SETTINGS,
     Settings,
     SettingsProblem,
     SettingsWarning,
+    valid_path_setting,
 )
 
 FILE_KEY = "settings.toml"
@@ -19,12 +18,8 @@ FILE_KEY = "settings.toml"
 def _valid(name: str, value: object, default: object) -> bool:
     if isinstance(default, bool):
         return isinstance(value, bool)
-    if name in PATH_SETTINGS:  # a path: plain text, no control characters, a sane length
-        return (
-            isinstance(value, str)
-            and len(value) <= MAX_PATH_LENGTH
-            and not any(unicodedata.category(char) == "Cc" for char in value)
-        )
+    if name in PATH_SETTINGS:  # a path: plain text, a sane length
+        return isinstance(value, str) and valid_path_setting(value)
     return isinstance(value, str) and value in CHOICES[name]
 
 

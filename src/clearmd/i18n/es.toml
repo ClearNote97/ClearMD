@@ -119,6 +119,7 @@ summary_not_written = "⚠ No se pudo escribir el resumen en {path} (¿el disco 
 unexpected_error = "Ocurrió algo inesperado y ClearMD se detuvo: {detail}. Tus archivos no se modificaron; por favor repórtalo."
 time_left = "faltan {duration}"
 warning_slow = "⚠ {name} — podría tardar más de {limit} ({estimate}) y detenerse"
+cannot_open = "ClearMD no pudo abrir {path}. Ábrela desde tu explorador de archivos."
 
 [time]
 under_a_minute = "menos de un minuto"
@@ -308,6 +309,7 @@ close = "Cerrar"
 title = "ClearMD"
 subtitle = "Documentos a Markdown, en tu computador"
 local = "100 % local · nada sale de tu equipo"
+unexpected_error = "Algo inesperado salió mal: {detail}. Tus documentos originales no se modificaron y lo que ya se convirtió se conserva. Por favor repórtalo."
 
 [gui.steps]
 choose = "Elegir"

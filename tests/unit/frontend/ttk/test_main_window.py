@@ -2,6 +2,7 @@
 
 import threading
 import time
+import tkinter as tk
 import tkinter.font as tkfont
 from collections.abc import Iterator
 from pathlib import Path
@@ -13,7 +14,7 @@ from support.gui_fakes import FakeBackend, MemoryBackend, planned
 
 from clearmd.backend.schemas.errors import SkipReason
 from clearmd.backend.schemas.models import BatchPlan, OutcomeStatus, SkippedItem
-from clearmd.backend.schemas.settings import Settings
+from clearmd.backend.schemas.settings import Settings, SettingsProblem, SettingsWarning
 from clearmd.frontend.presenter import Action, AppState
 from clearmd.frontend.presenter.state import enabled_actions
 from clearmd.frontend.ttk import TtkApp
@@ -405,3 +406,85 @@ def test_settings_and_help_are_never_disabled_together_with_help(app: TtkApp) ->
     for state in AppState:
         enabled = enabled_actions(state, has_inputs=True, can_confirm=True, has_results=True)
         assert Action.HELP in enabled  # "?" always works (UX §4)
+
+
+# --- Review of 005 (code review C-*) -------------------------------------------------------------
+
+
+def run_until_closed(app: TtkApp, seconds: float = 10.0) -> bool:
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        try:
+            app.root.update()
+            if not app.root.winfo_exists():
+                return True
+        except tk.TclError:
+            return True  # destroyed
+        time.sleep(0.01)
+    return False
+
+
+def test_c1_closing_while_converting_waits_for_the_summary(display: str, tmp_path: Path) -> None:
+    marker = tmp_path / "Resumen_ClearMD.md"
+
+    class Slow(FakeBackend):
+        def run_batch(self, plan: BatchPlan, **kwargs: Any) -> Any:
+            kwargs["cancel"]._event.wait(5)  # converting until cancelled
+            time.sleep(0.3)  # the current file stops, then the summary is written
+            marker.write_text("summary", encoding="utf-8")
+            return super().run_batch(plan, **kwargs)
+
+    app = TtkApp(Slow(settings=Settings(show_welcome=False)))
+    app.start()
+    app.presenter.add_paths([tmp_path])
+    app.main.convert.invoke()
+    pump(app, until=lambda: app.presenter.state is AppState.WAITING_DECISION)
+    app.review.confirm.invoke()
+    pump(app, until=lambda: app.presenter.state is AppState.CONVERTING)
+    app.close()
+    assert run_until_closed(app)
+    assert marker.is_file()
+
+
+def test_c2_an_unexpected_error_stays_on_screen(display: str, tmp_path: Path) -> None:
+    app = TtkApp(FakeBackend(settings=Settings(show_welcome=False), plan_error=RuntimeError("x")))
+    try:
+        app.start()
+        app.presenter.add_paths([tmp_path])
+        app.main.convert.invoke()
+        pump(app, until=lambda: app.presenter.state is AppState.READY and app.last_plan is None)
+        pump(app, seconds=0.2)
+        assert "Something unexpected went wrong" in app.message.cget("text")
+    finally:
+        app.close()
+
+
+def test_c3_settings_warnings_at_start_are_on_screen(display: str) -> None:
+    warnings = (SettingsWarning("colour", SettingsProblem.UNKNOWN_KEY),)
+    app = TtkApp(FakeBackend(settings=Settings(show_welcome=False), warnings=warnings))
+    try:
+        app.start()
+        pump(app, seconds=0.2)
+        assert "colour" in app.message.cget("text")
+        assert int(app.message.cget("wraplength")) > 0  # C-12: long messages wrap
+    finally:
+        app.close()
+
+
+def test_c5_a_theme_change_keeps_the_selected_row(app: TtkApp, tmp_path: Path) -> None:
+    app.presenter.add_paths([tmp_path / "a.pdf", tmp_path / "b.pdf"])
+    tree = app.main.inputs.tree
+    tree.selection_set(tree.get_children()[1])
+    app.apply_theme("dark")
+    assert [tree.index(item) for item in tree.selection()] == [1]
+
+
+def test_c9_closing_with_the_welcome_open_keeps_its_answer(display: str) -> None:
+    fake = FakeBackend(settings=Settings(show_welcome=True))
+    app = TtkApp(fake)
+    app.start()
+    pump(app, until=lambda: app.dialog is not None)
+    assert isinstance(app.dialog, WelcomeDialog)
+    app.dialog.dont_show.set(True)
+    app.close()
+    assert fake.saved[-1].show_welcome is False

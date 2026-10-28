@@ -111,3 +111,14 @@ def test_a_remembered_folder_that_is_not_a_plain_path_is_ignored(folder: object)
 def test_saving_refuses_a_value_reading_would_refuse() -> None:
     with pytest.raises(ValueError):
         serialize_settings(Settings(language="fr"))
+
+
+@pytest.mark.parametrize(
+    "folder", ["/tmp/a\nb", "/tmp/\udcff", "/" + "x" * 5000], ids=["newline", "surrogate", "long"]
+)
+def test_a_path_that_cannot_be_stored_is_refused_before_writing(folder: str) -> None:
+    from clearmd.backend.schemas.settings import valid_path_setting
+
+    assert not valid_path_setting(folder)
+    with pytest.raises(ValueError):
+        serialize_settings(Settings(last_output_folder=folder))

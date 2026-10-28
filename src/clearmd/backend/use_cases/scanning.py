@@ -15,6 +15,7 @@ from clearmd.backend.schemas.events import ScanProgress
 from clearmd.backend.schemas.formats import MARKDOWN_EXTENSIONS, OUTPUT_DIR_NAME, ZIP_EXTENSIONS
 from clearmd.backend.schemas.limits import Limits
 from clearmd.backend.schemas.models import InputError, InputProblem, SkippedItem
+from clearmd.backend.use_cases.cancel import CancelToken
 
 LOCK_FILE_PREFIX = "~$"
 # Folders below an input deeper than this are skipped (real trees are far shallower; an archive
@@ -78,13 +79,18 @@ class _Scanner:
         recursive: bool,
         limits: Limits,
         on_progress: Callable[[ScanProgress], None] | None,
+        cancel: CancelToken | None = None,
     ) -> None:
         self.recursive = recursive
         self.limits = limits
         self.on_progress = on_progress
+        self.cancel = cancel
         self.candidates: list[Candidate] = []
         self.skipped: list[SkippedItem] = []
         self.errors: list[InputError] = []
+
+    def cancelled(self) -> bool:
+        return self.cancel is not None and self.cancel.is_set()
 
     def _skip(
         self,
@@ -140,7 +146,7 @@ class _Scanner:
     def _walk(self, origin: Path, top: Path, top_relative: Path) -> None:
         """Depth-first and iterative: files of a folder, then its subfolders in name order."""
         pending: list[tuple[Path, Path]] = [(top, top_relative)]
-        while pending:
+        while pending and not self.cancelled():
             folder, relative = pending.pop()
             if len(relative.parts) > MAX_DEPTH:
                 depth = len(relative.parts)  # the file's value and the limit (UX contract §3)
@@ -197,9 +203,13 @@ def scan(
     recursive: bool,
     limits: Limits,
     on_progress: Callable[[ScanProgress], None] | None = None,
+    cancel: CancelToken | None = None,
 ) -> ScanResult:
-    """Files of every input, in a stable order: files of a folder before its subfolders."""
-    scanner = _Scanner(recursive=recursive, limits=limits, on_progress=on_progress)
+    """Files of every input, in a stable order: files of a folder before its subfolders. A
+    cancelled scan stops at the next folder (the GUI's Cancel while analyzing)."""
+    scanner = _Scanner(recursive=recursive, limits=limits, on_progress=on_progress, cancel=cancel)
     for source in inputs:
+        if scanner.cancelled():
+            break
         scanner.add_input(source)
     return ScanResult(tuple(scanner.candidates), tuple(scanner.skipped), tuple(scanner.errors))

@@ -167,6 +167,17 @@ def _print_summary(catalog: Catalog, report: BatchReport) -> None:
         print(catalog.text("cli.summary_not_written", path=_p(root)), file=sys.stderr)
 
 
+def _converted_roots(report: BatchReport) -> list[Path]:
+    """The output folders that hold a converted file: the only ones worth opening."""
+    return list(
+        dict.fromkeys(
+            outcome.item.output_root
+            for outcome in report.outcomes
+            if outcome.status is OutcomeStatus.CONVERTED
+        )
+    )
+
+
 def _output_roots(report: BatchReport) -> list[Path]:
     return list(dict.fromkeys(outcome.item.output_root for outcome in report.outcomes))
 
@@ -358,6 +369,9 @@ def _main(argv: Sequence[str] | None) -> int:
     report = _run_cancellable(catalog, plan, decision, progress, err)
     _print_summary(catalog, report)
     if args.open:
-        for root in _output_roots(report):
-            open_folder(root)
+        for root in _converted_roots(report):
+            try:
+                open_folder(root)
+            except (OSError, ValueError):  # a root refused as a link, no file browser…
+                print(catalog.text("cli.cannot_open", path=_p(root)), file=err)
     return _exit_code(report)

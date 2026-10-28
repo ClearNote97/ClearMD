@@ -227,3 +227,19 @@ def test_files_come_before_subfolders_and_subfolders_in_order(tmp_path: Path) ->
     _touch(tmp_path / "p" / "top.pdf")
     result = scan([tmp_path / "p"], recursive=True, limits=Limits())
     assert _names(result.candidates) == ["top.pdf", "y.pdf", "z.pdf", "x.pdf"]
+
+
+def test_a_cancelled_scan_stops_at_the_next_folder(tmp_path: Path) -> None:
+    from clearmd.backend.use_cases.cancel import CancelToken
+
+    for index in range(5):
+        _touch(tmp_path / f"d{index}" / "a.txt")
+    token = CancelToken()
+    seen: list[ScanProgress] = []
+
+    def progress(event: ScanProgress) -> None:
+        seen.append(event)
+        token.cancel()  # pressed while the first folder is being read
+
+    result = scan([tmp_path], recursive=True, limits=Limits(), on_progress=progress, cancel=token)
+    assert len(seen) == 1 and len(result.candidates) == 0

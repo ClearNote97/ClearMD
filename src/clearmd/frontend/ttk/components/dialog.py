@@ -59,9 +59,10 @@ class Dialog(tk.Toplevel):
         try:
             self.wait_visibility()
             self.grab_set()
-        except tk.TclError:  # not viewable (a minimized window): it is still usable
+        except tk.TclError:  # not viewable (a minimized window), or closed while waiting
             pass
-        self.focus_set()
+        if self.winfo_exists():
+            self.focus_set()
 
     def close(self) -> None:
         self.grab_release()

@@ -728,3 +728,15 @@ def test_ac_35_an_unexpected_error_is_a_message_not_a_traceback(
     err = capsys.readouterr().err
     assert "Traceback" not in err
     assert "RuntimeError: something nobody expected" in err
+
+
+def test_ac_36_open_tells_a_folder_it_cannot_open_and_ends_normally(
+    workdir: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    source = put(workdir, "sample.txt", "a.txt")
+    (workdir / "elsewhere").mkdir()
+    (workdir / "ClearMD_Output").symlink_to(workdir / "elsewhere")  # refused as a link
+    code = main([str(source), "--open", "--quiet"])
+    captured = capsys.readouterr()
+    assert code == 1  # the file failed: the output folder is a link
+    assert "Traceback" not in captured.err

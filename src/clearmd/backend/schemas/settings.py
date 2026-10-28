@@ -1,5 +1,6 @@
 """The preferences shared by every interface, with their defaults (ADR-0012, ADR-0017)."""
 
+import unicodedata
 from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
@@ -33,6 +34,15 @@ CHOICES: Mapping[str, frozenset[str]] = MappingProxyType(
 # Settings that hold a path the user chose, not one of a few choices: any plain text up to a length.
 PATH_SETTINGS: frozenset[str] = frozenset({"last_output_folder"})
 MAX_PATH_LENGTH = 4096
+
+
+def valid_path_setting(value: str) -> bool:
+    """Whether a path can be stored in settings.toml: plain text (no control characters, no lone
+    surrogates from an undecodable name) and a sane length. A folder that fails this can still
+    receive results; it is just not remembered (security review of 005)."""
+    return len(value) <= MAX_PATH_LENGTH and not any(
+        unicodedata.category(char) in {"Cc", "Cs"} for char in value
+    )
 
 
 class SettingsProblem(StrEnum):

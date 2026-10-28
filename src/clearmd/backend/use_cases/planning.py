@@ -21,6 +21,7 @@ from clearmd.backend.schemas.models import (
     SkippedItem,
 )
 from clearmd.backend.use_cases.archive import inspect_archive, unsafe_reason
+from clearmd.backend.use_cases.cancel import CancelToken
 from clearmd.backend.use_cases.paths import (
     NameRequest,
     keeps_output_inside,
@@ -56,9 +57,12 @@ def build_plan(
     output_root: Path | None = None,
     on_event: Callable[[BatchEvent], None] | None = None,
     html_strategy: Strategy = Strategy.FULL,
+    cancel: CancelToken | None = None,
 ) -> BatchPlan:
     unique_inputs = list(dict.fromkeys(inputs))  # "a.pdf a.pdf" is one file, converted once
-    scanned = scan(unique_inputs, recursive=recursive, limits=limits, on_progress=on_event)
+    scanned = scan(
+        unique_inputs, recursive=recursive, limits=limits, on_progress=on_event, cancel=cancel
+    )
     drafts: list[tuple[Candidate, Detection, Path, float, Strategy]] = []
     requests: list[NameRequest] = []
     skipped: list[SkippedItem] = [
@@ -71,6 +75,8 @@ def build_plan(
         for item in scanned.skipped
     ]
     for candidate in scanned.candidates:
+        if cancel is not None and cancel.is_set():  # cancelled: what is left is not examined
+            break
         root = output_root_for(candidate.input, is_dir=candidate.input_is_dir, override=output_root)
         detection = detector.detect(candidate.path)
         if detection is None:

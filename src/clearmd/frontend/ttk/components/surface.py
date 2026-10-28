@@ -20,6 +20,7 @@ class Surface(tk.Canvas):
         self._palette: Palette | None = None
         self._texts = {"eyebrow": "", "title": "", "subtitle": ""}
         self._ground: ImageTk.PhotoImage | None = None
+        self._ground_key: tuple[int, int, str] | None = None  # drawn again only when it changes
         self.page = ttk.Frame(self, style=PAGE)
         self.bind("<Configure>", lambda _event: self._draw())
 
@@ -46,9 +47,10 @@ class Surface(tk.Canvas):
         if p is None or width < 2 * MARGIN or height < 2 * MARGIN:
             return
         self.delete("all")
-        self._ground = ImageTk.PhotoImage(
-            art.surface(width, height, p.ground, p.shape), master=self
-        )
+        if self._ground is None or self._ground_key != (width, height, p.mode):
+            picture = art.surface(width, height, p.ground, p.shape)
+            self._ground = ImageTk.PhotoImage(picture, master=self)
+            self._ground_key = (width, height, p.mode)
         self.create_image(0, 0, image=self._ground, anchor="nw")
         x, y = SPACE, GAP
         self.create_text(

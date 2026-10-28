@@ -119,6 +119,7 @@ summary_not_written = "⚠ The summary in {path} could not be written (is the di
 unexpected_error = "Something unexpected went wrong and ClearMD stopped: {detail}. Your files were not changed; please report this."
 time_left = "{duration} left"
 warning_slow = "⚠ {name} — may take more than {limit} ({estimate}) and be stopped"
+cannot_open = "ClearMD could not open {path}. Open it from your file browser."
 
 [time]
 under_a_minute = "less than a minute"
@@ -308,6 +309,7 @@ close = "Close"
 title = "ClearMD"
 subtitle = "Documents to Markdown, on your computer"
 local = "100 % local · nothing leaves your computer"
+unexpected_error = "Something unexpected went wrong: {detail}. Your original documents were not changed, and what was already converted is kept. Please report this."
 
 [gui.steps]
 choose = "Choose"

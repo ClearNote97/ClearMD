@@ -34,3 +34,11 @@ def test_only_a_real_folder_is_ever_opened(
     with pytest.raises(ValueError):
         folders.open_folder(target)
     assert launched == []
+
+
+def test_a_relative_path_is_never_opened(monkeypatch: pytest.MonkeyPatch) -> None:
+    launched: list[object] = []
+    monkeypatch.setattr(subprocess, "Popen", lambda args, **_: launched.append(args))
+    with pytest.raises(ValueError):  # "-a" would reach "open" or "xdg-open" as an option
+        folders.open_folder(Path("-a"))
+    assert launched == []

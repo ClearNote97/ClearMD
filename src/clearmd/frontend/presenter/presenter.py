@@ -33,7 +33,7 @@ from clearmd.backend.schemas.models import (
     OutcomeStatus,
     PlannedConversion,
 )
-from clearmd.backend.schemas.settings import Settings
+from clearmd.backend.schemas.settings import Settings, valid_path_setting
 from clearmd.frontend.presenter.icons import FOLDER, icon_for, icon_of_format
 from clearmd.frontend.presenter.models import (
     InputRow,
@@ -54,6 +54,7 @@ from clearmd.frontend.presenter.state import AppState, enabled_actions, step_of
 from clearmd.frontend.presenter.system_theme import detect_system_theme
 from clearmd.i18n import Catalog, load_catalog, printable, resolve_language
 
+SCAN_MS = 100  # the scan count is shown at most this often (code review of 005)
 LONG_FILE_SECONDS = 15  # after this, the file's timer and "large files can take a few minutes"
 TICK_MILLISECONDS = 1000
 
@@ -90,6 +91,8 @@ class Presenter:
         self._current: tuple[int, int, str, float | None, str] | None = None
         self._started_at = 0.0
         self._done = 0
+        self._theme: str | None = None
+        self._scan_count: int | None = None  # the latest count, shown at most every SCAN_MS
 
     # --- Start -----------------------------------------------------------------------------------
 
@@ -97,12 +100,15 @@ class Presenter:
         """Read the settings, apply the language and the theme, show the welcome if wanted."""
         settings, warnings = self._backend.load_settings()
         self._apply(settings)
-        for warning in warnings:
-            text = self.catalog.text(f"settings.{warning.problem.value}", setting=warning.key)
-            self._view.show_message(printable(text))
         self._show_inputs()
         self._show_output()
         self._set(AppState.READY)
+        if warnings:  # after the first state: a view may clear its message on a step change
+            lines = (
+                self.catalog.text(f"settings.{warning.problem.value}", setting=warning.key)
+                for warning in warnings
+            )
+            self._view.show_message("\n".join(printable(line) for line in lines))
         if self.settings.show_welcome:
             self._view.show_welcome(
                 tuple(self.catalog.text(f"gui.welcome.step{n}") for n in (1, 2, 3))
@@ -113,7 +119,10 @@ class Presenter:
         self.catalog = load_catalog(resolve_language(None, settings.language))
         self._view.apply_language(self.catalog)
         theme = settings.theme if settings.theme != "system" else self._detect_theme()
-        self._view.apply_theme(theme if theme in {"light", "dark"} else "light")
+        theme = theme if theme in {"light", "dark"} else "light"
+        if theme != self._theme:  # redrawing the lists for nothing loses their selection
+            self._theme = theme
+            self._view.apply_theme(theme)
 
     @property
     def output_folder(self) -> Path | None:
@@ -124,6 +133,8 @@ class Presenter:
 
     def add_paths(self, paths: Sequence[Path]) -> None:
         """Files or folders, from the dialogs or dropped on the window; never listed twice."""
+        if self.state is not AppState.READY:  # the plan was made from the inputs as they were
+            return
         known = {_key(path) for path in self._inputs}
         for path in paths:
             absolute = Path(os.path.abspath(path))
@@ -134,24 +145,34 @@ class Presenter:
         self._set(self.state)
 
     def remove_input(self, path: Path) -> None:
+        if self.state is not AppState.READY:
+            return
         self._inputs = [known for known in self._inputs if _key(known) != _key(Path(path))]
         self._show_inputs()
         self._set(self.state)
 
     def clear_inputs(self) -> None:
+        if self.state is not AppState.READY:
+            return
         self._inputs.clear()
         self._show_inputs()
         self._set(self.state)
 
     def choose_output_next_to(self) -> None:
+        if self.state is not AppState.READY:
+            return
         self._output_folder = None
         self._show_output()
 
     def choose_output_folder(self, folder: Path) -> None:
-        """Results in ``folder``, remembered as the suggestion for next time (ADR-0016)."""
+        """Results in ``folder``, remembered as the suggestion for next time (ADR-0016) when its
+        path can be stored (a name with control characters still receives the results)."""
+        if self.state is not AppState.READY:
+            return
         self._output_folder = Path(os.path.abspath(folder))
         self._show_output()
-        self._save(replace(self.settings, last_output_folder=str(self._output_folder)))
+        if valid_path_setting(str(self._output_folder)):
+            self._save(replace(self.settings, last_output_folder=str(self._output_folder)))
 
     # --- Plan, confirm, convert ------------------------------------------------------------------
 
@@ -166,16 +187,18 @@ class Presenter:
             "output_root": self._output_folder,
             "html_strategy": Strategy(self.settings.html_strategy),
         }
+        self._cancel = token = CancelToken()
+        self._scan_count = None
         self._set(AppState.ANALYZING)
         self._view.show_scan(self.catalog.text("gui.scan.started"))
 
         def on_event(event: BatchEvent) -> None:
             if isinstance(event, ScanProgress):
-                self._later(generation, lambda: self._scanned(event.found))
+                self._later(generation, lambda: self._scanned(generation, event.found))
 
         def work() -> None:
             try:
-                plan = self._backend.plan_batch(inputs, on_event=on_event, **options)
+                plan = self._backend.plan_batch(inputs, on_event=on_event, cancel=token, **options)
             except Exception as error:  # noqa: BLE001 -- told to the user, the app goes on
                 self._later(generation, partial(self._unexpected, error))
                 return
@@ -194,6 +217,7 @@ class Presenter:
         overwrites = choice == "overwrite" if choice != "ask" else bool(overwrite)
         generation = self._next_generation()
         self._cancel = token = CancelToken()
+        language = self.catalog.language  # read here: the worker never touches the presenter
         self._done = 0
         self._current = None
         self._set(AppState.CONVERTING)
@@ -202,6 +226,7 @@ class Presenter:
             if isinstance(event, ConversionStarted):
                 left, name = event.seconds_left, event.item.source.name
                 icon = icon_of_format(event.item.detection.format)
+                name = printable(name)
                 self._later(
                     generation, lambda: self._started(event.index, event.total, name, left, icon)
                 )
@@ -215,7 +240,7 @@ class Presenter:
                     overwrite=lambda item: overwrites,
                     on_event=on_event,
                     cancel=token,
-                    language=self.catalog.language,
+                    language=language,
                 )
             except Exception as error:  # noqa: BLE001 -- told to the user, the app goes on
                 self._later(generation, partial(self._unexpected, error))
@@ -229,6 +254,9 @@ class Presenter:
         """Stop now: an analysis is dropped; a batch stops its current file at once (ADR-0015)."""
         if self.state is AppState.ANALYZING:
             self._next_generation()  # whatever it returns is dropped
+            if self._cancel is not None:
+                self._cancel.cancel()  # and the scan stops at its next folder
+            self._cancel = None
             self._set(AppState.READY)
         elif self.state is AppState.CONVERTING and self._cancel is not None:
             self._cancel.cancel()
@@ -243,13 +271,15 @@ class Presenter:
         self._set(AppState.READY)
 
     def open_results(self) -> None:
+        problems = []
         for folder in self._result_folders():
             try:
                 self._backend.open_folder(folder)
             except (OSError, ValueError):
-                self._view.show_message(
-                    self.catalog.text("gui.result.cannot_open", path=str(folder))
-                )
+                path = printable(str(folder))
+                problems.append(self.catalog.text("gui.result.cannot_open", path=path))
+        if problems:  # every one of them: a later message would hide an earlier one
+            self._view.show_message("\n".join(problems))
 
     # --- Settings and welcome --------------------------------------------------------------------
 
@@ -259,6 +289,10 @@ class Presenter:
         self._save(settings)
         self._show_inputs()
         self._show_output()
+        if self._plan is not None and self.state is AppState.WAITING_DECISION:
+            self._view.show_plan(self._plan_view(self._plan))
+        if self._report is not None:  # the results, in the new language
+            self._view.show_result(self._result_view(self._report, self.state))
         self._set(self.state)
 
     def restore_defaults(self) -> None:
@@ -290,8 +324,22 @@ class Presenter:
         self._generation += 1
         return self._generation
 
-    def _scanned(self, found: int) -> None:
-        self._view.show_scan(self.catalog.text("gui.scan.found", count=found))
+    def _scanned(self, generation: int, found: int) -> None:
+        """One event per folder: the latest count is shown at most every SCAN_MS (a large tree
+        would otherwise queue seconds of redrawing on the UI thread)."""
+        pending = self._scan_count is not None
+        self._scan_count = found
+        if not pending:
+            self._view.after(SCAN_MS, lambda: self._show_scan_count(generation))
+
+    def _show_scan_count(self, generation: int) -> None:
+        found, self._scan_count = self._scan_count, None
+        if (
+            generation == self._generation
+            and self.state is AppState.ANALYZING
+            and found is not None
+        ):
+            self._view.show_scan(self.catalog.text("gui.scan.found", count=found))
 
     def _planned(self, plan: BatchPlan) -> None:
         self._plan = plan
@@ -333,9 +381,10 @@ class Presenter:
 
     def _unexpected(self, error: Exception) -> None:
         detail = printable(f"{type(error).__name__}: {error}")
-        self._view.show_message(self.catalog.text("cli.unexpected_error", detail=detail))
+        message = self.catalog.text("gui.app.unexpected_error", detail=detail)
         self._cancel = None
         self._set(AppState.READY)
+        self._view.show_message(message)  # after the state: a view may clear it on a step change
 
     # --- What the view draws ---------------------------------------------------------------------
 
@@ -357,7 +406,8 @@ class Presenter:
             is_folder = path.is_dir()
             name = path.name or str(path)
             icon = icon_for(path, is_folder=is_folder)
-            rows.append(InputRow(path, name, str(path.parent), is_folder, icon))
+            location = printable(str(path.parent))
+            rows.append(InputRow(path, printable(name), location, is_folder, icon))
         self._view.show_inputs(tuple(rows))
 
     def _show_output(self) -> None:
@@ -367,7 +417,8 @@ class Presenter:
             label = self.catalog.text("gui.output.next_to_detail")
             choice = OutputChoice(OutputMode.NEXT_TO, None, suggestion, label)
         else:
-            label = self.catalog.text("gui.output.folder", path=str(self._output_folder))
+            path = printable(str(self._output_folder))
+            label = self.catalog.text("gui.output.folder", path=path)
             choice = OutputChoice(OutputMode.FOLDER, self._output_folder, suggestion, label)
         self._view.show_output_choice(choice)
 
@@ -398,19 +449,19 @@ class Presenter:
         for item in plan.conversions:
             kind = RowKind.EXISTS if item.exists else RowKind.CONVERT
             icon = icon_of_format(item.detection.format)
-            source = item.source
-            rows.append(PlanRow(kind, source.name, str(source.parent), self._format(item), icon))
+            name, location = _shown(item.source)
+            rows.append(PlanRow(kind, name, location, self._format(item), icon))
         for skipped in plan.skipped:
             reason = skip_reason(self.catalog, skipped)
             detail = f"{reason}. {skip_action(self.catalog, skipped)}"
-            name = skipped.path.name + ("/" if skipped.is_dir else "")
+            name, location = _shown(skipped.path, is_dir=skipped.is_dir)
             icon = icon_for(skipped.path, is_folder=skipped.is_dir)
-            rows.append(PlanRow(RowKind.SKIPPED, name, str(skipped.path.parent), detail, icon))
+            rows.append(PlanRow(RowKind.SKIPPED, name, location, detail, icon))
         for missing in plan.input_errors:
             detail = self.catalog.text("gui.plan.not_found")
-            path = missing.path
-            icon = icon_for(path, is_folder=False)  # it is not there: its name is all we know
-            rows.append(PlanRow(RowKind.MISSING, path.name, str(path.parent), detail, icon))
+            name, location = _shown(missing.path)
+            icon = icon_for(missing.path, is_folder=False)  # it is not there: only its name
+            rows.append(PlanRow(RowKind.MISSING, name, location, detail, icon))
         existing = len(plan.existing)
         summary = self.catalog.text(
             "gui.plan.summary",
@@ -454,15 +505,15 @@ class Presenter:
             else:
                 continue
             icon = icon_of_format(outcome.item.detection.format)
-            rows.append(ResultRow(source.name, str(source.parent), detail, icon))
+            rows.append(ResultRow(*_shown(source), detail, icon))
         for skipped in report.skipped:
             reason = skip_reason(self.catalog, skipped)
             detail = f"{reason}. {skip_action(self.catalog, skipped)}"
             icon = icon_for(skipped.path, is_folder=skipped.is_dir)
-            rows.append(ResultRow(skipped.path.name, str(skipped.path.parent), detail, icon))
+            rows.append(ResultRow(*_shown(skipped.path), detail, icon))
         for root in report.unwritten_summaries:
             detail = self.catalog.text("gui.result.no_summary")
-            rows.append(ResultRow(root.name, str(root.parent), detail, FOLDER))
+            rows.append(ResultRow(*_shown(root), detail, FOLDER))
         counts = self.catalog.text(
             "cli.summary",
             converted=count[OutcomeStatus.CONVERTED],
@@ -493,6 +544,13 @@ class Presenter:
             if outcome.status is OutcomeStatus.CONVERTED
         )
         return tuple(roots)
+
+
+def _shown(path: Path, *, is_dir: bool = False) -> tuple[str, str]:
+    """A path's name and folder as a view may show them: invisible and line-breaking
+    characters escaped, as the CLI does (security review of 005)."""
+    name = path.name + ("/" if is_dir else "")
+    return printable(name), printable(str(path.parent))
 
 
 def _key(path: Path) -> str:
