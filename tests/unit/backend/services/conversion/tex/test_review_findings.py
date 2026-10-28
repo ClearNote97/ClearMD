@@ -3,6 +3,7 @@
 Each test reproduces the reported input first; the finding id is in the test name.
 """
 
+import sys
 import time
 from pathlib import Path
 
@@ -55,6 +56,7 @@ def test_h1_starred_verb_keeps_its_text() -> None:
         "\\begin{itemize}\\item " * 500 + "x" + "\\end{itemize}" * 500,
         "\\input{" * 20_000,
     ],
+    ids=["braces", "lists", "inputs"],  # short ids: pytest puts the id in an environment variable
 )
 def test_m4_f2_deep_nesting_converts_with_a_note(latex: str, tmp_path: Path) -> None:
     started = time.monotonic()
@@ -437,7 +439,7 @@ def test_f3_image_lookups_are_bounded(tmp_path: Path) -> None:
     images = "".join(f"\\includegraphics{{n{n}}}" for n in range(3000))
     started = time.monotonic()
     convert_document(write(tmp_path, "i.tex", doc(images, "\\graphicspath{" + "{a/}" * 64 + "}")))
-    assert time.monotonic() - started < 20
+    assert time.monotonic() - started < (60 if sys.platform == "win32" else 20)  # slower stat
 
 
 def test_f9_the_list_of_refused_includes_is_bounded(tmp_path: Path) -> None:

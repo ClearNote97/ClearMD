@@ -61,8 +61,10 @@ class TtkApp:
     """The window, and the presenter's view."""
 
     def __init__(self, backend: Backend | None = None, *, root: tk.Tk | None = None) -> None:
-        # TkinterDnD.Tk: a Tk root with drag and drop (tkinterdnd2 has no types).
-        self.root: Any = root or TkinterDnD.Tk()
+        # TkinterDnD.Tk: a Tk root with drag and drop (tkinterdnd2 has no types). Without its
+        # library (a Tk it was not built for), the window works with Add files / Add folder only.
+        self.root: Any = root or _root_with_drop()
+        self.drops = bool(getattr(self.root, "TkdndVersion", None))
         self.root.withdraw()  # shown once laid out, in its theme (no flash of the wrong one)
         self.root.minsize(MIN_WIDTH, MIN_HEIGHT)
         self.root.geometry(START_SIZE)
@@ -155,8 +157,9 @@ class TtkApp:
         self._show_page(self.main)
 
         # Files and folders dropped anywhere on the window (tkinterdnd2, ADR-0026).
-        self.root.drop_target_register(DND_FILES)
-        self.root.dnd_bind("<<Drop>>", self._dropped)
+        if self.drops:
+            self.root.drop_target_register(DND_FILES)
+            self.root.dnd_bind("<<Drop>>", self._dropped)
         self.root.bind("<Return>", lambda _event: self._primary())
 
     # --- Intents ---------------------------------------------------------------------------------
@@ -402,6 +405,16 @@ class TtkApp:
     def start(self) -> None:
         self.presenter.start()
         self.root.deiconify()
+
+
+def _root_with_drop() -> Any:
+    """A Tk root that accepts dropped files, or a plain one if tkdnd cannot be loaded."""
+    try:
+        return TkinterDnD.Tk()
+    except (RuntimeError, tk.TclError):
+        root: Any = tk.Tk()
+        root.TkdndVersion = None
+        return root
 
 
 def _forget_dead_style() -> None:

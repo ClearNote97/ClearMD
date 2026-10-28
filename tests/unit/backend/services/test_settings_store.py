@@ -1,13 +1,14 @@
 from pathlib import Path
 
 import pytest
+from support import WINDOWS
 
 from clearmd.backend.schemas.settings import Settings, SettingsProblem
 from clearmd.backend.services.settings_store import load_settings, settings_path
 
 
 def test_the_settings_file_lives_in_the_user_config_folder(tmp_path: Path) -> None:
-    # tests/conftest.py points XDG_CONFIG_HOME at a temporary folder for every test.
+    # tests/conftest.py points CLEARMD_CONFIG_DIR at a temporary .../ClearMD for every test.
     assert settings_path().parts[-2:] == ("ClearMD", "settings.toml")
 
 
@@ -24,6 +25,7 @@ def test_the_file_is_read(tmp_path: Path) -> None:
     assert warnings == ()
 
 
+@pytest.mark.skipif(WINDOWS, reason="chmod cannot make a file unreadable on Windows")
 def test_an_unreadable_file_means_defaults_and_a_warning() -> None:
     path = settings_path()
     path.parent.mkdir(parents=True)

@@ -41,6 +41,13 @@ def pump(window: TtkApp, *, until: Any = None, seconds: float = 2.0) -> None:
         time.sleep(0.01)
 
 
+def press_enter(app: TtkApp) -> None:
+    """Enter on the window: it needs the keyboard focus first (Windows gives it only on demand)."""
+    app.root.focus_force()
+    app.root.update()
+    app.root.event_generate("<Return>", when="tail")
+
+
 def widgets(root: Any) -> Iterator[Any]:
     pending = [root]
     while pending:
@@ -90,7 +97,7 @@ def test_dropped_files_and_folders_are_added(app: TtkApp, tmp_path: Path) -> Non
 
 def test_enter_triggers_convert_and_the_rail_moves_to_review(app: TtkApp, tmp_path: Path) -> None:
     app.presenter.add_paths([tmp_path])
-    app.root.event_generate("<Return>", when="tail")
+    press_enter(app)
     pump(app, until=lambda: app.presenter.state is AppState.WAITING_DECISION)
     assert app.presenter.state is AppState.WAITING_DECISION
     assert app.last_plan is not None
@@ -215,7 +222,7 @@ def test_a_clean_batch_says_every_file_was_converted(display: str, tmp_path: Pat
         app.presenter.add_paths([tmp_path])
         app.main.convert.invoke()
         pump(app, until=lambda: app.presenter.state is AppState.WAITING_DECISION)
-        app.root.event_generate("<Return>", when="tail")  # Enter confirms on the review
+        press_enter(app)  # Enter confirms on the review
         pump(app, until=lambda: app.presenter.state is AppState.FINISHED)
         pump(app, seconds=0.1)
         assert app.results.all_good.winfo_ismapped()
@@ -534,3 +541,22 @@ def replace_settings(settings: Settings, **changes: Any) -> Settings:
     from dataclasses import replace
 
     return replace(settings, **changes)
+
+
+def test_without_tkdnd_the_window_still_works_without_dropping(
+    display: str, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from clearmd.frontend.ttk import app as app_module
+
+    def unavailable() -> None:
+        raise RuntimeError("Unable to load tkdnd library.")  # e.g. a Tk it was not built for
+
+    monkeypatch.setattr(app_module.TkinterDnD, "Tk", unavailable)
+    app = TtkApp(FakeBackend(settings=Settings(show_welcome=False)))
+    try:
+        app.start()
+        assert app.drops is False
+        app.presenter.add_paths([tmp_path])
+        assert app.main.inputs.names() == [f"{tmp_path.name}/"]
+    finally:
+        app.close()

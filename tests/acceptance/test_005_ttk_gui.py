@@ -68,6 +68,13 @@ def pump(app: TtkApp, *, until: Callable[[], bool] | None = None, seconds: float
         time.sleep(0.01)
 
 
+def press_enter(app: TtkApp) -> None:
+    """Enter on the window: it needs the keyboard focus first (Windows gives it only on demand)."""
+    app.root.focus_force()
+    app.root.update()
+    app.root.event_generate("<Return>", when="tail")
+
+
 def to_review(app: TtkApp, *paths: Path) -> None:
     app.presenter.add_paths(list(paths))
     app.main.convert.invoke()
@@ -490,7 +497,7 @@ def test_ac_18_everything_works_with_the_keyboard(
         if widget is None or widget is app.main.add_files:
             break
     assert {app.main.add_folder, app.main.inputs.tree, app.main.convert} <= set(chain)
-    app.root.event_generate("<Return>", when="tail")  # Enter: the primary action
+    press_enter(app)  # Enter: the primary action
     pump(app, until=lambda: app.presenter.state is AppState.WAITING_DECISION)
     app.rail.help.invoke()
     assert app.dialog is not None

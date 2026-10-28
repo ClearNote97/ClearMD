@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 from build_fixtures import MARKERS
 from run_benchmark import SEED, make_pdf, make_xlsx
-from support import put
+from support import WINDOWS, put
 from support.worker_factories import FAKE
 
 from clearmd.backend.api import composition
@@ -75,7 +75,7 @@ def test_ac_22_password_protected_pdf_has_a_human_message(
 
 
 def _tree(root: Path) -> list[str]:
-    return sorted(str(path.relative_to(root)) for path in root.rglob("*"))
+    return sorted(path.relative_to(root).as_posix() for path in root.rglob("*"))
 
 
 def test_ac_02_a_folder_mirrors_its_structure(workdir: Path) -> None:
@@ -320,6 +320,7 @@ def test_ac_23_and_ac_44_a_file_over_the_time_limit_is_stopped_not_failed(
     assert "stopped" in captured.out
 
 
+@pytest.mark.skipif(WINDOWS, reason="chmod cannot make a folder unwritable on Windows")
 def test_ac_27_an_unwritable_output_root_fails_its_files_and_others_continue(
     workdir: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -500,6 +501,9 @@ def test_ac_18_no_terminal_no_flag_means_exit_3_and_nothing_written(
     assert _outputs(workdir) == {"a": "old", "b": "old"}
 
 
+@pytest.mark.skipif(
+    WINDOWS, reason="Ctrl+C is a POSIX signal here; on Windows the console sends its own event"
+)
 def test_ac_26_ctrl_c_stops_at_once_and_still_writes_the_summary(workdir: Path) -> None:
     quick = put(workdir, "sample.txt", "quick.txt")
     slow = workdir / "slow.pdf"
@@ -519,8 +523,8 @@ def test_ac_26_ctrl_c_stops_at_once_and_still_writes_the_summary(workdir: Path) 
     time.sleep(0.5)  # the slow PDF is being converted now
     began = time.monotonic()
     process.send_signal(signal.SIGINT)
-    process.communicate(timeout=60)
-    assert process.returncode == 130
+    _, err = process.communicate(timeout=60)
+    assert process.returncode == 130, seen + err
     assert time.monotonic() - began < 5  # at once, not after the 8 s file
     output = workdir / "ClearMD_Output"
     assert (output / "OutputMD" / "quick.md").is_file()
@@ -578,7 +582,7 @@ def test_ac_37_dry_run_shows_the_plan_and_writes_nothing(
     (workdir / "notes.md").write_text("# hi", encoding="utf-8")
     assert main([str(source), str(workdir / "notes.md"), "--dry-run"]) == 0
     captured = capsys.readouterr()
-    assert "a.txt → " in captured.out and "OutputMD/a.md" in captured.out
+    assert "a.txt → " in captured.out and str(Path("OutputMD/a.md")) in captured.out
     assert "notes.md — already Markdown" in captured.err
     assert "nothing was written" in captured.out
     assert not (workdir / "ClearMD_Output").exists()
@@ -689,6 +693,7 @@ def test_ac_26_ctrl_c_at_the_question_exits_130_and_writes_nothing_new(
     assert _outputs(workdir) == {"a": "old", "b": "old"}
 
 
+@pytest.mark.skipif(WINDOWS, reason="Windows file names cannot hold control characters")
 def test_ac_38_control_characters_in_names_cannot_drive_the_terminal(
     workdir: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

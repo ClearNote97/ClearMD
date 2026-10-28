@@ -21,8 +21,12 @@ def _no_network(monkeypatch: pytest.MonkeyPatch) -> None:
 def _isolated_settings(
     tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # The user's real settings.toml never affects a test, and no test writes it.
-    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path_factory.mktemp("config")))
+    # The user's real settings.toml never affects a test, and no test writes it. platformdirs
+    # ignores XDG_CONFIG_HOME on Windows and macOS: ClearMD's own variable works everywhere, and
+    # reaches the CLI processes some tests start.
+    config = tmp_path_factory.mktemp("config")
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(config))
+    monkeypatch.setenv("CLEARMD_CONFIG_DIR", str(config / "ClearMD"))
 
 
 @pytest.fixture

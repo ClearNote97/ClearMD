@@ -12,8 +12,14 @@ from clearmd.backend.use_cases.settings import FILE_KEY, parse_settings, seriali
 APP_NAME = "ClearMD"
 
 
+CONFIG_DIR_VARIABLE = "CLEARMD_CONFIG_DIR"  # a folder of one's own: tests, a portable copy
+
+
 def settings_path() -> Path:
-    return platformdirs.user_config_path(APP_NAME, appauthor=False) / FILE_KEY
+    """``settings.toml`` in the system's configuration folder, or in ``$CLEARMD_CONFIG_DIR``."""
+    chosen = os.environ.get(CONFIG_DIR_VARIABLE)
+    folder = Path(chosen) if chosen else platformdirs.user_config_path(APP_NAME, appauthor=False)
+    return folder / FILE_KEY
 
 
 def load_settings(path: Path | None = None) -> tuple[Settings, tuple[SettingsWarning, ...]]:

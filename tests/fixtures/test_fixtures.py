@@ -1,6 +1,7 @@
 """The committed fixtures exist, are reproducible and have the properties the tests rely on."""
 
 import io
+import sys
 import zipfile
 from pathlib import Path
 
@@ -36,6 +37,7 @@ def test_every_fixture_is_committed(rebuilt: dict[str, Path]) -> None:
     assert missing == []
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="another zlib on Windows: other deflate bytes")
 def test_rebuilding_gives_the_committed_bytes(rebuilt: dict[str, Path]) -> None:
     changed = [
         name
@@ -127,6 +129,7 @@ def rebuilt_odt(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
     return build_odt(tmp_path_factory.mktemp("odt"))
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="another zlib on Windows: other deflate bytes")
 def test_the_odt_fixtures_are_committed_and_reproducible(rebuilt_odt: dict[str, Path]) -> None:
     changed = [
         name

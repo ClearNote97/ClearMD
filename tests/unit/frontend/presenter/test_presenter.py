@@ -1,5 +1,6 @@
 """The presenter (005, T03): states, intents and texts, with a fake view and a fake backend."""
 
+import os
 import threading
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field, replace
@@ -20,6 +21,12 @@ from clearmd.backend.schemas.settings import Settings, SettingsProblem, Settings
 from clearmd.frontend.presenter import Action, AppState, OutputMode, Presenter
 from clearmd.frontend.presenter.models import RowKind, Stat, Tone
 from clearmd.i18n import Catalog
+
+
+def absolute(path: str) -> Path:
+    """How the presenter keeps an input: absolute (on Windows, with the current drive)."""
+    return Path(os.path.abspath(path))
+
 
 # --- Fakes ---------------------------------------------------------------------------------------
 
@@ -160,9 +167,9 @@ def test_inputs_are_never_listed_twice_and_can_be_removed() -> None:
     presenter.add_paths([Path("/docs/a.pdf"), Path("/docs/a.pdf"), Path("/docs/../docs/a.pdf")])
     presenter.add_paths([Path("/docs/b")])
     rows = view.last("inputs")
-    assert [row.path for row in rows] == [Path("/docs/a.pdf"), Path("/docs/b")]
+    assert [row.path for row in rows] == [absolute("/docs/a.pdf"), absolute("/docs/b")]
     presenter.remove_input(Path("/docs/a.pdf"))
-    assert [row.path for row in view.last("inputs")] == [Path("/docs/b")]
+    assert [row.path for row in view.last("inputs")] == [absolute("/docs/b")]
     presenter.clear_inputs()
     assert view.last("inputs") == ()
     assert Action.CONVERT not in view.last("state").enabled
@@ -284,7 +291,7 @@ def test_back_from_the_plan_keeps_the_inputs() -> None:
     view.drain()
     presenter.back()
     assert view.last("state").state is AppState.READY
-    assert [row.path for row in view.last("inputs")] == [Path("/docs")]
+    assert [row.path for row in view.last("inputs")] == [absolute("/docs")]
 
 
 # --- Converting (AC-09, AC-10) -------------------------------------------------------------------
@@ -596,14 +603,16 @@ def test_c12_every_folder_that_cannot_be_opened_is_told_in_one_message() -> None
     presenter, view, _, _ = converted(Unopenable(plan=plan))
     presenter.open_results()
     shown = view.last("message")
-    assert "/docs/ClearMD_Output" in shown and "/other/ClearMD_Output" in shown
+    assert (
+        str(Path("/docs/ClearMD_Output")) in shown and str(Path("/other/ClearMD_Output")) in shown
+    )
 
 
 def test_s1_a_folder_that_cannot_be_remembered_is_used_but_not_saved() -> None:
     presenter, _, fake, _ = make()
     odd = Path("/tmp/a\nb")
     presenter.choose_output_folder(odd)
-    assert presenter.output_folder == odd  # the results still go there
+    assert presenter.output_folder == absolute(str(odd))  # the results still go there
     assert all("\n" not in saved.last_output_folder for saved in fake.saved)
     presenter.save_settings(replace(presenter.settings, language="es"))
     assert fake.saved[-1].language == "es"  # later saves are not blocked

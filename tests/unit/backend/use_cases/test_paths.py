@@ -1,5 +1,6 @@
 """Output paths and names (ADR-0016; AC-01, AC-02, AC-04, AC-12 - AC-15)."""
 
+import os
 import random
 from pathlib import Path
 
@@ -29,9 +30,10 @@ def test_a_drive_root_keeps_its_output_inside() -> None:
 
 
 def test_the_home_folder_keeps_its_output_inside(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(Path, "home", classmethod(lambda cls: Path("/home/ana")))
-    assert output_parent_for(Path("/home/ana"), is_dir=True) == Path("/home/ana")
-    assert output_parent_for(Path("/home/ana/docs"), is_dir=True) == Path("/home/ana")
+    home = Path(os.path.abspath("/home/ana"))  # inputs are absolute (on Windows: a drive)
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
+    assert output_parent_for(home, is_dir=True) == home
+    assert output_parent_for(home / "docs", is_dir=True) == home
 
 
 def test_an_explicit_output_folder_replaces_the_parent() -> None:
@@ -114,11 +116,12 @@ def test_names_do_not_depend_on_input_order() -> None:
         _request("report"),
         _request("notes.txt"),
     ]
-    expected = dict(zip((r.source for r in requests), resolve_names(requests), strict=True))
+    # Keyed by the text: on Windows "report.pdf" and "Report.pdf" are equal paths.
+    expected = dict(zip((str(r.source) for r in requests), resolve_names(requests), strict=True))
     for seed in range(20):
         shuffled = requests[:]
         random.Random(seed).shuffle(shuffled)
-        got = dict(zip((r.source for r in shuffled), resolve_names(shuffled), strict=True))
+        got = dict(zip((str(r.source) for r in shuffled), resolve_names(shuffled), strict=True))
         assert got == expected
 
 

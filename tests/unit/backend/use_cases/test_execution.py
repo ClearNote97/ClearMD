@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
+from support import WINDOWS
 
 from clearmd.backend.schemas.errors import Cancelled, ConversionError, ErrorCode
 from clearmd.backend.schemas.events import BatchEvent, ConversionFinished, ConversionStarted
@@ -282,6 +283,7 @@ def test_an_output_that_appeared_after_planning_is_not_overwritten_silently(tmp_
     assert [o.status for o in report.outcomes] == [OutcomeStatus.KEPT]
 
 
+@pytest.mark.skipif(WINDOWS, reason="chmod cannot make a folder unwritable on Windows")
 def test_an_unwritable_output_root_fails_its_files_without_converting_them(tmp_path: Path) -> None:
     locked = tmp_path / "locked"
     locked.mkdir()

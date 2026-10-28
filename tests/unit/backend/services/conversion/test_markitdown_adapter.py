@@ -9,7 +9,7 @@ import pytest
 from build_fixtures import MARKERS
 from markitdown import FileConversionException, UnsupportedFormatException
 from markitdown._exceptions import FailedConversionAttempt
-from support import DOCUMENTS_DIR
+from support import DOCUMENTS_DIR, WINDOWS
 
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.schemas.formats import FormatId, format_for_extension
@@ -106,6 +106,7 @@ def test_a_source_replaced_by_a_symlink_is_not_followed(tmp_path: Path) -> None:
     assert raised.value.code is ErrorCode.SOURCE_UNREADABLE
 
 
+@pytest.mark.skipif(WINDOWS, reason="chmod cannot make a file unreadable on Windows")
 def test_a_source_that_cannot_be_read_is_source_unreadable(tmp_path: Path) -> None:
     locked = tmp_path / "locked.txt"
     locked.write_text("x", encoding="utf-8")
