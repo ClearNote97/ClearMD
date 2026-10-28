@@ -546,12 +546,12 @@ def replace_settings(settings: Settings, **changes: Any) -> Settings:
 def test_without_tkdnd_the_window_still_works_without_dropping(
     display: str, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    from clearmd.frontend.ttk import app as app_module
+    from tkinterdnd2 import TkinterDnD
 
     def unavailable() -> None:
         raise RuntimeError("Unable to load tkdnd library.")  # e.g. a Tk it was not built for
 
-    monkeypatch.setattr(app_module.TkinterDnD, "Tk", unavailable)
+    monkeypatch.setattr(TkinterDnD, "Tk", unavailable)
     app = TtkApp(FakeBackend(settings=Settings(show_welcome=False)))
     try:
         app.start()
