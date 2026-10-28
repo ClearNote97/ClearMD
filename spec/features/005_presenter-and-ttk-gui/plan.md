@@ -1,7 +1,7 @@
 # Plan — Feature 005: Presenter (MVP) + ttkbootstrap GUI
 
 > The **how**. Criteria: [`spec.md`](./spec.md). Decisions: ADR-0001, ADR-0008, ADR-0012, ADR-0013, ADR-0016,
-> ADR-0026. Contract: [`spec/contracts/ux.md`](../../contracts/ux.md).
+> ADR-0026, ADR-0027 (visual identity). Contract: [`spec/contracts/ux.md`](../../contracts/ux.md).
 
 ## Architecture
 
@@ -20,15 +20,20 @@ src/clearmd/
       presenter.py             # the intents (add, remove, analyze, confirm, cancel, open, settings…)
       texts.py                 # every text the view shows, from the catalogs
       system_theme.py          # light or dark, from the operating system (no dependency)
+    assets/                    # ADR-0027: logo (SVG, PNG, app icon) and file icons (PNG), for every GUI
+    presenter/icons.py         # which icon a path gets (by format; folder, Markdown, unknown)
     ttk/                       # ttkbootstrap + tkinterdnd2
       app.py                   # the root window, the theme, the scheduler (after), main()
-      layout.py                # the 8 px grid, the fonts (14 px body), the colours of the states
+      layout.py                # the 8 px grid, the fonts (14 px body)
+      brand.py                 # the palette, the clearmd-light/-dark themes, rounded image elements
+      art.py                   # Pillow drawings: rounded shapes, the background shape, row images
       views/                   # main, plan, progress, result, help, welcome, settings
-      components/              # input list, drop zone, state badge, buttons
+      components/              # the rail, cards, the drop zone, the file list
 tests/
   unit/frontend/presenter/     # every intent and state, with a fake view and a fake backend
   unit/frontend/ttk/           # widgets under xvfb (skipped without a display)
   gui/screenshots.py           # every screen, light/dark, EN/ES → docs/screenshots/005/
+  gui/make_assets.py           # draws the logo and the file icons (one geometry → SVG and PNG)
   acceptance/test_005_ttk_gui.py
 ```
 
@@ -41,6 +46,9 @@ tests/
 3. **The ttk shell.** Root window with tkinterdnd2 and ttkbootstrap, theme from the setting or the system,
    the layout constants, the main view with Add files / Add folder / drop zone / input list / output choice /
    Convert / "?" / settings.
+3b. **The visual identity (ADR-0027).** The asset script and its drift test; the two themes; rounded
+   buttons and cards; the rail with the logo and the steps; the main view rebuilt on it, with the numbered
+   file list and its icons.
 4. **Plan, progress, result.** The plan review (counts, skipped with reason and action, existing outputs and
    the choice), the progress (i of n, file, bar, time left, long-file timer, Cancel), the result (counts,
    problems in plain words, Open results folder, the folder opened by itself).

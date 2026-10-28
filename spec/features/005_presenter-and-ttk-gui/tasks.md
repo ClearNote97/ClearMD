@@ -18,6 +18,10 @@
 
 - [x] **T04 — The ttk shell and the main view.** Theme, layout constants, Add files / Add folder / drag and drop
       / input list / output choice / Convert / "?" / settings; `clearmd-ttk` (AC-05, AC-16, AC-17, AC-20).
+- [ ] **T04b — The visual identity (ADR-0027).** `make_assets.py` (logo SVG/PNG, app icon, file icons) and a
+      test that the committed assets match it; the presenter's icon per row; the `clearmd-light/-dark`
+      themes; rounded buttons and cards (image elements); the rail (logo, Clear·MD, the four steps, Settings,
+      Help); the main view redone on it with the numbered, iconed list; the window icon (AC-22, AC-23).
 - [ ] **T05 — Plan, progress, result.** The three views on the presenter's models; Cancel; Open results folder
       (AC-07 – AC-12).
 - [ ] **T06 — Help, welcome, settings.** The three dialogs (AC-13 – AC-15).
@@ -27,8 +31,9 @@
 ## Slice C — Shown and closed
 
 - [ ] **T08 — Screenshots.** The script under xvfb; `docs/screenshots/005/` (AC-21).
-- [ ] **T09 — Acceptance and a real batch.** `tests/acceptance/test_005_ttk_gui.py`, one test per AC-01 … AC-21;
+- [ ] **T09 — Acceptance and a real batch.** `tests/acceptance/test_005_ttk_gui.py`, one test per AC-01 … AC-23;
       the same outputs as the CLI (AC-20).
 - [ ] **T10 — Close the feature.** READMEs (with the screenshots), architecture, roadmap, spec ticked; gate;
       code review, security audit with runnable proofs, adversarial verification of the fixes; ADR-0026
-      accepted. Then the repository becomes public (the author's request), after a scan of the whole history.
+      accepted. Then the repository becomes public (the author's request), after a scan of the whole
+      history.

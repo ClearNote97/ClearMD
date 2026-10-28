@@ -61,6 +61,8 @@
   plus drag and drop where the toolkit allows it.
 - Minimum body text 14 px (or the toolkit's equivalent); contrast meets WCAG AA (4.5:1 for text).
 - Light and dark themes, following the system by default.
+- Every GUI wears the same identity (ADR-0027): the teal palette, the C·M↓ logo, the four steps of the flow
+  (Choose · Review · Convert · Results) always visible, and ClearMD's own file icons in every list.
 
 ## 6. Keyboard and accessibility
 
