@@ -87,7 +87,7 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 # ttkbootstrap's functions carry no annotations: the GUI (and only the GUI) may call them.
-module = ["clearmd.frontend.ttk.*", "unit.frontend.ttk.*", "gui.*"]
+module = ["clearmd.frontend.ttk.*", "unit.frontend.ttk.*", "gui.*", "acceptance.test_005_ttk_gui"]
 disallow_untyped_calls = false
 
 [tool.pytest.ini_options]

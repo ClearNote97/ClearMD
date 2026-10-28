@@ -31,7 +31,7 @@
 ## Slice C — Shown and closed
 
 - [x] **T08 — Screenshots.** The script under xvfb; `docs/screenshots/005/` (AC-21).
-- [ ] **T09 — Acceptance and a real batch.** `tests/acceptance/test_005_ttk_gui.py`, one test per AC-01 … AC-23;
+- [x] **T09 — Acceptance and a real batch.** `tests/acceptance/test_005_ttk_gui.py`, one test per AC-01 … AC-23;
       the same outputs as the CLI (AC-20).
 - [ ] **T10 — Close the feature.** READMEs (with the screenshots), architecture, roadmap, spec ticked; gate;
       code review, security audit with runnable proofs, adversarial verification of the fixes; ADR-0026

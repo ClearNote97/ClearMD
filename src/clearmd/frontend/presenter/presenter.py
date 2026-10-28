@@ -69,13 +69,13 @@ class Presenter:
         backend: Backend | None = None,
         *,
         clock: Callable[[], float] = time.monotonic,
-        detect_theme: Callable[[], str] = detect_system_theme,
+        detect_theme: Callable[[], str] | None = None,
         spawn: Callable[[Callable[[], None]], None] | None = None,
     ) -> None:
         self._view = view
         self._backend = backend or ApiBackend()
         self._clock = clock
-        self._detect_theme = detect_theme
+        self._detect_theme = detect_theme or detect_system_theme
         self._spawn = spawn or _in_background
         self.settings = Settings()
         self.catalog: Catalog = load_catalog("en")
