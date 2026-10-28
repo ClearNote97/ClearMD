@@ -197,3 +197,42 @@ unreadable = "Configuración: no se pudo leer {setting}; se usan los valores por
 
 [summary.strategy]
 article = "{format} (Artículo)"
+
+[gui.state]
+ready = "Listo"
+analyzing = "Analizando"
+waiting_decision = "Esperando tu decisión"
+converting = "Convirtiendo"
+finished = "Terminado"
+finished_with_problems = "Terminado con problemas"
+cancelled = "Cancelado"
+
+[gui.welcome]
+step1 = "1. Elige archivos o una carpeta"
+step2 = "2. Revisa qué se va a convertir"
+step3 = "3. Listo, tu carpeta se abre"
+
+[gui.scan]
+started = "Buscando documentos…"
+found = "Buscando documentos… {count} encontrados"
+
+[gui.output]
+next_to = "Junto a los originales"
+folder = "En {path}"
+
+[gui.plan]
+summary = "Por convertir: {convert} · Omitidos: {skipped} · Ya existen: {existing}"
+not_found = "no existe. Comprueba que todavía está ahí."
+
+[gui.progress]
+counter = "{index} de {total}"
+long_file = "Los archivos grandes pueden tardar unos minutos."
+cancelling = "Cancelando… el archivo actual se detiene ya."
+
+[gui.result]
+kept = "su resultado ya existía y se conservó."
+no_summary = "no se pudo escribir el resumen ahí. Comprueba que el disco tiene espacio."
+cannot_open = "ClearMD no pudo abrir {path}. Ábrela desde tu explorador de archivos."
+
+[gui.settings]
+not_saved = "ClearMD no pudo guardar los ajustes. Tus cambios aplican hasta que lo cierres."

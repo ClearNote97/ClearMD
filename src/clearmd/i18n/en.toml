@@ -197,3 +197,42 @@ unreadable = "Settings: {setting} could not be read; using the defaults."
 
 [summary.strategy]
 article = "{format} (Article)"
+
+[gui.state]
+ready = "Ready"
+analyzing = "Analyzing"
+waiting_decision = "Waiting for your decision"
+converting = "Converting"
+finished = "Finished"
+finished_with_problems = "Finished with problems"
+cancelled = "Cancelled"
+
+[gui.welcome]
+step1 = "1. Choose files or a folder"
+step2 = "2. Review what will be converted"
+step3 = "3. Done, your folder opens"
+
+[gui.scan]
+started = "Looking for documents…"
+found = "Looking for documents… {count} found"
+
+[gui.output]
+next_to = "Next to the originals"
+folder = "In {path}"
+
+[gui.plan]
+summary = "To convert: {convert} · Skipped: {skipped} · Already exist: {existing}"
+not_found = "not found. Check that it still exists."
+
+[gui.progress]
+counter = "{index} of {total}"
+long_file = "Large files can take a few minutes."
+cancelling = "Cancelling… the current file stops now."
+
+[gui.result]
+kept = "its result already existed and was kept."
+no_summary = "the summary could not be written there. Check that the disk has free space."
+cannot_open = "ClearMD could not open {path}. Open it from your file browser."
+
+[gui.settings]
+not_saved = "ClearMD could not save the settings. Your changes apply until you close it."

@@ -11,7 +11,7 @@
       `presenter/` and `ttk/`.
 - [x] **T02 — Settings written, folders opened.** `save_settings`, `last_output_folder`, `open_folder` shared
       (AC-06, AC-15).
-- [ ] **T03 — The presenter.** States, intents, worker thread and scheduler, texts from the catalogs, the system
+- [x] **T03 — The presenter.** States, intents, worker thread and scheduler, texts from the catalogs, the system
       theme; tested with a fake view and a fake backend (AC-01 – AC-04, AC-06 – AC-12, AC-16).
 
 ## Slice B — The window
