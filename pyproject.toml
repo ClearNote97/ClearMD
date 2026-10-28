@@ -22,11 +22,19 @@ dependencies = [
     # HTML article mode: finds the main content; ClearMD writes it (ADR-0025, feature 004). Pinned:
     # its extraction decides the output, as markitdown's does.
     "trafilatura==2.3.1",
+    # The first GUI (feature 005, ADR-0026): themes for tkinter, and drag and drop (tkdnd inside).
+    # Pinned to releases at least two weeks old.
+    "ttkbootstrap==2.2.3",
+    "tkinterdnd2==0.6.4",
 ]
 # Only what is used: the GUIs and PyInstaller arrive in their own feature, not before (ADR-0009).
 
 [project.scripts]
 clearmd = "clearmd.frontend.cli:main"
+
+[project.gui-scripts]
+# A GUI script: no console window on Windows (ADR-0026).
+clearmd-ttk = "clearmd.frontend.ttk:main"
 
 [dependency-groups]
 dev = [
@@ -70,8 +78,15 @@ mypy_path = ["src", "tests", "tests/fixtures", "tests/benchmark"]
 
 [[tool.mypy.overrides]]
 # Third-party libraries without type information; each entry is justified where it is imported.
-module = ["openpyxl", "openpyxl.*", "psutil", "pylatexenc", "pylatexenc.*"]
+module = [
+    "openpyxl", "openpyxl.*", "psutil", "pylatexenc", "pylatexenc.*", "tkinterdnd2", "tkinterdnd2.*",
+]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# ttkbootstrap's functions carry no annotations: the GUI (and only the GUI) may call them.
+module = ["clearmd.frontend.ttk.*", "unit.frontend.ttk.*", "gui.*"]
+disallow_untyped_calls = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -6,7 +6,7 @@
 
 ## Slice A — The presenter, without a window
 
-- [ ] **T01 — Environment.** Tk, `xvfb` and fonts in the dev container (`Dockerfile`, ADR-0008);
+- [x] **T01 — Environment.** Tk, `xvfb` and fonts in the dev container (`Dockerfile`, ADR-0008);
       `ttkbootstrap` and `tkinterdnd2` pinned (two weeks old at least); the architecture rules for
       `presenter/` and `ttk/`.
 - [ ] **T02 — Settings written, folders opened.** `save_settings`, `last_output_folder`, `open_folder` shared

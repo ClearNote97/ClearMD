@@ -12,6 +12,8 @@
 | clearmd.backend.api                     | third-party; clearmd.backend, clearmd.i18n           |
 | clearmd.frontend                        | third-party; clearmd.backend.api, .schemas, i18n,    |
 |                                         | clearmd.frontend                                     |
+| clearmd.frontend.presenter              | standard library; backend.api, .schemas, i18n, itself|
+| clearmd.frontend.ttk                    | third-party; the presenter, .schemas, i18n, itself   |
 """
 
 import ast
@@ -30,6 +32,7 @@ PACKAGE_ROOT = Path(clearmd.__file__).parent
 class Rule:
     allows_third_party: bool
     allowed_internal: tuple[str, ...]
+    forbidden_stdlib: tuple[str, ...] = ()  # standard modules a layer must not use (a toolkit)
 
 
 RULES: dict[str, Rule] = {
@@ -80,6 +83,27 @@ RULES: dict[str, Rule] = {
     "clearmd.frontend": Rule(
         True, ("clearmd.backend.api", "clearmd.backend.schemas", "clearmd.i18n", "clearmd.frontend")
     ),
+    # The presenter (ADR-0026): every GUI's interaction logic; the standard library, no toolkit.
+    "clearmd.frontend.presenter": Rule(
+        False,
+        (
+            "clearmd.backend.api",
+            "clearmd.backend.schemas",
+            "clearmd.i18n",
+            "clearmd.frontend.presenter",
+        ),
+        forbidden_stdlib=("tkinter", "turtle"),
+    ),
+    # A GUI talks to the presenter only: never to the api or another interface (ADR-0001/0026).
+    "clearmd.frontend.ttk": Rule(
+        True,
+        (
+            "clearmd.frontend.presenter",
+            "clearmd.backend.schemas",
+            "clearmd.i18n",
+            "clearmd.frontend.ttk",
+        ),
+    ),
     # The package root and `clearmd.backend` itself only hold docstrings.
     "clearmd.backend": Rule(False, ()),
     "clearmd": Rule(False, ()),
@@ -118,6 +142,9 @@ def violations(module: str, imports: set[str]) -> list[str]:
     problems = []
     for name in sorted(imports):
         top = name.split(".")[0]
+        if top in rule.forbidden_stdlib:
+            problems.append(f"{module} imports {name}")
+            continue
         if top == "__future__" or top in sys.stdlib_module_names:
             continue
         if top == "clearmd":
@@ -165,6 +192,11 @@ def test_module_respects_the_dependency_rule(module: str, path: Path) -> None:
             "from clearmd.backend.services.worker import child",
         ),
         ("clearmd.backend.services.conversion.markdown_out", "import markdown_it"),
+        ("clearmd.frontend.presenter.presenter", "import tkinter"),
+        ("clearmd.frontend.presenter.presenter", "import ttkbootstrap"),
+        ("clearmd.frontend.presenter.presenter", "from clearmd.backend.services import folders"),
+        ("clearmd.frontend.ttk.app", "from clearmd.backend.api import plan_batch"),
+        ("clearmd.frontend.ttk.app", "from clearmd.frontend.cli import main"),
     ],
 )
 def test_checker_reports_forbidden_imports(module: str, source: str) -> None:

@@ -2,7 +2,7 @@
 # DOCKERFILE - ClearMD (development environment)
 # -----------------------------------------------------------------------------
 # Python 3.14 (markitdown requires <3.15). 'slim-bookworm' = Debian 12 (glibc 2.36).
-# Each GUI's graphics libraries are added in that GUI's phase (ADR-0008).
+# Each GUI's graphics libraries are added in that GUI's phase (ADR-0008): Tk for 005.
 FROM python:3.14.5-slim-bookworm
 
 # Keep Debian from opening interactive prompts while installing packages.
@@ -13,11 +13,18 @@ ENV DEBIAN_FRONTEND=noninteractive
 # - ca-certificates: HTTPS (downloading dependencies).
 # - curl: network utilities and diagnostics.
 # No build-essential: every dependency ships wheels for 3.14 (ADR-0009).
+# - libtk8.6, libxcursor1 (tkdnd), xvfb, xauth, fonts-dejavu-core: the ttkbootstrap GUI (feature 005,
+#   ADR-0008/0026), run and screenshotted under a virtual display; never shown from the container.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     git \
     openssh-client \
     curl \
+    libtk8.6 \
+    libxcursor1 \
+    xvfb \
+    xauth \
+    fonts-dejavu-core \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # 'uv', the package manager: binaries copied from Astral's official image.
