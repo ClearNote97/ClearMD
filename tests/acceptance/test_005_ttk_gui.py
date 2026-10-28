@@ -18,7 +18,6 @@ from typing import Any
 
 import pytest
 from support import DOCUMENTS_DIR
-from support.display import virtual_display
 from support.gui_fakes import FakeBackend, MemoryBackend, planned
 
 import clearmd.frontend.presenter.presenter as presenter_module
@@ -39,14 +38,6 @@ from clearmd.i18n import load_catalog
 
 ROOT = Path(__file__).resolve().parents[2]
 QUIET = Settings(show_welcome=False, open_output_when_done=False)
-
-
-@pytest.fixture(scope="module")
-def display() -> Iterator[str]:
-    with virtual_display() as name:
-        if name is None:
-            pytest.skip("no display and no Xvfb: GUI tests need one")
-        yield name
 
 
 @pytest.fixture

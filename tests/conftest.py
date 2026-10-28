@@ -1,10 +1,13 @@
-"""Shared fixtures: no network (ADR-0005, AC-39) and an isolated settings folder per test."""
+"""Shared fixtures: no network (ADR-0005, AC-39), an isolated settings folder per test, and one
+display for every GUI test of the session."""
 
 import socket
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 from support import DOCUMENTS_DIR, blocked
+from support.display import virtual_display
 
 
 @pytest.fixture(autouse=True)
@@ -25,3 +28,13 @@ def _isolated_settings(
 @pytest.fixture
 def documents_dir() -> Path:
     return DOCUMENTS_DIR
+
+
+@pytest.fixture(scope="session")
+def display() -> Iterator[str]:
+    """One display for the whole run: a virtual one stopped while Tk still holds a connection to
+    it ends the process (Xlib), so it lives until the last GUI test."""
+    with virtual_display() as name:
+        if name is None:
+            pytest.skip("no display and no Xvfb: GUI tests need one")
+        yield name
