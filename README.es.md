@@ -131,16 +131,21 @@ anteriores._
 | **002** Conversor de `.tex` (con ecuaciones, sin pandoc) | ✅ lista | 807 tests en total · revisada |
 | **003** Conversor de `.odt` (solo librería estándar) | ✅ lista | 1085 tests en total · revisada |
 | **004** Modo artículo para HTML | ✅ lista | 1287 tests en total · revisada |
-| **005** Primera app de escritorio (ttkbootstrap) | ⏳ | |
-| **006** CI + ejecutables para Windows y Linux | ⏳ | |
+| **005** Primera app de escritorio (ttkbootstrap) | ✅ lista | 1622 tests en total · revisada |
+| **006** CI + ejecutables para Windows y Linux | ✅ lista | CI en Linux y Windows · ejecutables verificados con un lote real |
 | **007–008** Apps en PySide6 y flet | ⏳ | |
 
 El plan completo está en el [roadmap](./spec/roadmap.md). ClearMD tiene **línea de comandos** y su primera **app de
-escritorio** (`clearmd-ttk`); los ejecutables para Windows y Linux vienen después.
+escritorio** (`clearmd-ttk`), ambas también como ejecutables para Windows y Linux, construidos y verificados por la CI.
 
 ---
 
 ## ▶️ Cómo correr
+
+**Descarga la app** (nada que instalar): desde la [última versión](https://github.com/ClearNote97/ClearMD/releases/latest),
+`ClearMD-…-windows.exe` para Windows o `ClearMD-…-linux.tar.gz` para Linux, y ábrela con doble clic.
+Windows puede advertir que la app no es reconocida, porque aún no está firmada: *Más información → Ejecutar de todas
+formas*. El primer inicio tarda unos segundos mientras la app se descomprime.
 
 **Desde el repositorio** (aún no está en PyPI):
 

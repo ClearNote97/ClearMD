@@ -127,18 +127,23 @@ _Plus the failed and skipped files with a plain-words reason, and the history of
 | **002** `.tex` converter (math preserved, no pandoc) | ✅ done | 807 tests in total · reviewed |
 | **003** `.odt` converter (standard library only) | ✅ done | 1085 tests in total · reviewed |
 | **004** HTML article mode | ✅ done | 1287 tests in total · reviewed |
-| **005** First desktop app (ttkbootstrap) | ⏳ | |
-| **006** CI + Windows/Linux executables | ⏳ | |
+| **005** First desktop app (ttkbootstrap) | ✅ done | 1622 tests in total · reviewed |
+| **006** CI + Windows/Linux executables | ✅ done | CI on Linux and Windows · executables checked by a real batch |
 | **007–008** PySide6 and flet apps | ⏳ | |
 
 Full plan in the [roadmap](./spec/roadmap.md). ClearMD has a **command line** and its first **desktop app**
-(`clearmd-ttk`); the Windows and Linux executables come next.
+(`clearmd-ttk`), both also as Windows and Linux executables built and checked by CI.
 
 ---
 
 ## ▶️ How to run
 
-**From the repository** (the package is not on PyPI yet):
+**Download the app** (nothing to install): from the [latest release](https://github.com/ClearNote97/ClearMD/releases/latest),
+`ClearMD-…-windows.exe` for Windows or `ClearMD-…-linux.tar.gz` for Linux, then open it with a double click.
+Windows may warn that the app is not recognized, because it is not code-signed yet: *More info → Run anyway*.
+The first start takes a few seconds while the app unpacks itself.
+
+**From the repository**, for the command line (the package is not on PyPI yet):
 
 ```bash
 uv tool install git+https://github.com/ClearNote97/ClearMD   # recommended: same tool as the dev stack

@@ -33,7 +33,7 @@
 - [x] **T08 — Screenshots.** The script under xvfb; `docs/screenshots/005/` (AC-21).
 - [x] **T09 — Acceptance and a real batch.** `tests/acceptance/test_005_ttk_gui.py`, one test per AC-01 … AC-23;
       the same outputs as the CLI (AC-20).
-- [ ] **T10 — Close the feature.** READMEs (with the screenshots), architecture, roadmap, spec ticked; gate;
+- [x] **T10 — Close the feature.** READMEs (with the screenshots), architecture, roadmap, spec ticked; gate;
       code review, security audit with runnable proofs, adversarial verification of the fixes; ADR-0026
       accepted. Then the repository becomes public (the author's request), after a scan of the whole
       history.

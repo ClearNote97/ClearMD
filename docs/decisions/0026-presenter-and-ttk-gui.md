@@ -1,6 +1,6 @@
 # ADR-0026: The presenter and the first GUI (ttkbootstrap)
 
-- **Status:** proposed
+- **Status:** accepted (refined by ADR-0027, the look; and by the reviews of 005)
 - **Date:** 2026-10-27
 - **Refines:** ADR-0001 (presenter + GUIs), ADR-0003 (the three toolkits), ADR-0008 (GUI libraries in the
   container), ADR-0012 (settings), ADR-0013 (non-technical users first), ADR-0016 (where results go).

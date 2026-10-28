@@ -30,14 +30,21 @@ already tested (ADR-0001).
       article, ClearMD writes it with the shared guarantee (a page with no article too), `--html full|article`
       and the `html_strategy` setting, the strategy in the plan and the summary (ADR-0025).
 
+- [x] **005 — Presenter (MVP) + ttkbootstrap GUI** ([spec](./features/005_presenter-and-ttk-gui/spec.md)):
+      the presenter every GUI shares (ADR-0026), the ttk window in ClearMD's own look — the rail
+      with the four steps, the C·M↓ logo, file icons, teal light and dark themes (ADR-0027) —
+      help, welcome, settings; reviewed (code, security, adversarial verification).
+- [x] **006 — CI and executables** ([spec](./features/006_ci-and-executables/spec.md)): tests on Linux and
+      Windows (Python 3.12 and 3.14); the desktop app and the command line as one-file executables
+      for Windows and Linux, each build checked by a real batch; GitHub (pre-)releases with the
+      third-party notices (ADR-0028).
+
 ## Next
 
-- [ ] **005 — Presenter (MVP) + ttkbootstrap GUI**, following `spec/contracts/ux.md`: help window, welcome,
-      settings window, progress, splash, output folder choice (remembered).
-- [ ] **006 — CI:** tests on Linux and Windows (Python 3.12 and 3.14) + executables in GitHub Releases;
-      executable size as a metric; **code signing** of the Windows executables (SignPath, free for open
-      source) so SmartScreen does not scare non-technical users; a Windows Job Object as the worker's hard
-      memory cap; an advisory check of `uv.lock` and hash-pinned builds (known limitations of 001).
+- [ ] **006b — Hardening of the executables:** **code signing** of the Windows executables
+      (SignPath, free for open source — once the repository is public) so SmartScreen does not
+      scare non-technical users; a Windows Job Object as the worker's hard memory cap; an advisory
+      check of `uv.lock` and hash-pinned builds; executable size as a metric.
 
 ## Later
 

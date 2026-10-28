@@ -21,21 +21,21 @@ is for.
 Tests: `tests/acceptance/test_006_ci_and_executables.py` (what can be checked from the
 repository) and the workflow itself (what only CI can run).
 
-- [ ] **AC-01** CI runs ruff, `mypy --strict` and the whole test suite on Linux and Windows with
+- [x] **AC-01** CI runs ruff, `mypy --strict` and the whole test suite on Linux and Windows with
   Python 3.12 and 3.14, from the lock file, with every action pinned to a commit and read-only
   permissions.
-- [ ] **AC-02** The release workflow builds, on Windows and on Linux, two one-file programs:
+- [x] **AC-02** The release workflow builds, on Windows and on Linux, two one-file programs:
   `ClearMD` (the desktop app: no console, the app icon, a splash) and `clearmd-cli` (the command
   line).
-- [ ] **AC-03** Each build is checked before it is published: the command line converts a real
+- [x] **AC-03** Each build is checked before it is published: the command line converts a real
   batch (every format, a file without extension, LaTeX, OpenDocument) through the worker process,
   and the desktop app opens and closes by itself (`--smoke`).
-- [ ] **AC-04** A version tag publishes a GitHub pre-release with the Windows app, the Windows
+- [x] **AC-04** A version tag publishes a GitHub pre-release with the Windows app, the Windows
   command line, a Linux archive and `THIRD-PARTY-NOTICES.txt` (every bundled library's license,
   from its own metadata); a manual run only builds and checks.
-- [ ] **AC-05** The release notes tell, in English and Spanish, how to open the app when Windows
+- [x] **AC-05** The release notes tell, in English and Spanish, how to open the app when Windows
   warns that it is not signed, and that nothing leaves the computer.
-- [ ] **AC-06** PyInstaller is a build-only dependency (its own group), pinned like every other
+- [x] **AC-06** PyInstaller is a build-only dependency (its own group), pinned like every other
   dependency (at least two weeks old).
 
 ## Risks / open questions
