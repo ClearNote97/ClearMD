@@ -218,7 +218,8 @@ found = "Looking for documents… {count} found"
 
 [gui.output]
 next_to = "Next to the originals"
-folder = "In {path}"
+next_to_detail = "A ClearMD_Output folder is created next to each file or folder you chose."
+folder = "A ClearMD_Output folder is created in {path}."
 
 [gui.plan]
 summary = "To convert: {convert} · Skipped: {skipped} · Already exist: {existing}"
@@ -236,3 +237,27 @@ cannot_open = "ClearMD could not open {path}. Open it from your file browser."
 
 [gui.settings]
 not_saved = "ClearMD could not save the settings. Your changes apply until you close it."
+
+[gui.app]
+title = "ClearMD"
+subtitle = "Documents to Markdown, on your computer"
+
+[gui.main]
+add_files = "Add files"
+add_folder = "Add folder"
+drop = "or drop files and folders here"
+empty = "Nothing chosen yet."
+column_name = "Name"
+column_location = "Folder"
+remove = "Remove selected"
+clear = "Clear all"
+output_title = "Results go"
+in_folder = "In a folder I choose"
+pick_folder = "Choose folder…"
+convert = "Convert"
+help = "? Help"
+settings = "Settings"
+pick_files_title = "Choose documents"
+pick_folder_title = "Choose a folder"
+pick_output_title = "Where should the results go?"
+documents = "Documents"

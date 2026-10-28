@@ -16,7 +16,7 @@
 
 ## Slice B — The window
 
-- [ ] **T04 — The ttk shell and the main view.** Theme, layout constants, Add files / Add folder / drag and drop
+- [x] **T04 — The ttk shell and the main view.** Theme, layout constants, Add files / Add folder / drag and drop
       / input list / output choice / Convert / "?" / settings; `clearmd-ttk` (AC-05, AC-16, AC-17, AC-20).
 - [ ] **T05 — Plan, progress, result.** The three views on the presenter's models; Cancel; Open results folder
       (AC-07 – AC-12).

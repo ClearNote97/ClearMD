@@ -28,19 +28,17 @@ class Action(StrEnum):
     HELP = "help"
 
 
-_EDITING = frozenset(
-    {Action.ADD, Action.REMOVE, Action.CHOOSE_OUTPUT, Action.SETTINGS, Action.HELP}
-)
+_EDITING = frozenset({Action.ADD, Action.CHOOSE_OUTPUT, Action.SETTINGS, Action.HELP})
 _FINISHED = frozenset({Action.BACK, Action.OPEN_RESULTS, Action.SETTINGS, Action.HELP})
 
 
 def enabled_actions(
     state: AppState, *, has_inputs: bool, can_confirm: bool, has_results: bool
 ) -> frozenset[Action]:
-    """The actions a view enables in ``state``: Convert only with inputs, Confirm only with
-    something to convert, Cancel only while working, Help always (UX §4)."""
+    """The actions a view enables in ``state``: Convert and Remove only with inputs, Confirm only
+    with something to convert, Cancel only while working, Help always (UX §4)."""
     if state is AppState.READY:
-        return _EDITING | ({Action.CONVERT} if has_inputs else set())
+        return _EDITING | ({Action.CONVERT, Action.REMOVE} if has_inputs else set())
     if state in {AppState.ANALYZING, AppState.CONVERTING}:
         return frozenset({Action.CANCEL, Action.HELP})
     if state is AppState.WAITING_DECISION:

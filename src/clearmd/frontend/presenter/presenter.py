@@ -111,6 +111,11 @@ class Presenter:
         theme = settings.theme if settings.theme != "system" else self._detect_theme()
         self._view.apply_theme(theme if theme in {"light", "dark"} else "light")
 
+    @property
+    def output_folder(self) -> Path | None:
+        """The folder chosen for the results; ``None``: next to the originals."""
+        return self._output_folder
+
     # --- Inputs and the output -------------------------------------------------------------------
 
     def add_paths(self, paths: Sequence[Path]) -> None:
@@ -350,9 +355,8 @@ class Presenter:
         remembered = self.settings.last_output_folder
         suggestion = Path(remembered) if remembered else None
         if self._output_folder is None:
-            choice = OutputChoice(
-                OutputMode.NEXT_TO, None, suggestion, self.catalog.text("gui.output.next_to")
-            )
+            label = self.catalog.text("gui.output.next_to_detail")
+            choice = OutputChoice(OutputMode.NEXT_TO, None, suggestion, label)
         else:
             label = self.catalog.text("gui.output.folder", path=str(self._output_folder))
             choice = OutputChoice(OutputMode.FOLDER, self._output_folder, suggestion, label)
