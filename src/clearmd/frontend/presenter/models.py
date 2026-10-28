@@ -53,11 +53,30 @@ class PlanRow:
     icon: str
 
 
+class Tone(StrEnum):
+    """How a figure is coloured: the accent, a warning, a problem, or plain."""
+
+    ACCENT = "accent"
+    WARNING = "warning"
+    DANGER = "danger"
+    NEUTRAL = "neutral"
+
+
+@dataclass(frozen=True)
+class Stat:
+    """One figure of a summary ("To convert: 12"), drawn as a card by the GUIs."""
+
+    label: str
+    value: int
+    tone: Tone
+
+
 @dataclass(frozen=True)
 class PlanView:
     summary: str
     rows: tuple[PlanRow, ...]
     asks_about_existing: bool  # the user chooses: overwrite or keep (setting "ask")
+    stats: tuple[Stat, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -68,6 +87,7 @@ class ProgressView:
     time_left: str | None  # "about 3 min left"
     elapsed: str | None  # this file's running timer, once it takes long
     long_file: str | None  # "Large files can take a few minutes."
+    icon: str = "unknown"  # the current file's icon
 
 
 @dataclass(frozen=True)
@@ -84,3 +104,4 @@ class ResultView:
     counts: str
     rows: tuple[ResultRow, ...]
     folders: tuple[Path, ...]  # the ClearMD_Output folders of the batch
+    stats: tuple[Stat, ...] = ()

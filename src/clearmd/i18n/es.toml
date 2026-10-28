@@ -224,16 +224,38 @@ folder = "Se crea una carpeta ClearMD_Output en {path}."
 [gui.plan]
 summary = "Por convertir: {convert} · Omitidos: {skipped} · Ya existen: {existing}"
 not_found = "no existe. Comprueba que todavía está ahí."
+stat_convert = "Por convertir"
+stat_skipped = "Omitidos"
+stat_existing = "Ya existen"
+column_what = "Qué pasará"
+existing_question = "Algunos resultados ya existen. ¿Qué debe hacer ClearMD con ellos?"
+keep = "Conservarlos (esos archivos se omiten)"
+overwrite = "Reemplazarlos por nuevos"
+back = "Volver"
+confirm = "Convertir"
+nothing = "Aquí no hay nada para convertir. Vuelve y elige otros archivos."
 
 [gui.progress]
 counter = "{index} de {total}"
 long_file = "Los archivos grandes pueden tardar unos minutos."
 cancelling = "Cancelando… el archivo actual se detiene ya."
+cancel = "Cancelar"
+elapsed = "Este archivo: {clock}"
+current = "Convirtiendo ahora"
 
 [gui.result]
 kept = "su resultado ya existía y se conservó."
 no_summary = "no se pudo escribir el resumen ahí. Comprueba que el disco tiene espacio."
 cannot_open = "ClearMD no pudo abrir {path}. Ábrela desde tu explorador de archivos."
+stat_converted = "Convertidos"
+stat_skipped = "Omitidos"
+stat_failed = "Fallidos"
+stat_stopped = "Detenidos"
+open = "Abrir carpeta de resultados"
+again = "Convertir más"
+all_good = "Todos los archivos se convirtieron. Tus resultados están en la carpeta ClearMD_Output."
+problems = "Lo que necesita tu atención"
+column_what = "Qué pasó"
 
 [gui.settings]
 not_saved = "ClearMD no pudo guardar los ajustes. Tus cambios aplican hasta que lo cierres."

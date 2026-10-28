@@ -18,7 +18,7 @@ from clearmd.backend.schemas.models import (
 )
 from clearmd.backend.schemas.settings import Settings, SettingsProblem, SettingsWarning
 from clearmd.frontend.presenter import Action, AppState, OutputMode, Presenter
-from clearmd.frontend.presenter.models import RowKind
+from clearmd.frontend.presenter.models import RowKind, Stat, Tone
 from clearmd.i18n import Catalog
 
 # --- Fakes ---------------------------------------------------------------------------------------
@@ -224,6 +224,23 @@ def test_the_plan_is_shown_and_nothing_runs_before_confirming() -> None:
     assert shown.asks_about_existing  # the setting is "ask"
 
 
+def test_the_plan_gives_its_counts_as_figures_for_the_summary_cards() -> None:
+    plan = BatchPlan(
+        (planned("a.pdf"), planned("b.pdf", exists=True)),
+        (SkippedItem(Path("/docs/notes.md"), SkipReason.ALREADY_MARKDOWN),),
+        (),
+    )
+    presenter, view, _, _ = make(FakeBackend(plan=plan))
+    presenter.add_paths([Path("/docs")])
+    presenter.analyze()
+    view.drain()
+    assert view.last("plan").stats == (
+        Stat("To convert", 2, Tone.ACCENT),
+        Stat("Skipped", 1, Tone.WARNING),
+        Stat("Already exist", 1, Tone.NEUTRAL),
+    )
+
+
 @pytest.mark.parametrize(("setting", "overwrites"), [("overwrite", True), ("skip", False)])
 def test_overwrite_and_skip_settings_never_ask(setting: str, overwrites: bool) -> None:
     plan = BatchPlan((planned("b.pdf", exists=True),), (), ())
@@ -278,6 +295,7 @@ def test_progress_says_where_it_is_and_the_time_left_in_plain_words() -> None:
     presenter, view, _, _ = converted(FakeBackend(plan=plan))
     progress = [value for call, value in view.calls if call == "progress"]
     assert progress[0].counter == "1 of 2" and progress[0].name == "a.pdf"
+    assert progress[0].icon == "pdf"
     assert progress[0].time_left == "about 2 min left"
     assert progress[1].counter == "2 of 2" and progress[1].fraction == pytest.approx(0.5)
 
@@ -361,6 +379,12 @@ def test_failures_never_stop_the_batch_and_say_what_to_do() -> None:
     details = {row.name: row.detail for row in result.rows}
     assert details["a.pdf"] == "This file is password-protected. Remove the password and try again."
     assert details["b.pdf"].startswith("Exceeded the time limit (10 min).")
+    assert result.stats == (
+        Stat("Converted", 1, Tone.ACCENT),
+        Stat("Skipped", 0, Tone.NEUTRAL),
+        Stat("Failed", 1, Tone.DANGER),
+        Stat("Stopped", 1, Tone.WARNING),
+    )
 
 
 # --- Threads (AC-02) -----------------------------------------------------------------------------

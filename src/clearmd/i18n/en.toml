@@ -224,16 +224,38 @@ folder = "A ClearMD_Output folder is created in {path}."
 [gui.plan]
 summary = "To convert: {convert} · Skipped: {skipped} · Already exist: {existing}"
 not_found = "not found. Check that it still exists."
+stat_convert = "To convert"
+stat_skipped = "Skipped"
+stat_existing = "Already exist"
+column_what = "What happens"
+existing_question = "Some results already exist. What should ClearMD do with them?"
+keep = "Keep them (those files are skipped)"
+overwrite = "Replace them with new ones"
+back = "Back"
+confirm = "Convert"
+nothing = "There is nothing to convert here. Go back and choose other files."
 
 [gui.progress]
 counter = "{index} of {total}"
 long_file = "Large files can take a few minutes."
 cancelling = "Cancelling… the current file stops now."
+cancel = "Cancel"
+elapsed = "This file: {clock}"
+current = "Now converting"
 
 [gui.result]
 kept = "its result already existed and was kept."
 no_summary = "the summary could not be written there. Check that the disk has free space."
 cannot_open = "ClearMD could not open {path}. Open it from your file browser."
+stat_converted = "Converted"
+stat_skipped = "Skipped"
+stat_failed = "Failed"
+stat_stopped = "Stopped"
+open = "Open results folder"
+again = "Convert more"
+all_good = "Every file was converted. Your results are in the ClearMD_Output folder."
+problems = "What needs your attention"
+column_what = "What happened"
 
 [gui.settings]
 not_saved = "ClearMD could not save the settings. Your changes apply until you close it."

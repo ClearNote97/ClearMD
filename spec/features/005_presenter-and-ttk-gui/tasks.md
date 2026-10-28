@@ -22,7 +22,7 @@
       test that the committed assets match it; the presenter's icon per row; the `clearmd-light/-dark`
       themes; rounded buttons and cards (image elements); the rail (logo, Clear·MD, the four steps, Settings,
       Help); the main view redone on it with the numbered, iconed list; the window icon (AC-22, AC-23).
-- [ ] **T05 — Plan, progress, result.** The three views on the presenter's models; Cancel; Open results folder
+- [x] **T05 — Plan, progress, result.** The three views on the presenter's models; Cancel; Open results folder
       (AC-07 – AC-12).
 - [ ] **T06 — Help, welcome, settings.** The three dialogs (AC-13 – AC-15).
 - [ ] **T07 — Keyboard and look.** Tab order, Enter, Esc, nothing only on hover, both themes checked (AC-17 –

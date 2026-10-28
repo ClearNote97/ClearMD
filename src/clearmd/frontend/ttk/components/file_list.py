@@ -43,7 +43,7 @@ class FileList(ttk.Frame):
         self._pictures: list[ImageTk.PhotoImage] = []
         keys = [f"c{i}" for i in range(len(self._columns))]
         self.tree = ttk.Treeview(self, columns=keys, height=height, selectmode="extended")
-        self.tree.column("#0", width=360, stretch=True)
+        self.tree.column("#0", width=300, stretch=False)  # the extra columns take what is left
         for key, column in zip(keys, self._columns, strict=True):
             self.tree.column(key, width=column.width, stretch=column.stretch, anchor="w")
         scroll = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
@@ -91,6 +91,17 @@ class FileList(ttk.Frame):
     def names(self) -> list[str]:
         """The names as listed (for tests)."""
         return [self._items[item].name for item in self.tree.get_children()]
+
+    def current(self) -> ListRow | None:
+        """The row with the keyboard focus or the first selected one."""
+        chosen = self.tree.selection() or ((self.tree.focus(),) if self.tree.focus() else ())
+        return self._items.get(chosen[0]) if chosen else None
+
+    def select_first(self) -> None:
+        children = self.tree.get_children()
+        if children:
+            self.tree.selection_set(children[0])
+            self.tree.focus(children[0])
 
     def selected(self) -> list[Any]:
         return [self._items[item].payload for item in self.tree.selection() if item in self._items]

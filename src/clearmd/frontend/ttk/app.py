@@ -44,6 +44,9 @@ from clearmd.frontend.ttk.layout import (
 )
 from clearmd.frontend.ttk.scheduler import Scheduler
 from clearmd.frontend.ttk.views.main import MainView
+from clearmd.frontend.ttk.views.plan import ReviewView
+from clearmd.frontend.ttk.views.progress import ConvertView
+from clearmd.frontend.ttk.views.result import ResultsView
 from clearmd.i18n import Catalog
 
 _NAMED_FONTS = ("TkDefaultFont", "TkTextFont", "TkMenuFont", "TkHeadingFont", "TkCaptionFont")
@@ -124,7 +127,25 @@ class TtkApp:
             on_pick_folder=self.pick_output_folder,
             on_convert=lambda: self.presenter.analyze(),
         )
-        self.main.pack(fill="both", expand=True)
+        self.review = ReviewView(
+            page,
+            fonts=self.fonts,
+            on_back=lambda: self.presenter.back(),
+            on_confirm=lambda overwrite: self.presenter.confirm(overwrite),
+        )
+        self.converting = ConvertView(
+            page, fonts=self.fonts, on_cancel=lambda: self.presenter.cancel()
+        )
+        self.results = ResultsView(
+            page,
+            fonts=self.fonts,
+            on_again=lambda: self.presenter.back(),
+            on_open=lambda: self.presenter.open_results(),
+        )
+        # One page per step (ADR-0027): Choose (also while analyzing), Review, Convert, Results.
+        self.pages: tuple[ttk.Frame, ...] = (self.main, self.review, self.converting, self.results)
+        self.page: ttk.Frame | None = None
+        self._show_page(self.main)
 
         # Files and folders dropped anywhere on the window (tkinterdnd2, ADR-0026).
         self.root.drop_target_register(DND_FILES)
@@ -178,7 +199,9 @@ class TtkApp:
         if Action.CONVERT in self.state.enabled:
             self.presenter.analyze()
         elif Action.CONFIRM in self.state.enabled:
-            self.presenter.confirm()
+            self.review.confirm.invoke()  # with the answer about existing results
+        elif Action.OPEN_RESULTS in self.state.enabled:
+            self.presenter.open_results()
 
     def show_help(self) -> None:
         """The help window (T06)."""
@@ -200,9 +223,16 @@ class TtkApp:
         self.scheduler.after(milliseconds, callback)
 
     def show_state(self, state: StateView) -> None:
+        previous = self.state
         self.state = state
         if state.state is not AppState.ANALYZING:
             self._scan = None
+        if previous is None or previous.step != state.step:
+            self.message.configure(text="")  # a message belongs to the step it was given in
+        if state.state is AppState.CONVERTING and (previous is None or previous.step != 3):
+            self.converting.clear()
+        page = self.main if state.state is AppState.ANALYZING else self.pages[state.step - 1]
+        self._show_page(page)
         self.rail.show_step(state.step)
         self._header()
         main = self.main
@@ -215,6 +245,11 @@ class TtkApp:
             (main.in_folder, Action.CHOOSE_OUTPUT),
             (main.pick, Action.CHOOSE_OUTPUT),
             (main.convert, Action.CONVERT),
+            (self.review.back, Action.BACK),
+            (self.review.confirm, Action.CONFIRM),
+            (self.converting.cancel, Action.CANCEL),
+            (self.results.again, Action.BACK),
+            (self.results.open, Action.OPEN_RESULTS),
             (self.rail.settings, Action.SETTINGS),
             (self.rail.help, Action.HELP),
         ):
@@ -231,13 +266,24 @@ class TtkApp:
         self._header()
 
     def show_plan(self, plan: PlanView) -> None:
-        self.last_plan = plan  # drawn by the plan view (T05)
+        self.last_plan = plan
+        self.review.show(plan)
 
     def show_progress(self, progress: ProgressView) -> None:
-        self.last_progress = progress  # drawn by the progress view (T05)
+        self.last_progress = progress
+        self.converting.show(progress)
 
     def show_result(self, result: ResultView) -> None:
-        self.last_result = result  # drawn by the result view (T05)
+        self.last_result = result
+        self.results.show(result)
+
+    def _show_page(self, page: ttk.Frame) -> None:
+        if page is self.page:
+            return
+        if self.page is not None:
+            self.page.pack_forget()
+        page.pack(fill="both", expand=True)
+        self.page = page
 
     def show_message(self, text: str) -> None:
         self.message.configure(text=text)
@@ -251,13 +297,15 @@ class TtkApp:
         self.root.configure(background=self.palette.ground)
         self.rail.apply_palette(self.palette)
         self.surface.apply_palette(self.palette)
-        self.main.apply_palette(self.palette)
+        for view in (self.main, self.review, self.results):
+            view.apply_palette(self.palette)
 
     def apply_language(self, catalog: Catalog) -> None:
         self.catalog = catalog
         self.root.title(catalog.text("gui.app.title"))
         self.rail.apply_language(catalog)
-        self.main.apply_language(catalog)
+        for view in (self.main, self.review, self.converting, self.results):
+            view.apply_language(catalog)
         self._header()
 
     def _header(self) -> None:

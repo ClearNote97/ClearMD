@@ -8,7 +8,7 @@ from typing import Any
 
 from clearmd.backend.schemas.errors import ErrorCode
 from clearmd.backend.schemas.events import BatchEvent, ConversionFinished, ConversionStarted
-from clearmd.backend.schemas.formats import FormatId
+from clearmd.backend.schemas.formats import EXTENSIONS, FormatId
 from clearmd.backend.schemas.models import (
     BatchPlan,
     BatchReport,
@@ -23,13 +23,18 @@ from clearmd.backend.schemas.settings import Settings, SettingsWarning
 NOW = datetime(2026, 10, 27, 12, 0)
 
 
-def planned(name: str, *, exists: bool = False, cost: float = 1.0) -> PlannedConversion:
-    source = Path("/docs") / name
+def planned(
+    name: str, *, exists: bool = False, cost: float = 1.0, folder: Path = Path("/docs")
+) -> PlannedConversion:
+    source = folder / name
+    output_root = folder / "ClearMD_Output"
     return PlannedConversion(
         source=source,
-        output_root=Path("/docs/ClearMD_Output"),
-        target=Path("/docs/ClearMD_Output/OutputMD") / f"{source.stem}.md",
-        detection=Detection(FormatId.PDF, DetectionMethod.EXTENSION),
+        output_root=output_root,
+        target=output_root / "OutputMD" / f"{source.stem}.md",
+        detection=Detection(
+            EXTENSIONS.get(source.suffix.lower(), FormatId.PDF), DetectionMethod.EXTENSION
+        ),
         exists=exists,
         cost=cost,
     )

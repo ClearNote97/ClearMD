@@ -45,7 +45,9 @@ from clearmd.frontend.presenter.models import (
     ResultRow,
     ResultView,
     RowKind,
+    Stat,
     StateView,
+    Tone,
 )
 from clearmd.frontend.presenter.ports import ApiBackend, Backend, View
 from clearmd.frontend.presenter.state import AppState, enabled_actions, step_of
@@ -84,7 +86,8 @@ class Presenter:
         self._report: BatchReport | None = None
         self._cancel: CancelToken | None = None
         self._generation = 0
-        self._current: tuple[int, int, str, float | None] | None = None  # index, total, name, left
+        # index, total, name, seconds left, icon
+        self._current: tuple[int, int, str, float | None, str] | None = None
         self._started_at = 0.0
         self._done = 0
 
@@ -198,7 +201,10 @@ class Presenter:
         def on_event(event: BatchEvent) -> None:
             if isinstance(event, ConversionStarted):
                 left, name = event.seconds_left, event.item.source.name
-                self._later(generation, lambda: self._started(event.index, event.total, name, left))
+                icon = icon_of_format(event.item.detection.format)
+                self._later(
+                    generation, lambda: self._started(event.index, event.total, name, left, icon)
+                )
             elif isinstance(event, ConversionFinished):
                 self._later(generation, self._finished_one)
 
@@ -292,8 +298,8 @@ class Presenter:
         self._view.show_plan(self._plan_view(plan))
         self._set(AppState.WAITING_DECISION)
 
-    def _started(self, index: int, total: int, name: str, left: float | None) -> None:
-        self._current = (index, total, name, left)
+    def _started(self, index: int, total: int, name: str, left: float | None, icon: str) -> None:
+        self._current = (index, total, name, left, icon)
         self._started_at = self._clock()
         self._show_progress()
 
@@ -368,7 +374,7 @@ class Presenter:
     def _show_progress(self) -> None:
         if self._current is None:
             return
-        index, total, name, left = self._current
+        index, total, name, left, icon = self._current
         elapsed = self._clock() - self._started_at
         long_file = elapsed >= LONG_FILE_SECONDS
         self._view.show_progress(
@@ -383,6 +389,7 @@ class Presenter:
                 ),
                 elapsed=self.catalog.clock(elapsed) if long_file else None,
                 long_file=self.catalog.text("gui.progress.long_file") if long_file else None,
+                icon=icon,
             )
         )
 
@@ -412,7 +419,18 @@ class Presenter:
             existing=existing,
         )
         asks = existing > 0 and self.settings.on_existing_output == "ask"
-        return PlanView(summary, tuple(rows), asks)
+        stats = (
+            self._stat("gui.plan.stat_convert", len(plan.conversions), Tone.ACCENT),
+            self._stat("gui.plan.stat_skipped", len(plan.skipped) + len(plan.input_errors)),
+            self._stat("gui.plan.stat_existing", existing, Tone.NEUTRAL),
+        )
+        return PlanView(summary, tuple(rows), asks, stats)
+
+    def _stat(self, key: str, value: int, tone: Tone = Tone.WARNING) -> Stat:
+        """A figure; a warning or a problem only when it is not zero."""
+        return Stat(
+            self.catalog.text(key), value, tone if value or tone is Tone.ACCENT else Tone.NEUTRAL
+        )
 
     def _format(self, item: PlannedConversion) -> str:
         shown = item.detection.format.value.upper()
@@ -454,7 +472,15 @@ class Presenter:
         if count[OutcomeStatus.STOPPED]:
             counts += self.catalog.text("cli.summary_stopped", stopped=count[OutcomeStatus.STOPPED])
         headline = self.catalog.text(f"gui.state.{state.value}")
-        return ResultView(headline, counts, tuple(rows), self._result_folders(report))
+        stats = [
+            self._stat("gui.result.stat_converted", count[OutcomeStatus.CONVERTED], Tone.ACCENT),
+            self._stat("gui.result.stat_skipped", len(report.skipped) + count[OutcomeStatus.KEPT]),
+            self._stat("gui.result.stat_failed", count[OutcomeStatus.FAILED], Tone.DANGER),
+        ]
+        if count[OutcomeStatus.STOPPED]:
+            stats.append(self._stat("gui.result.stat_stopped", count[OutcomeStatus.STOPPED]))
+        folders = self._result_folders(report)
+        return ResultView(headline, counts, tuple(rows), folders, tuple(stats))
 
     def _result_folders(self, report: BatchReport | None = None) -> tuple[Path, ...]:
         """The ClearMD_Output folders that hold converted files (none before a batch)."""
