@@ -25,12 +25,12 @@
 - [x] **T05 — Plan, progress, result.** The three views on the presenter's models; Cancel; Open results folder
       (AC-07 – AC-12).
 - [x] **T06 — Help, welcome, settings.** The three dialogs (AC-13 – AC-15).
-- [ ] **T07 — Keyboard and look.** Tab order, Enter, Esc, nothing only on hover, both themes checked (AC-17 –
+- [x] **T07 — Keyboard and look.** Tab order, Enter, Esc, nothing only on hover, both themes checked (AC-17 –
       AC-19).
 
 ## Slice C — Shown and closed
 
-- [ ] **T08 — Screenshots.** The script under xvfb; `docs/screenshots/005/` (AC-21).
+- [x] **T08 — Screenshots.** The script under xvfb; `docs/screenshots/005/` (AC-21).
 - [ ] **T09 — Acceptance and a real batch.** `tests/acceptance/test_005_ttk_gui.py`, one test per AC-01 … AC-23;
       the same outputs as the CLI (AC-20).
 - [ ] **T10 — Close the feature.** READMEs (with the screenshots), architecture, roadmap, spec ticked; gate;

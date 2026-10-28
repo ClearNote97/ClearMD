@@ -1,6 +1,8 @@
 <div align="center">
 
-# 📝 ClearMD
+<img src="./src/clearmd/frontend/assets/logo/clearmd-app-128.png" alt="ClearMD" width="96">
+
+# Clear·MD
 
 **Convierte tus documentos a Markdown — 100% local: ClearMD nunca usa internet.**
 
@@ -80,7 +82,17 @@ El valor está en el método — un producto pequeño construido como uno serio:
 
 ## 👀 Un vistazo
 
-Una carpeta mixta, con un PDF protegido con contraseña, un documento sin extensión, dos archivos que quedarían
+**La app de escritorio** — un lote real, desde elegir una carpeta hasta los resultados (sin internet):
+
+![ClearMD convirtiendo una carpeta](./docs/screenshots/005/flow-light-es.gif)
+
+| Elegir | Revisar | Resultados |
+|---|---|---|
+| ![Elegir](./docs/screenshots/005/1-choose-light-es.png) | ![Revisar](./docs/screenshots/005/2-review-light-es.png) | ![Resultados](./docs/screenshots/005/4-results-dark-es.png) |
+
+Claro y oscuro, español e inglés: todas las pantallas están en [`docs/screenshots/005/`](./docs/screenshots/005/).
+
+**La línea de comandos** — una carpeta mixta, con un PDF protegido con contraseña, un documento sin extensión, dos archivos que quedarían
 con el mismo nombre y una bomba ZIP disfrazada de Word:
 
 ```text
@@ -123,8 +135,8 @@ anteriores._
 | **006** CI + ejecutables para Windows y Linux | ⏳ | |
 | **007–008** Apps en PySide6 y flet | ⏳ | |
 
-El plan completo está en el [roadmap](./spec/roadmap.md). Hoy ClearMD es una **herramienta de línea de comandos**;
-las apps de escritorio vienen después.
+El plan completo está en el [roadmap](./spec/roadmap.md). ClearMD tiene **línea de comandos** y su primera **app de
+escritorio** (`clearmd-ttk`); los ejecutables para Windows y Linux vienen después.
 
 ---
 
@@ -136,6 +148,7 @@ las apps de escritorio vienen después.
 uv tool install git+https://github.com/ClearNote97/ClearMD   # recomendado: la misma herramienta del stack
 # o: pip install git+https://github.com/ClearNote97/ClearMD  (Python 3.12–3.14)
 
+clearmd-ttk                                  # la app de escritorio
 clearmd informe.pdf notas.docx               # archivos
 clearmd ~/Documentos/proyecto                # una carpeta completa, con subcarpetas
 clearmd tesis/ --output-root ~/Escritorio    # resultados en ~/Escritorio/ClearMD_Output
@@ -202,7 +215,8 @@ ClearMD_Output/          junto a lo que elegiste (o en --output-root)
 **[magika](https://github.com/google/magika)** (detección por contenido) ·
 **[trafilatura](https://github.com/adbar/trafilatura)** (encontrar el artículo de una página) ·
 **[pylatexenc](https://github.com/phfaist/pylatexenc)** (lectura de LaTeX) · **psutil** (límites del worker) ·
-**platformdirs** · **pytest · ruff · mypy --strict** · **uv** · **Dev Container + Docker**.
+**platformdirs** · **[ttkbootstrap](https://github.com/israel-dryer/ttkbootstrap)** + **tkinterdnd2** + **Pillow**
+(la app de escritorio) · **pytest · ruff · mypy --strict** · **uv** · **Dev Container + Docker**.
 
 **Plantilla base:** [ClearNote_Dev](https://github.com/ClearNote97/ClearNote_Dev) — mi plantilla insignia de
 desarrollo en Python bajo Spec-Driven Development. ClearMD nació de ella y se podó: sin base de datos, sin backend
@@ -229,6 +243,9 @@ web — una herramienta de escritorio ([ADR-0009](./docs/decisions/0009-template
   | [pylatexenc](https://github.com/phfaist/pylatexenc) (Philippe Faist) | lee el LaTeX para el conversor propio de `.tex` | MIT |
   | [psutil](https://github.com/giampaolo/psutil) (Giampaolo Rodolà) | mide la memoria del worker | BSD-3-Clause |
   | [platformdirs](https://github.com/tox-dev/platformdirs) | ubica los ajustes en cada sistema | MIT |
+  | [ttkbootstrap](https://github.com/israel-dryer/ttkbootstrap) (Israel Dryer) | temas para la app de escritorio (tkinter) | MIT (partes Apache-2.0 o BSD-2-Clause) |
+  | [tkinterdnd2](https://github.com/Eliav2/tkinterdnd2) (con tkdnd) | soltar archivos en la ventana | MIT |
+  | [Pillow](https://github.com/python-pillow/Pillow) | dibuja las formas redondeadas de la ventana y los íconos de ClearMD | MIT-CMU |
 
   Cada una trae sus propias dependencias, con sus licencias (todas permisivas); `uv.lock` las lista.
 

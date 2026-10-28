@@ -1,6 +1,8 @@
 <div align="center">
 
-# 📝 ClearMD
+<img src="./src/clearmd/frontend/assets/logo/clearmd-app-128.png" alt="ClearMD" width="96">
+
+# Clear·MD
 
 **Turn your documents into Markdown — 100% local: ClearMD never uses the internet.**
 
@@ -77,7 +79,17 @@ The value is in the method — a small product built like a serious one:
 
 ## 👀 A look
 
-A mixed folder, with a password-protected PDF, a document without extension, two files that would get the same
+**The desktop app** — a real batch, from choosing a folder to the results (no internet involved):
+
+![ClearMD converting a folder](./docs/screenshots/005/flow-light-en.gif)
+
+| Choose | Review | Results |
+|---|---|---|
+| ![Choose](./docs/screenshots/005/1-choose-light-en.png) | ![Review](./docs/screenshots/005/2-review-light-en.png) | ![Results](./docs/screenshots/005/4-results-dark-en.png) |
+
+Light and dark, English and Spanish: every screen is in [`docs/screenshots/005/`](./docs/screenshots/005/).
+
+**The command line** — a mixed folder, with a password-protected PDF, a document without extension, two files that would get the same
 name, and a zip bomb disguised as a Word file:
 
 ```text
@@ -119,8 +131,8 @@ _Plus the failed and skipped files with a plain-words reason, and the history of
 | **006** CI + Windows/Linux executables | ⏳ | |
 | **007–008** PySide6 and flet apps | ⏳ | |
 
-Full plan in the [roadmap](./spec/roadmap.md). Today ClearMD is a **command-line tool**; the desktop apps come
-next.
+Full plan in the [roadmap](./spec/roadmap.md). ClearMD has a **command line** and its first **desktop app**
+(`clearmd-ttk`); the Windows and Linux executables come next.
 
 ---
 
@@ -132,6 +144,7 @@ next.
 uv tool install git+https://github.com/ClearNote97/ClearMD   # recommended: same tool as the dev stack
 # or: pip install git+https://github.com/ClearNote97/ClearMD  (Python 3.12–3.14)
 
+clearmd-ttk                              # the desktop app
 clearmd report.pdf notes.docx            # files
 clearmd ~/Documents/project              # a whole folder, subfolders included
 clearmd thesis/ --output-root ~/Desktop  # results in ~/Desktop/ClearMD_Output
@@ -198,7 +211,8 @@ ClearMD_Output/          next to what you chose (or in --output-root)
 **[magika](https://github.com/google/magika)** (detection by content) ·
 **[trafilatura](https://github.com/adbar/trafilatura)** (finding a page's article) ·
 **[pylatexenc](https://github.com/phfaist/pylatexenc)** (reading LaTeX) · **psutil** (worker limits) ·
-**platformdirs** · **pytest · ruff · mypy --strict** · **uv** · **Dev Container + Docker**.
+**platformdirs** · **[ttkbootstrap](https://github.com/israel-dryer/ttkbootstrap)** + **tkinterdnd2** + **Pillow**
+(the desktop app) · **pytest · ruff · mypy --strict** · **uv** · **Dev Container + Docker**.
 
 **Base template:** [ClearNote_Dev](https://github.com/ClearNote97/ClearNote_Dev) — my flagship template for
 Python development under Spec-Driven Development. ClearMD was born from it and pruned: no database, no web
@@ -225,6 +239,9 @@ backend — a desktop tool ([ADR-0009](./docs/decisions/0009-template-pruning.md
   | [pylatexenc](https://github.com/phfaist/pylatexenc) (Philippe Faist) | reads LaTeX for ClearMD's `.tex` converter | MIT |
   | [psutil](https://github.com/giampaolo/psutil) (Giampaolo Rodolà) | measures the worker's memory | BSD-3-Clause |
   | [platformdirs](https://github.com/tox-dev/platformdirs) | finds where the settings live on each system | MIT |
+  | [ttkbootstrap](https://github.com/israel-dryer/ttkbootstrap) (Israel Dryer) | themes for the desktop app (tkinter) | MIT (parts Apache-2.0 or BSD-2-Clause) |
+  | [tkinterdnd2](https://github.com/Eliav2/tkinterdnd2) (with tkdnd) | dropping files on the window | MIT |
+  | [Pillow](https://github.com/python-pillow/Pillow) | draws the window's rounded shapes and ClearMD's icons | MIT-CMU |
 
   Each one brings its own dependencies, under their own licenses (all permissive); `uv.lock` lists them.
 
