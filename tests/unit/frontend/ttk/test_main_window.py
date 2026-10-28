@@ -549,6 +549,7 @@ def test_without_tkdnd_the_window_still_works_without_dropping(
     from tkinterdnd2 import TkinterDnD
 
     def unavailable() -> None:
+        tk.Tk()  # as in tkinterdnd2: the interpreter exists before loading tkdnd fails
         raise RuntimeError("Unable to load tkdnd library.")  # e.g. a Tk it was not built for
 
     monkeypatch.setattr(TkinterDnD, "Tk", unavailable)
@@ -558,5 +559,8 @@ def test_without_tkdnd_the_window_still_works_without_dropping(
         assert app.drops is False
         app.presenter.add_paths([tmp_path])
         assert app.main.inputs.names() == [f"{tmp_path.name}/"]
+        assert all(
+            app.main.inputs.tree.item(i, "image") for i in app.main.inputs.tree.get_children()
+        )
     finally:
         app.close()

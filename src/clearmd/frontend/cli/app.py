@@ -270,6 +270,9 @@ def _run_cancellable(
     cancel = CancelToken()
     reports: list[BatchReport] = []
     errors: list[BaseException] = []
+    # An event, not Thread.join: on Python 3.12 a join interrupted by Ctrl+C marks the thread as
+    # finished, and the next join returns before the batch has ended (CI of feature 006).
+    done = threading.Event()
 
     def work() -> None:
         try:
@@ -284,16 +287,17 @@ def _run_cancellable(
             errors.append(error)
         else:
             reports.append(report)
+        finally:
+            done.set()
 
-    thread = threading.Thread(target=work, name="clearmd-batch", daemon=True)
-    thread.start()
+    threading.Thread(target=work, name="clearmd-batch", daemon=True).start()
     try:
-        while thread.is_alive():
-            thread.join(0.2)
+        while not done.wait(0.2):
+            pass
     except KeyboardInterrupt:
         cancel.cancel()
         print(catalog.text("cli.cancelling"), file=stream)
-        thread.join()  # a second Ctrl+C here stops the process for good
+        done.wait()  # a second Ctrl+C here stops the process for good
     if errors:
         raise errors[0]
     return reports[0]

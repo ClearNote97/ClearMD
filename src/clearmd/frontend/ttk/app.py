@@ -412,6 +412,11 @@ def _root_with_drop() -> Any:
     try:
         return TkinterDnD.Tk()
     except (RuntimeError, tk.TclError):
+        # Its Tk interpreter was created before tkdnd failed, and it is now tkinter's default
+        # root: images made without a master would go there. It is closed first.
+        stale = getattr(tk, "_default_root", None)
+        if stale is not None:
+            stale.destroy()
         root: Any = tk.Tk()
         root.TkdndVersion = None
         return root
