@@ -16,7 +16,7 @@ from clearmd.backend.schemas.models import (
     PlannedConversion,
 )
 from clearmd.backend.schemas.settings import Settings, SettingsWarning
-from clearmd.backend.services import settings_store
+from clearmd.backend.services import folders, settings_store
 from clearmd.backend.services.rejections import (
     failed_line,
     skip_action,
@@ -34,8 +34,10 @@ __all__ = [
     "Strategy",
     "failed_line",
     "load_settings",
+    "open_folder",
     "plan_batch",
     "run_batch",
+    "save_settings",
     "settings_path",
     "skip_action",
     "skip_reason",
@@ -51,6 +53,16 @@ def load_settings() -> tuple[Settings, tuple[SettingsWarning, ...]]:
 
 def settings_path() -> Path:
     return settings_store.settings_path()
+
+
+def save_settings(settings: Settings) -> None:
+    """Write the shared settings.toml atomically (the GUIs, ADR-0026); ``OSError`` if it cannot."""
+    settings_store.save_settings(settings)
+
+
+def open_folder(path: Path) -> None:
+    """Show a results folder in the system file browser (only a real folder; ``ValueError``)."""
+    folders.open_folder(path)
 
 
 def _ignore(event: BatchEvent) -> None:

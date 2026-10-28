@@ -15,6 +15,8 @@ class Settings:
     recursive: bool = True
     html_strategy: str = "full"
     show_welcome: bool = True
+    # The folder the user last picked for the results; empty: next to the originals (ADR-0016/0026).
+    last_output_folder: str = ""
 
 
 # The accepted values of each text setting; booleans accept only true/false.
@@ -26,6 +28,11 @@ CHOICES: Mapping[str, frozenset[str]] = MappingProxyType(
         "html_strategy": frozenset({"full", "article"}),
     }
 )
+
+
+# Settings that hold a path the user chose, not one of a few choices: any plain text up to a length.
+PATH_SETTINGS: frozenset[str] = frozenset({"last_output_folder"})
+MAX_PATH_LENGTH = 4096
 
 
 class SettingsProblem(StrEnum):

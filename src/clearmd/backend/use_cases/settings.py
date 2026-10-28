@@ -1,9 +1,17 @@
 """Parse and serialize settings.toml. A bad file never stops the app (ADR-0012, AC-33)."""
 
 import tomllib
+import unicodedata
 from dataclasses import fields, replace
 
-from clearmd.backend.schemas.settings import CHOICES, Settings, SettingsProblem, SettingsWarning
+from clearmd.backend.schemas.settings import (
+    CHOICES,
+    MAX_PATH_LENGTH,
+    PATH_SETTINGS,
+    Settings,
+    SettingsProblem,
+    SettingsWarning,
+)
 
 FILE_KEY = "settings.toml"
 
@@ -11,7 +19,18 @@ FILE_KEY = "settings.toml"
 def _valid(name: str, value: object, default: object) -> bool:
     if isinstance(default, bool):
         return isinstance(value, bool)
+    if name in PATH_SETTINGS:  # a path: plain text, no control characters, a sane length
+        return (
+            isinstance(value, str)
+            and len(value) <= MAX_PATH_LENGTH
+            and not any(unicodedata.category(char) == "Cc" for char in value)
+        )
     return isinstance(value, str) and value in CHOICES[name]
+
+
+def _toml_string(value: str) -> str:
+    """A TOML basic string: backslashes and quotes escaped, so a Windows path reads back as is."""
+    return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
 def parse_settings(text: str) -> tuple[Settings, tuple[SettingsWarning, ...]]:
@@ -34,10 +53,14 @@ def parse_settings(text: str) -> tuple[Settings, tuple[SettingsWarning, ...]]:
 
 
 def serialize_settings(settings: Settings) -> str:
-    """Flat TOML, one setting per line, in the declared order (the settings window, feature 005)."""
+    """Flat TOML, one setting per line, in the declared order (the settings window, feature 005).
+    A value that reading would refuse is never written (``ValueError``)."""
+    defaults = Settings()
     lines = []
     for field in fields(Settings):
         value = getattr(settings, field.name)
-        shown = ("true" if value else "false") if isinstance(value, bool) else f'"{value}"'
+        if not _valid(field.name, value, getattr(defaults, field.name)):
+            raise ValueError(f"invalid value for {field.name}: {value!r}")
+        shown = ("true" if value else "false") if isinstance(value, bool) else _toml_string(value)
         lines.append(f"{field.name} = {shown}")
     return "\n".join(lines) + "\n"

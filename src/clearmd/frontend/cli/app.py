@@ -7,8 +7,6 @@ and cancels it (AC-26).
 
 import argparse
 import multiprocessing
-import os
-import subprocess
 import sys
 import threading
 from collections.abc import Callable, Sequence
@@ -21,6 +19,7 @@ from clearmd.backend.api import (
     Strategy,
     failed_line,
     load_settings,
+    open_folder,
     plan_batch,
     run_batch,
     skipped_line,
@@ -102,15 +101,6 @@ def _ask(prompt: str) -> str | None:
     print(prompt, end="", file=sys.stderr, flush=True)
     line = sys.stdin.readline()
     return line.strip() if line else None
-
-
-def _open_folder(path: Path) -> None:
-    """Show a folder in the system file browser. Local only: no network (ADR-0005)."""
-    if sys.platform == "win32":
-        os.startfile(path)  # type: ignore[attr-defined]  # Windows only
-        return
-    opener = "open" if sys.platform == "darwin" else "xdg-open"
-    subprocess.Popen([opener, str(path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 # --- Output ----------------------------------------------------------------------------------
@@ -369,5 +359,5 @@ def _main(argv: Sequence[str] | None) -> int:
     _print_summary(catalog, report)
     if args.open:
         for root in _output_roots(report):
-            _open_folder(root)
+            open_folder(root)
     return _exit_code(report)

@@ -563,7 +563,7 @@ def test_ac_36_open_shows_the_results_folder_only_when_asked(
     from clearmd.frontend.cli import app
 
     opened: list[Path] = []
-    monkeypatch.setattr(app, "_open_folder", opened.append)
+    monkeypatch.setattr(app, "open_folder", opened.append)
     source = put(workdir, "sample.txt", "a.txt")
     assert main([str(source), "--quiet"]) == 0
     assert opened == []

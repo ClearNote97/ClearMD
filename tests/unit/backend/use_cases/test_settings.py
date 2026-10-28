@@ -70,3 +70,44 @@ def test_serialization_round_trips_and_is_valid_toml() -> None:
     text = serialize_settings(custom)
     assert tomllib.loads(text)["language"] == "es"
     assert parse_settings(text) == (custom, ())
+
+
+# --- The remembered output folder (feature 005, ADR-0016/0026) -----------------------------------
+
+
+def test_the_remembered_output_folder_is_empty_by_default() -> None:
+    assert Settings().last_output_folder == ""
+
+
+@pytest.mark.parametrize(
+    "folder",
+    [
+        "/home/ana/Resultados",
+        "C:\\Users\\Ana\\Documents\\Tesis",
+        'D:\\Datos "2026"\\salida',
+        "/tmp/it's here",
+        "C:\\Users\\Ana\\Ñandú y café",
+    ],
+)
+def test_a_remembered_folder_round_trips_whatever_it_holds(folder: str) -> None:
+    text = serialize_settings(Settings(last_output_folder=folder))
+    assert tomllib.loads(text)["last_output_folder"] == folder
+    assert parse_settings(text) == (Settings(last_output_folder=folder), ())
+
+
+@pytest.mark.parametrize("folder", ["a\x00b", "a\nb", "x" * 5000, 42])
+def test_a_remembered_folder_that_is_not_a_plain_path_is_ignored(folder: object) -> None:
+    value = f'"{folder}"' if isinstance(folder, str) else str(folder)
+    settings, warnings = parse_settings(
+        f"last_output_folder = {value}\n".replace("\x00", "\\u0000")
+    )
+    assert settings.last_output_folder == ""
+    assert [w.problem for w in warnings] in (
+        [SettingsProblem.INVALID_VALUE],
+        [SettingsProblem.UNREADABLE],
+    )
+
+
+def test_saving_refuses_a_value_reading_would_refuse() -> None:
+    with pytest.raises(ValueError):
+        serialize_settings(Settings(language="fr"))

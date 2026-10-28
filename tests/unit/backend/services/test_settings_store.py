@@ -44,3 +44,41 @@ def test_a_non_utf8_file_means_defaults_and_a_warning(monkeypatch: pytest.Monkey
     settings, warnings = load_settings()
     assert settings == Settings()
     assert [w.problem for w in warnings] == [SettingsProblem.UNREADABLE]
+
+
+# --- Writing (feature 005, ADR-0026) -------------------------------------------------------------
+
+
+def test_saved_settings_are_read_back() -> None:
+    from clearmd.backend.services.settings_store import save_settings
+
+    chosen = Settings(language="es", theme="dark", last_output_folder="/home/ana/Resultados")
+    save_settings(chosen)
+    assert load_settings() == (chosen, ())
+
+
+def test_saving_is_atomic_and_leaves_no_temporary_file(monkeypatch: pytest.MonkeyPatch) -> None:
+    import os
+
+    from clearmd.backend.services.settings_store import save_settings
+
+    save_settings(Settings(language="es"))
+    before = settings_path().read_text(encoding="utf-8")
+
+    def broken_replace(source: object, target: object) -> None:
+        raise OSError("disk full")
+
+    monkeypatch.setattr(os, "replace", broken_replace)
+    with pytest.raises(OSError):
+        save_settings(Settings(language="en", theme="dark"))
+    # The old file is intact, and the half-written one is gone.
+    assert settings_path().read_text(encoding="utf-8") == before
+    assert sorted(p.name for p in settings_path().parent.iterdir()) == ["settings.toml"]
+
+
+def test_saving_creates_the_folder() -> None:
+    from clearmd.backend.services.settings_store import save_settings
+
+    assert not settings_path().parent.exists()
+    save_settings(Settings())
+    assert settings_path().is_file()
