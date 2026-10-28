@@ -1,5 +1,6 @@
 """The committed logo and icons are exactly what ClearMD's own script draws (ADR-0027)."""
 
+import hashlib
 from importlib.resources import files
 
 import pytest
@@ -9,11 +10,16 @@ from clearmd.frontend.presenter.icons import ICONS
 
 ASSETS = files("clearmd.frontend") / "assets"
 
-pytestmark = pytest.mark.skipif(
-    not make_assets.FONT.exists(), reason="the icons' letters need the dev container's font"
+
+def _same_font() -> bool:
+    if not make_assets.FONT.exists():
+        return False
+    return hashlib.sha256(make_assets.FONT.read_bytes()).hexdigest() == make_assets.FONT_SHA256
+
+
+@pytest.mark.skipif(
+    not _same_font(), reason="the icons' letters are drawn with the dev container's font"
 )
-
-
 def test_the_committed_assets_match_the_script() -> None:
     drawn = make_assets.assets()
     stale = [path for path, data in drawn.items() if (ASSETS / path).read_bytes() != data]

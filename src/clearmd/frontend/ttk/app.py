@@ -262,6 +262,7 @@ class TtkApp:
             return
         if self.dialog is not None:
             self.dialog.close()  # its answer counts ("Don't show again")
+        self.presenter.shutdown()
         if self.state is not None and self.state.state is AppState.CONVERTING:
             self._closing_since = time.monotonic()
             self.presenter.cancel()

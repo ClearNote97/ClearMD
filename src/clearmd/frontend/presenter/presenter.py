@@ -92,7 +92,8 @@ class Presenter:
         self._started_at = 0.0
         self._done = 0
         self._theme: str | None = None
-        self._scan_count: int | None = None  # the latest count, shown at most every SCAN_MS
+        self._shutting_down = False  # the window is closing: nothing is opened any more
+        self._scan_count: tuple[int, int] | None = None  # (generation, latest count), SCAN_MS
 
     # --- Start -----------------------------------------------------------------------------------
 
@@ -262,6 +263,11 @@ class Presenter:
             self._cancel.cancel()
             self._view.show_message(self.catalog.text("gui.progress.cancelling"))
 
+    def shutdown(self) -> None:
+        """The window is closing: a batch may still end (its summary is written), but nothing
+        opens afterwards (adversarial review of 005)."""
+        self._shutting_down = True
+
     def back(self) -> None:
         """From the plan or the result, to the inputs again (they are kept)."""
         if self.state in {AppState.ANALYZING, AppState.CONVERTING}:
@@ -327,18 +333,17 @@ class Presenter:
     def _scanned(self, generation: int, found: int) -> None:
         """One event per folder: the latest count is shown at most every SCAN_MS (a large tree
         would otherwise queue seconds of redrawing on the UI thread)."""
-        pending = self._scan_count is not None
-        self._scan_count = found
+        pending = self._scan_count is not None and self._scan_count[0] == generation
+        self._scan_count = (generation, found)
         if not pending:
             self._view.after(SCAN_MS, lambda: self._show_scan_count(generation))
 
     def _show_scan_count(self, generation: int) -> None:
-        found, self._scan_count = self._scan_count, None
-        if (
-            generation == self._generation
-            and self.state is AppState.ANALYZING
-            and found is not None
-        ):
+        if self._scan_count is None or self._scan_count[0] != generation:
+            return  # an older analysis's timer: the count belongs to another one
+        found = self._scan_count[1]
+        self._scan_count = None
+        if generation == self._generation and self.state is AppState.ANALYZING:
             self._view.show_scan(self.catalog.text("gui.scan.found", count=found))
 
     def _planned(self, plan: BatchPlan) -> None:
@@ -376,7 +381,8 @@ class Presenter:
         )
         self._view.show_result(self._result_view(report, state))
         self._set(state)
-        if state is not AppState.CANCELLED and self.settings.open_output_when_done:
+        opens = self.settings.open_output_when_done and not self._shutting_down
+        if state is not AppState.CANCELLED and opens:
             self.open_results()
 
     def _unexpected(self, error: Exception) -> None:

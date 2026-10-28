@@ -60,6 +60,9 @@ class ResultsView(ttk.Frame):
         self._actions = actions
 
     def show(self, result: ResultView) -> None:
+        tree = self.problems.tree
+        selected = tree.index(tree.selection()[0]) if tree.selection() else 0
+        keep = len(tree.get_children()) == len(result.rows)  # the same result again (settings)
         self.stats.show(result.stats)
         for widget in (self.all_good, self.problems_title, self.problems, self.detail):
             widget.pack_forget()
@@ -70,7 +73,10 @@ class ResultsView(ttk.Frame):
                 [ListRow(row.icon, row.name, (row.detail,), tag="warning") for row in result.rows]
             )
             self.detail.pack(fill="x", pady=(SPACE, 0), before=self._actions)
-            self.problems.select_first()
+            children = tree.get_children()
+            row = children[selected if keep and selected < len(children) else 0]
+            tree.selection_set(row)
+            tree.focus(row)
             self._show_detail()
         else:
             self.all_good.pack(fill="x", pady=(GAP, 0), before=self._actions)

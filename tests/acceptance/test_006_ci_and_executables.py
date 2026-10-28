@@ -31,7 +31,7 @@ def test_ac_01_ci_runs_every_check_on_linux_and_windows_with_pinned_actions() ->
 
 def test_ac_02_two_one_file_programs_per_system() -> None:
     spec = (PACKAGING / "clearmd.spec").read_text(encoding="utf-8")
-    assert 'name="ClearMD"' in spec and 'name="clearmd"' in spec
+    assert 'name="ClearMD"' in spec and 'name="clearmd-cli"' in spec
     assert "console=False" in spec and "console=True" in spec
     assert "Splash(" in spec and "clearmd.ico" in spec
     release = workflow("release.yml")

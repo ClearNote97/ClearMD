@@ -616,3 +616,33 @@ def test_s2_names_are_shown_with_invisible_characters_escaped() -> None:
     assert names == ["x\\u202egpj.exe", "a\\nb.pdf"] or all(
         "‮" not in name and "\n" not in name for name in names
     )
+
+
+# --- Adversarial verification of the fixes (A-*) -------------------------------------------------
+
+
+def test_a1_a_window_closing_never_opens_the_results_afterwards() -> None:
+    fake = FakeBackend(settings=Settings(open_output_when_done=True))
+    presenter, view, _, _ = make(fake)
+    presenter.add_paths([Path("/docs")])
+    presenter.analyze()
+    view.drain()
+    presenter.shutdown()  # the window is closing: the batch may still finish normally
+    presenter.confirm()
+    view.drain()
+    assert view.last("state").state is AppState.FINISHED
+    assert fake.opened == []
+
+
+def test_a2_a_cancelled_analysis_never_swallows_the_next_ones_count() -> None:
+    presenter, view, _, _ = held()
+    presenter.add_paths([Path("/docs")])
+    presenter.analyze()
+    presenter._scanned(presenter._generation, 7)  # a count arrives: its timer is pending
+    presenter.cancel()
+    presenter.analyze()
+    presenter._scanned(presenter._generation, 1234)  # the new analysis's count
+    for _ in range(3):
+        view.drain(timers=True)  # the old timer fires first
+    scans = [value for call, value in view.calls if call == "scan"]
+    assert any("1234" in text for text in scans)

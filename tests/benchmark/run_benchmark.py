@@ -21,7 +21,6 @@ import json
 import multiprocessing
 import platform
 import random
-import resource
 import statistics
 import sys
 import tempfile
@@ -554,6 +553,12 @@ CASES = [
 
 
 def _peak_rss_mib() -> float:
+    if sys.platform == "win32":  # no resource module: the peak working set instead
+        import psutil
+
+        return float(psutil.Process().memory_info().peak_wset) / MIB
+    import resource
+
     # ru_maxrss is in KiB on Linux.
     return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
 

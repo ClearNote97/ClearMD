@@ -25,7 +25,8 @@ PyInstaller only builds for the system it runs on.
 ### The executables (`packaging/clearmd.spec`, `.github/workflows/release.yml`)
 
 - **PyInstaller, one file per program**: `ClearMD` (the desktop app: no console window, the app
-  icon, a splash while it unpacks — ADR-0026) and `clearmd` (the command line). One file is what
+  icon, a splash while it unpacks — ADR-0026) and `clearmd-cli` (the command line: not `clearmd`,
+  because Windows file names ignore case and it would replace `ClearMD.exe`). One file is what
   a non-technical user can download and open; the cost is a few seconds of unpacking at start.
   (PySide6 will need *onedir* for its license, ADR-0003: that is feature 007's.)
 - The worker process (ADR-0015) runs inside the same executable: `multiprocessing` with *spawn*

@@ -11,6 +11,9 @@ on:
 permissions:
   contents: read
 
+env:
+  UV_PYTHON_PREFERENCE: only-managed # uv's own Python (with tkinter), never the runner's
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true

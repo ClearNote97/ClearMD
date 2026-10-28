@@ -17,6 +17,8 @@ from PIL import Image, ImageDraw, ImageFont
 
 ASSETS = Path(__file__).resolve().parents[2] / "src" / "clearmd" / "frontend" / "assets"
 FONT = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")
+# The dev container's DejaVu Sans Bold (Debian 12): another version draws the letters differently.
+FONT_SHA256 = "0d977336a6d5fba34eab8e3199eb218327161b5143749f802982c2bc34df0c96"
 SUPERSAMPLE = 8  # drawn this many times larger, then reduced: smooth edges
 
 TEAL = "#0F766E"

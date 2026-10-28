@@ -8,7 +8,7 @@
   ci.yml                    # lint + types (once); tests: Linux/Windows × Python 3.12/3.14
   release.yml               # build + check per system; publish on a v* tag
 packaging/
-  clearmd.spec              # PyInstaller: ClearMD (window, splash, icon) and clearmd (console)
+  clearmd.spec              # PyInstaller: ClearMD (window, splash, icon) and clearmd-cli
   launch_gui.py, launch_cli.py
   check_executables.sh      # a real batch with the CLI; the window with --smoke
   package.sh                # the release files of one system

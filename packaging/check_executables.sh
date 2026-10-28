@@ -20,7 +20,7 @@ cp "$here/tests/fixtures/tex/paper.tex" "$work/in/"
 cp "$here/tests/fixtures/odt/report.odt" "$work/in/"
 expected=$(ls "$work/in" | wc -l)
 
-"$dist/clearmd$suffix" "$work/in" --lang es
+"$dist/clearmd-cli$suffix" "$work/in" --lang es
 written=$(find "$work/ClearMD_Output/OutputMD" -name '*.md' | wc -l)
 test -f "$work/ClearMD_Output/Resumen_ClearMD.md"
 if [[ "$written" -ne "$expected" ]]; then

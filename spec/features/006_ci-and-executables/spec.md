@@ -25,7 +25,8 @@ repository) and the workflow itself (what only CI can run).
   Python 3.12 and 3.14, from the lock file, with every action pinned to a commit and read-only
   permissions.
 - [ ] **AC-02** The release workflow builds, on Windows and on Linux, two one-file programs:
-  `ClearMD` (the desktop app: no console, the app icon, a splash) and `clearmd` (the command line).
+  `ClearMD` (the desktop app: no console, the app icon, a splash) and `clearmd-cli` (the command
+  line).
 - [ ] **AC-03** Each build is checked before it is published: the command line converts a real
   batch (every format, a file without extension, LaTeX, OpenDocument) through the worker process,
   and the desktop app opens and closes by itself (`--smoke`).

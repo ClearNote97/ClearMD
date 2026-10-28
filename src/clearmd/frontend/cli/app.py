@@ -167,15 +167,11 @@ def _print_summary(catalog: Catalog, report: BatchReport) -> None:
         print(catalog.text("cli.summary_not_written", path=_p(root)), file=sys.stderr)
 
 
-def _converted_roots(report: BatchReport) -> list[Path]:
-    """The output folders that hold a converted file: the only ones worth opening."""
-    return list(
-        dict.fromkeys(
-            outcome.item.output_root
-            for outcome in report.outcomes
-            if outcome.status is OutcomeStatus.CONVERTED
-        )
-    )
+def _summary_roots(report: BatchReport) -> list[Path]:
+    """The output folders worth opening: those whose summary was written (it says what happened,
+    even when every file failed). A folder refused as a link has none."""
+    unwritten = set(report.unwritten_summaries)
+    return [root for root in _output_roots(report) if root not in unwritten]
 
 
 def _output_roots(report: BatchReport) -> list[Path]:
@@ -369,7 +365,7 @@ def _main(argv: Sequence[str] | None) -> int:
     report = _run_cancellable(catalog, plan, decision, progress, err)
     _print_summary(catalog, report)
     if args.open:
-        for root in _converted_roots(report):
+        for root in _summary_roots(report):
             try:
                 open_folder(root)
             except (OSError, ValueError):  # a root refused as a link, no file browser…

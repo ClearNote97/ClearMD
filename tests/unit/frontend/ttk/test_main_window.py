@@ -488,3 +488,49 @@ def test_c9_closing_with_the_welcome_open_keeps_its_answer(display: str) -> None
     app.dialog.dont_show.set(True)
     app.close()
     assert fake.saved[-1].show_welcome is False
+
+
+def test_a3_a_settings_save_keeps_the_selected_problem(display: str, tmp_path: Path) -> None:
+    plan = BatchPlan((planned("a.pdf"), planned("b.pdf")), (), ())
+    statuses = {"a.pdf": OutcomeStatus.FAILED, "b.pdf": OutcomeStatus.FAILED}
+    app = TtkApp(FakeBackend(plan=plan, statuses=statuses, settings=Settings(show_welcome=False)))
+    try:
+        app.start()
+        app.presenter.add_paths([tmp_path])
+        app.main.convert.invoke()
+        pump(app, until=lambda: app.presenter.state is AppState.WAITING_DECISION)
+        app.review.confirm.invoke()
+        pump(app, until=lambda: app.presenter.state is AppState.FINISHED_WITH_PROBLEMS)
+        tree = app.results.problems.tree
+        tree.selection_set(tree.get_children()[1])
+        pump(app, seconds=0.1)
+        app.presenter.save_settings(replace_settings(app.presenter.settings, recursive=False))
+        pump(app, seconds=0.1)
+        assert [tree.index(item) for item in tree.selection()] == [1]
+        assert app.results.detail.cget("text").startswith("b.pdf")
+    finally:
+        app.close()
+
+
+def test_a4_a_plan_shown_again_keeps_the_answer_about_existing_results(
+    display: str, tmp_path: Path
+) -> None:
+    plan = BatchPlan((planned("a.pdf", exists=True),), (), ())
+    app = TtkApp(FakeBackend(plan=plan, settings=Settings(show_welcome=False)))
+    try:
+        app.start()
+        app.presenter.add_paths([tmp_path])
+        app.main.convert.invoke()
+        pump(app, until=lambda: app.presenter.state is AppState.WAITING_DECISION)
+        app.review.decision.set("overwrite")
+        assert app.last_plan is not None
+        app.show_plan(app.last_plan)  # the same plan again (a language change)
+        assert app.review.decision.get() == "overwrite"
+    finally:
+        app.close()
+
+
+def replace_settings(settings: Settings, **changes: Any) -> Settings:
+    from dataclasses import replace
+
+    return replace(settings, **changes)

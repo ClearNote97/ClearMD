@@ -3,7 +3,7 @@
 #   uv run --group build pyinstaller packaging/clearmd.spec --noconfirm
 #
 # Two one-file programs: ClearMD (the desktop app, no console, a splash while it unpacks) and
-# clearmd (the command line). They share ClearMD's data: the catalogs, the logo and icons, and the
+# clearmd-cli (the command line; not "clearmd": Windows names ignore case, it would replace the app). They share ClearMD's data: the catalogs, the logo and icons, and the
 # data files of the libraries that read the documents.
 # ruff: noqa -- PyInstaller runs this file with its own globals (Analysis, EXE, Splash...).
 
@@ -68,7 +68,7 @@ cli_exe = EXE(  # noqa: F821
     cli.binaries,
     cli.datas,
     [],
-    name="clearmd",
+    name="clearmd-cli",
     console=True,
     icon=str(ASSETS / "clearmd.ico"),
     upx=False,

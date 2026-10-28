@@ -32,6 +32,7 @@ class ReviewView(ttk.Frame):
         super().__init__(parent, style=PAGE)
         self._on_confirm = on_confirm
         self._asks = False
+        self._rows: tuple[object, ...] = ()
         self._texts: list[tuple[Any, str]] = []
 
         self.stats = Stats(self, fonts=fonts)
@@ -80,8 +81,11 @@ class ReviewView(ttk.Frame):
                 for row in rows
             ]
         )  # fmt: skip
+        same = plan.rows == self._rows  # shown again (a settings change): the answer stays
+        self._rows = plan.rows
         self._asks = plan.asks_about_existing
-        self.decision.set(KEEP)
+        if not same:
+            self.decision.set(KEEP)
         self.existing.pack_forget()
         if self._asks:
             self.existing.pack(fill="x", pady=(GAP, 0), before=self._actions)

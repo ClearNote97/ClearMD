@@ -740,3 +740,16 @@ def test_ac_36_open_tells_a_folder_it_cannot_open_and_ends_normally(
     captured = capsys.readouterr()
     assert code == 1  # the file failed: the output folder is a link
     assert "Traceback" not in captured.err
+
+
+def test_ac_36_open_shows_the_summary_even_when_every_file_failed(
+    workdir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from clearmd.frontend.cli import app
+
+    opened: list[Path] = []
+    monkeypatch.setattr(app, "open_folder", opened.append)
+    broken = workdir / "broken.pdf"
+    broken.write_bytes(b"%PDF-1.4 not really")
+    main([str(broken), "--open", "--quiet"])
+    assert opened == [workdir / "ClearMD_Output"]  # its summary says why

@@ -1,7 +1,7 @@
 """Regressions for the security audit of feature 004 (F1–F7), each from its reported input."""
 
 import os
-import resource
+import sys
 import time
 from pathlib import Path
 
@@ -63,7 +63,10 @@ def test_f2_a_character_xml_forbids_never_turns_the_article_off(
     assert NoteKind.ARTICLE_NOT_FOUND not in {note.kind for note in result.notes}
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="the resource module is POSIX only")
 def test_f3_runs_of_formatting_stay_within_memory(tmp_path: Path) -> None:
+    import resource
+
     before = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     started = time.monotonic()
     convert(tmp_path, "<p>" + "<b>a</b> " * 50_000 + "</p>")
