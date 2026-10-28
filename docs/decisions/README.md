@@ -45,3 +45,4 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 | [0025](./0025-html-article-mode.md) | HTML article mode: trafilatura finds the article, ClearMD writes it | accepted; refined after review |
 | [0026](./0026-presenter-and-ttk-gui.md) | The presenter and the first GUI (ttkbootstrap) | proposed |
 | [0027](./0027-visual-identity.md) | Visual identity: the rail and cards, teal, the C·M↓ logo, own file icons | accepted |
+| [0028](./0028-ci-and-executables.md) | CI on Linux and Windows; one-file executables built and checked on GitHub Actions | accepted |

@@ -46,6 +46,10 @@ dev = [
     "pypdf>=6",
     "markdown-it-py>=3,<5",
 ]
+# Building the executables (feature 006, ADR-0028): only in CI and the dev container.
+build = [
+    "pyinstaller==6.22.3",
+]
 
 [build-system]
 requires = ["uv_build>=0.11.13,<0.14"]
@@ -54,7 +58,13 @@ build-backend = "uv_build"
 [tool.uv]
 # Supply chain: no release younger than two weeks enters the lock (2026-10-26: these two were
 # published days before trafilatura was added; their previous release is used).
-constraint-dependencies = ["lxml-html-clean<0.4.6", "tzlocal<5.4.5"]
+constraint-dependencies = [
+    "lxml-html-clean<0.4.6",
+    "tzlocal<5.4.5",
+    # 2026-10-28 (PyInstaller, 006): these were eight days old; their predecessors are used.
+    "pyinstaller-hooks-contrib<2026.9",
+    "setuptools<84.1",
+]
 
 [tool.uv.build-backend]
 # One README per folder, as in the template, but not inside the wheel (ADR-0014).

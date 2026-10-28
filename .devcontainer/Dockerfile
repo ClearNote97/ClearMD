@@ -24,6 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxcursor1 \
     xvfb \
     xauth \
+    binutils \
     fonts-dejavu-core \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
