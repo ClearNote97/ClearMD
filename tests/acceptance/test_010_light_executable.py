@@ -47,7 +47,7 @@ def test_ac_02_excel_is_clearmds_own_and_an_encrypted_workbook_is_locked(tmp_pat
     result = XlsxConverter().convert(DOCUMENTS_DIR / "sample.xlsx", detection, tmp_path / "x.md")
     assert "## Data" in result.markdown and "| fixture-xlsx | 1 |" in result.markdown
     locked = tmp_path / "locked.xlsx"
-    locked.write_bytes(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1" + b"\x00" * 600)
+    locked.write_bytes(b"\xd0\xcf\x11\xe0" + b"\x00" * 600 + "EncryptedPackage".encode("utf-16-le"))
     with pytest.raises(ConversionError) as raised:
         XlsxConverter().convert(locked, detection, tmp_path / "l.md")
     assert raised.value.code is ErrorCode.PASSWORD_PROTECTED
@@ -66,4 +66,5 @@ def test_ac_03_the_heavy_libraries_are_left_out_and_the_notices_say_only_what_sh
 def test_ac_04_the_executables_are_checked_by_a_real_batch_and_measured() -> None:
     check = (ROOT / "packaging" / "check_executables.sh").read_text(encoding="utf-8")
     assert "sample.xlsx" in check and "docx_without_extension" in check
-    assert "MAX_MB=50" in check  # the Linux executable must stay under it
+    assert "MAX_MB=50" in check  # each program must stay under it
+    assert "pyi-archive_viewer" in check and "numpy|pandas|onnxruntime|magika" in check

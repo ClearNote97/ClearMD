@@ -36,10 +36,26 @@ each did a small job:
   - babel keeps only its root, English and Spanish data.
   - The notices list only what ships.
 
+### After review (code review and security audit of 010)
+
+- Detection is linear in its sample: no expression that can backtrack.
+  - A notebook is known by its start, even past the sample.
+  - A CSV needs three comma-separated rows (the converter reads commas only), and never a
+    Markdown table or lines ending like code.
+  - A program is unsupported even when it mentions LaTeX.
+  - XHTML, comments and body fragments are HTML.
+  - A ZIP's index is checked as planning does, and a `mimetype` is read only when stored.
+- The Excel converter does not trust a sheet's declared size, and stops past 20 million cells.
+  An old `.xls` is unsupported; only an encrypted workbook is "password-protected".
+- An archive whose declared sizes cannot be true, or whose compression no document uses, counts
+  as too large unpacked.
+- Macro-enabled `.docm`, `.xlsm` and `.pptm` without an extension are read as their documents
+  (text only, macros never run). JSON, YAML and XML read as plain text.
+
 ## Consequences
 
 - The executable goes from about 90 MB to about 41 MB (Linux), checked by the same real batch.
-- Development installs still bring magika and pandas through markitdown. Only the executables are
-  light.
+- Development installs still bring magika through markitdown (pandas no longer). Only the
+  executables are light; their check fails if a left-out library comes back inside.
 - Detection by signatures recognises the formats ClearMD converts and nothing more. A file
   without an extension whose content matches none of them is "unsupported".

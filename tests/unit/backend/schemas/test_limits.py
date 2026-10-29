@@ -55,10 +55,12 @@ def test_estimated_memory_adds_the_worker_base_and_the_format_factor() -> None:
     assert limits.estimated_memory(FormatId.XLSX, 10 * MIB) == expected
 
 
-def test_a_60_mb_xlsx_does_not_fit_and_a_10_mb_pdf_does() -> None:
+def test_a_60_mb_xlsx_now_fits_and_a_250_mb_one_does_not() -> None:
     limits = Limits()
-    # 60 MB of xlsx is ~276 MiB of XML inside (ratio 4.6, benchmark 001).
-    assert limits.estimated_memory(FormatId.XLSX, 276 * MIB) > limits.worker_memory
+    # 60 MB of xlsx is ~276 MiB of XML inside (ratio 4.6, benchmark 001): pandas could not hold
+    # it, ClearMD's own converter can (feature 010). Four times that still cannot.
+    assert limits.estimated_memory(FormatId.XLSX, 276 * MIB) < limits.worker_memory
+    assert limits.estimated_memory(FormatId.XLSX, 1150 * MIB) > limits.worker_memory
     assert limits.estimated_memory(FormatId.PDF, 10 * MIB) < limits.worker_memory
 
 

@@ -25,7 +25,12 @@ from clearmd.backend.services.conversion.markdown_out import (
 )
 from clearmd.backend.services.conversion.safe_files import open_regular_file
 
-_OLE = b"\xd0\xcf\x11\xe0"  # an encrypted workbook is an OLE file, not a ZIP
+_OLE = b"\xd0\xcf\x11\xe0"  # an encrypted workbook (and an old .xls) is an OLE file, not a ZIP
+_ENCRYPTED = "EncryptedPackage".encode("utf-16-le")  # the stream an encrypted workbook holds
+SCAN_CHUNK = 1024**2
+MAX_ROWS = 1_048_576  # Excel's own limits: a sheet declaring more is not believed
+MAX_COLUMNS = 16_384
+MAX_CELLS = 20_000_000  # about what fits in a worker's memory as text (code review of 010)
 
 
 def _shown(value: Any) -> str:
@@ -34,10 +39,10 @@ def _shown(value: Any) -> str:
         return ""
     if isinstance(value, bool):
         return "TRUE" if value else "FALSE"
-    if isinstance(value, float) and value.is_integer():
-        return str(int(value))
-    if isinstance(value, dt.datetime) and value.time() == dt.time():
-        return value.date().isoformat()
+    if isinstance(value, float):
+        return str(int(value)) if value.is_integer() else format(value, ".15g")  # 0.3, not noise
+    if isinstance(value, dt.datetime):
+        return value.date().isoformat() if value.time() == dt.time() else value.isoformat(sep=" ")
     if isinstance(value, (dt.date, dt.time)):
         return value.isoformat()
     return " ".join(str(value).split())
@@ -48,15 +53,24 @@ def _cell(value: Any) -> str:
 
 
 def _rows(sheet: Any) -> list[list[Any]]:
-    """The sheet's rows without its empty ones, and as wide as its widest used column."""
-    rows = [list(row) for row in sheet.iter_rows(values_only=True)]
-    rows = [row for row in rows if any(value not in (None, "") for value in row)]
-    width = max(
-        (max((i + 1 for i, value in enumerate(row) if value not in (None, "")), default=0)
-         for row in rows),
-        default=0,
-    )  # fmt: skip
-    return [row[:width] + [None] * (width - len(row)) for row in rows]
+    """The sheet's rows, read as they are: the size a sheet declares is not trusted (a tiny file
+    declaring a million wide rows asked gigabytes, code review and security audit of 010). Empty
+    rows go, trailing empty cells go, and the rest is evened out to the widest row."""
+    sheet.reset_dimensions()
+    rows: list[list[Any]] = []
+    cells = 0
+    for row in sheet.iter_rows(values_only=True, max_row=MAX_ROWS, max_col=MAX_COLUMNS):
+        values = list(row)
+        while values and values[-1] in (None, ""):
+            values.pop()
+        if not values:
+            continue
+        cells += len(values)
+        if cells > MAX_CELLS:
+            raise ConversionError(ErrorCode.OUT_OF_MEMORY, f"more than {MAX_CELLS} cells")
+        rows.append(values)
+    width = max((len(row) for row in rows), default=0)
+    return [row + [None] * (width - len(row)) for row in rows]
 
 
 def _table(rows: list[list[Any]]) -> Iterable[str]:
@@ -67,6 +81,17 @@ def _table(rows: list[list[Any]]) -> Iterable[str]:
         yield MARK + "| " + " | ".join(_cell(value) for value in row) + " |"
 
 
+def _holds(stream: Any, needle: bytes) -> bool:
+    """Whether the file holds ``needle``, read a chunk at a time (the OLE directory may be at its
+    end)."""
+    tail = b""
+    while chunk := stream.read(SCAN_CHUNK):
+        if needle in tail + chunk:
+            return True
+        tail = chunk[-len(needle) :]
+    return False
+
+
 class XlsxConverter:
     def convert(self, source: Path, detection: Detection, target: Path) -> ConversionResult:
         try:
@@ -75,7 +100,10 @@ class XlsxConverter:
             raise ConversionError(ErrorCode.SOURCE_UNREADABLE, str(error)) from error
         with stream:
             if stream.read(4) == _OLE:
-                raise ConversionError(ErrorCode.PASSWORD_PROTECTED, "an encrypted workbook")
+                stream.seek(0)
+                if _holds(stream, _ENCRYPTED):
+                    raise ConversionError(ErrorCode.PASSWORD_PROTECTED, "an encrypted workbook")
+                raise ConversionError(ErrorCode.UNSUPPORTED_FORMAT, "an old Excel file (.xls)")
             stream.seek(0)
             try:
                 book = openpyxl.load_workbook(stream, read_only=True, data_only=True)

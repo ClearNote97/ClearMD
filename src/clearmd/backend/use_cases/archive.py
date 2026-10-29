@@ -35,7 +35,7 @@ class ArchiveInfo:
         return self.uncompressed / self.file_size if self.file_size else 0.0
 
 
-def _end_record(path: Path) -> tuple[int, int] | None:
+def end_record(path: Path) -> tuple[int, int] | None:
     """(entries, central directory size) exactly as ``zipfile`` will read them, or ``None``.
 
     Uses the stdlib's own locator (private, guarded by a test), ZIP64 included: a hand-written
@@ -57,7 +57,7 @@ def inspect_archive(path: Path, max_entries: int = 50_000) -> ArchiveInfo | None
     """
     try:
         file_size = path.stat().st_size
-        end = _end_record(path)
+        end = end_record(path)
         if end is None:
             return None  # zipfile cannot open it either: the converter fails it as corrupt
         entries, directory = end
@@ -67,6 +67,10 @@ def inspect_archive(path: Path, max_entries: int = 50_000) -> ArchiveInfo | None
             infos = archive.infolist()
     except (zipfile.BadZipFile, OSError, ValueError, struct.error):
         return None
+    if any(_dishonest(entry) for entry in infos):
+        # A size that cannot be true (or a compression no document uses) bounds nothing: the
+        # archive counts as too large unpacked (security audit of 010).
+        return ArchiveInfo(UNBOUNDED, UNBOUNDED, file_size, entries=len(infos))
     return ArchiveInfo(
         uncompressed=sum(entry.file_size for entry in infos),
         text_bytes=sum(
@@ -75,6 +79,18 @@ def inspect_archive(path: Path, max_entries: int = 50_000) -> ArchiveInfo | None
         file_size=file_size,
         entries=len(infos),
     )
+
+
+UNBOUNDED = 2**62
+_DOCUMENT_COMPRESSION = {zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED}  # all OOXML, ODF and EPUB use
+
+
+def _dishonest(entry: zipfile.ZipInfo) -> bool:
+    """Deflate never makes data much larger than it was: a compressed size past that means the
+    declared size lies, and the limits read from it would not hold."""
+    if entry.compress_type not in _DOCUMENT_COMPRESSION:
+        return True
+    return entry.compress_size > entry.file_size + entry.file_size // 1000 + 64
 
 
 def unsafe_reason(info: ArchiveInfo, limits: Limits) -> tuple[SkipReason, float, float] | None:

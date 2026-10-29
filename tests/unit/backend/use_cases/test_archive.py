@@ -98,7 +98,7 @@ def _patched_counts(source: Path, target: Path, on_disk: int, total: int) -> Pat
     return target
 
 
-def test_a_fake_signature_inside_the_end_record_cannot_switch_the_check_off(tmp_path: Path) -> None:
+def test_a_fake_signature_inside_theend_record_cannot_switch_the_check_off(tmp_path: Path) -> None:
     # Counts 0x4B50 / 0x0605 spell "PK\x05\x06" inside the real end record (adversarial review).
     bomb = _patched_counts(DOCUMENTS_DIR / "zip_bomb.docx", tmp_path / "bomb.docx", 0x4B50, 0x0605)
     with zipfile.ZipFile(bomb) as archive:  # zipfile ignores those counts and opens it
@@ -127,5 +127,17 @@ def test_a_huge_central_directory_is_unsafe_whatever_the_count_says(
     assert is_unsafe(info, Limits())
 
 
-def test_the_end_record_is_read_by_the_same_function_zipfile_uses() -> None:
+def test_theend_record_is_read_by_the_same_function_zipfile_uses() -> None:
     assert callable(getattr(zipfile, "_EndRecData", None))  # stdlib, private: guarded here
+
+
+def test_s10_6_an_archive_whose_sizes_cannot_be_true_counts_as_too_large(tmp_path: Path) -> None:
+    import zipfile
+
+    from clearmd.backend.use_cases.archive import UNBOUNDED, inspect_archive
+
+    path = tmp_path / "odd.docx"
+    with zipfile.ZipFile(path, "w") as archive:
+        archive.writestr("word/document.xml", b"x" * 1000, compress_type=zipfile.ZIP_BZIP2)
+    info = inspect_archive(path)
+    assert info is not None and info.uncompressed == UNBOUNDED

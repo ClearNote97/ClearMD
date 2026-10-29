@@ -19,7 +19,7 @@ GIB = 1024**3
 SECONDS_PER_MIB: Mapping[FormatId, float] = MappingProxyType(
     {
         FormatId.PDF: 15.0,  # PDFium + cleaning (ADR-0030): 6 s/MiB plain, 14 s/MiB compressed
-        FormatId.XLSX: 1.5,
+        FormatId.XLSX: 0.3,  # ClearMD's own converter (ADR-0032): 22 s for a 100k x 20 sheet
         FormatId.PPTX: 1.2,
         FormatId.DOCX: 0.6,
         FormatId.HTML: 0.2,
@@ -36,7 +36,7 @@ SECONDS_PER_MIB: Mapping[FormatId, float] = MappingProxyType(
 # MiB of worker memory per MiB of size (same size as the cost), from the peaks of benchmark 001.
 MEMORY_PER_MIB: Mapping[FormatId, float] = MappingProxyType(
     {
-        FormatId.XLSX: 25.7,
+        FormatId.XLSX: 4.0,  # ClearMD's own converter (ADR-0032): ~320 MiB for 100k x 20
         FormatId.CSV: 13.7,
         FormatId.DOCX: 11.7,
         FormatId.PDF: 16.0,  # PDFium (ADR-0030): 9 plain, 19 compressed text

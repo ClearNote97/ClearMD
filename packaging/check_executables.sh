@@ -37,10 +37,18 @@ else
 fi
 echo "window: opened and closed"
 
-# A light executable (feature 010): each program under this size.
+# A light executable (feature 010): each program under this size (MB: millions of bytes), and
+# none of the libraries it leaves out inside.
 MAX_MB=50
 for program in "$dist/ClearMD$suffix" "$dist/clearmd-cli$suffix"; do
-  size=$(( $(wc -c < "$program") / 1024 / 1024 ))
+  heavy=$(cd "$here" && uv run --no-default-groups --group build pyi-archive_viewer -r "$program" \
+    | grep -E "'(numpy|pandas|onnxruntime|magika)[.']" || true)
+  if [[ -n "$heavy" ]]; then
+    echo "$program holds a library it should leave out:" >&2
+    echo "$heavy" | head -5 >&2
+    exit 1
+  fi
+  size=$(( $(wc -c < "$program") / 1000 / 1000 ))
   if (( size >= MAX_MB )); then
     echo "$program is $size MB, over $MAX_MB MB" >&2
     exit 1

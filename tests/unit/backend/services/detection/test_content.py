@@ -62,3 +62,112 @@ def test_latex_without_extension_is_detected_by_content(detector: SignatureDetec
 
     detection = detector.detect(TEX_DIR / "no_extension_latex")
     assert detection is not None and detection.format is FormatId.TEX
+
+
+# --- Code review and security audit of 010 (C10-*, S10-*) ------------------------------------
+
+
+def _detect(tmp_path: Path, content: str | bytes) -> FormatId | None:
+    from clearmd.backend.services.detection.content import detect_format
+
+    path = tmp_path / "unnamed"
+    if isinstance(content, str):
+        path.write_text(content, encoding="utf-8")
+    else:
+        path.write_bytes(content)
+    return detect_format(path)
+
+
+def test_c10_1_a_large_notebook_is_a_notebook(tmp_path: Path) -> None:
+    image = "A" * 120_000
+    notebook = (
+        '{\n "cells": [\n  {\n   "cell_type": "code",\n   "outputs": [{"data": {"image/png": "'
+        + image + '"}}],\n   "source": ["print(1)"]\n  }\n ],\n "metadata": {},\n "nbformat": 4\n}'
+    )  # fmt: skip
+    assert _detect(tmp_path, notebook) is FormatId.IPYNB
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        "2026-10-29 10:00:01 INFO start\n2026-10-29 10:00:02 INFO, user=1\n",
+        "const a = 1;\nconst b = 2;\nconst c = 3;\nconsole.log(a, b, c);\n",
+        "| a | b |\n|---|---|\n| 1 | 2 |\n",
+        "Hello, world.\nThis, too.\n",
+        "a;b;c\n1;2;3\n4;5;6\n",
+    ],
+)
+def test_c10_3_only_real_comma_separated_rows_are_csv(tmp_path: Path, content: str) -> None:
+    assert _detect(tmp_path, content) is not FormatId.CSV
+
+
+def test_c10_3_a_real_csv_still_is(tmp_path: Path) -> None:
+    assert _detect(tmp_path, "name,value\nalpha,1\nbeta,2\ngamma,3\n") is FormatId.CSV
+
+
+@pytest.mark.parametrize(
+    "program",
+    [
+        'title = "\\\\section{Intro}"\nimport os\n',  # mentions LaTeX: still a program
+        '#include "stdio.h"\nint main(void) { return 0; }\n',
+        "<?php echo 'hi'; ?>\n",
+        "const fs = require('fs');\nmodule.exports = {};\n",
+        'if __name__ == "__main__":\n    main()\n',
+    ],
+)
+def test_c10_4_c10_5_programs_are_unsupported(tmp_path: Path, program: str) -> None:
+    assert _detect(tmp_path, program) is None
+
+
+def test_c10_5_a_readme_with_a_code_example_is_text(tmp_path: Path) -> None:
+    readme = "# Tool\n\nInstall it, then:\n\n```python\nimport tool\n```\n\nThat is all.\n"
+    assert _detect(tmp_path, readme) is FormatId.TXT
+
+
+@pytest.mark.parametrize(
+    "page",
+    [
+        '<?xml version="1.0"?>\n<!DOCTYPE html>\n<html><body>x</body></html>',
+        "<!-- a -->\n<!-- b -->\n<html><body>x</body></html>",
+        "<body><p>x</p></body>",
+    ],
+)
+def test_c10_6_xhtml_comments_and_body_fragments_are_html(tmp_path: Path, page: str) -> None:
+    assert _detect(tmp_path, page) is FormatId.HTML
+
+
+def test_s10_1_many_comments_never_stall_detection(tmp_path: Path) -> None:
+    import time
+
+    start = time.perf_counter()
+    _detect(tmp_path, "<!---->" * 5000 + "x")
+    assert time.perf_counter() - start < 1
+
+
+def test_s10_3_a_compressed_mimetype_is_never_read(tmp_path: Path) -> None:
+    import zipfile
+
+    path = tmp_path / "unnamed"
+    with zipfile.ZipFile(path, "w") as archive:
+        archive.writestr("mimetype", b"application/epub+zip", compress_type=zipfile.ZIP_BZIP2)
+    from clearmd.backend.services.detection.content import detect_format
+
+    assert detect_format(path) is None
+
+
+def test_s10_4_a_huge_zip_index_is_refused_before_it_is_read(tmp_path: Path) -> None:
+    import zipfile
+
+    path = tmp_path / "unnamed"
+    with zipfile.ZipFile(path, "w") as archive:
+        for index in range(60_000):
+            archive.writestr(str(index), b"")
+    from clearmd.backend.services.detection.content import detect_format
+
+    assert detect_format(path) is None
+
+
+def test_s10_5_deep_json_or_an_encrypted_entry_is_unsupported_not_an_error(
+    tmp_path: Path,
+) -> None:
+    assert _detect(tmp_path, '{"cells": [{"cell_type": ' + "[" * 60_000) in {None, FormatId.TXT}

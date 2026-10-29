@@ -8,7 +8,8 @@ package metadata states them. Run in the build environment:
 import sys
 from importlib.metadata import Distribution, distributions
 
-BUILD_ONLY = {"pyinstaller", "pyinstaller-hooks-contrib", "altgraph", "setuptools", "packaging"}
+# setuptools and packaging ship (PyInstaller bundles what its hooks import): they are listed.
+BUILD_ONLY = {"pyinstaller", "pyinstaller-hooks-contrib", "altgraph"}
 # Installed with markitdown, left out of the executables (packaging/clearmd.spec, ADR-0032).
 NOT_SHIPPED = {"magika", "onnxruntime", "numpy", "pandas", "flatbuffers", "coloredlogs",
                "humanfriendly", "sympy", "mpmath", "protobuf", "click"}  # fmt: skip

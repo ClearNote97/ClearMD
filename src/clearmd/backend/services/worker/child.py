@@ -61,6 +61,8 @@ def handle(
     if isinstance(request, DetectRequest):
         try:
             detection = registry.detect_content(Path(request.source))
+        except MemoryError:  # the worker is replaced: its memory is no longer to be trusted
+            return Failed(ErrorCode.OUT_OF_MEMORY.value, "MemoryError: over the hard memory cap")
         except Exception as error:
             return Failed(ErrorCode.CONVERSION_FAILED.value, f"{type(error).__name__}: {error}")
         return Detected(detection.format.value if detection is not None else None)

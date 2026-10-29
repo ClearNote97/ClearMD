@@ -75,7 +75,8 @@ def test_a_sheet_title_is_text(tmp_path: Path) -> None:
 
 def test_an_encrypted_workbook_is_password_protected(tmp_path: Path) -> None:
     path = tmp_path / "locked.xlsx"
-    path.write_bytes(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1" + b"\x00" * 600)
+    stream = "EncryptedPackage".encode("utf-16-le")
+    path.write_bytes(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1" + b"\x00" * 600 + stream)
     with pytest.raises(ConversionError) as raised:
         convert(path)
     assert raised.value.code is ErrorCode.PASSWORD_PROTECTED
@@ -87,3 +88,69 @@ def test_a_broken_workbook_is_corrupt(tmp_path: Path) -> None:
     with pytest.raises(ConversionError) as raised:
         convert(path)
     assert raised.value.code is ErrorCode.CORRUPT_FILE
+
+
+# --- Code review and security audit of 010 (C10-*, S10-*) ------------------------------------
+
+
+def _inflated(tmp_path: Path, dimension: str, rows: str) -> Path:
+    import io
+    import zipfile
+
+    book = openpyxl.Workbook()
+    book.active["A1"] = "h"
+    buffer = io.BytesIO()
+    book.save(buffer)
+    namespace = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+    sheet = f'<worksheet xmlns="{namespace}">{dimension}<sheetData>{rows}</sheetData></worksheet>'
+    path = tmp_path / "bomb.xlsx"
+    with (
+        zipfile.ZipFile(io.BytesIO(buffer.getvalue())) as source,
+        zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as out,
+    ):
+        for info in source.infolist():
+            data = sheet if info.filename == "xl/worksheets/sheet1.xml" else source.read(info)
+            out.writestr(info.filename, data)
+    return path
+
+
+def cell(ref: str, text: str) -> str:
+    return f'<c r="{ref}" t="inlineStr"><is><t>{text}</t></is></c>'
+
+
+def test_c10_2_a_declared_size_is_not_trusted(tmp_path: Path) -> None:
+    import resource
+    import time
+
+    rows = f'<row r="1">{cell("A1", "h")}</row><row r="20000">{cell("A20000", "z")}</row>'
+    path = _inflated(tmp_path, '<dimension ref="A1:XFD20000"/>', rows)
+    before = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    start = time.perf_counter()
+    markdown = convert(path)
+    assert time.perf_counter() - start < 10
+    assert resource.getrusage(resource.RUSAGE_SELF).ru_maxrss - before < 200 * 1024  # KiB
+    assert "| h |" in markdown and "| z |" in markdown
+
+
+def test_c10_8_numbers_and_times_read_as_written(tmp_path: Path) -> None:
+    markdown = convert(
+        workbook(tmp_path, {"S": [["a", "b"], [0.1 + 0.2, dt.datetime(2026, 10, 29, 13, 45)]]})
+    )
+    assert "| 0.3 | 2026-10-29 13:45:00 |" in markdown
+
+
+def test_c10_9_an_old_xls_is_unsupported_not_locked(tmp_path: Path) -> None:
+    path = tmp_path / "old.xlsx"
+    path.write_bytes(
+        b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1" + b"\x00" * 600 + "Workbook".encode("utf-16-le")
+    )
+    with pytest.raises(ConversionError) as raised:
+        convert(path)
+    assert raised.value.code is ErrorCode.UNSUPPORTED_FORMAT
+    locked = tmp_path / "locked.xlsx"
+    locked.write_bytes(
+        b"\xd0\xcf\x11\xe0" + b"\x00" * 9000 + "EncryptedPackage".encode("utf-16-le")
+    )
+    with pytest.raises(ConversionError) as raised:
+        convert(locked)
+    assert raised.value.code is ErrorCode.PASSWORD_PROTECTED
