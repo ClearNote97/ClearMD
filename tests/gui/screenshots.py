@@ -31,6 +31,7 @@ from clearmd.frontend.presenter import AppState  # noqa: E402
 from clearmd.frontend.ttk import TtkApp  # noqa: E402
 
 WIDTH, HEIGHT = 1080, 720
+COMPACT_WIDTH = 900  # below 1000 px the rail is compact (feature 007)
 # Real files and folders (a folder must exist to be shown as one), under a temporary home.
 DEMO = Path(tempfile.gettempdir()) / "Usuarios" / "ana"
 DOCUMENTS, DOWNLOADS = DEMO / "Documentos", DEMO / "Descargas"
@@ -124,6 +125,22 @@ def settings_window(app: TtkApp) -> None:
     app.show_settings()
 
 
+def convert_ready(app: TtkApp) -> None:
+    to_review(app)
+    app.presenter.go_to(3)
+
+
+def convert_more(app: TtkApp) -> None:
+    to_results(app)
+    app.convert_more()
+
+
+def compact(app: TtkApp) -> None:
+    app.root.geometry(f"{COMPACT_WIDTH}x{HEIGHT}+0+0")
+    app.presenter.add_paths(INPUTS)
+    settle(app, seconds=0.4)
+
+
 def welcome(app: TtkApp) -> None:
     settle(app, until=lambda: app.dialog is not None)
 
@@ -173,6 +190,9 @@ def main() -> int:
                 shots += [
                     ("5-help", FakeBackend(plan=PLAN), help_window),
                     ("6-settings", FakeBackend(plan=PLAN), settings_window),
+                    ("3-convert-ready", FakeBackend(plan=PLAN), convert_ready),
+                    ("4-convert-more", FakeBackend(plan=PLAN, statuses=FAILED), convert_more),
+                    ("1-choose-compact", FakeBackend(plan=PLAN), compact),
                 ]
                 for name, fake, prepare in shots:
                     app = window(language, theme, fake)

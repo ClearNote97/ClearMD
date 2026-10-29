@@ -7,7 +7,7 @@ from dataclasses import replace
 from tkinter import ttk
 
 from clearmd.backend.schemas.settings import Settings
-from clearmd.frontend.ttk.brand import CHECK_ON_PAGE, MUTED, PRIMARY, SOFT, Palette
+from clearmd.frontend.ttk.brand import CHECK_ON_PAGE, HINT, MUTED, PRIMARY, SOFT, Palette
 from clearmd.frontend.ttk.components.dialog import Dialog
 from clearmd.frontend.ttk.layout import GAP, HALF, SPACE
 from clearmd.i18n import Catalog
@@ -22,8 +22,10 @@ def help_dialog(
     palette: Palette,
     fonts: dict[str, tkfont.Font],
     on_close: Callable[[], None],
+    version: str = "",
 ) -> Dialog:
-    """How to use it, what it converts, where results go, privacy, the language (UX §4)."""
+    """How to use it, what it converts, where results go, privacy, the language (UX §4); the
+    version at the foot (feature 007)."""
     dialog = Dialog(
         parent,
         title=catalog.text("gui.help.title"),
@@ -39,6 +41,9 @@ def help_dialog(
             dialog.body, text=catalog.text(f"gui.help.{section}"), wraplength=560, justify="left"
         )
         text.pack(anchor="w", pady=(HALF, 0))
+    if version:
+        shown = catalog.text("gui.help.version", version=version)
+        ttk.Label(dialog.actions, text=shown, style=HINT).pack(side="left")
     close = ttk.Button(
         dialog.actions, text=catalog.text("gui.help.close"), style=PRIMARY, command=dialog.close
     )

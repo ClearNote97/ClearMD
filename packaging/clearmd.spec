@@ -44,7 +44,12 @@ gui_splash = Splash(  # noqa: F821
     str(ASSETS / "splash.png"),
     binaries=gui.binaries,
     datas=gui.datas,
-    text_pos=None,
+    # "Loading… N %", updated by the app at each stage of its start (feature 007), in the free
+    # bottom-left corner of the picture (tests/gui/make_assets.py: SPLASH_TEXT_POSITION).
+    text_pos=(40, 214),
+    text_size=10,
+    text_color="#A9B4BE",
+    text_default="Loading… 0 %",
     always_on_top=False,
 )
 gui_exe = EXE(  # noqa: F821

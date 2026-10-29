@@ -240,7 +240,14 @@ class TtkApp:
         """The "?" window: always available (UX §4)."""
         if self.dialog is None:
             self._open(
-                help_dialog(self.root, self._catalog(), self.palette, self.fonts, self._closed)
+                help_dialog(
+                    self.root,
+                    self._catalog(),
+                    self.palette,
+                    self.fonts,
+                    self._closed,
+                    version=self.presenter.version,
+                )  # fmt: skip
             )
 
     def show_settings(self) -> None:
@@ -486,12 +493,22 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     multiprocessing.freeze_support()  # a no-op unless running as a packaged executable
     arguments = sys.argv[1:] if argv is None else list(argv)
+    _splash_text("Loading… 85 %")
     app = TtkApp()
+    _splash_text("Loading… 100 %")
     app.start()
     _close_splash()
     if "--smoke" in arguments:
         app.root.after(SMOKE_SECONDS * 1000, app.close)
     app.root.mainloop()
+
+
+def _splash_text(text: str) -> None:
+    try:
+        import pyi_splash  # type: ignore[import-not-found,import-untyped,unused-ignore]  # frozen
+    except ImportError:
+        return
+    pyi_splash.update_text(text)
 
 
 def _close_splash() -> None:

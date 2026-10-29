@@ -306,6 +306,7 @@ privacy = "100 % local: ClearMD never uses the internet. Your documents never le
 language_title = "Language · Idioma"
 language = "Change the language in Settings. · Cambia el idioma en Ajustes (Settings → Language)."
 close = "Close"
+version = "ClearMD {version}"
 
 [gui.app]
 title = "ClearMD"
@@ -345,8 +346,8 @@ choose_title = "Choose what to convert"
 choose_subtitle = "Files or folders: ClearMD turns them into Markdown without leaving your computer."
 review_title = "Review before converting"
 review_subtitle = "Nothing is written until you confirm."
-convert_title = "Converting"
-convert_subtitle = "You can cancel at any time; what is already done is kept."
+convert_title = "Convert"
+convert_subtitle = "Nothing is written until you press Convert; you can cancel at any time."
 results_title = "Results"
 results_subtitle = "What happened with each file, and where to find the results."
 
