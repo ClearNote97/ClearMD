@@ -293,8 +293,8 @@ def test_ac_43_a_file_that_may_take_too_long_is_warned_about_and_still_tried(
 ) -> None:
     put(workdir, "sample.txt", "quick.txt")
     put(workdir, "sample.pdf", "manual.pdf")
-    # The PDF's estimate (~0.02 s) exceeds this limit; the tiny text file's does not.
-    limits = replace(composition.default_limits(), time_per_file=0.015)
+    # The PDF's estimate (~0.004 s, ADR-0030) exceeds this limit; the tiny text file's does not.
+    limits = replace(composition.default_limits(), time_per_file=0.002)
     monkeypatch.setattr(composition, "default_limits", lambda: limits)
     main([str(workdir)])
     err = capsys.readouterr().err
@@ -306,8 +306,9 @@ def test_ac_23_and_ac_44_a_file_over_the_time_limit_is_stopped_not_failed(
     workdir: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     put(workdir, "sample.txt", "quick.txt")
-    # ~30 text pages: ~3 s for pdfminer, well over a 0.5 s limit (the supervisor polls every 0.1 s).
-    make_pdf(workdir / "manual.pdf", 100 * 1024, random.Random(SEED))
+    # ~300 text pages: ~4 s for PDFium and ClearMD's cleaning (ADR-0030), well over a 0.5 s
+    # limit (the supervisor polls every 0.1 s).
+    make_pdf(workdir / "manual.pdf", 1024 * 1024, random.Random(SEED))
     limits = replace(composition.default_limits(), time_per_file=0.5)
     monkeypatch.setattr(composition, "default_limits", lambda: limits)
     assert main([str(workdir / "quick.txt"), str(workdir / "manual.pdf")]) == 1
@@ -507,7 +508,7 @@ def test_ac_18_no_terminal_no_flag_means_exit_3_and_nothing_written(
 def test_ac_26_ctrl_c_stops_at_once_and_still_writes_the_summary(workdir: Path) -> None:
     quick = put(workdir, "sample.txt", "quick.txt")
     slow = workdir / "slow.pdf"
-    make_pdf(slow, 300 * 1024, random.Random(SEED))  # ~8 s of pdfminer
+    make_pdf(slow, 2 * 1024 * 1024, random.Random(SEED))  # ~9 s of PDFium and cleaning
     script = "import sys\nfrom clearmd.frontend.cli import main\nsys.exit(main(sys.argv[1:]))\n"
     process = subprocess.Popen(
         [sys.executable, "-c", script, str(quick), str(slow)],

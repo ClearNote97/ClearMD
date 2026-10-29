@@ -18,7 +18,7 @@ GIB = 1024**3
 # formats the MiB are the uncompressed text parts (XML/XHTML), not images: a docx of photos is fast.
 SECONDS_PER_MIB: Mapping[FormatId, float] = MappingProxyType(
     {
-        FormatId.PDF: 31.0,
+        FormatId.PDF: 6.0,  # PDFium + cleaning (ADR-0030): 5.0 s/MiB of uncompressed text
         FormatId.XLSX: 1.5,
         FormatId.PPTX: 1.2,
         FormatId.DOCX: 0.6,
@@ -39,7 +39,7 @@ MEMORY_PER_MIB: Mapping[FormatId, float] = MappingProxyType(
         FormatId.XLSX: 25.7,
         FormatId.CSV: 13.7,
         FormatId.DOCX: 11.7,
-        FormatId.PDF: 8.7,
+        FormatId.PDF: 4.0,  # PDFium, two passes (ADR-0030): 3 MiB per MiB of uncompressed text
         FormatId.HTML: 7.0,
         FormatId.PPTX: 6.7,
         FormatId.TXT: 3.9,

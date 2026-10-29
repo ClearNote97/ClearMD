@@ -58,6 +58,7 @@ def build_registry() -> ConverterRegistry:
     from clearmd.backend.services.conversion.html import ArticleConverter
     from clearmd.backend.services.conversion.markitdown_adapter import MarkItDownConverter
     from clearmd.backend.services.conversion.odt import OdtConverter
+    from clearmd.backend.services.conversion.pdf import PdfConverter
     from clearmd.backend.services.conversion.tex import TexConverter
     from clearmd.backend.services.detection.content import MagikaDetector
 
@@ -65,6 +66,7 @@ def build_registry() -> ConverterRegistry:
     converters: dict[FormatId, DocumentConverter] = dict.fromkeys(markitdown.converters, markitdown)
     converters[FormatId.TEX] = TexConverter()
     converters[FormatId.ODT] = OdtConverter()
+    converters[FormatId.PDF] = PdfConverter()  # PDFium + ClearMD's cleaning (ADR-0030)
     article = ArticleConverter()  # no article: the whole page, written by ClearMD too
     return ConverterRegistry(
         converters,

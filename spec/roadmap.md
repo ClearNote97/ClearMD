@@ -46,8 +46,9 @@ already tested (ADR-0001).
 
 ## Next
 
-- [ ] **008 — PDF quality:** PDFium for the text, ClearMD's own post-processing (repeated headers
-      and page numbers, hyphenation, paragraphs, headings, rotated text), unreadable text told.
+- [ ] **008 — PDF quality** ([spec](./features/008_pdf-quality/spec.md), ADR-0030): PDFium for
+      the text, ClearMD's own cleaning (repeated headers and page numbers, hyphenation, paragraphs,
+      footnotes, headings), glyph codes read back, unreadable text told.
 - [ ] **009 — A summary in human language, and its PDF** in the app's look; the format chosen on
       the first screen and in Settings.
 - [ ] **010 — A light executable:** own detection for files without an extension (no magika),

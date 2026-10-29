@@ -19,7 +19,7 @@ from clearmd.backend.services.conversion.markitdown_adapter import (
     map_exception,
 )
 
-CONVERTIBLE = sorted(name for name in MARKERS if name != "encrypted.pdf")
+CONVERTIBLE = sorted(name for name in MARKERS if not name.endswith(".pdf"))  # PDF: ADR-0030
 
 
 TARGET = Path("out.md")  # markitdown writes no links to other files
@@ -50,8 +50,6 @@ def test_every_fixture_converts_and_keeps_its_text(
 @pytest.mark.parametrize(
     ("name", "code"),
     [
-        ("encrypted.pdf", ErrorCode.PASSWORD_PROTECTED),
-        ("corrupt.pdf", ErrorCode.CORRUPT_FILE),
         ("corrupt.docx", ErrorCode.CORRUPT_FILE),
     ],
 )
@@ -65,7 +63,7 @@ def test_hard_fixtures_fail_with_their_code(
 
 
 def test_only_the_converter_of_the_detected_format_runs(tmp_path: Path) -> None:
-    """A zip renamed .pdf must fail as a PDF, never fall back to markitdown's ZipConverter."""
+    """A zip renamed .docx must fail as a docx, never fall back to markitdown's ZipConverter."""
     import markitdown.converters._zip_converter as zip_module
 
     def forbidden(*args: Any, **kwargs: Any) -> Any:
@@ -74,14 +72,15 @@ def test_only_the_converter_of_the_detected_format_runs(tmp_path: Path) -> None:
     original = zip_module.ZipConverter.convert
     zip_module.ZipConverter.convert = forbidden  # type: ignore[method-assign]
     try:
-        fake = tmp_path / "invoice.pdf"
+        fake = tmp_path / "invoice.docx"
         with zipfile.ZipFile(fake, "w") as archive:
             archive.writestr("inner.txt", "x" * 1000)
         with pytest.raises(ConversionError) as raised:
             MarkItDownConverter().convert(
-                fake, Detection(FormatId.PDF, DetectionMethod.EXTENSION), TARGET
+                fake, Detection(FormatId.DOCX, DetectionMethod.EXTENSION), TARGET
             )
-        assert raised.value.code is ErrorCode.CORRUPT_FILE
+        # Failed as a docx (python-docx finds no document in it), never read as an archive.
+        assert raised.value.code is ErrorCode.CONVERSION_FAILED
     finally:
         zip_module.ZipConverter.convert = original  # type: ignore[method-assign]
 
@@ -91,7 +90,11 @@ def test_no_image_audio_or_zip_converter_is_ever_registered() -> None:
     assert names.isdisjoint(
         {"ZipConverter", "ImageConverter", "AudioConverter", "OutlookMsgConverter"}
     )
-    assert set(MarkItDownConverter().converters) == set(FormatId) - {FormatId.TEX, FormatId.ODT}
+    assert set(MarkItDownConverter().converters) == set(FormatId) - {
+        FormatId.TEX,
+        FormatId.ODT,
+        FormatId.PDF,
+    }
 
 
 def test_a_source_replaced_by_a_symlink_is_not_followed(tmp_path: Path) -> None:

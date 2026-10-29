@@ -170,6 +170,10 @@ article_not_found = "no article was found in the page, so the whole page was con
 article_too_complex = "the page has too many elements for article mode, so the whole page was converted"
 page_cut = "the page is too large to write whole; its first part was kept"
 images_not_downloaded = "images not downloaded (each shown by its description): {items}"
+pdf_pages_without_text = "pages without text, probably scanned images (ClearMD does not read text in images): {items}"
+pdf_text_decoded = "some text used fonts without a character map; ClearMD read it back"
+pdf_text_unreadable = "some characters could not be read: they are shown as “�”, or as letters that may be wrong"
+pdf_running_removed = "headers, footers and page numbers repeated on the pages were left out"
 and_more = " and {count} more"
 
 [note.reason]

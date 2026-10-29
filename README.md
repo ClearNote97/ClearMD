@@ -64,7 +64,7 @@ The value is in the method — a small product built like a serious one:
    fetched, and a page with no article is written whole by ClearMD too.
 5. **Measured, not guessed.** Benchmarks ([001](./docs/benchmarks/001-conversion-limits.md),
    [002](./docs/benchmarks/002-tex-converter.md), [003](./docs/benchmarks/003-odt-converter.md),
-   [004](./docs/benchmarks/004-html-article-mode.md)) set the limits and the speed of each format: PDF is the time bottleneck (~10 pages/s), xlsx the memory one, a 300-page
+   [004](./docs/benchmarks/004-html-article-mode.md)) set the limits and the speed of each format: xlsx is the memory bottleneck, a PDF reads ~100 pages/s with PDFium (ADR-0030), a 300-page
    LaTeX thesis takes ~3 s and a 300-page `.odt` report under a second. Files are converted from
    the cheapest to the most expensive, and the time left is estimated from the real speed of the batch.
 6. **Reviewed by independent eyes.** A code review, a security audit and an adversarial verification of the
@@ -240,7 +240,8 @@ backend — a desktop tool ([ADR-0009](./docs/decisions/0009-template-pruning.md
 
   | Library | What it does in ClearMD | License |
   |---|---|---|
-  | [markitdown](https://github.com/microsoft/markitdown) (Microsoft) | converts PDF, Word, PowerPoint, Excel, HTML, CSV, EPUB and notebooks | MIT |
+  | [markitdown](https://github.com/microsoft/markitdown) (Microsoft) | converts Word, PowerPoint, Excel, HTML, CSV, EPUB and notebooks | MIT |
+  | [pypdfium2](https://github.com/pypdfium2-team/pypdfium2) with [PDFium](https://pdfium.googlesource.com/pdfium/) (Google) | reads the text of PDFs for ClearMD's PDF converter | Apache-2.0 / BSD-3-Clause |
   | [magika](https://github.com/google/magika) (Google) | detects the format of files without an extension | Apache-2.0 |
   | [trafilatura](https://github.com/adbar/trafilatura) (Adrien Barbaresi) | finds the article of a web page (article mode) | Apache-2.0 |
   | [pylatexenc](https://github.com/phfaist/pylatexenc) (Philippe Faist) | reads LaTeX for ClearMD's `.tex` converter | MIT |

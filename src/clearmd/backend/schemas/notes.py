@@ -28,6 +28,10 @@ class NoteKind(StrEnum):
     ARTICLE_TOO_COMPLEX = "article_too_complex"
     PAGE_CUT = "page_cut"
     IMAGES_NOT_DOWNLOADED = "images_not_downloaded"
+    PDF_PAGES_WITHOUT_TEXT = "pdf_pages_without_text"
+    PDF_TEXT_DECODED = "pdf_text_decoded"
+    PDF_TEXT_UNREADABLE = "pdf_text_unreadable"
+    PDF_RUNNING_REMOVED = "pdf_running_removed"
 
     @property
     def key(self) -> str:

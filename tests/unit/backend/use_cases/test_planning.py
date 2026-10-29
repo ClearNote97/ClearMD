@@ -176,12 +176,12 @@ def test_a_file_that_would_not_fit_in_memory_is_skipped_with_the_numbers(tmp_pat
 def test_a_file_that_may_take_too_long_is_planned_with_a_warning(tmp_path: Path) -> None:
     (tmp_path / "slow.pdf").write_bytes(b"%PDF" + b"x" * MIB)
     (tmp_path / "quick.txt").write_text("x", encoding="utf-8")
-    limits = Limits(time_per_file=10)
+    limits = Limits(time_per_file=3)  # 1 MiB of PDF: about 6 s (ADR-0030)
     plan = build_plan([tmp_path], detector=TableDetector(), limits=limits)
     assert [item.source.name for item in plan.conversions] == ["quick.txt", "slow.pdf"]
     (warning,) = plan.warnings
     assert warning.item.source.name == "slow.pdf"
-    assert warning.estimated_seconds > warning.limit_seconds == 10
+    assert warning.estimated_seconds > warning.limit_seconds == 3
 
 
 def test_the_same_input_twice_is_converted_once(tmp_path: Path) -> None:

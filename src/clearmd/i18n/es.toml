@@ -170,6 +170,10 @@ article_not_found = "no se encontró un artículo en la página; se convirtió l
 article_too_complex = "la página tiene demasiados elementos para el modo artículo; se convirtió la página completa"
 page_cut = "la página es demasiado grande para escribirla completa; se conservó su primera parte"
 images_not_downloaded = "imágenes no descargadas (cada una se muestra con su descripción): {items}"
+pdf_pages_without_text = "páginas sin texto, seguramente imágenes escaneadas (ClearMD no lee texto en imágenes): {items}"
+pdf_text_decoded = "parte del texto usaba fuentes sin mapa de caracteres; ClearMD lo recuperó"
+pdf_text_unreadable = "algunos caracteres no se pudieron leer: aparecen como “�” o como letras que pueden estar mal"
+pdf_running_removed = "se omitieron los encabezados, pies y números de página que se repiten en las páginas"
 and_more = " y {count} más"
 
 [note.reason]

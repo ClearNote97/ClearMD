@@ -5,9 +5,8 @@ Only the converter of the detected format runs, called directly on a stream Clea
 a zip renamed ``.pdf`` would reach its ZipConverter (bypassing the zip-bomb check of ADR-0015) and
 an image would run exiftool (security review of feature 001).
 
-The exception mapping was confirmed against the fixtures (T04): pdfminer raises
-``PDFPasswordIncorrect`` for an encrypted PDF and ``PDFSyntaxError`` for a broken one; a truncated
-docx raises ``BadZipFile``.
+The exception mapping was confirmed against the fixtures (T04): a truncated docx raises
+``BadZipFile``. PDF is ClearMD's own since feature 008 (ADR-0030).
 """
 
 import zipfile
@@ -25,13 +24,10 @@ from markitdown.converters import (
     EpubConverter,
     HtmlConverter,
     IpynbConverter,
-    PdfConverter,
     PlainTextConverter,
     PptxConverter,
     XlsxConverter,
 )
-from pdfminer.pdfdocument import PDFEncryptionError
-from pdfminer.psexceptions import PSException
 
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.schemas.formats import FormatId
@@ -42,7 +38,6 @@ _CORRUPT: tuple[type[BaseException], ...] = (
     zipfile.BadZipFile,
     ParseError,
     ExpatError,
-    PSException,
 )
 # lxml (used by python-pptx) is matched by name: it ships no type information.
 _CORRUPT_BY_NAME = frozenset({"XMLSyntaxError"})
@@ -56,8 +51,6 @@ def _describe(error: BaseException) -> str:
 def _code_for(error: BaseException) -> ErrorCode:
     if isinstance(error, MemoryError):
         return ErrorCode.OUT_OF_MEMORY
-    if isinstance(error, PDFEncryptionError):
-        return ErrorCode.PASSWORD_PROTECTED
     if isinstance(error, _CORRUPT) or type(error).__name__ in _CORRUPT_BY_NAME:
         return ErrorCode.CORRUPT_FILE
     if isinstance(error, PermissionError):
@@ -92,7 +85,6 @@ def _converters() -> Mapping[FormatId, DocumentConverter]:
     # Some of markitdown's converters have untyped constructors.
     return MappingProxyType(
         {
-            FormatId.PDF: PdfConverter(),
             FormatId.DOCX: DocxConverter(),  # type: ignore[no-untyped-call]
             FormatId.PPTX: PptxConverter(),  # type: ignore[no-untyped-call]
             FormatId.XLSX: XlsxConverter(),  # type: ignore[no-untyped-call]

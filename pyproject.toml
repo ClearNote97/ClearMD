@@ -12,7 +12,8 @@ dependencies = [
     # Encoding of .tex files that declare none (feature 002); markitdown pulls it in too.
     "charset-normalizer>=3.4",
     # Pre-1.0: exact version, upgraded on purpose and with tests (ADR-0004).
-    "markitdown[pdf,docx,pptx,xlsx]==0.1.9",
+    "markitdown[docx,pptx,xlsx]==0.1.9",
+    "pypdfium2>=5.14,<6",  # PDF text (feature 008, ADR-0030)
     # Per-OS configuration paths (ADR-0002, ADR-0012).
     "platformdirs>=4.13",
     # Memory of the worker process on every OS (ADR-0015).
@@ -91,7 +92,7 @@ mypy_path = ["src", "tests", "tests/fixtures", "tests/benchmark"]
 [[tool.mypy.overrides]]
 # Third-party libraries without type information; each entry is justified where it is imported.
 module = [
-    "openpyxl", "openpyxl.*", "psutil", "pylatexenc", "pylatexenc.*", "tkinterdnd2", "tkinterdnd2.*",
+    "openpyxl", "openpyxl.*", "psutil", "pypdfium2", "pypdfium2.*", "pylatexenc", "pylatexenc.*", "tkinterdnd2", "tkinterdnd2.*",
 ]
 ignore_missing_imports = true
 

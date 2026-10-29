@@ -8,18 +8,20 @@ from clearmd.backend.services.conversion.registry import ConverterRegistry, buil
 
 def test_every_supported_format_has_a_converter() -> None:
     from clearmd.backend.services.conversion.odt import OdtConverter
+    from clearmd.backend.services.conversion.pdf import PdfConverter
     from clearmd.backend.services.conversion.tex import TexConverter
 
     registry = build_registry()
     assert isinstance(registry.for_format(FormatId.TEX), TexConverter)
     assert isinstance(registry.for_format(FormatId.ODT), OdtConverter)
-    others = set(FormatId) - {FormatId.TEX, FormatId.ODT}
+    assert isinstance(registry.for_format(FormatId.PDF), PdfConverter)  # ADR-0030
+    others = set(FormatId) - {FormatId.TEX, FormatId.ODT, FormatId.PDF}
     assert all(isinstance(registry.for_format(fmt), MarkItDownConverter) for fmt in others)
 
 
 def test_all_formats_share_one_markitdown_instance() -> None:
     registry = build_registry()
-    assert registry.for_format(FormatId.PDF) is registry.for_format(FormatId.DOCX)
+    assert registry.for_format(FormatId.XLSX) is registry.for_format(FormatId.DOCX)
 
 
 def test_a_format_without_converter_is_unsupported() -> None:

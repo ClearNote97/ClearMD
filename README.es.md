@@ -65,8 +65,8 @@ El valor está en el método — un producto pequeño construido como uno serio:
    artículo también la escribe ClearMD completa.
 5. **Medido, no adivinado.** Los benchmarks ([001](./docs/benchmarks/001-conversion-limits.md),
    [002](./docs/benchmarks/002-tex-converter.md), [003](./docs/benchmarks/003-odt-converter.md),
-   [004](./docs/benchmarks/004-html-article-mode.md)) fijaron los límites y la velocidad de cada formato: el PDF es el cuello de botella por tiempo (~10 páginas/s), el xlsx por
-   memoria, una tesis de 300 páginas en LaTeX tarda ~3 s y un informe `.odt` de 300 páginas, menos de un
+   [004](./docs/benchmarks/004-html-article-mode.md)) fijaron los límites y la velocidad de cada formato: el xlsx es el cuello de botella por
+   memoria, un PDF se lee a ~100 páginas/s con PDFium (ADR-0030), una tesis de 300 páginas en LaTeX tarda ~3 s y un informe `.odt` de 300 páginas, menos de un
    segundo. Los
    archivos se convierten del más liviano al más pesado, y el tiempo restante se estima con la velocidad real del
    lote.
@@ -244,7 +244,8 @@ web — una herramienta de escritorio ([ADR-0009](./docs/decisions/0009-template
 
   | Librería | Qué hace en ClearMD | Licencia |
   |---|---|---|
-  | [markitdown](https://github.com/microsoft/markitdown) (Microsoft) | convierte PDF, Word, PowerPoint, Excel, HTML, CSV, EPUB y notebooks | MIT |
+  | [markitdown](https://github.com/microsoft/markitdown) (Microsoft) | convierte Word, PowerPoint, Excel, HTML, CSV, EPUB y notebooks | MIT |
+  | [pypdfium2](https://github.com/pypdfium2-team/pypdfium2) con [PDFium](https://pdfium.googlesource.com/pdfium/) (Google) | lee el texto de los PDF para el convertidor de PDF de ClearMD | Apache-2.0 / BSD-3-Clause |
   | [magika](https://github.com/google/magika) (Google) | detecta el formato de los archivos sin extensión | Apache-2.0 |
   | [trafilatura](https://github.com/adbar/trafilatura) (Adrien Barbaresi) | encuentra el artículo de una página web (modo artículo) | Apache-2.0 |
   | [pylatexenc](https://github.com/phfaist/pylatexenc) (Philippe Faist) | lee el LaTeX para el conversor propio de `.tex` | MIT |
