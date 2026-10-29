@@ -54,6 +54,10 @@ class FileList(ttk.Frame):
         self.empty = ttk.Label(self.tree, style=MUTED, anchor="center", justify="center")
         self.tree.bind("<<TreeviewSelect>>", lambda _event: self._sync_boxes(), add="+")
         self.tree.bind("<Button-1>", self._clicked)
+        # The keyboard too (UX §6): Space checks the row with the focus, Ctrl+A checks all.
+        self.tree.bind("<space>", lambda _event: self._toggle_focused())
+        self.tree.bind("<Control-a>", lambda _event: self._select_all())
+        self.tree.bind("<Control-A>", lambda _event: self._select_all())
 
     # --- Texts and colours ------------------------------------------------------------------
 
@@ -144,6 +148,16 @@ class FileList(ttk.Frame):
             self.tree.selection_remove(*children)
         else:
             self.tree.selection_set(children)
+
+    def _toggle_focused(self) -> str:
+        focused = self.tree.focus()
+        if focused:
+            self.toggle(focused)
+        return "break"
+
+    def _select_all(self) -> str:
+        self.tree.selection_set(self.tree.get_children())
+        return "break"
 
     def clear_selection(self) -> None:
         self.tree.selection_remove(*self.tree.selection())

@@ -49,7 +49,7 @@ gui_splash = Splash(  # noqa: F821
     text_pos=(40, 214),
     text_size=10,
     text_color="#A9B4BE",
-    text_default="Loading… 0 %",
+    text_default="Loading · Cargando… 0 %",
     always_on_top=False,
 )
 gui_exe = EXE(  # noqa: F821

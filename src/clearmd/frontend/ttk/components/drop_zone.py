@@ -22,6 +22,7 @@ class DropZone(tk.Canvas):
         self._picture: ImageTk.PhotoImage | None = None
         self.configure(cursor="hand2")
         self._pending: str | None = None
+        self.bind("<Destroy>", lambda _event: self._cancel_pending(), add="+")
         self.bind("<Configure>", lambda _event: self._resized())
         self.bind("<Button-1>", lambda _event: on_click())
 
@@ -36,6 +37,12 @@ class DropZone(tk.Canvas):
 
     def text(self) -> str:
         return self._text
+
+    def _cancel_pending(self) -> None:
+        """A redraw still waiting when the window closes is dropped (code review of 007)."""
+        if self._pending is not None:
+            self.after_cancel(self._pending)
+            self._pending = None
 
     def _resized(self) -> None:
         """A dashed border is a picture: drawn again only once the size settles (AC-09)."""

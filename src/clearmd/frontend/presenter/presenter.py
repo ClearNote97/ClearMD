@@ -97,6 +97,7 @@ class Presenter:
         self._shutting_down = False  # the window is closing: nothing is opened any more
         self._scan_count: tuple[int, int] | None = None  # (generation, latest count), SCAN_MS
         self.page = 1  # the step on screen (ADR-0029)
+        self._plan_id = 0  # each plan's own number (security audit of 007, F-2)
 
     # --- Start -----------------------------------------------------------------------------------
 
@@ -145,33 +146,41 @@ class Presenter:
 
     def add_paths(self, paths: Sequence[Path]) -> None:
         """Files or folders, from the dialogs or dropped on the window; never listed twice."""
-        if not self._editable():
-            return
         known = {_key(path) for path in self._inputs}
+        new: list[Path] = []
         for path in paths:
             absolute = Path(os.path.abspath(path))
             if _key(absolute) not in known:
                 known.add(_key(absolute))
-                self._inputs.append(absolute)
+                new.append(absolute)
+        if not new or not self._editable():  # nothing new: the plan stays (C7-4)
+            return
+        self._inputs.extend(new)
         self._show_inputs()
         self._set(self.state)
 
     def remove_input(self, path: Path) -> None:
-        if not self._editable():
+        self.remove_inputs([path])
+
+    def remove_inputs(self, paths: Sequence[Path]) -> None:
+        """Remove several at once: one redraw, whatever their number (code review of 007)."""
+        gone = {_key(Path(path)) for path in paths}
+        kept = [known for known in self._inputs if _key(known) not in gone]
+        if len(kept) == len(self._inputs) or not self._editable():
             return
-        self._inputs = [known for known in self._inputs if _key(known) != _key(Path(path))]
+        self._inputs = kept
         self._show_inputs()
         self._set(self.state)
 
     def clear_inputs(self) -> None:
-        if not self._editable():
+        if not self._inputs or not self._editable():
             return
         self._inputs.clear()
         self._show_inputs()
         self._set(self.state)
 
     def choose_output_next_to(self) -> None:
-        if not self._editable():
+        if self._output_folder is None or not self._editable():
             return
         self._output_folder = None
         self._show_output()
@@ -180,9 +189,10 @@ class Presenter:
     def choose_output_folder(self, folder: Path) -> None:
         """Results in ``folder``, remembered as the suggestion for next time (ADR-0016) when its
         path can be stored (a name with control characters still receives the results)."""
-        if not self._editable():
+        chosen = Path(os.path.abspath(folder))
+        if chosen == self._output_folder or not self._editable():
             return
-        self._output_folder = Path(os.path.abspath(folder))
+        self._output_folder = chosen
         self._show_output()
         self._set(self.state)
         if valid_path_setting(str(self._output_folder)):
@@ -197,6 +207,7 @@ class Presenter:
             self._plan = None
             self._report = None
             self.state = AppState.READY
+            self._view.forget_work()
         return True
 
     # --- Pages (ADR-0029) ------------------------------------------------------------------------
@@ -215,6 +226,7 @@ class Presenter:
             if self.state is AppState.WAITING_DECISION:
                 self.go_to(2)
             else:
+                self._editable()  # after a batch: a new plan (security audit of 007, N-1)
                 self.analyze()
         elif self.page == 2:
             self.go_to(3)
@@ -380,6 +392,9 @@ class Presenter:
 
     def save_settings(self, settings: Settings) -> None:
         """Save and apply at once (language, theme); told if the file cannot be written."""
+        old = self.settings
+        if (old.recursive, old.html_strategy) != (settings.recursive, settings.html_strategy):
+            self._editable()  # these change what a plan holds: it is made again (007, I-1)
         self._apply(settings)
         self._save(settings)
         self._show_inputs()
@@ -437,6 +452,7 @@ class Presenter:
 
     def _planned(self, plan: BatchPlan) -> None:
         self._plan = plan
+        self._plan_id += 1
         self._view.show_plan(self._plan_view(plan))
         self.page = 2
         self._set(AppState.WAITING_DECISION)
@@ -575,7 +591,7 @@ class Presenter:
             self._stat("gui.plan.stat_skipped", len(plan.skipped) + len(plan.input_errors)),
             self._stat("gui.plan.stat_existing", existing, Tone.NEUTRAL),
         )
-        return PlanView(summary, tuple(rows), asks, stats)
+        return PlanView(summary, tuple(rows), asks, stats, self._plan_id)
 
     def _stat(self, key: str, value: int, tone: Tone = Tone.WARNING) -> Stat:
         """A figure; a warning or a problem only when it is not zero."""

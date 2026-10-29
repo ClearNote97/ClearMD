@@ -55,6 +55,11 @@ class ConvertView(ttk.Frame):
         self.ready_where.configure(text=where)
         self.ready.pack(fill="x")
 
+    def forget(self) -> None:
+        """No plan any more: neither what was ready nor an old progress stays on screen."""
+        self.ready.pack_forget()
+        self.progress_card.pack_forget()
+
     def clear(self) -> None:
         """The batch starts: the progress replaces the ready card."""
         self.ready.pack_forget()

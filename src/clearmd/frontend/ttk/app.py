@@ -91,6 +91,7 @@ class TtkApp:
         self._scan: str | None = None
         self.dialog: Dialog | None = None  # the open dialog: one at a time
         self._closing_since: float | None = None  # closed while converting: waiting for the end
+        self._page_shown_at = 0.0  # when the page on screen changed (F-1)
         self._build()
         self.presenter = Presenter(self, backend)
         self.rail.show_version(self.presenter.version)
@@ -145,7 +146,7 @@ class TtkApp:
             fonts=self.fonts,
             on_add_files=self.add_files,
             on_add_folder=self.add_folder,
-            on_remove=lambda path: self.presenter.remove_input(path),
+            on_remove=lambda paths: self.presenter.remove_inputs(paths),
             on_clear=lambda: self.presenter.clear_inputs(),
             on_next_to=lambda: self.presenter.choose_output_next_to(),
             on_pick_folder=self.pick_output_folder,
@@ -162,7 +163,7 @@ class TtkApp:
         if self.drops:
             self.root.drop_target_register(DND_FILES)
             self.root.dnd_bind("<<Drop>>", self._dropped)
-        self.root.bind("<Return>", lambda _event: self._primary())
+        self.root.bind("<Return>", lambda _event: self._primary(by_key=True))
         for number in range(1, 5):  # the rail by keyboard (AC-01)
             self.root.bind(
                 f"<Control-Key-{number}>", lambda _event, n=number: self.presenter.go_to(n)
@@ -213,10 +214,16 @@ class TtkApp:
         if self.state is not None and Action.ADD in self.state.enabled:
             self.presenter.add_paths(paths)
 
-    def _primary(self) -> None:
-        """The page's primary action, from its button or Enter (UX §6, ADR-0029)."""
-        if self.dialog is None:
-            self.presenter.press_primary(self.review.overwrite_answer())
+    def _primary(self, *, by_key: bool = False) -> None:
+        """The page's primary action, from its button or Enter (UX §6, ADR-0029). Ignored for a
+        moment after the page changes: a held Enter or a double click must not run Next and
+        Convert in one burst, past a page the user did not see (security audit of 007, F-1)."""
+        if self.dialog is not None:
+            return
+        pause = PRIMARY_PAUSE_SECONDS if by_key else PRIMARY_PAUSE_SECONDS / 2  # a double click
+        if time.monotonic() - self._page_shown_at < pause:
+            return
+        self.presenter.press_primary(self.review.overwrite_answer())
 
     def convert_more(self) -> None:
         """Asked every time: keep the chosen files, or start empty (feature 007)."""
@@ -327,6 +334,7 @@ class TtkApp:
             self._scan = None
         if previous is not None and previous.page != state.page:
             self.message.configure(text="")  # a message belongs to the page it was given on
+            self._page_shown_at = time.monotonic()
         converting = state.state is AppState.CONVERTING
         if converting and (previous is None or previous.state is not AppState.CONVERTING):
             self.converting.clear()
@@ -401,6 +409,13 @@ class TtkApp:
             self.page.pack_forget()
         page.pack(fill="both", expand=True)
         self.page = page
+
+    def forget_work(self) -> None:
+        self.last_plan = None
+        self.last_result = None
+        self.review.forget()
+        self.converting.forget()
+        self.results.forget()
 
     def show_message(self, text: str) -> None:
         self.message.configure(text=text)
@@ -481,6 +496,7 @@ def _forget_dead_style() -> None:
         tb.Style.instance = None
 
 
+PRIMARY_PAUSE_SECONDS = 0.5  # after a page change, before its primary action counts (F-1)
 CLOSE_POLL_MS = 50
 CLOSE_WAIT_SECONDS = 60  # closing while converting: at most this long for the batch to stop
 SMOKE_SECONDS = 3  # ``--smoke``: the executable's own check in CI (ADR-0028)
@@ -493,9 +509,9 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     multiprocessing.freeze_support()  # a no-op unless running as a packaged executable
     arguments = sys.argv[1:] if argv is None else list(argv)
-    _splash_text("Loading… 85 %")
+    _splash_text("Loading · Cargando… 85 %")
     app = TtkApp()
-    _splash_text("Loading… 100 %")
+    _splash_text("Loading · Cargando… 100 %")
     app.start()
     _close_splash()
     if "--smoke" in arguments:

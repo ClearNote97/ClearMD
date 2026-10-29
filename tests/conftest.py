@@ -42,3 +42,10 @@ def display() -> Iterator[str]:
         if name is None:
             pytest.skip("no display and no Xvfb: GUI tests need one")
         yield name
+
+
+@pytest.fixture(autouse=True)
+def _no_pause_between_pages(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Tests press buttons faster than a person: the window's pause after a page change (against a
+    held Enter, security audit of 007) is off, except where a test turns it on."""
+    monkeypatch.setattr("clearmd.frontend.ttk.app.PRIMARY_PAUSE_SECONDS", 0.0)

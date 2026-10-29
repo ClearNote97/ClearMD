@@ -88,6 +88,7 @@ class PlanView:
     rows: tuple[PlanRow, ...]
     asks_about_existing: bool  # the user chooses: overwrite or keep (setting "ask")
     stats: tuple[Stat, ...] = ()
+    plan_id: int = 0  # another plan (even with the same rows): the user's answer starts over
 
 
 @dataclass(frozen=True)

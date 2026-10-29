@@ -23,6 +23,7 @@ class Surface(tk.Canvas):
         self._ground_key: tuple[int, int, str] | None = None  # drawn again only when it changes
         self.page = ttk.Frame(self, style=PAGE)
         self._pending: str | None = None
+        self.bind("<Destroy>", lambda _event: self._cancel_pending(), add="+")
         self.bind("<Configure>", lambda _event: self._resized())
 
     def apply_palette(self, palette: Palette) -> None:
@@ -41,6 +42,12 @@ class Surface(tk.Canvas):
         body = self._fonts["body"].metrics("linespace")
         title = self._fonts["title"].metrics("linespace")
         return GAP + body + HALF + title + HALF + body
+
+    def _cancel_pending(self) -> None:
+        """A redraw still waiting when the window closes is dropped (code review of 007)."""
+        if self._pending is not None:
+            self.after_cancel(self._pending)
+            self._pending = None
 
     def _resized(self) -> None:
         """Lay out at once; draw the ground again only once the size settles (AC-09)."""

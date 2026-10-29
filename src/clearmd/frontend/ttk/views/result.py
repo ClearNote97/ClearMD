@@ -59,7 +59,7 @@ class ResultsView(ttk.Frame):
             self.problems.show(
                 [ListRow(row.icon, row.name, (row.detail,), tag="warning") for row in result.rows]
             )
-            self.detail.pack(fill="x", pady=(SPACE, 0))
+            self.detail.pack(side="bottom", fill="x", pady=(SPACE, 0), before=self.problems)
             children = tree.get_children()
             row = children[selected if keep and selected < len(children) else 0]
             tree.selection_set(row)
@@ -67,6 +67,12 @@ class ResultsView(ttk.Frame):
             self._show_detail()
         else:
             self.all_good.pack(fill="x", pady=(GAP, 0))
+
+    def forget(self) -> None:
+        """The result was dropped (an edit): its figures and list leave the screen."""
+        self.stats.show(())
+        for widget in (self.all_good, self.problems_title, self.problems, self.detail):
+            widget.pack_forget()
 
     def _show_detail(self) -> None:
         row = self.problems.current()

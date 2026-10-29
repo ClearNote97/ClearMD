@@ -307,6 +307,8 @@ language_title = "Language · Idioma"
 language = "Change the language in Settings. · Cambia el idioma en Ajustes (Settings → Language)."
 close = "Close"
 version = "ClearMD {version}"
+keyboard_title = "Keyboard"
+keyboard = "Ctrl+1 … Ctrl+4 opens a step · Enter runs the main action · Space checks a file · Ctrl+A checks all · Delete removes the checked ones · Esc closes a window."
 
 [gui.app]
 title = "ClearMD"

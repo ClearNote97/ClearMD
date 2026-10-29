@@ -28,7 +28,7 @@ class ReviewView(ttk.Frame):
     ) -> None:
         super().__init__(parent, style=PAGE)
         self._asks = False
-        self._rows: tuple[object, ...] = ()
+        self._plan_id = -1
         self._texts: list[tuple[Any, str]] = []
 
         self.stats = Stats(self, fonts=fonts)
@@ -67,14 +67,22 @@ class ReviewView(ttk.Frame):
                 for row in rows
             ]
         )  # fmt: skip
-        same = plan.rows == self._rows  # shown again (a settings change): the answer stays
-        self._rows = plan.rows
+        same = plan.plan_id == self._plan_id  # the same plan shown again: the answer stays
+        self._plan_id = plan.plan_id
         self._asks = plan.asks_about_existing
         if not same:
             self.decision.set(KEEP)
         self.existing.pack_forget()
         if self._asks:
-            self.existing.pack(fill="x", pady=(GAP, 0))
+            self.existing.pack(side="bottom", fill="x", pady=(GAP, 0), before=self.files)
+
+    def forget(self) -> None:
+        """The plan was dropped (an edit): nothing of it stays on screen (code review of 007)."""
+        self.stats.show(())
+        self.files.show([])
+        self.existing.pack_forget()
+        self._asks = False
+        self._plan_id = -1
 
     def overwrite_answer(self) -> bool | None:
         """The answer about existing results, when the plan asks it (setting "ask")."""

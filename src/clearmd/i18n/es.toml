@@ -307,6 +307,8 @@ language_title = "Idioma · Language"
 language = "Cambia el idioma en Ajustes. · Change the language in Settings (Ajustes → Idioma)."
 close = "Cerrar"
 version = "ClearMD {version}"
+keyboard_title = "Teclado"
+keyboard = "Ctrl+1 … Ctrl+4 abre un paso · Enter ejecuta la acción principal · Espacio marca un archivo · Ctrl+A marca todos · Supr quita los marcados · Esc cierra una ventana."
 
 [gui.app]
 title = "ClearMD"

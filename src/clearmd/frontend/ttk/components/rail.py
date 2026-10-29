@@ -62,13 +62,20 @@ class Rail(tk.Canvas):
         self.settings = ttk.Button(self, style=RAIL, command=on_settings, takefocus=True)
         self.help = ttk.Button(self, style=RAIL, command=on_help, takefocus=True)
         self.bind("<Configure>", lambda _event: self.redraw_soon())
+        self.bind("<Destroy>", lambda _event: self._cancel_pending(), add="+")
+        for index in range(1, len(STEPS) + 1):  # once: the items come and go, the tags stay
+            tag = f"step{index}"
+            self.tag_bind(tag, "<Button-1>", partial(self._clicked, index))
+            self.tag_bind(tag, "<Enter>", lambda _event: self.configure(cursor="hand2"))
+            self.tag_bind(tag, "<Leave>", lambda _event: self.configure(cursor=""))
         self.configure(cursor="")
 
     # --- What the window tells it -------------------------------------------------------------
 
     def show_page(self, page: int) -> None:
-        self._page = page
-        self._draw()
+        if page != self._page:  # every state change calls this: draw only what changes
+            self._page = page
+            self._draw()
 
     def set_compact(self, compact: bool) -> None:
         if compact != self._compact:
@@ -107,6 +114,11 @@ class Rail(tk.Canvas):
         if self._pending is not None:
             self.after_cancel(self._pending)
         self._pending = self.after(REDRAW_MS, self._draw)
+
+    def _cancel_pending(self) -> None:
+        if self._pending is not None:
+            self.after_cancel(self._pending)
+            self._pending = None
 
     def _buttons_text(self) -> None:
         if self._compact:  # icon-like texts: the full words would not fit
@@ -183,9 +195,6 @@ class Rail(tk.Canvas):
                 badge_x + _BADGE // 2 + SPACE + HALF, middle, text=label, fill=colour,
                 font=self._fonts["strong" if on_screen else "body"], anchor="w", tags=tag,
             )  # fmt: skip
-        self.tag_bind(tag, "<Button-1>", partial(self._clicked, index))
-        self.tag_bind(tag, "<Enter>", lambda _event: self.configure(cursor="hand2"))
-        self.tag_bind(tag, "<Leave>", lambda _event: self.configure(cursor=""))
 
     def _clicked(self, index: int, _event: object) -> None:
         self._on_step(index)

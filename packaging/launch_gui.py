@@ -10,12 +10,12 @@ except ImportError:
     pyi_splash = None
 
 if pyi_splash is not None:
-    pyi_splash.update_text("Loading… 30 %")
+    pyi_splash.update_text("Loading · Cargando… 30 %")
 
 from clearmd.frontend.ttk import main  # noqa: E402 -- the heavy import, after the first step
 
 if pyi_splash is not None:
-    pyi_splash.update_text("Loading… 70 %")
+    pyi_splash.update_text("Loading · Cargando… 70 %")
 
 if __name__ == "__main__":
     main()

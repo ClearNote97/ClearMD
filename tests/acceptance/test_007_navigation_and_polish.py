@@ -176,11 +176,11 @@ def test_ac_11_the_splash_shows_the_subtitle_and_the_start_up_progress() -> None
     splash = Image.open(ROOT / "src/clearmd/frontend/assets/logo/splash.png")
     assert splash.size == (520, 240)
     spec = (ROOT / "packaging" / "clearmd.spec").read_text(encoding="utf-8")
-    assert 'text_default="Loading… 0 %"' in spec and "text_pos=(40, 214)" in spec
+    assert 'text_default="Loading · Cargando… 0 %"' in spec and "text_pos=(40, 214)" in spec
     launcher = (ROOT / "packaging" / "launch_gui.py").read_text(encoding="utf-8")
-    assert "Loading… 30 %" in launcher and "Loading… 70 %" in launcher
+    assert "Cargando… 30 %" in launcher and "Cargando… 70 %" in launcher
     app_source = (ROOT / "src/clearmd/frontend/ttk/app.py").read_text(encoding="utf-8")
-    assert "Loading… 100 %" in app_source
+    assert "Cargando… 100 %" in app_source
 
 
 def test_ac_12_screenshots_of_the_new_screens_in_both_themes_and_languages() -> None:

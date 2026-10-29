@@ -12,7 +12,7 @@ from clearmd.frontend.ttk.components.dialog import Dialog
 from clearmd.frontend.ttk.layout import GAP, HALF, SPACE
 from clearmd.i18n import Catalog
 
-_HELP_SECTIONS = ("how", "formats", "where", "privacy", "language")
+_HELP_SECTIONS = ("how", "formats", "where", "keyboard", "privacy", "language")
 _LANGUAGES = {"en": "English", "es": "Español"}  # each in its own language
 
 
@@ -239,7 +239,12 @@ class KeepInputsDialog(Dialog):
             command=lambda: self.answer(False),
         )  # fmt: skip
         self.clear.pack(side="right", padx=(0, SPACE))
-        self.bind("<Return>", lambda _event: self.answer(True))
+        self.bind("<Return>", lambda _event: self._enter())
+
+    def _enter(self) -> None:
+        """Enter runs the button with the focus; elsewhere, the default (keep them)."""
+        focused = self.focus_get()
+        self.answer(focused is not self.clear)
 
     def answer(self, keep: bool) -> None:
         self.close()

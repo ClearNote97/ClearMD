@@ -35,6 +35,6 @@ Each criterion has an acceptance test (`tests/acceptance/test_007_navigation_and
   window can shrink to 800 × 560, and below 1000 px wide the rail is compact (logo and numbers).
 - [ ] **AC-10** The version is on screen (the rail's footer) and in the help.
 - [ ] **AC-11** The executable's splash shows the logo, *Turn your documents into Markdown*, and
-  "Loading… N %" moving through the real stages of the start.
+  "Loading · Cargando… N %" (it starts before any setting is read: both languages) moving through the real stages of the start.
 - [ ] **AC-12** Everything new follows ADR-0027 (palette, type, 8 px grid, WCAG AA), in English
   and Spanish, works with the keyboard, and has screenshots in `docs/screenshots/007/`.

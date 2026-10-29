@@ -68,3 +68,10 @@ class Dialog(tk.Toplevel):
         self.grab_release()
         self.destroy()
         self._on_close()
+        # Tk variables die here, on the UI thread: left to the garbage collector, one could be
+        # freed from the worker thread, which Tk does not allow (a warning seen in 007's tests).
+        for name, value in list(vars(self).items()):
+            if isinstance(value, tk.Variable) or (
+                isinstance(value, dict) and any(isinstance(v, tk.Variable) for v in value.values())
+            ):
+                setattr(self, name, None)

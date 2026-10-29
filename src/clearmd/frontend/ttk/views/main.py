@@ -33,7 +33,7 @@ class MainView(ttk.Frame):
         fonts: dict[str, tkfont.Font],
         on_add_files: Callable[[], None],
         on_add_folder: Callable[[], None],
-        on_remove: Callable[[Path], None],
+        on_remove: Callable[[list[Path]], None],
         on_clear: Callable[[], None],
         on_next_to: Callable[[], None],
         on_pick_folder: Callable[[], None],
@@ -65,7 +65,9 @@ class MainView(ttk.Frame):
         self.inputs.tree.bind("<Delete>", lambda _event: self._remove_selected())
 
         editing = ttk.Frame(self, style=PAGE)
-        editing.pack(fill="x", pady=(HALF, 0))
+        # The output card and the editing links stay at the bottom; the list takes what is left,
+        # so nothing is cut at the smallest window (code review of 007).
+        editing.pack(side="bottom", fill="x", pady=(HALF, 0), before=self.inputs)
         self.remove = ttk.Button(editing, style=LINK, command=self._remove_selected)
         self.remove.pack(side="left")
         self.clear = ttk.Button(editing, style=LINK, command=on_clear)
@@ -77,7 +79,7 @@ class MainView(ttk.Frame):
         self._label(self.clear, "gui.main.clear")
 
         bottom = ttk.Frame(self, style=PAGE)
-        bottom.pack(fill="x", pady=(SPACE, 0))
+        bottom.pack(side="bottom", fill="x", pady=(SPACE, 0), before=editing)
         output = ttk.Frame(bottom, style=CARD, padding=GAP)
         output.pack(side="left", fill="x", expand=True)
         title = ttk.Label(output, font=fonts["strong"])
@@ -138,5 +140,6 @@ class MainView(ttk.Frame):
         self._texts.append((widget, key))
 
     def _remove_selected(self) -> None:
-        for path in self.inputs.selected():
-            self._on_remove(path)
+        chosen = self.inputs.selected()
+        if chosen:
+            self._on_remove(chosen)
