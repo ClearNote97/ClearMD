@@ -40,3 +40,6 @@ Thumbs.db
 # --- LOGS ---
 *.log
 logs/pytest-report.xml
+
+# Real documents and their outputs, for local evaluation only: never committed (privacy).
+docs/Examples/
