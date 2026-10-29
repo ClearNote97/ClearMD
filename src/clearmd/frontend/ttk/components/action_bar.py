@@ -15,10 +15,16 @@ class ActionBar(ttk.Frame):
         super().__init__(parent, style=PAGE)
         self.primary = ttk.Button(self, style=PRIMARY, command=on_primary)
         self.primary.pack(side="right")
-        self.secondary = ttk.Button(self, style=SOFT)
+        # One command for the whole life of the button: configuring a new one on every state
+        # change would leave a Tcl command behind each time (adversarial check of 007, A7-2).
+        self.secondary = ttk.Button(self, style=SOFT, command=self._secondary)
         self.hint = ttk.Label(self, style=HINT, anchor="e", justify="right")
         self.hint.pack(side="right", fill="x", expand=True, padx=(0, GAP))
         self._secondary_command: Callable[[], None] | None = None
+
+    def _secondary(self) -> None:
+        if self._secondary_command is not None:
+            self._secondary_command()
 
     def show(self, primary: Primary) -> None:
         self.primary.configure(text=primary.label)
@@ -32,6 +38,7 @@ class ActionBar(ttk.Frame):
         if text is None or command is None:
             self.secondary.pack_forget()
             return
-        self.secondary.configure(text=text, command=command, style=STRONG if strong else SOFT)
+        self._secondary_command = command
+        self.secondary.configure(text=text, style=STRONG if strong else SOFT)
         if not self.secondary.winfo_ismapped():
             self.secondary.pack(side="right", padx=(0, SPACE), after=self.primary)

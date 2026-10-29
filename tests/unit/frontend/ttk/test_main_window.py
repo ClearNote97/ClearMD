@@ -11,6 +11,7 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from support.gui_close import shut
 from support.gui_fakes import FakeBackend, MemoryBackend, planned
 
 from clearmd.backend.schemas.errors import SkipReason
@@ -29,7 +30,7 @@ def app(display: str) -> Iterator[TtkApp]:
     window.start()
     pump(window, seconds=0.2)
     yield window
-    window.close()
+    shut(window)
 
 
 def pump(window: TtkApp, *, until: Any = None, seconds: float = 2.0) -> None:
@@ -61,7 +62,8 @@ def press_enter(app: TtkApp) -> None:
     """Enter on the window: it needs the keyboard focus first (Windows gives it only on demand)."""
     app.root.focus_force()
     app.root.update()
-    app.root.event_generate("<Return>", when="tail")
+    app.root.event_generate("<KeyPress-Return>", when="tail")
+    app.root.event_generate("<KeyRelease-Return>", when="tail")  # pressed and let go
 
 
 def widgets(root: Any) -> Iterator[Any]:
@@ -199,7 +201,7 @@ def test_review_shows_the_figures_and_each_file_then_converting_ends_in_results(
         convert_more(app)
         assert shown(app) is app.main and app.main.inputs.names() == [f"{tmp_path.name}/"]
     finally:
-        app.close()
+        shut(app)
 
 
 def test_progress_shows_the_file_and_cancel_stops(display: str, tmp_path: Path) -> None:
@@ -228,7 +230,7 @@ def test_progress_shows_the_file_and_cancel_stops(display: str, tmp_path: Path) 
         assert app.presenter.state is AppState.CANCELLED and shown(app) is app.results
     finally:
         gate.set()
-        app.close()
+        shut(app)
 
 
 def test_a_clean_batch_says_every_file_was_converted(display: str, tmp_path: Path) -> None:
@@ -246,7 +248,7 @@ def test_a_clean_batch_says_every_file_was_converted(display: str, tmp_path: Pat
         assert app.results.all_good.winfo_ismapped()
         assert not app.results.problems.winfo_ismapped()
     finally:
-        app.close()
+        shut(app)
 
 
 def shown(app: TtkApp) -> object:
@@ -277,7 +279,7 @@ def test_problems_are_listed_in_the_results(display: str, tmp_path: Path) -> Non
         app.actions.primary.invoke()
         assert fake.opened
     finally:
-        app.close()
+        shut(app)
 
 
 # --- Help, welcome, settings (T06) ---------------------------------------------------------------
@@ -309,7 +311,7 @@ def test_the_welcome_appears_once_and_can_be_dismissed_for_good(display: str) ->
         assert app.dialog is None
         assert fake.saved[-1].show_welcome is False
     finally:
-        app.close()
+        shut(app)
 
 
 def test_settings_save_applies_the_language_and_theme(app: TtkApp) -> None:
@@ -374,7 +376,7 @@ def test_a_real_batch_through_the_window_writes_the_markdown(display: str, tmp_p
         assert set(app.results.problems.names()) == {"encrypted.pdf", "notas.md"}
         assert backend.opened == [output]
     finally:
-        app.close()
+        shut(app)
 
 
 # --- Keyboard and look (T07; AC-17 – AC-19, AC-22) -----------------------------------------------
@@ -466,7 +468,7 @@ def test_c1_closing_while_converting_waits_for_the_summary(display: str, tmp_pat
     pump(app, until=lambda: app.presenter.state is AppState.WAITING_DECISION)
     confirm(app)
     pump(app, until=lambda: app.presenter.state is AppState.CONVERTING)
-    app.close()
+    shut(app)
     assert run_until_closed(app)
     assert marker.is_file()
 
@@ -481,7 +483,7 @@ def test_c2_an_unexpected_error_stays_on_screen(display: str, tmp_path: Path) ->
         pump(app, seconds=0.2)
         assert "Something unexpected went wrong" in app.message.cget("text")
     finally:
-        app.close()
+        shut(app)
 
 
 def test_c3_settings_warnings_at_start_are_on_screen(display: str) -> None:
@@ -493,7 +495,7 @@ def test_c3_settings_warnings_at_start_are_on_screen(display: str) -> None:
         assert "colour" in app.message.cget("text")
         assert int(app.message.cget("wraplength")) > 0  # C-12: long messages wrap
     finally:
-        app.close()
+        shut(app)
 
 
 def test_c5_a_theme_change_keeps_the_selected_row(app: TtkApp, tmp_path: Path) -> None:
@@ -511,7 +513,7 @@ def test_c9_closing_with_the_welcome_open_keeps_its_answer(display: str) -> None
     pump(app, until=lambda: app.dialog is not None)
     assert isinstance(app.dialog, WelcomeDialog)
     app.dialog.dont_show.set(True)
-    app.close()
+    shut(app)
     assert fake.saved[-1].show_welcome is False
 
 
@@ -534,7 +536,7 @@ def test_a3_a_settings_save_keeps_the_selected_problem(display: str, tmp_path: P
         assert [tree.index(item) for item in tree.selection()] == [1]
         assert app.results.detail.cget("text").startswith("b.pdf")
     finally:
-        app.close()
+        shut(app)
 
 
 def test_a4_a_plan_shown_again_keeps_the_answer_about_existing_results(
@@ -552,7 +554,7 @@ def test_a4_a_plan_shown_again_keeps_the_answer_about_existing_results(
         app.show_plan(app.last_plan)  # the same plan again (a language change)
         assert app.review.decision.get() == "overwrite"
     finally:
-        app.close()
+        shut(app)
 
 
 def replace_settings(settings: Settings, **changes: Any) -> Settings:
@@ -581,7 +583,7 @@ def test_without_tkdnd_the_window_still_works_without_dropping(
             app.main.inputs.tree.item(i, "image") for i in app.main.inputs.tree.get_children()
         )
     finally:
-        app.close()
+        shut(app)
 
 
 # --- Navigation (feature 007, ADR-0029) ----------------------------------------------------------
@@ -645,7 +647,7 @@ def test_convert_more_asks_whether_to_keep_the_files(display: str, tmp_path: Pat
             convert_more(app, keep=keep)
             assert shown(app) is app.main and app.main.inputs.names() == expected
         finally:
-            app.close()
+            shut(app)
 
 
 def test_a_narrow_window_gets_the_compact_rail_and_the_version_is_shown(app: TtkApp) -> None:
@@ -787,12 +789,99 @@ def test_c7_6_the_rail_is_drawn_again_only_when_the_page_changes(app: TtkApp) ->
 def test_c7_7_space_checks_a_row_and_ctrl_a_selects_all(app: TtkApp, tmp_path: Path) -> None:
     app.presenter.add_paths([tmp_path / "a.pdf", tmp_path / "b.pdf"])
     tree = app.main.inputs.tree
-    tree.focus_set()
+    app.root.deiconify()
+    tree.focus_force()
     tree.focus(tree.get_children()[1])
-    app.root.update()
+    pump(app, until=lambda: app.root.focus_get() is tree, seconds=2)
     tree.event_generate("<space>", when="tail")
     pump(app, seconds=0.05)
     assert app.main.inputs.checked() == [False, True]
     tree.event_generate("<Control-a>", when="tail")
     pump(app, seconds=0.05)
     assert app.main.inputs.checked() == [True, True]
+
+
+# --- Adversarial check of 007 (F-1, A7-*) --------------------------------------------------------
+
+
+def key(name: str, time_ms: int) -> SimpleNamespace:
+    return SimpleNamespace(keysym=name, time=time_ms)
+
+
+def test_a_held_key_is_one_press_on_windows_and_on_x11() -> None:
+    from clearmd.frontend.ttk.presses import Presses
+
+    windows = Presses()  # Windows repeats the press
+    assert [windows.pressed(key("Return", t)) for t in (0, 500, 530)] == [True, False, False]
+    windows.released(key("Return", 600))
+    assert windows.pressed(key("Return", 900))
+    x11 = Presses()  # X11 repeats a release and a press with the same time
+    assert x11.pressed(key("Return", 0))
+    x11.released(key("Return", 500))
+    assert not x11.pressed(key("Return", 500))
+    x11.released(key("Return", 700))
+    assert x11.pressed(key("Return", 950))
+
+
+def test_f1_a_held_enter_runs_one_action_whatever_the_pages(app: TtkApp, tmp_path: Path) -> None:
+    app.presenter.add_paths([tmp_path])
+    for time_ms in range(0, 3000, 30):  # three seconds of a held Enter
+        app._enter(key("Return", time_ms + 1))  # Windows: presses only, no release
+        pump(app, seconds=0.01)
+    pump(app, until=lambda: app.presenter.page == 2)
+    assert app.presenter.page == 2 and app.presenter.state is AppState.WAITING_DECISION
+
+
+def test_f1_the_pause_after_a_page_change_is_shown_on_the_button(
+    app: TtkApp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("clearmd.frontend.ttk.app.PRIMARY_PAUSE_SECONDS", 0.3)
+    app.presenter.add_paths([tmp_path])
+    app._primary()
+    pump(app, until=lambda: app.presenter.page == 2)
+    assert app.actions.primary.instate(["disabled"])
+    pump(app, until=lambda: app.actions.primary.instate(["!disabled"]), seconds=2)
+    assert app.actions.primary.instate(["!disabled"])
+
+
+def test_a7_1_convert_more_leaves_nothing_of_the_last_batch(app: TtkApp, tmp_path: Path) -> None:
+    app.presenter.add_paths([tmp_path])
+    app._primary()
+    pump(app, until=lambda: app.presenter.page == 2)
+    confirm(app)
+    pump(app, until=lambda: app.presenter.page == 4)
+    convert_more(app, keep=True)
+    assert app.review.files.names() == [] and app.results.stats.figures() == []
+    assert not app.converting.progress_card.winfo_ismapped()
+
+
+def test_a7_2_the_secondary_button_keeps_one_command(app: TtkApp) -> None:
+    first = app.actions.secondary.cget("command")
+    for page in (2, 3, 2, 3):
+        app.presenter.go_to(page)
+    assert app.actions.secondary.cget("command") == first
+
+
+def test_a7_3_a_burst_of_resizes_leaves_one_redraw_waiting(app: TtkApp) -> None:
+    for _ in range(5):
+        app.surface.event_generate("<Configure>")
+        app.rail.redraw_soon()
+        app.rail.set_compact(not app.rail._compact)
+    waiting = [app.root.tk.call("after", "info", t) for t in app.root.tk.call("after", "info")]
+    assert sum("_redraw_now" in str(script) for script in waiting) <= 3  # surface, rail, drop
+
+
+def test_c7_7_arrows_move_the_focus_so_checks_add_up(app: TtkApp, tmp_path: Path) -> None:
+    app.presenter.add_paths([tmp_path / f"{n}.pdf" for n in range(4)])
+    inputs = app.main.inputs
+    tree = inputs.tree
+    tree.focus(tree.get_children()[0])
+    inputs._toggle_focused()
+    inputs._move(1, False)
+    inputs._move(1, False)
+    inputs._toggle_focused()
+    pump(app, seconds=0.05)
+    assert inputs.checked() == [True, False, True, False]
+    inputs._move(1, True)
+    pump(app, seconds=0.05)
+    assert inputs.checked() == [True, False, True, True]

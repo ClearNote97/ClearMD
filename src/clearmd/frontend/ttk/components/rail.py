@@ -113,7 +113,11 @@ class Rail(tk.Canvas):
         """Draw once the size settles: a resize sends a burst of events (AC-09)."""
         if self._pending is not None:
             self.after_cancel(self._pending)
-        self._pending = self.after(REDRAW_MS, self._draw)
+        self._pending = self.after(REDRAW_MS, self._redraw_now)
+
+    def _redraw_now(self) -> None:
+        self._pending = None
+        self._draw()
 
     def _cancel_pending(self) -> None:
         if self._pending is not None:
@@ -136,7 +140,7 @@ class Rail(tk.Canvas):
         return picture
 
     def _draw(self) -> None:
-        self._pending = None
+        self._cancel_pending()  # a draw now makes a waiting one useless
         p = self._palette
         height = self.winfo_height()
         if p is None or height < 2 * _STEPS_TOP:

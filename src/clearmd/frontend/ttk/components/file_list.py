@@ -3,6 +3,7 @@
 import tkinter as tk
 from collections.abc import Sequence
 from dataclasses import dataclass
+from functools import partial
 from tkinter import ttk
 from typing import Any
 
@@ -58,6 +59,11 @@ class FileList(ttk.Frame):
         self.tree.bind("<space>", lambda _event: self._toggle_focused())
         self.tree.bind("<Control-a>", lambda _event: self._select_all())
         self.tree.bind("<Control-A>", lambda _event: self._select_all())
+        # The arrows move the focus only, so checks add up (a keyboard can check rows 1 and 3);
+        # with Shift they check the rows they pass (adversarial check of 007, C7-7).
+        for key, step in (("Up", -1), ("Down", 1)):
+            self.tree.bind(f"<{key}>", partial(self._move, step, False))
+            self.tree.bind(f"<Shift-{key}>", partial(self._move, step, True))
 
     # --- Texts and colours ------------------------------------------------------------------
 
@@ -88,6 +94,9 @@ class FileList(ttk.Frame):
     # --- Rows ----------------------------------------------------------------------------------
 
     def show(self, rows: Sequence[ListRow]) -> None:
+        items = self.tree.get_children()
+        focused = self.tree.focus()
+        place = items.index(focused) if focused in items else 0  # kept after the rebuild
         self._rows = tuple(rows)
         self.tree.delete(*self.tree.get_children())
         self._items.clear()
@@ -111,6 +120,7 @@ class FileList(ttk.Frame):
             self._items[item] = row
         self._sync_boxes()
         if self._rows:
+            self.tree.focus(self.tree.get_children()[min(place, len(self._rows) - 1)])
             self.empty.place_forget()
         else:
             self.empty.place(relx=0.5, rely=0.55, anchor="center")
@@ -148,6 +158,21 @@ class FileList(ttk.Frame):
             self.tree.selection_remove(*children)
         else:
             self.tree.selection_set(children)
+
+    def _move(self, step: int, check: bool, _event: object = None) -> str:
+        items = self.tree.get_children()
+        if not items:
+            return "break"
+        focused = self.tree.focus()
+        here = items.index(focused) if focused in items else -1
+        target = items[min(max(here + step, 0), len(items) - 1)]
+        if check:
+            if focused in items:
+                self.tree.selection_add(focused)
+            self.tree.selection_add(target)
+        self.tree.focus(target)
+        self.tree.see(target)
+        return "break"
 
     def _toggle_focused(self) -> str:
         focused = self.tree.focus()

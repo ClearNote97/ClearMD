@@ -18,6 +18,7 @@ from typing import Any
 
 import pytest
 from support import DOCUMENTS_DIR
+from support.gui_close import shut
 from support.gui_fakes import FakeBackend, MemoryBackend, planned
 
 import clearmd.frontend.presenter.presenter as presenter_module
@@ -54,7 +55,7 @@ def window(display: str) -> Iterator[Callable[..., TtkApp]]:
     yield make
     for app in opened:
         try:
-            app.close()
+            shut(app)
         except Exception:  # noqa: BLE001 -- already closed by the test
             pass
 
@@ -72,6 +73,7 @@ def confirm(app: TtkApp) -> None:
     """Convert the plan: Next on Review, then Convert (ADR-0029)."""
     if app.presenter.page == 2:
         app.actions.primary.invoke()
+        pump(app, until=lambda: app.presenter.page == 3, seconds=10)
     app.actions.primary.invoke()
 
 
@@ -87,7 +89,8 @@ def press_enter(app: TtkApp) -> None:
     """Enter on the window: it needs the keyboard focus first (Windows gives it only on demand)."""
     app.root.focus_force()
     app.root.update()
-    app.root.event_generate("<Return>", when="tail")
+    app.root.event_generate("<KeyPress-Return>", when="tail")
+    app.root.event_generate("<KeyRelease-Return>", when="tail")  # pressed and let go
 
 
 def to_review(app: TtkApp, *paths: Path) -> None:
@@ -358,7 +361,8 @@ def test_ac_11_the_result_tells_counts_problems_and_opens_the_folder(
     app = window(fake)
     to_review(app, tmp_path)
     confirm(app)
-    pump(app, until=lambda: converted(app))
+    pump(app, until=lambda: converted(app), seconds=30)
+    assert converted(app), (app.presenter.state, app.presenter.page)
     assert app.results.stats.figures()[:3] == [
         ("Converted", "1"),
         ("Skipped", "0"),

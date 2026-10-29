@@ -38,6 +38,10 @@ class DropZone(tk.Canvas):
     def text(self) -> str:
         return self._text
 
+    def _redraw_now(self) -> None:
+        self._pending = None
+        self._draw()
+
     def _cancel_pending(self) -> None:
         """A redraw still waiting when the window closes is dropped (code review of 007)."""
         if self._pending is not None:
@@ -48,10 +52,10 @@ class DropZone(tk.Canvas):
         """A dashed border is a picture: drawn again only once the size settles (AC-09)."""
         if self._pending is not None:
             self.after_cancel(self._pending)
-        self._pending = self.after(REDRAW_MS, self._draw)
+        self._pending = self.after(REDRAW_MS, self._redraw_now)
 
     def _draw(self) -> None:
-        self._pending = None
+        self._cancel_pending()  # a draw now makes a waiting one useless
         p = self._palette
         width, height = self.winfo_width(), self.winfo_height()
         if p is None or width < 4 * RADIUS:

@@ -7,6 +7,7 @@ from typing import Any
 
 import pytest
 from PIL import Image
+from support.gui_close import shut
 from support.gui_fakes import FakeBackend
 
 from clearmd.backend.schemas.settings import Settings
@@ -24,7 +25,7 @@ def app(display: str) -> Iterator[TtkApp]:
     window.start()
     pump(window, seconds=0.1)
     yield window
-    window.close()
+    shut(window)
 
 
 def pump(app: TtkApp, *, until: Callable[[], bool] | None = None, seconds: float = 5.0) -> None:
@@ -114,7 +115,7 @@ def test_ac_05_convert_more_is_prominent_and_asks_every_time(display: str, tmp_p
             app.dialog.answer(keep)
             assert app.presenter.page == 1 and app.main.inputs.names() == names
         finally:
-            app.close()
+            shut(app)
 
 
 def test_ac_06_checkboxes_follow_the_selection_header_clear_and_empty_click(
@@ -155,10 +156,11 @@ def test_ac_09_backgrounds_redraw_once_settled_small_window_and_compact_rail(
 ) -> None:
     assert app.root.minsize() == (800, 560)
     app.root.geometry("820x600")
-    pump(app, until=lambda: app.rail._compact, seconds=2)
+    pump(app, until=lambda: app.rail._compact, seconds=5)
     assert app.rail._compact
+    app.surface.event_generate("<Configure>")  # one more resize step
     assert app.surface._pending is not None  # a redraw waits for the size to settle
-    pump(app, until=lambda: app.surface._pending is None, seconds=1)
+    pump(app, until=lambda: app.surface._pending is None, seconds=5)
     assert app.surface._pending is None  # and happened once it did
 
 

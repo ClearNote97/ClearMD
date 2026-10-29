@@ -43,6 +43,10 @@ class Surface(tk.Canvas):
         title = self._fonts["title"].metrics("linespace")
         return GAP + body + HALF + title + HALF + body
 
+    def _redraw_now(self) -> None:
+        self._pending = None
+        self._draw()
+
     def _cancel_pending(self) -> None:
         """A redraw still waiting when the window closes is dropped (code review of 007)."""
         if self._pending is not None:
@@ -54,10 +58,10 @@ class Surface(tk.Canvas):
         self._draw(paint=False)
         if self._pending is not None:
             self.after_cancel(self._pending)
-        self._pending = self.after(REDRAW_MS, self._draw)
+        self._pending = self.after(REDRAW_MS, self._redraw_now)
 
     def _draw(self, *, paint: bool = True) -> None:
-        self._pending = None
+        self._cancel_pending()  # a draw now makes a waiting one useless
         p = self._palette
         width, height = self.winfo_width(), self.winfo_height()
         if p is None or width < 2 * MARGIN or height < 2 * MARGIN:

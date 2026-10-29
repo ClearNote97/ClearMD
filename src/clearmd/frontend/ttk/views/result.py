@@ -44,6 +44,9 @@ class ResultsView(ttk.Frame):
         )
         # The selected problem in full: a long explanation does not fit its column.
         self.detail = ttk.Label(self, style=ON_PAGE, wraplength=760, justify="left")
+        self.detail.bind(  # as wide as the page: a long text never runs past it (007, A7-4)
+            "<Configure>", lambda event: self.detail.configure(wraplength=max(event.width, 200))
+        )
         self.problems.tree.bind("<<TreeviewSelect>>", lambda _event: self._show_detail())
 
     def show(self, result: ResultView) -> None:

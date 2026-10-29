@@ -241,6 +241,7 @@ class Presenter:
             return
         self._plan = None
         self._report = None
+        self._view.forget_work()  # nothing of the last batch stays on screen (007, A7-1)
         if not keep:
             self._inputs.clear()
         self.page = 1
@@ -496,6 +497,9 @@ class Presenter:
         detail = printable(f"{type(error).__name__}: {error}")
         message = self.catalog.text("gui.app.unexpected_error", detail=detail)
         self._cancel = None
+        self._plan = None
+        self._report = None
+        self._view.forget_work()
         self._set(AppState.READY)
         self._view.show_message(message)  # after the state: a view may clear it on a step change
 

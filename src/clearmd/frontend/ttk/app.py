@@ -47,6 +47,7 @@ from clearmd.frontend.ttk.layout import (
     TITLE,
     WORDMARK,
 )
+from clearmd.frontend.ttk.presses import Presses
 from clearmd.frontend.ttk.scheduler import Scheduler
 from clearmd.frontend.ttk.views.dialogs import (
     KeepInputsDialog,
@@ -92,6 +93,8 @@ class TtkApp:
         self.dialog: Dialog | None = None  # the open dialog: one at a time
         self._closing_since: float | None = None  # closed while converting: waiting for the end
         self._page_shown_at = 0.0  # when the page on screen changed (F-1)
+        self._unpause: str | None = None  # the end of that pause
+        self.presses = Presses()
         self._build()
         self.presenter = Presenter(self, backend)
         self.rail.show_version(self.presenter.version)
@@ -163,7 +166,11 @@ class TtkApp:
         if self.drops:
             self.root.drop_target_register(DND_FILES)
             self.root.dnd_bind("<<Drop>>", self._dropped)
-        self.root.bind("<Return>", lambda _event: self._primary(by_key=True))
+        self.root.bind("<KeyPress-Return>", self._enter)
+        self.root.bind("<KeyRelease-Return>", self.presses.released)
+        # Space on the focused primary button: held, it is one press too (F-1).
+        self.actions.primary.bind("<KeyPress-space>", self._space)
+        self.actions.primary.bind("<KeyRelease-space>", self.presses.released)
         for number in range(1, 5):  # the rail by keyboard (AC-01)
             self.root.bind(
                 f"<Control-Key-{number}>", lambda _event, n=number: self.presenter.go_to(n)
@@ -214,16 +221,37 @@ class TtkApp:
         if self.state is not None and Action.ADD in self.state.enabled:
             self.presenter.add_paths(paths)
 
-    def _primary(self, *, by_key: bool = False) -> None:
-        """The page's primary action, from its button or Enter (UX §6, ADR-0029). Ignored for a
-        moment after the page changes: a held Enter or a double click must not run Next and
-        Convert in one burst, past a page the user did not see (security audit of 007, F-1)."""
+    def _enter(self, event: Any) -> None:
+        if self.presses.pressed(event):  # held down: one press, whatever the page (F-1)
+            self._primary()
+
+    def _space(self, event: Any) -> str | None:
+        return None if self.presses.pressed(event) else "break"  # "break": the button stays
+
+    def _primary(self) -> None:
+        """The page's primary action, from its button or Enter (UX §6, ADR-0029). Right after the
+        page changes it waits a moment, shown disabled: a double click must not run Next and
+        Convert past a page the user did not see (security audit of 007, F-1)."""
         if self.dialog is not None:
             return
-        pause = PRIMARY_PAUSE_SECONDS if by_key else PRIMARY_PAUSE_SECONDS / 2  # a double click
-        if time.monotonic() - self._page_shown_at < pause:
+        if time.monotonic() - self._page_shown_at < PRIMARY_PAUSE_SECONDS:
             return
         self.presenter.press_primary(self.review.overwrite_answer())
+
+    def _pause_primary(self) -> None:
+        """The primary button is disabled for the pause after a page change, so it is seen."""
+        if self._unpause is not None:
+            self.root.after_cancel(self._unpause)
+            self._unpause = None
+        if PRIMARY_PAUSE_SECONDS <= 0 or self.actions.primary.instate(["disabled"]):
+            return
+        self.actions.primary.state(["disabled"])
+        self._unpause = self.root.after(int(PRIMARY_PAUSE_SECONDS * 1000), self._end_pause)
+
+    def _end_pause(self) -> None:
+        self._unpause = None
+        if self.state is not None:
+            self.actions.show(self.state.primary)
 
     def convert_more(self) -> None:
         """Asked every time: keep the chosen files, or start empty (feature 007)."""
@@ -318,6 +346,9 @@ class TtkApp:
         self._destroy()
 
     def _destroy(self) -> None:
+        if self._unpause is not None:
+            self.root.after_cancel(self._unpause)
+            self._unpause = None
         self.scheduler.close()
         self.root.update_idletasks()  # Tk's own idle work (a theme change) runs before the end
         self.root.destroy()
@@ -343,6 +374,8 @@ class TtkApp:
         self._show_page(self.pages[state.page - 1])
         self.rail.show_page(state.page)
         self.actions.show(state.primary)
+        if previous is not None and previous.page != state.page:
+            self._pause_primary()
         self._show_secondary(state)
         self._header()
         main = self.main

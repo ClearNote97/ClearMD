@@ -16,6 +16,9 @@ _HELP_SECTIONS = ("how", "formats", "where", "keyboard", "privacy", "language")
 _LANGUAGES = {"en": "English", "es": "Español"}  # each in its own language
 
 
+HELP_WIDTH = 720  # wide and short: it fits a 1366 × 768 screen with its taskbar
+
+
 def help_dialog(
     parent: tk.Misc,
     catalog: Catalog,
@@ -38,7 +41,10 @@ def help_dialog(
         title.configure(font=fonts["strong"])
         title.pack(anchor="w", pady=(0 if index == 0 else GAP, 0))
         text = ttk.Label(
-            dialog.body, text=catalog.text(f"gui.help.{section}"), wraplength=560, justify="left"
+            dialog.body,
+            text=catalog.text(f"gui.help.{section}"),
+            wraplength=HELP_WIDTH,
+            justify="left",
         )
         text.pack(anchor="w", pady=(HALF, 0))
     if version:
