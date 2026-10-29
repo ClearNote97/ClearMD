@@ -73,7 +73,10 @@ def build_parser(catalog: Catalog) -> argparse.ArgumentParser:
         "--html", choices=[strategy.value for strategy in Strategy], help=help_("cli.help.html")
     )
     parser.add_argument(
-        "--summary-pdf", action="store_true", default=None, help=help_("cli.help.summary_pdf")
+        "--summary-pdf",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help=help_("cli.help.summary_pdf"),
     )
     parser.add_argument("--dry-run", action="store_true", help=help_("cli.help.dry_run"))
     parser.add_argument("--open", action="store_true", help=help_("cli.help.open"))
@@ -378,7 +381,10 @@ def _main(argv: Sequence[str] | None) -> int:
     if decision is None:
         return EXIT_DECISION_REQUIRED
     progress = _Progress(catalog, quiet=args.quiet, stream=err)
-    summary_pdf = bool(args.summary_pdf) or settings.summary_format == "markdown_pdf"
+    # A flag decides for this run only (--summary-pdf, --no-summary-pdf); without one, the setting.
+    summary_pdf = (
+        settings.summary_format == "markdown_pdf" if args.summary_pdf is None else args.summary_pdf
+    )
     report = _run_cancellable(catalog, plan, decision, progress, err, summary_pdf=summary_pdf)
     _print_summary(catalog, report)
     if args.open:

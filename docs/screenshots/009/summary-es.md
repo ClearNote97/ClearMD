@@ -2,7 +2,7 @@
 
 ⚠️ **Se convirtieron 4 de 6 documentos.** 2 cosas necesitan tu atención.
 
-2026-10-29 20:25 · ClearMD 0.3.0 · 4 convertidos · 1 omitidos · 2 con error
+2026-10-29 21:25 · ClearMD 0.3.0 · 4 convertidos · 1 omitido · 2 con error
 
 ## Dónde están tus archivos
 Tus archivos Markdown están en la carpeta `OutputMD/`, junto a este resumen.
@@ -16,10 +16,10 @@ Tus archivos Markdown están en la carpeta `OutputMD/`, junto a este resumen.
 ## Convertidos
 | Documento | Carpeta | Resultado | Formato | Tiempo |
 |---|---|---|---|---|
-| `notes.txt` | `Documents` | `Documents/notes.md` | TXT | <1 s |
-| `report.docx` | `Documents` | `Documents/report.md` | DOCX | <1 s |
-| `chapter.pdf` | `Documents/thesis` | `Documents/thesis/chapter.md` | PDF | <1 s |
-| `slides.pptx` | `Documents` | `Documents/slides.md` | PPTX | <1 s |
+| `notes.txt` | `Documents` | `notes.md` | TXT | <1 s |
+| `report.docx` | `Documents` | `report.md` | DOCX | <1 s |
+| `chapter.pdf` | `Documents/thesis` | `chapter.md` | PDF | <1 s |
+| `slides.pptx` | `Documents` | `slides.md` | PPTX | <1 s |
 
 ## No incluidos
 - `readme.md` en `Documents` — Ya es Markdown. No necesita conversión.

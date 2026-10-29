@@ -41,7 +41,7 @@ class Entry:
     message: str = ""
     notes: tuple[ConversionNote, ...] = ()
     detail: str = ""
-    result: str = ""  # a kept result, relative to the Markdown folder
+    result: str = ""  # a kept result's name, in ``folder`` of the Markdown folder
 
 
 @dataclass(frozen=True)
@@ -50,7 +50,7 @@ class Row:
 
     name: str
     folder: str
-    result: str  # relative to the Markdown folder
+    result: str  # the Markdown file's name, in ``folder`` of the Markdown folder
     format: str
     time: str
 
@@ -72,12 +72,24 @@ def _relative(path: Path, base: Path) -> Path:
     return path.relative_to(base) if path.is_relative_to(base) else path
 
 
-def _place(path: Path, base: Path, *, folder: bool = False) -> tuple[str, str]:
-    """(name, folder) of a file, the folder relative to where the batch started."""
-    relative = _relative(path, base)
-    parent = relative.parent.as_posix()
-    name = relative.name + ("/" if folder else "")
-    return name, "" if parent == "." else parent
+def _folder(path: Path) -> str:
+    parent = path.as_posix()
+    return "" if parent == "." else parent
+
+
+def _converted_place(outcome: ConversionOutcome, markdown: Path) -> tuple[str, str]:
+    """(name, folder): the folder is the result's, inside the Markdown folder, the same for every
+    output choice (code review of 009: never a long absolute path)."""
+    target = _relative(outcome.item.target, markdown)
+    return outcome.item.source.name, _folder(target.parent)
+
+
+def _skipped_place(item: SkippedItem, base: Path) -> tuple[str, str]:
+    """(name, folder) of a file left out: its folder as its results would have been placed,
+    from the folder above the input it was found under."""
+    above = item.input.parent if item.input is not None else base
+    relative = _relative(item.path, above)
+    return relative.name + ("/" if item.is_dir else ""), _folder(relative.parent)
 
 
 class SummaryBuilder:
@@ -96,15 +108,17 @@ class SummaryBuilder:
         markdown = report.root / MARKDOWN_FOLDER
         converted = by[OutcomeStatus.CONVERTED]
         attention = (
-            [self._failed(o, base) for o in by[OutcomeStatus.FAILED]]
-            + [self._stopped(o, base) for o in by[OutcomeStatus.STOPPED]]
-            + [self._noted(o, base) for o in converted if o.notes]
+            [self._failed(o, markdown) for o in by[OutcomeStatus.FAILED]]
+            + [self._stopped(o, markdown) for o in by[OutcomeStatus.STOPPED]]
+            + [self._noted(o, markdown) for o in converted if o.notes]
         )
         total = len(converted) + sum(
             len(by[kind])
             for kind in (OutcomeStatus.FAILED, OutcomeStatus.STOPPED, OutcomeStatus.CANCELLED)
         )
-        mark, headline = self._headline(report, len(converted), total, bool(attention))
+        mark, headline = self._headline(
+            report, len(converted), total, bool(attention), by[OutcomeStatus.KEPT]
+        )
         attention_line = self.plural("summary.attention_count", len(attention)) if attention else ""
         return SummaryContent(
             mark=mark,
@@ -112,65 +126,66 @@ class SummaryBuilder:
             attention_line=attention_line,
             batch_line=self._batch_line(report, by),
             attention=tuple(attention),
-            converted=tuple(self._row(o, base, markdown) for o in converted),
+            converted=tuple(self._row(o, markdown) for o in converted),
             left_out=tuple(self._skipped(item, base) for item in report.skipped),
-            kept=tuple(self._kept(o, base, markdown) for o in by[OutcomeStatus.KEPT]),
+            kept=tuple(self._kept(o, markdown) for o in by[OutcomeStatus.KEPT]),
             cancelled=tuple(
-                Entry(Mark.STOPPED, *_place(o.item.source, base))
+                Entry(Mark.STOPPED, *_converted_place(o, markdown))
                 for o in by[OutcomeStatus.CANCELLED]
             ),
         )
 
     def _headline(
-        self, report: OutputRootReport, converted: int, total: int, attention: bool
+        self,
+        report: OutputRootReport,
+        converted: int,
+        total: int,
+        attention: bool,
+        kept: list[ConversionOutcome],
     ) -> tuple[Mark, str]:
-        text = self._catalog.text
+        count = self._catalog.count
         if report.cancelled:
-            return Mark.STOPPED, text(
-                "summary.headline.cancelled", converted=converted, total=total
-            )
+            headline = self.plural("summary.headline.cancelled", converted, total=count(total))
+            return Mark.STOPPED, headline
         if total == 0:
-            return Mark.DONE, text("summary.headline.nothing_new")
+            if report.skipped:  # nothing tried, and something left out: worth a look
+                return Mark.ATTENTION, self.plural("summary.headline.nothing", len(kept))
+            return Mark.DONE, self.plural("summary.headline.nothing_new", len(kept))
         if converted == 0:
             return Mark.FAILED, self.plural("summary.headline.none", total)
         if converted < total:
-            return Mark.ATTENTION, text("summary.headline.some", converted=converted, total=total)
+            headline = self.plural("summary.headline.some", converted, total=count(total))
+            return Mark.ATTENTION, headline
         mark = Mark.ATTENTION if attention else Mark.DONE
         return mark, self.plural("summary.headline.all", total)
 
     def _batch_line(
         self, report: OutputRootReport, by: dict[OutcomeStatus, list[ConversionOutcome]]
     ) -> str:
-        text = self._catalog.text
-        line = " · ".join(
-            [
-                report.started_at.strftime(DATE_FORMAT),
-                f"ClearMD {self._version}",
-                text(
-                    "cli.summary",
-                    converted=len(by[OutcomeStatus.CONVERTED]),
-                    skipped=len(report.skipped) + len(by[OutcomeStatus.KEPT]),
-                    failed=len(by[OutcomeStatus.FAILED]),
-                ),
-            ]
-        )
+        parts = [
+            report.started_at.strftime(DATE_FORMAT),
+            f"ClearMD {self._version}",
+            self.plural("summary.count.converted", len(by[OutcomeStatus.CONVERTED])),
+            self.plural("summary.count.skipped", len(report.skipped) + len(by[OutcomeStatus.KEPT])),
+            self.plural("summary.count.failed", len(by[OutcomeStatus.FAILED])),
+        ]
         if by[OutcomeStatus.STOPPED]:
-            line += text("cli.summary_stopped", stopped=len(by[OutcomeStatus.STOPPED]))
+            parts.append(self.plural("summary.count.stopped", len(by[OutcomeStatus.STOPPED])))
         if report.cancelled:
-            line += f" · {text('summary.batch_cancelled')}"
-        return line
+            parts.append(self._catalog.text("summary.batch_cancelled"))
+        return " · ".join(parts)
 
-    def _failed(self, outcome: ConversionOutcome, base: Path) -> Entry:
+    def _failed(self, outcome: ConversionOutcome, markdown: Path) -> Entry:
         assert outcome.error is not None
         detail = printable(" ".join(outcome.detail.split()))
         return Entry(
             Mark.FAILED,
-            *_place(outcome.item.source, base),
+            *_converted_place(outcome, markdown),
             self._catalog.error(outcome.error),
             detail=detail,
         )
 
-    def _stopped(self, outcome: ConversionOutcome, base: Path) -> Entry:
+    def _stopped(self, outcome: ConversionOutcome, markdown: Path) -> Entry:
         assert outcome.error is not None
         message = self._catalog.text(
             "summary.stopped_line",
@@ -179,33 +194,32 @@ class SummaryBuilder:
             percent=outcome.share_done,
             action=self._catalog.text(outcome.error.action_key),
         )
-        return Entry(Mark.STOPPED, *_place(outcome.item.source, base), message)
+        return Entry(Mark.STOPPED, *_converted_place(outcome, markdown), message)
 
-    def _noted(self, outcome: ConversionOutcome, base: Path) -> Entry:
+    def _noted(self, outcome: ConversionOutcome, markdown: Path) -> Entry:
         message = self._catalog.text("summary.converted_but")
         return Entry(
-            Mark.ATTENTION, *_place(outcome.item.source, base), message, notes=outcome.notes
+            Mark.ATTENTION, *_converted_place(outcome, markdown), message, notes=outcome.notes
         )
 
     def _skipped(self, item: SkippedItem, base: Path) -> Entry:
         reason = skip_reason(self._catalog, item)
         message = f"{reason[:1].upper()}{reason[1:]}. {skip_action(self._catalog, item)}"
-        return Entry(None, *_place(item.path, base, folder=item.is_dir), message)
+        return Entry(None, *_skipped_place(item, base), message)
 
-    def _kept(self, outcome: ConversionOutcome, base: Path, markdown: Path) -> Entry:
-        result = _relative(outcome.item.target, markdown).as_posix()
-        return Entry(None, *_place(outcome.item.source, base), result=result)
+    def _kept(self, outcome: ConversionOutcome, markdown: Path) -> Entry:
+        name, folder = _converted_place(outcome, markdown)
+        return Entry(None, name, folder, result=outcome.item.target.name)
 
-    def _row(self, outcome: ConversionOutcome, base: Path, markdown: Path) -> Row:
+    def _row(self, outcome: ConversionOutcome, markdown: Path) -> Row:
         detection = outcome.item.detection
         fmt = detection.format.value.upper()
         if outcome.item.strategy is not Strategy.FULL:
             fmt = self._catalog.text(f"summary.strategy.{outcome.item.strategy}", format=fmt)
         if detection.by_content:
             fmt = self._catalog.text("summary.by_content", format=fmt)
-        name, folder = _place(outcome.item.source, base)
-        result = _relative(outcome.item.target, markdown).as_posix()
-        return Row(name, folder, result, fmt, self.time(outcome.seconds))
+        name, folder = _converted_place(outcome, markdown)
+        return Row(name, folder, outcome.item.target.name, fmt, self.time(outcome.seconds))
 
     def time(self, seconds: float) -> str:
         if seconds < 1:

@@ -33,12 +33,15 @@ from clearmd.backend.use_cases.output_files import atomic_write_bytes
 from clearmd.i18n import Catalog, printable
 
 REGULAR, BOLD = b"Helvetica", b"Helvetica-Bold"
-SPACE_EM = 0.278  # Helvetica's space, in ems (its metrics: Adobe's AFM)
 WIDTH, HEIGHT = 595.0, 842.0  # A4, in points
 MARGIN = 48.0
 BAND = 76.0  # the teal band at the top of the first page
 NOTE_ITEMS = 20
-TABLE_SHARES = (0.26, 0.15, 0.26, 0.23, 0.10)  # document, folder, result, format, time
+MAX_SHOWN = 200  # characters of a name, folder or result; their middle goes past it
+MAX_DETAIL = 500  # characters of a technical detail
+CELL_SIZE = 8.5
+HEADING_ROOM = 44 + 18  # a heading never alone at a page's foot: one line of what follows too
+TABLE_SHARES = (0.22, 0.17, 0.20, 0.31, 0.10)  # document, folder, result, format, time
 
 Colour = tuple[int, int, int]
 
@@ -142,39 +145,48 @@ def _text_object(document: object, font: object, text: str, size: float) -> obje
     return obj
 
 
-class _Measure:
-    """Text widths in the standard fonts, from PDFium itself (a word's box, at 1000 pt)."""
-
-    def __init__(self) -> None:
-        self._pdf = pdfium.PdfDocument.new()
-        self._fonts = {
-            False: raw.FPDFText_LoadStandardFont(self._pdf.raw, REGULAR),
-            True: raw.FPDFText_LoadStandardFont(self._pdf.raw, BOLD),
-        }
-
-    @cache  # noqa: B019 -- one measurer for the process, the words of every report
-    def word(self, word: str, bold: bool) -> float:
-        if not word:
-            return 0.0
-        obj = _text_object(self._pdf.raw, self._fonts[bold], word, 1000)
-        left, bottom, right, top = (ctypes.c_float() for _ in range(4))
-        raw.FPDFPageObj_GetBounds(
-            obj, *(ctypes.byref(value) for value in (left, bottom, right, top))
-        )
-        raw.FPDFPageObj_Destroy(obj)
-        return (right.value - left.value) / 1000
+def _ink(document: object, font: object, text: str) -> float:
+    """The width of ``text``'s ink at 1000 pt, by PDFium."""
+    obj = _text_object(document, font, text, 1000)
+    left, bottom, right, top = (ctypes.c_float() for _ in range(4))
+    raw.FPDFPageObj_GetBounds(obj, *(ctypes.byref(value) for value in (left, bottom, right, top)))
+    raw.FPDFPageObj_Destroy(obj)
+    return right.value - left.value
 
 
 @cache
-def _measure() -> _Measure:
-    return _Measure()
+def _advances(bold: bool) -> dict[str, float]:
+    """Each Windows Latin character's advance in ems, measured once: the ink of "H?H" less the
+    ink of "HH" is the advance of "?", whatever its own ink (code review of 009: a word's ink
+    is narrower than the room it takes). At most 256 entries per font, kept for the process."""
+    pdf = pdfium.PdfDocument.new()
+    try:
+        font = raw.FPDFText_LoadStandardFont(pdf.raw, BOLD if bold else REGULAR)
+        base = _ink(pdf.raw, font, "HH")
+        table = {}
+        for code in range(0x20, 0x100):
+            char = bytes([code]).decode("cp1252", errors="replace")
+            if char != "\ufffd":
+                table[char] = (_ink(pdf.raw, font, f"H{char}H") - base) / 1000
+        return table
+    finally:
+        pdf.close()
 
 
 def _width(text: str, size: float, bold: bool) -> float:
-    """Words measured, spaces counted: a word's box leaves out the space around it."""
-    words = text.split(" ")
-    spaces = len(words) - 1
-    return size * (sum(_measure().word(word, bold) for word in words) + spaces * SPACE_EM)
+    advances = _advances(bold)
+    return size * sum(advances.get(char, 0.556) for char in text)
+
+
+def _cut(text: str, size: float, width: float, bold: bool) -> int:
+    """How many characters of ``text`` fit in ``width``: one pass, never a search."""
+    advances = _advances(bold)
+    used = 0.0
+    for index, char in enumerate(text):
+        used += size * advances.get(char, 0.556)
+        if used > width:
+            return max(index, 1)
+    return len(text)
 
 
 def _latin(text: str) -> str:
@@ -182,9 +194,14 @@ def _latin(text: str) -> str:
     return text.encode("cp1252", errors="replace").decode("cp1252")
 
 
-def _shown(text: str) -> str:
-    """Text from the user's files, drawn as it may be printed."""
-    return " ".join(printable(text).split())
+def _shown(text: str, limit: int = MAX_SHOWN) -> str:
+    """Text from the user's files, drawn as it may be printed; a very long one with its middle
+    left out (a folder 4,000 characters deep is still one line or two, security audit of 009)."""
+    shown = " ".join(printable(text).split())
+    if len(shown) <= limit:
+        return shown
+    half = (limit - 1) // 2
+    return f"{shown[:half]}…{shown[-half:]}"
 
 
 def _runs(runs: list[_Run]) -> list[_Run]:
@@ -205,9 +222,7 @@ def _wrap(runs: list[_Run], size: float, width: float) -> Iterator[list[_Run]]:
                 piece = piece.lstrip()
                 piece_width = _width(piece, size, run.bold)
             while piece and piece_width > width:  # one word wider than the line
-                cut = len(piece)
-                while cut > 1 and _width(piece[:cut], size, run.bold) > width:
-                    cut -= 1
+                cut = _cut(piece, size, width, run.bold)
                 yield [*line, _Run(piece[:cut], run.bold, run.colour)]
                 line, used = [], 0.0
                 piece = piece[cut:]
@@ -223,9 +238,7 @@ def _fit(text: str, size: float, width: float, bold: bool = False) -> str:
     """One cell's text, cut with "…" when it does not fit."""
     if _width(text, size, bold) <= width:
         return text
-    while text and _width(text + "…", size, bold) > width:
-        text = text[:-1]
-    return text + "…"
+    return text[: _cut(text, size, width - _width("…", size, bold), bold)] + "…"
 
 
 class PdfReport:
@@ -286,7 +299,7 @@ class PdfReport:
         canvas.y -= 6
 
     def _heading(self, canvas: _Canvas, text: str) -> None:
-        canvas.room(44)
+        canvas.room(HEADING_ROOM)
         canvas.y -= 16
         canvas.text(MARGIN, canvas.y, _latin(text), 12, _Run(text, True, ACCENT))
         canvas.rect(MARGIN, canvas.y - 6, WIDTH - 2 * MARGIN, 0.8, BORDER)
@@ -301,7 +314,14 @@ class PdfReport:
             canvas.y -= size + 4
 
     def _line(self, canvas: _Canvas, x: float, runs: list[_Run], size: float) -> None:
+        """Words of one style together, one text object: the font spaces them itself."""
+        merged: list[_Run] = []
         for run in runs:
+            if merged and (merged[-1].bold, merged[-1].colour) == (run.bold, run.colour):
+                merged[-1] = _Run(merged[-1].text + run.text, run.bold, run.colour)
+            else:
+                merged.append(run)
+        for run in merged:
             canvas.text(x, canvas.y, run.text, size, run)
             x += _width(run.text, size, run.bold)
 
@@ -321,8 +341,9 @@ class PdfReport:
         for note in entry.notes:
             self._paragraph(canvas, [_Run(f"· {self.describe(note)}")], indent=26, size=9)
         if entry.detail:
-            detail = f"{self._catalog.text('summary.technical_detail')}: {entry.detail}"
-            self._paragraph(canvas, [_Run(_shown(detail), False, MUTED)], indent=26, size=8)
+            shown = _shown(entry.detail, MAX_DETAIL)
+            detail = f"{self._catalog.text('summary.technical_detail')}: {shown}"
+            self._paragraph(canvas, [_Run(detail, False, MUTED)], indent=26, size=8)
         canvas.y -= 4
 
     def describe(self, note: ConversionNote) -> str:
@@ -349,18 +370,22 @@ class PdfReport:
         ]
 
         def row(cells: list[str], *, bold: bool, ground: Colour | None) -> None:
-            canvas.room(18)
+            x = MARGIN
             if ground is not None:
                 canvas.rect(MARGIN, canvas.y - 5, full, 17, ground)
-            x = MARGIN
             for cell, width in zip(cells, widths, strict=True):
-                shown = _fit(_latin(cell), 9, width - 8, bold)
-                canvas.text(x + 4, canvas.y, shown, 9, _Run(shown, bold))
+                shown = _fit(_latin(cell), CELL_SIZE, width - 8, bold)
+                canvas.text(x + 4, canvas.y, shown, CELL_SIZE, _Run(shown, bold))
                 x += width
             canvas.y -= 17
 
+        pages = canvas.pages
         row(header, bold=True, ground=SHAPE)
         for converted in content.converted:
+            canvas.room(18)
+            if canvas.pages != pages:  # a new page: the header again
+                pages = canvas.pages
+                row(header, bold=True, ground=SHAPE)
             cells = [
                 _shown(converted.name),
                 _shown(converted.folder) or "—",

@@ -9,7 +9,7 @@ from pathlib import Path
 import pypdfium2 as pdfium
 import pytest
 from markdown_it import MarkdownIt
-from support import DOCUMENTS_DIR
+from support import DOCUMENTS_DIR, WINDOWS
 from support.gui_close import shut
 from support.gui_fakes import FakeBackend
 
@@ -87,8 +87,8 @@ def test_ac_04_names_with_their_folder_apart_in_a_table(workdir: Path) -> None:
     mixed(workdir)
     main([str(workdir / "docs"), "--quiet"])
     text = summary(workdir)
-    assert "| `chapter.docx` | `docs/thesis` | `docs/thesis/chapter.md` | DOCX |" in text
-    assert "| `notes.txt` | `docs` | `docs/notes.md` | TXT |" in text
+    assert "| `chapter.docx` | `docs/thesis` | `chapter.md` | DOCX |" in text
+    assert "| `notes.txt` | `docs` | `notes.md` | TXT |" in text
     assert str(workdir) not in text  # never a long absolute path
 
 
@@ -103,7 +103,10 @@ def test_ac_05_the_history_is_folded_and_kept(workdir: Path) -> None:
 
 
 def test_ac_06_a_hostile_name_never_breaks_the_summary(workdir: Path) -> None:
-    for name in ("a|b `c`.txt", "# heading.txt", "[x](javascript:alert(1)).txt", "<img src=x>.txt"):
+    names = ["a `c` b.txt", "# heading.txt", "[x](javascript;alert(1)).txt", "&lt;b&gt;.txt"]
+    if not WINDOWS:  # Windows allows none of | < > : in a name
+        names += ["a|b.txt", "<img src=x>.txt", "[y](javascript:alert(1)).txt"]
+    for name in names:
         put(workdir, "sample.txt", name)
     main([str(workdir / "docs"), "--quiet"])
     tokens = MarkdownIt("commonmark", {"html": True}).enable("table").parse(summary(workdir))
@@ -132,7 +135,7 @@ def test_ac_08_the_pdf_report_next_to_the_markdown(workdir: Path) -> None:
         "Where your files are" in text
         and "broken.docx in docs — This file seems to be damaged." in text
     )
-    assert "chapter.docx docs/thesis docs/thesis/chapter.md DOCX" in text
+    assert "chapter.docx docs/thesis chapter.md DOCX" in text
     data = (workdir / "ClearMD_Output" / "Resumen_ClearMD.pdf").read_bytes()
     assert b"/URI" not in data and b"/JavaScript" not in data and b"/OpenAction" not in data
 
@@ -190,3 +193,25 @@ def test_ac_11_samples_of_the_summary_and_screenshots_of_the_choice() -> None:
         for theme in ("light", "dark"):
             for screen in ("1-choose", "6-settings"):
                 assert (shots / f"{screen}-{theme}-{language}.png").is_file(), screen
+
+
+def test_c9_5_an_old_pdf_never_stays_next_to_a_newer_summary(workdir: Path) -> None:
+    put(workdir, "sample.txt", "first.txt")
+    main([str(workdir / "docs"), "--quiet", "--summary-pdf"])
+    assert (workdir / "ClearMD_Output" / "Resumen_ClearMD.pdf").is_file()
+    put(workdir, "sample.txt", "second.txt")
+    main([str(workdir / "docs"), "--quiet", "--overwrite", "--no-summary-pdf"])
+    assert not (workdir / "ClearMD_Output" / "Resumen_ClearMD.pdf").exists()
+
+
+def test_c9_6_the_setting_decides_and_a_flag_overrides_it(
+    workdir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import clearmd.frontend.cli.app as cli
+
+    monkeypatch.setattr(cli, "load_settings", lambda: (Settings(summary_format="markdown_pdf"), ()))
+    put(workdir, "sample.txt", "a.txt")
+    main([str(workdir / "docs"), "--quiet"])
+    assert (workdir / "ClearMD_Output" / "Resumen_ClearMD.pdf").is_file()  # the setting
+    main([str(workdir / "docs"), "--quiet", "--overwrite", "--no-summary-pdf"])
+    assert not (workdir / "ClearMD_Output" / "Resumen_ClearMD.pdf").exists()  # the flag

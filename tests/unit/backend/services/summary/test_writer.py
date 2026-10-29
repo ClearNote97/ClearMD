@@ -106,8 +106,8 @@ EXPECTED_EN = "\n".join(
         "## Converted",
         "| Document | Folder | Result | Format | Time |",
         "|---|---|---|---|---|",
-        "| `notes.pdf` | `project` | `project/notes.md` | PDF | 28 s |",
-        "| `scan` | `project` | `project/scan.md` | DOCX, detected by content | <1 s |",
+        "| `notes.pdf` | `project` | `notes.md` | PDF | 28 s |",
+        "| `scan` | `project` | `scan.md` | DOCX, detected by content | <1 s |",
         "",
         "## Left out",
         "- `.cache/` in `project` — Hidden file. Make it visible to convert it.",
@@ -260,7 +260,7 @@ def test_a_planted_summary_link_is_neither_read_nor_written_through(tmp_path: Pa
         ("a``b.pdf", "``` a``b.pdf ```"),
         ("evil\n- injected.pdf", "`evil\\x0a- injected.pdf`"),
         # A "/" makes it a folder and a name: both stay code spans.
-        ("fake<!-- /clearmd:history -->.pdf", "`clearmd:history -->.pdf` in `fake<!-- `"),
+        ("fake<!-- /clearmd:history -->.pdf", "`clearmd:history -->.pdf`"),
     ],
 )
 def test_names_cannot_escape_their_code_span_or_line(
@@ -400,3 +400,66 @@ def test_a_long_list_of_names_is_cut_at_twenty(tmp_path: Path) -> None:
 
 def test_files_without_notes_have_no_notes_section(tmp_path: Path) -> None:
     assert "converted, but" not in _write(tmp_path)
+
+
+# --- Code review of 009 (C9-*) -------------------------------------------------------------------
+
+
+def test_c9_1_nothing_tried_and_something_left_out_is_no_success(tmp_path: Path) -> None:
+    kept = ConversionOutcome(_item(tmp_path, "a.pdf", "a.md", FormatId.PDF), OutcomeStatus.KEPT)
+    left = SkippedItem(tmp_path / "b.xyz", SkipReason.UNSUPPORTED_FORMAT)
+    writer = MarkdownSummaryWriter(load_catalog("en"), version="0.1.0")
+    report = OutputRootReport(tmp_path / "ClearMD_Output", NOW, NOW, (kept,), (left,), False)
+    report.root.mkdir()
+    writer.write(report)
+    text = (report.root / "Resumen_ClearMD.md").read_text(encoding="utf-8")
+    assert text.splitlines()[2] == "⚠️ **Nothing was converted: see what was left out.**"
+
+
+def test_c9_2_the_folder_is_the_results_never_an_absolute_path(tmp_path: Path) -> None:
+    chosen = tmp_path / "elsewhere" / "ClearMD_Output"
+    item = PlannedConversion(
+        source=tmp_path / "Documents" / "top.txt",
+        output_root=chosen,
+        target=chosen / "OutputMD" / "Documents" / "top.md",
+        detection=Detection(FormatId.TXT, DetectionMethod.EXTENSION),
+        exists=False,
+        cost=1,
+    )
+    report = OutputRootReport(
+        chosen, NOW, NOW, (ConversionOutcome(item, OutcomeStatus.CONVERTED),), (), False
+    )
+    chosen.mkdir(parents=True)
+    MarkdownSummaryWriter(load_catalog("en"), version="0.1.0").write(report)
+    text = (chosen / "Resumen_ClearMD.md").read_text(encoding="utf-8")
+    assert "| `top.txt` | `Documents` | `top.md` |" in text and str(tmp_path) not in text
+
+
+@pytest.mark.parametrize(
+    ("language", "counts", "headline"),
+    [
+        ("es", (1, 2), "⚠️ **Se convirtió 1 de 3 documentos.**"),
+        ("en", (1, 2), "⚠️ **1 of 3 documents was converted.**"),
+        ("es", (2, 1), "⚠️ **Se convirtieron 2 de 3 documentos.**"),
+    ],
+)
+def test_c9_7_singular_and_plural(
+    tmp_path: Path, language: str, counts: tuple[int, int], headline: str
+) -> None:
+    converted, failed = counts
+    outcomes = tuple(
+        ConversionOutcome(_item(tmp_path, f"c{n}.pdf", f"c{n}.md", FormatId.PDF),
+                          OutcomeStatus.CONVERTED)
+        for n in range(converted)
+    ) + tuple(
+        ConversionOutcome(_item(tmp_path, f"f{n}.pdf", f"f{n}.md", FormatId.PDF),
+                          OutcomeStatus.FAILED, ErrorCode.CORRUPT_FILE)
+        for n in range(failed)
+    )  # fmt: skip
+    report = OutputRootReport(tmp_path / "ClearMD_Output", NOW, NOW, outcomes, (), False)
+    report.root.mkdir()
+    MarkdownSummaryWriter(load_catalog(language), version="0.1.0").write(report)
+    lines = (report.root / "Resumen_ClearMD.md").read_text(encoding="utf-8").splitlines()
+    assert lines[2].startswith(headline)
+    if language == "es" and converted == 1:
+        assert "1 convertido · 0 omitidos · 2 con error" in lines[4]

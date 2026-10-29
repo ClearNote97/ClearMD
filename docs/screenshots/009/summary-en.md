@@ -2,7 +2,7 @@
 
 ⚠️ **4 of 6 documents were converted.** 2 things need your attention.
 
-2026-10-29 20:25 · ClearMD 0.3.0 · 4 converted · 1 skipped · 2 failed
+2026-10-29 21:25 · ClearMD 0.3.0 · 4 converted · 1 skipped · 2 failed
 
 ## Where your files are
 Your Markdown files are in the `OutputMD/` folder, next to this summary.
@@ -16,10 +16,10 @@ Your Markdown files are in the `OutputMD/` folder, next to this summary.
 ## Converted
 | Document | Folder | Result | Format | Time |
 |---|---|---|---|---|
-| `notes.txt` | `Documents` | `Documents/notes.md` | TXT | <1 s |
-| `report.docx` | `Documents` | `Documents/report.md` | DOCX | <1 s |
-| `chapter.pdf` | `Documents/thesis` | `Documents/thesis/chapter.md` | PDF | <1 s |
-| `slides.pptx` | `Documents` | `Documents/slides.md` | PPTX | <1 s |
+| `notes.txt` | `Documents` | `notes.md` | TXT | <1 s |
+| `report.docx` | `Documents` | `report.md` | DOCX | <1 s |
+| `chapter.pdf` | `Documents/thesis` | `chapter.md` | PDF | <1 s |
+| `slides.pptx` | `Documents` | `slides.md` | PPTX | <1 s |
 
 ## Left out
 - `readme.md` in `Documents` — Already Markdown. It needs no conversion.

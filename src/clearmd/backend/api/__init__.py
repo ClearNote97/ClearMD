@@ -8,7 +8,7 @@ from pathlib import Path
 from clearmd.backend.api import composition
 from clearmd.backend.schemas.errors import ErrorCode
 from clearmd.backend.schemas.events import BatchEvent
-from clearmd.backend.schemas.formats import Strategy
+from clearmd.backend.schemas.formats import PDF_SUMMARY_NAME, Strategy
 from clearmd.backend.schemas.models import (
     BatchPlan,
     BatchReport,
@@ -26,6 +26,7 @@ from clearmd.backend.services.rejections import (
 )
 from clearmd.backend.use_cases.cancel import CancelToken
 from clearmd.backend.use_cases.execution import execute_plan
+from clearmd.backend.use_cases.output_files import remove_regular_file
 from clearmd.backend.use_cases.planning import build_plan
 from clearmd.backend.use_cases.reporting import by_output_root
 
@@ -136,15 +137,29 @@ def run_batch(
         except (OSError, ValueError):  # ValueError: e.g. text that cannot be encoded
             if not _root_was_refused(root_report):  # those already say why, file by file
                 unwritten.append(root_report.root)
+            _remove_old_pdf(root_report.root)
             continue
+        written = False
         if reporter is not None:
             try:
                 reporter.write(root_report)
+                written = True
             except Exception:  # noqa: BLE001 -- the Markdown is written: the batch goes on, told
                 unwritten_pdfs.append(root_report.root)
+        if not written:
+            _remove_old_pdf(root_report.root)
     return replace(
         report, unwritten_summaries=tuple(unwritten), unwritten_pdfs=tuple(unwritten_pdfs)
     )
+
+
+def _remove_old_pdf(root: Path) -> None:
+    """A PDF summary from an earlier batch never stays next to a newer Markdown one (code review
+    of 009). Only a regular file is removed, never through a link."""
+    try:
+        remove_regular_file(root / PDF_SUMMARY_NAME, inside=root)
+    except OSError:  # none, or it cannot be removed: nothing more to do
+        pass
 
 
 def _root_was_refused(root_report: OutputRootReport) -> bool:

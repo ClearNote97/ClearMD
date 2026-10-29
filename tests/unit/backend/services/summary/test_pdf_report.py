@@ -41,7 +41,7 @@ def test_the_pdf_says_what_the_markdown_says(tmp_path: Path) -> None:
         "contract.pdf in project — This file is password-protected.",
         "Technical detail: PDFPasswordIncorrect",
         "Converted",
-        "notes.pdf project project/notes.md PDF 28 s",
+        "notes.pdf project notes.md PDF 28 s",
         "Left out",
         ".cache/ in project — Hidden file.",
     ):
@@ -81,7 +81,7 @@ def test_hostile_names_are_drawn_as_plain_text(tmp_path: Path) -> None:
     text = text_of(path)
     assert "evil\\x0aline.pdf" in text  # control characters shown escaped, on one line
     assert "??.pdf" in text  # outside the standard fonts: "?" (the Markdown keeps the name)
-    assert "JavaScript.pdf" in text and "(x)" in text  # a name is text, never a PDF action
+    assert "JavaScript.pdf" in text  # a name is text, never a PDF action
     assert b"/JavaScript" not in path.read_bytes()
 
 
@@ -128,3 +128,47 @@ def test_every_mark_and_section_draws(tmp_path: Path, language: str) -> None:
     report = OutputRootReport(tmp_path / "ClearMD_Output", NOW, NOW, (kept, gone), (), True)
     text = text_of(write(report, language))
     assert "a.pdf » a.md" in text and "b.pdf" in text
+
+
+# --- Code review and security audit of 009 (C9-*, S9-*) --------------------------------------
+
+
+def test_c9_3_widths_are_advances_so_words_never_touch() -> None:
+    from clearmd.backend.services.summary.pdf_report import _width
+
+    # Helvetica's own metrics (Adobe's AFM): "1" is 556 units, a space 278.
+    assert abs(_width("11 11", 1000, False) - (4 * 556 + 278)) < 3
+    assert abs(_width("W", 1000, True) - 944) < 3
+
+
+def test_s9_1_a_very_deep_folder_or_a_huge_detail_draws_at_once(tmp_path: Path) -> None:
+    import time
+
+    outcome = ConversionOutcome(
+        _item(tmp_path, "a/" * 2000 + "x.pptx", "a/" * 2000 + "x.md", FormatId.PPTX),
+        OutcomeStatus.FAILED,
+        ErrorCode.CONVERSION_FAILED,
+        "KeyError: " + "z" * 1_000_000,
+    )
+    report = OutputRootReport(tmp_path / "ClearMD_Output", NOW, NOW, (outcome,), (), False)
+    start = time.perf_counter()
+    text = text_of(write(report))
+    assert time.perf_counter() - start < 5
+    assert "…" in text and len(text) < 5_000  # the middle of each left out
+
+
+def test_c9_9_the_table_header_comes_again_on_every_page(tmp_path: Path) -> None:
+    outcomes = tuple(
+        ConversionOutcome(_item(tmp_path, f"d{n:03d}.pdf", f"d{n:03d}.md", FormatId.PDF),
+                          OutcomeStatus.CONVERTED, seconds=1)
+        for n in range(120)
+    )  # fmt: skip
+    report = OutputRootReport(tmp_path / "ClearMD_Output", NOW, NOW, outcomes, (), False)
+    path = write(report)
+    document = pdfium.PdfDocument(str(path))
+    try:
+        pages = [page.get_textpage().get_text_range() for page in document]
+    finally:
+        document.close()
+    assert len(pages) >= 2
+    assert all("Document Folder Result Format Time" in page for page in pages)

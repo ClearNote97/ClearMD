@@ -77,6 +77,15 @@ def atomic_write_bytes(target: Path, data: bytes, *, inside: Path) -> None:
         raise
 
 
+def remove_regular_file(target: Path, *, inside: Path) -> None:
+    """Remove ``target`` (within ``inside``) if it is a regular file: never a link, a junction or
+    a folder, and never through one."""
+    _real_folders_down_to(target.parent, inside)
+    status = os.lstat(target)
+    if stat.S_ISREG(status.st_mode) and not _is_link(status):
+        target.unlink()
+
+
 def sweep_temporary_files(root: Path) -> None:
     """Remove temporary files left by a power cut or a forced stop.
 

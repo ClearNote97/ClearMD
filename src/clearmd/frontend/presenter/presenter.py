@@ -323,6 +323,7 @@ class Presenter:
         generation = self._next_generation()
         self._cancel = token = CancelToken()
         language = self.catalog.language  # read here: the worker never touches the presenter
+        summary_pdf = self.settings.summary_format == "markdown_pdf"
         self._done = 0
         self._current = None
         self.page = 3  # the progress is shown on Convert (ADR-0029)
@@ -347,7 +348,7 @@ class Presenter:
                     on_event=on_event,
                     cancel=token,
                     language=language,
-                    summary_pdf=self.settings.summary_format == "markdown_pdf",
+                    summary_pdf=summary_pdf,
                 )
             except Exception as error:  # noqa: BLE001 -- told to the user, the app goes on
                 self._later(generation, partial(self._unexpected, error))
