@@ -44,7 +44,7 @@ def test_ac_01_an_odt_converts_through_the_pipeline(workdir: Path) -> None:
     (report,) = copy_odt(workdir, "report.odt")
     assert main([str(report), "--quiet"]) == 0
     assert "fixture-odt-report" in output(workdir, "report.md")
-    assert "| `report.odt` | `OutputMD/report.md` | ODT |" in summary(workdir)
+    assert "| `report.odt` | — | `report.md` | ODT |" in summary(workdir)
 
 
 def test_ac_02_an_odt_without_extension_is_detected_by_content(workdir: Path) -> None:
@@ -178,7 +178,7 @@ def test_ac_15_notes_follow_the_language(workdir: Path) -> None:
     (revisions,) = copy_odt(workdir, "revisions.odt")
     assert main([str(revisions), "--lang", "es", "--quiet"]) == 0
     text = summary(workdir)
-    assert "## Convertidos con notas" in text
+    assert "## Necesita tu atención" in text
     assert "`1` (comentarios), `1` (cambios rastreados)" in text
 
 

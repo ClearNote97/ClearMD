@@ -51,8 +51,9 @@ already tested (ADR-0001).
 
 ## Next
 
-- [ ] **009 — A summary in human language, and its PDF** in the app's look; the format chosen on
-      the first screen and in Settings.
+- [ ] **009 — A summary in human language, and its PDF**
+      ([spec](./features/009_human-summary/spec.md), ADR-0031) in the app's look; the format
+      chosen on the first screen and in Settings.
 - [ ] **010 — A light executable:** own detection for files without an extension (no magika),
       own Excel converter (no pandas), no babel.
 - [ ] **006b — Hardening of the executables:** **code signing** of the Windows executables

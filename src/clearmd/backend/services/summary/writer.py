@@ -1,19 +1,24 @@
-"""Write Resumen_ClearMD.md for one output folder (ADR-0016; AC-22, AC-28, AC-29, AC-41)."""
+"""Write Resumen_ClearMD.md for one output folder, in human language (ADR-0016, ADR-0031).
+
+What it says comes from ``content.SummaryContent``; this module only writes it as Markdown. Names
+from the user's files are code spans a hostile name cannot close (ADR-0023).
+"""
 
 import html
 import re
 from collections.abc import Iterable
 from pathlib import Path
 
-from clearmd.backend.schemas.formats import SUMMARY_NAME, Strategy
-from clearmd.backend.schemas.models import (
-    ConversionOutcome,
-    OutcomeStatus,
-    OutputRootReport,
-    SkippedItem,
-)
+from clearmd.backend.schemas.formats import SUMMARY_NAME
+from clearmd.backend.schemas.models import OutputRootReport
 from clearmd.backend.schemas.notes import ConversionNote
-from clearmd.backend.services.rejections import skip_action, skip_reason, stopped_message
+from clearmd.backend.services.summary.content import (
+    MARKDOWN_FOLDER,
+    Entry,
+    Mark,
+    SummaryBuilder,
+    SummaryContent,
+)
 from clearmd.backend.use_cases.output_files import UnsafeOutput, atomic_write, read_regular_file
 from clearmd.i18n import Catalog, printable
 
@@ -21,7 +26,6 @@ HISTORY_START = "<!-- clearmd:history -->"
 HISTORY_END = "<!-- /clearmd:history -->"
 HISTORY_LIMIT = 200
 NOTE_ITEMS = 20
-DATE_FORMAT = "%Y-%m-%d %H:%M"
 # Only lines ClearMD itself wrote survive into the history: date · ClearMD version · totals.
 _HISTORY_LINE = re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2} · ClearMD [0-9A-Za-z.+-]+ · [\w ·]+")
 
@@ -38,10 +42,6 @@ def _cell(text: str) -> str:
     return _code(text).replace("|", "\\|")
 
 
-def _relative(path: Path, base: Path) -> str:
-    return path.relative_to(base).as_posix() if path.is_relative_to(base) else str(path)
-
-
 def _previous_history(summary: Path) -> tuple[list[str], bool]:
     """Earlier batches, newest first, and whether a previous summary could not be read."""
     try:
@@ -53,10 +53,20 @@ def _previous_history(summary: Path) -> tuple[list[str], bool]:
     lines = text.split("\n")  # never splitlines(): it also breaks on U+2028 and friends
     if HISTORY_START not in lines or HISTORY_END not in lines:
         return [], True
-    inside = lines[lines.index(HISTORY_START) + 1 : lines.index(HISTORY_END)]
-    header = lines[1] if len(lines) > 1 else ""
+    start = lines.index(HISTORY_START)
+    inside = lines[start + 1 : lines.index(HISTORY_END)]
+    # The batch line of the last summary: the first of ClearMD's own lines above the history.
+    header = next((line for line in lines[:start] if _HISTORY_LINE.fullmatch(line)), "")
     candidates = [header, *(line.removeprefix("- ") for line in inside if line.startswith("- "))]
     return [f"- {line}" for line in candidates if _HISTORY_LINE.fullmatch(line)], False
+
+
+MARKS = {
+    Mark.DONE: "✅",
+    Mark.ATTENTION: "⚠️",
+    Mark.FAILED: "❌",
+    Mark.STOPPED: "⏹️",
+}
 
 
 class MarkdownSummaryWriter:
@@ -64,7 +74,7 @@ class MarkdownSummaryWriter:
 
     def __init__(self, catalog: Catalog, *, version: str) -> None:
         self._catalog = catalog
-        self._version = version
+        self._builder = SummaryBuilder(catalog, version=version)
 
     def write(self, report: OutputRootReport) -> None:
         path = report.root / SUMMARY_NAME
@@ -73,74 +83,72 @@ class MarkdownSummaryWriter:
         atomic_write(path, rendered, inside=report.root)
 
     def render(self, report: OutputRootReport, history: list[str], unreadable: bool) -> str:
+        return self.render_content(self._builder.build(report), history, unreadable)
+
+    def render_content(self, content: SummaryContent, history: list[str], unreadable: bool) -> str:
         text = self._catalog.text
-        status = {kind: [o for o in report.outcomes if o.status is kind] for kind in OutcomeStatus}
-        base, root = report.root.parent, report.root
-
-        def source(outcome: ConversionOutcome) -> str:
-            return _code(_relative(outcome.item.source, base))
-
-        lines = [f"# {text('summary.title')}", self._header(report, status), ""]
-        if status[OutcomeStatus.CONVERTED]:
+        headline = f"{MARKS[content.mark]} **{content.headline}**"
+        if content.attention_line:
+            headline += f" {content.attention_line}"
+        lines = [f"# {text('summary.title')}", "", headline, "", content.batch_line, ""]
+        lines += [
+            f"## {text('summary.where_title')}",
+            text("summary.where", folder=_code(MARKDOWN_FOLDER + "/")),
+            "",
+        ]
+        lines += self._section("summary.attention", self._attention(content.attention))
+        if content.converted:
             lines += [
                 f"## {text('summary.converted')}",
-                f"| {text('summary.col_source')} | {text('summary.col_output')} "
-                f"| {text('summary.col_format')} | {text('summary.col_time')} |",
-                "|---|---|---|---|",
-                *(self._row(o, base, root) for o in status[OutcomeStatus.CONVERTED]),
+                f"| {text('summary.col_document')} | {text('summary.col_folder')} "
+                f"| {text('summary.col_result')} | {text('summary.col_format')} "
+                f"| {text('summary.col_time')} |",
+                "|---|---|---|---|---|",
+                *(
+                    f"| {_cell(row.name)} | {_cell(row.folder) if row.folder else '—'} "
+                    f"| {_cell(row.result)} | {row.format} | {row.time} |"
+                    for row in content.converted
+                ),
                 "",
             ]
-        stopped = (f"- {source(o)} — {self._stopped(o)}" for o in status[OutcomeStatus.STOPPED])
-        kept = (
-            f"- {source(o)} → {_code(_relative(o.item.target, root))}"
-            for o in status[OutcomeStatus.KEPT]
-        )
-        lines += self._section(
-            "summary.with_notes", self._noted(status[OutcomeStatus.CONVERTED], base)
-        )
-        lines += self._section("summary.stopped", stopped)
-        lines += self._section("summary.failed", self._failed(status[OutcomeStatus.FAILED], base))
-        lines += self._section("summary.skipped", (self._skipped(i, base) for i in report.skipped))
+        lines += self._section("summary.left_out", (self._line(e) for e in content.left_out))
+        kept = (f"{self._line(e)} → {_code(e.result)}" for e in content.kept)
         lines += self._section("summary.kept", kept)
-        cancelled = (f"- {source(o)}" for o in status[OutcomeStatus.CANCELLED])
-        lines += self._section("summary.cancelled", cancelled)
-        lines += [HISTORY_START, f"## {text('summary.history')}"]
+        lines += self._section("summary.cancelled", (self._line(e) for e in content.cancelled))
+        # The history, folded: its markers and lines as before (ADR-0016), inside <details>.
+        lines += ["<details>", f"<summary>{text('summary.history')}</summary>", ""]
+        lines += [HISTORY_START]
         if unreadable:
             lines.append(f"_{text('summary.history_restarted')}_")
-        lines += [*history, HISTORY_END]
+        elif not history:
+            lines.append(f"_{text('summary.history_empty')}_")
+        lines += [*history, HISTORY_END, "", "</details>"]
         return "\n".join(lines) + "\n"
 
-    def _header(
-        self, report: OutputRootReport, by_status: dict[OutcomeStatus, list[ConversionOutcome]]
-    ) -> str:
-        text = self._catalog.text
-        parts = [
-            report.started_at.strftime(DATE_FORMAT),
-            f"ClearMD {self._version}",
-            text(
-                "cli.summary",
-                converted=len(by_status[OutcomeStatus.CONVERTED]),
-                skipped=len(report.skipped) + len(by_status[OutcomeStatus.KEPT]),
-                failed=len(by_status[OutcomeStatus.FAILED]),
-            ),
-        ]
-        header = " · ".join(parts)
-        if by_status[OutcomeStatus.STOPPED]:
-            header += text("cli.summary_stopped", stopped=len(by_status[OutcomeStatus.STOPPED]))
-        if report.cancelled:
-            header += f" · {text('summary.batch_cancelled')}"
-        return header
+    def _line(self, entry: Entry) -> str:
+        mark = f"{MARKS[entry.mark]} " if entry.mark else ""
+        place = (
+            " " + self._catalog.text("summary.in_folder", folder=_code(entry.folder))
+            if entry.folder
+            else ""
+        )
+        message = f" — {entry.message}" if entry.message else ""
+        return f"- {mark}{_code(entry.name)}{place}{message}"
+
+    def _attention(self, entries: Iterable[Entry]) -> Iterable[str]:
+        summary = self._catalog.text("summary.technical_detail")
+        for entry in entries:
+            yield self._line(entry)
+            for note in entry.notes:
+                yield f"  - {self.describe(note)}"
+            if entry.detail:
+                # One line, so blank lines in an exception cannot end the HTML block.
+                detail = html.escape(entry.detail, quote=False)
+                yield f"  <details><summary>{summary}</summary>{detail}</details>"
 
     def _section(self, key: str, items: Iterable[str]) -> list[str]:
         body = list(items)
         return [f"## {self._catalog.text(key)}", *body, ""] if body else []
-
-    def _noted(self, outcomes: list[ConversionOutcome], base: Path) -> Iterable[str]:
-        for outcome in outcomes:
-            if outcome.notes:
-                yield f"- {_code(_relative(outcome.item.source, base))}"
-                for note in outcome.notes:
-                    yield f"  - {self.describe(note)}"
 
     def describe(self, note: ConversionNote) -> str:
         """A note in words: its sentence, then its items (at most NOTE_ITEMS, then "and N more")."""
@@ -157,47 +165,3 @@ class MarkdownSummaryWriter:
         if hidden > 0:
             listed += self._catalog.text("note.and_more", count=hidden)
         return self._catalog.text(note.kind.key, items=listed)
-
-    def _row(self, outcome: ConversionOutcome, base: Path, root: Path) -> str:
-        detection = outcome.item.detection
-        fmt = detection.format.value.upper()
-        if outcome.item.strategy is not Strategy.FULL:
-            fmt = self._catalog.text(f"summary.strategy.{outcome.item.strategy}", format=fmt)
-        if detection.by_content:
-            fmt = self._catalog.text("summary.by_content", format=fmt)
-        source = _cell(_relative(outcome.item.source, base))
-        target = _cell(_relative(outcome.item.target, root))
-        return f"| {source} | {target} | {fmt} | {self._time(outcome.seconds)} |"
-
-    def _time(self, seconds: float) -> str:
-        if seconds < 1:
-            return self._catalog.text("time.under_a_second")
-        if seconds < 60:
-            return self._catalog.text("time.seconds", seconds=round(seconds))
-        return self._catalog.clock(seconds)
-
-    def _stopped(self, outcome: ConversionOutcome) -> str:
-        assert outcome.error is not None
-        return self._catalog.text(
-            "summary.stopped_line",
-            message=stopped_message(self._catalog, outcome),
-            elapsed=self._catalog.clock(outcome.seconds),
-            percent=outcome.share_done,
-            action=self._catalog.text(outcome.error.action_key),
-        )
-
-    def _failed(self, outcomes: list[ConversionOutcome], base: Path) -> Iterable[str]:
-        summary = self._catalog.text("summary.technical_detail")
-        for outcome in outcomes:
-            assert outcome.error is not None
-            message = self._catalog.error(outcome.error)
-            yield f"- {_code(_relative(outcome.item.source, base))} — {message}"
-            if outcome.detail:
-                # One line, so blank lines in an exception cannot end the HTML block.
-                detail = html.escape(printable(" ".join(outcome.detail.split())), quote=False)
-                yield f"  <details><summary>{summary}</summary>{detail}</details>"
-
-    def _skipped(self, item: SkippedItem, base: Path) -> str:
-        shown = _relative(item.path, base) + ("/" if item.is_dir else "")
-        reason = skip_reason(self._catalog, item)
-        return f"- {_code(shown)} — {reason}. {skip_action(self._catalog, item)}"

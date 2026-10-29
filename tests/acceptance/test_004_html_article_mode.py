@@ -53,7 +53,7 @@ def test_ac_01_by_default_a_page_converts_in_full(workdir: Path) -> None:
     assert main([str(page), "--quiet"]) == 0
     markdown = output(workdir, "news.md")
     assert "fixture-html-article" in markdown and "MENU-FIXTURE" in markdown
-    assert "| `news.html` | `OutputMD/news.md` | HTML |" in summary(workdir)
+    assert "| `news.html` | — | `news.md` | HTML |" in summary(workdir)
 
 
 def test_ac_02_the_setting_or_the_flag_chooses_the_article(workdir: Path) -> None:
@@ -69,7 +69,7 @@ def test_ac_02_the_setting_or_the_flag_chooses_the_article(workdir: Path) -> Non
 
 
 def test_ac_03_the_summary_shows_the_strategy(workdir: Path, article_md: str) -> None:
-    assert "| `news.html` | `OutputMD/news.md` | HTML (Article) |" in summary(workdir)
+    assert "| `news.html` | — | `news.md` | HTML (Article) |" in summary(workdir)
 
 
 def test_ac_04_the_article_keeps_its_structure(article_md: str) -> None:

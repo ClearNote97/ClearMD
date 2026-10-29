@@ -90,30 +90,37 @@ def _report(parent: Path, *, started_at: datetime = NOW) -> OutputRootReport:
 EXPECTED_EN = "\n".join(
     [
         "# ClearMD summary",
+        "",
+        "⚠️ **2 of 4 documents were converted.** 2 things need your attention.",
+        "",
         "2026-10-25 15:30 · ClearMD 0.1.0 · 2 converted · 2 skipped · 1 failed · 1 stopped",
         "",
-        "## Converted",
-        "| Source | Output | Format | Time |",
-        "|---|---|---|---|",
-        "| `project/notes.pdf` | `OutputMD/project/notes.md` | PDF | 28 s |",
-        "| `project/scan` | `OutputMD/project/scan.md` | DOCX, detected by content | <1 s |",
+        "## Where your files are",
+        "Your Markdown files are in the `OutputMD/` folder, next to this summary.",
         "",
-        "## Stopped",
-        "- `project/manual.pdf` — Exceeded the time limit (10 min). Estimated progress: 67% after"
-        " 10:00. Try splitting it into smaller files.",
-        "",
-        "## Failed",
-        "- `project/contract.pdf` — This file is password-protected."
-        " Remove the password and try again.",
+        "## Needs your attention",
+        "- ❌ `contract.pdf` in `project` — This file is password-protected. Remove the password and try again.",  # noqa: E501 (the summary as written)
         "  <details><summary>Technical detail</summary>PDFPasswordIncorrect</details>",
+        "- ⏹️ `manual.pdf` in `project` — Exceeded the time limit (10 min). Estimated progress: 67% after 10:00. Try splitting it into smaller files.",  # noqa: E501 (the summary as written)
         "",
-        "## Skipped",
-        "- `project/.cache/` — hidden file. Make it visible to convert it.",
-        "- `project/old.md` — already Markdown. It needs no conversion.",
+        "## Converted",
+        "| Document | Folder | Result | Format | Time |",
+        "|---|---|---|---|---|",
+        "| `notes.pdf` | `project` | `project/notes.md` | PDF | 28 s |",
+        "| `scan` | `project` | `project/scan.md` | DOCX, detected by content | <1 s |",
+        "",
+        "## Left out",
+        "- `.cache/` in `project` — Hidden file. Make it visible to convert it.",
+        "- `old.md` in `project` — Already Markdown. It needs no conversion.",
+        "",
+        "<details>",
+        "<summary>History</summary>",
         "",
         "<!-- clearmd:history -->",
-        "## History",
+        "_No earlier batches here._",
         "<!-- /clearmd:history -->",
+        "",
+        "</details>",
         "",
     ]
 )
@@ -133,16 +140,17 @@ def test_the_summary_in_english(tmp_path: Path) -> None:
 
 def test_the_summary_in_spanish(tmp_path: Path) -> None:
     text = _write(tmp_path, "es")
-    assert text.startswith("# Resumen de ClearMD\n2026-10-25 15:30 · ClearMD 0.1.0 · 2 convertidos")
+    assert text.startswith("# Resumen de ClearMD\n\n⚠️ **Se convirtieron 2 de 4 documentos.**")
+    assert "\n2026-10-25 15:30 · ClearMD 0.1.0 · 2 convertidos" in text
     for heading in (
+        "## Dónde están tus archivos",
+        "## Necesita tu atención",
         "## Convertidos",
-        "## Detenidos",
-        "## Con error",
-        "## Omitidos",
-        "## Historial",
+        "## No incluidos",
+        "<summary>Historial</summary>",
     ):
         assert heading in text
-    assert "| Origen | Resultado | Formato | Tiempo |" in text
+    assert "| Documento | Carpeta | Resultado | Formato | Tiempo |" in text
     assert "DOCX, detectado por su contenido" in text
     assert "Este archivo está protegido con contraseña." in text
 
@@ -151,7 +159,9 @@ def test_the_previous_batch_moves_into_the_history(tmp_path: Path) -> None:
     _write(tmp_path, started_at=NOW - timedelta(days=1))
     _write(tmp_path, started_at=NOW - timedelta(hours=2))
     text = _write(tmp_path)
-    history = text.split("## History\n", 1)[1].split("<!-- /clearmd:history -->", 1)[0]
+    history = text.split("<!-- clearmd:history -->\n", 1)[1].split("<!-- /clearmd:history -->", 1)[
+        0
+    ]
     assert history.splitlines() == [
         "- 2026-10-25 13:30 · ClearMD 0.1.0 · 2 converted · 2 skipped · 1 failed · 1 stopped",
         "- 2026-10-24 15:30 · ClearMD 0.1.0 · 2 converted · 2 skipped · 1 failed · 1 stopped",
@@ -197,8 +207,9 @@ def test_untrusted_names_cannot_break_the_table(tmp_path: Path, name: str, shown
     report = OutputRootReport(tmp_path / "ClearMD_Output", NOW, NOW, (outcome,), (), False)
     report.root.mkdir()
     writer.write(report)
-    row = (report.root / "Resumen_ClearMD.md").read_text(encoding="utf-8").splitlines()[6]
-    assert row.startswith(f"| {shown} |")
+    lines = (report.root / "Resumen_ClearMD.md").read_text(encoding="utf-8").splitlines()
+    row = lines[lines.index("|---|---|---|---|---|") + 1]
+    assert row.startswith(f"| {shown} |") and row.count(" | ") == 4  # still five cells
 
 
 def test_technical_details_cannot_inject_html(tmp_path: Path) -> None:
@@ -227,9 +238,9 @@ def test_kept_and_cancelled_items_have_their_sections(tmp_path: Path) -> None:
     report.root.mkdir()
     writer.write(report)
     text = (report.root / "Resumen_ClearMD.md").read_text(encoding="utf-8")
-    assert "## Kept (the output already existed)\n- `a.pdf` → `OutputMD/a.md`" in text
-    assert "## Cancelled\n- `b.pdf`" in text
-    assert "cancelled" in text.splitlines()[1]
+    assert "## Kept (the output already existed)\n- `a.pdf` → `a.md`" in text
+    assert "## Cancelled\n- ⏹️ `b.pdf`" in text
+    assert text.splitlines()[4].endswith(" · cancelled")  # the batch line
 
 
 def test_a_planted_summary_link_is_neither_read_nor_written_through(tmp_path: Path) -> None:
@@ -248,7 +259,8 @@ def test_a_planted_summary_link_is_neither_read_nor_written_through(tmp_path: Pa
     [
         ("a``b.pdf", "``` a``b.pdf ```"),
         ("evil\n- injected.pdf", "`evil\\x0a- injected.pdf`"),
-        ("fake<!-- /clearmd:history -->.pdf", "`fake<!-- /clearmd:history -->.pdf`"),
+        # A "/" makes it a folder and a name: both stay code spans.
+        ("fake<!-- /clearmd:history -->.pdf", "`clearmd:history -->.pdf` in `fake<!-- `"),
     ],
 )
 def test_names_cannot_escape_their_code_span_or_line(
@@ -265,8 +277,8 @@ def test_names_cannot_escape_their_code_span_or_line(
     report.root.mkdir()
     writer.write(report)
     text = (report.root / "Resumen_ClearMD.md").read_text(encoding="utf-8")
-    assert f"- {expected} — " in text
-    assert text.count("<!-- /clearmd:history -->") == 2 if "history" in name else True
+    assert f"- ❌ {expected} — " in text
+    assert text.split("\n").count("<!-- /clearmd:history -->") == 1  # only ClearMD's own marker
     assert "\n- injected" not in text
 
 
@@ -297,7 +309,7 @@ def test_a_name_cannot_inject_history_lines_on_the_next_run(tmp_path: Path) -> N
     writer.write(report)
     writer.write(report)  # the second run reads the first summary's history
     text = (report.root / "Resumen_ClearMD.md").read_text(encoding="utf-8")
-    history = text.split("\n## History\n", 1)[1]
+    history = text.split("\n<!-- clearmd:history -->\n", 1)[1]
     assert "<img" not in history
     assert history.splitlines()[0].startswith("- 2026-10-25 15:30 · ClearMD 0.1.0 · ")
 
@@ -313,7 +325,7 @@ def test_only_well_formed_history_lines_are_carried_over(tmp_path: Path) -> None
         encoding="utf-8",
     )
     text = _write(tmp_path)
-    history = text.split("\n## History\n", 1)[1]
+    history = text.split("\n<!-- clearmd:history -->\n", 1)[1]
     assert "- 2026-10-01 10:00 · ClearMD 0.1.0 · 3 converted · 0 skipped · 0 failed" in history
     assert "click me" not in history and "<script>" not in history
 
@@ -344,13 +356,13 @@ def _noted_report(tmp_path: Path, notes: tuple[ConversionNote, ...]) -> OutputRo
     [
         (
             "en",
-            "## Converted with notes",
+            "## Needs your attention",
             "commands ClearMD does not know were left as written: `\\foo`, `\\bar`",
             "includes not followed: `../secret.tex` (outside the document folder)",
         ),
         (
             "es",
-            "## Convertidos con notas",
+            "## Necesita tu atención",
             "se dejaron tal cual comandos que ClearMD no conoce: `\\foo`, `\\bar`",
             "no se siguieron estas inclusiones: `../secret.tex`"
             " (fuera de la carpeta del documento)",
@@ -371,7 +383,9 @@ def test_notes_are_listed_in_the_users_language(
     writer.write(report)
     text = (report.root / "Resumen_ClearMD.md").read_text(encoding="utf-8")
     section = text.split(heading + "\n", 1)[1].split("\n\n", 1)[0]
-    assert section.splitlines() == ["- `thesis/main.tex`", f"  - {unknown}", f"  - {include}"]
+    first = {"en": "- ⚠️ `main.tex` in `thesis` — converted, but:",
+             "es": "- ⚠️ `main.tex` en `thesis` — se convirtió, pero:"}[language]  # fmt: skip
+    assert section.splitlines() == [first, f"  - {unknown}", f"  - {include}"]
 
 
 def test_a_long_list_of_names_is_cut_at_twenty(tmp_path: Path) -> None:
@@ -385,4 +399,4 @@ def test_a_long_list_of_names_is_cut_at_twenty(tmp_path: Path) -> None:
 
 
 def test_files_without_notes_have_no_notes_section(tmp_path: Path) -> None:
-    assert "with notes" not in _write(tmp_path)
+    assert "converted, but" not in _write(tmp_path)

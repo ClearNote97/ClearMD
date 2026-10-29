@@ -352,11 +352,11 @@ def test_ac_22_and_ac_28_each_output_root_gets_its_summary(workdir: Path) -> Non
     arguments = [str(good), str(broken), str(scan), str(other), str(workdir / "one" / "old.md")]
     assert main([*arguments, "--quiet"]) == 1
     one = _summary(workdir / "one")
-    assert "| `notes.txt` | `OutputMD/notes.md` | TXT |" in one
-    assert "| `scan` | `OutputMD/scan.md` | DOCX, detected by content |" in one
-    assert "- `broken.docx` — This file seems to be damaged." in one
+    assert "| `notes.txt` | — | `notes.md` | TXT |" in one
+    assert "| `scan` | — | `scan.md` | DOCX, detected by content |" in one
+    assert "- ❌ `broken.docx` — This file seems to be damaged." in one
     assert "<details><summary>Technical detail</summary>BadZipFile" in one
-    assert "- `old.md` — already Markdown" in one
+    assert "- `old.md` — Already Markdown" in one
     assert "other.txt" not in one
     assert "`other.txt`" in _summary(workdir / "two")
 
@@ -364,9 +364,9 @@ def test_ac_22_and_ac_28_each_output_root_gets_its_summary(workdir: Path) -> Non
 def test_ac_29_the_history_keeps_earlier_batches(workdir: Path) -> None:
     source = put(workdir, "sample.txt", "notes.txt")
     assert main([str(source), "--quiet"]) == 0
-    first_header = _summary(workdir).splitlines()[1]
+    first_header = _summary(workdir).splitlines()[4]  # the batch line, under the headline
     assert main([str(source), "--overwrite", "--quiet"]) == 0
-    history = _summary(workdir).split("## History", 1)[1]
+    history = _summary(workdir).split("<!-- clearmd:history -->", 1)[1]
     assert f"- {first_header}" in history
 
 
@@ -385,7 +385,7 @@ def test_ac_28_the_summary_speaks_spanish_when_asked(workdir: Path) -> None:
     run_batch(plan, overwrite=lambda item: True, language="es")
     text = _summary(workdir)
     assert text.startswith("# Resumen de ClearMD")
-    assert "| Origen | Resultado | Formato | Tiempo |" in text
+    assert "| Documento | Carpeta | Resultado | Formato | Tiempo |" in text
 
 
 def test_ac_41_the_first_file_time_does_not_include_the_worker_start_up(workdir: Path) -> None:
@@ -532,7 +532,7 @@ def test_ac_26_ctrl_c_stops_at_once_and_still_writes_the_summary(workdir: Path) 
     assert not (output / "OutputMD" / "slow.md").exists()
     assert list(output.rglob("*.clearmd-tmp")) == []
     summary = (output / "Resumen_ClearMD.md").read_text(encoding="utf-8")
-    assert "## Cancelled\n- `slow.pdf`" in summary
+    assert "## Cancelled\n- ⏹️ `slow.pdf`" in summary
 
 
 def test_ac_31_messages_follow_lang(workdir: Path, capsys: pytest.CaptureFixture[str]) -> None:
