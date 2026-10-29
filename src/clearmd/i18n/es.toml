@@ -321,6 +321,16 @@ converting = "Convirtiendo… espera a que termine o cancélalo."
 done = "Este lote terminó: mira los Resultados o Convierte más."
 no_results = "Primero convierte algo: aquí aparecen los resultados."
 
+[gui.more]
+title = "Convertir más"
+question = "¿Conservar los archivos que elegiste?"
+explain = "Consérvalos para convertirlos otra vez o agregar más; empieza vacío para un lote nuevo."
+keep = "Conservarlos"
+clear = "Empezar vacío"
+
+[gui.convert]
+ready = "Listos para convertir: {count}"
+
 [gui.steps]
 choose = "Elegir"
 review = "Revisar"

@@ -194,3 +194,48 @@ class SettingsDialog(Dialog):
         chosen = self.chosen()
         self.close()
         self._on_save(chosen)
+
+
+class KeepInputsDialog(Dialog):
+    """ "Convert more": keep the chosen files, or start empty (asked every time, feature 007)."""
+
+    def __init__(
+        self,
+        parent: tk.Misc,
+        catalog: Catalog,
+        palette: Palette,
+        fonts: dict[str, tkfont.Font],
+        on_answer: Callable[[bool], None],
+        on_close: Callable[[], None],
+    ) -> None:
+        super().__init__(
+            parent,
+            title=catalog.text("gui.more.title"),
+            palette=palette,
+            fonts=fonts,
+            on_close=on_close,
+            width=480,
+        )
+        self._on_answer = on_answer
+        ttk.Label(self.body, text=catalog.text("gui.more.question"), font=fonts["strong"]).pack(
+            anchor="w"
+        )
+        explanation = ttk.Label(
+            self.body, text=catalog.text("gui.more.explain"), style=MUTED, wraplength=400
+        )
+        explanation.pack(anchor="w", pady=(SPACE, 0))
+        self.keep = ttk.Button(
+            self.actions, text=catalog.text("gui.more.keep"), style=PRIMARY,
+            command=lambda: self.answer(True),
+        )  # fmt: skip
+        self.keep.pack(side="right")
+        self.clear = ttk.Button(
+            self.actions, text=catalog.text("gui.more.clear"), style=SOFT,
+            command=lambda: self.answer(False),
+        )  # fmt: skip
+        self.clear.pack(side="right", padx=(0, SPACE))
+        self.bind("<Return>", lambda _event: self.answer(True))
+
+    def answer(self, keep: bool) -> None:
+        self.close()
+        self._on_answer(keep)

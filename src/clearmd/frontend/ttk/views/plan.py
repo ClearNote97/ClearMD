@@ -2,12 +2,11 @@
 
 import tkinter as tk
 import tkinter.font as tkfont
-from collections.abc import Callable
 from tkinter import ttk
 from typing import Any
 
 from clearmd.frontend.presenter.models import PlanView, RowKind
-from clearmd.frontend.ttk.brand import CARD, PAGE, PRIMARY, SOFT, Palette
+from clearmd.frontend.ttk.brand import CARD, PAGE, Palette
 from clearmd.frontend.ttk.components.file_list import Column, FileList, ListRow
 from clearmd.frontend.ttk.components.stats import Stats
 from clearmd.frontend.ttk.layout import GAP, SPACE
@@ -19,18 +18,15 @@ _ATTENTION = frozenset({RowKind.SKIPPED, RowKind.MISSING})
 
 class ReviewView(ttk.Frame):
     """The figures, the list (skipped files in the warning colour, with what to do), the question
-    about existing results when the setting is "ask", Back and Convert."""
+    about existing results when the setting is "ask" (the actions are in the page's bar)."""
 
     def __init__(
         self,
         parent: tk.Misc,
         *,
         fonts: dict[str, tkfont.Font],
-        on_back: Callable[[], None],
-        on_confirm: Callable[[bool | None], None],
     ) -> None:
         super().__init__(parent, style=PAGE)
-        self._on_confirm = on_confirm
         self._asks = False
         self._rows: tuple[object, ...] = ()
         self._texts: list[tuple[Any, str]] = []
@@ -60,16 +56,6 @@ class ReviewView(ttk.Frame):
         self.overwrite.pack(side="left", padx=(GAP, 0))
         self._label(self.overwrite, "gui.plan.overwrite")
 
-        actions = ttk.Frame(self, style=PAGE)
-        actions.pack(side="bottom", fill="x", pady=(GAP, 0))
-        self.confirm = ttk.Button(actions, style=PRIMARY, command=self._confirm)
-        self.confirm.pack(side="right")
-        self._label(self.confirm, "gui.plan.confirm")
-        self.back = ttk.Button(actions, style=SOFT, command=on_back)
-        self.back.pack(side="right", padx=(0, SPACE))
-        self._label(self.back, "gui.plan.back")
-        self._actions = actions
-
     def show(self, plan: PlanView) -> None:
         self.stats.show(plan.stats)
         # What will not be converted first: it is what the user may want to fix.
@@ -88,10 +74,11 @@ class ReviewView(ttk.Frame):
             self.decision.set(KEEP)
         self.existing.pack_forget()
         if self._asks:
-            self.existing.pack(fill="x", pady=(GAP, 0), before=self._actions)
+            self.existing.pack(fill="x", pady=(GAP, 0))
 
-    def _confirm(self) -> None:
-        self._on_confirm(self.decision.get() == OVERWRITE if self._asks else None)
+    def overwrite_answer(self) -> bool | None:
+        """The answer about existing results, when the plan asks it (setting "ask")."""
+        return self.decision.get() == OVERWRITE if self._asks else None
 
     def apply_language(self, catalog: Catalog) -> None:
         for widget, key in self._texts:

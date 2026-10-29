@@ -2,12 +2,11 @@
 
 import tkinter as tk
 import tkinter.font as tkfont
-from collections.abc import Callable
 from tkinter import ttk
 from typing import Any
 
 from clearmd.frontend.presenter.models import ResultView
-from clearmd.frontend.ttk.brand import CARD, ON_PAGE, PAGE, PRIMARY, SOFT, Palette
+from clearmd.frontend.ttk.brand import CARD, ON_PAGE, PAGE, Palette
 from clearmd.frontend.ttk.components.file_list import Column, FileList, ListRow
 from clearmd.frontend.ttk.components.stats import Stats
 from clearmd.frontend.ttk.layout import GAP, SPACE
@@ -23,8 +22,6 @@ class ResultsView(ttk.Frame):
         parent: tk.Misc,
         *,
         fonts: dict[str, tkfont.Font],
-        on_again: Callable[[], None],
-        on_open: Callable[[], None],
     ) -> None:
         super().__init__(parent, style=PAGE)
         self._texts: list[tuple[Any, str]] = []
@@ -49,16 +46,6 @@ class ResultsView(ttk.Frame):
         self.detail = ttk.Label(self, style=ON_PAGE, wraplength=760, justify="left")
         self.problems.tree.bind("<<TreeviewSelect>>", lambda _event: self._show_detail())
 
-        actions = ttk.Frame(self, style=PAGE)
-        actions.pack(side="bottom", fill="x", pady=(GAP, 0))
-        self.open = ttk.Button(actions, style=PRIMARY, command=on_open)
-        self.open.pack(side="right")
-        self._label(self.open, "gui.result.open")
-        self.again = ttk.Button(actions, style=SOFT, command=on_again)
-        self.again.pack(side="right", padx=(0, SPACE))
-        self._label(self.again, "gui.result.again")
-        self._actions = actions
-
     def show(self, result: ResultView) -> None:
         tree = self.problems.tree
         selected = tree.index(tree.selection()[0]) if tree.selection() else 0
@@ -67,19 +54,19 @@ class ResultsView(ttk.Frame):
         for widget in (self.all_good, self.problems_title, self.problems, self.detail):
             widget.pack_forget()
         if result.rows:
-            self.problems_title.pack(anchor="w", pady=(GAP, 0), before=self._actions)
-            self.problems.pack(fill="both", expand=True, pady=(SPACE, 0), before=self._actions)
+            self.problems_title.pack(anchor="w", pady=(GAP, 0))
+            self.problems.pack(fill="both", expand=True, pady=(SPACE, 0))
             self.problems.show(
                 [ListRow(row.icon, row.name, (row.detail,), tag="warning") for row in result.rows]
             )
-            self.detail.pack(fill="x", pady=(SPACE, 0), before=self._actions)
+            self.detail.pack(fill="x", pady=(SPACE, 0))
             children = tree.get_children()
             row = children[selected if keep and selected < len(children) else 0]
             tree.selection_set(row)
             tree.focus(row)
             self._show_detail()
         else:
-            self.all_good.pack(fill="x", pady=(GAP, 0), before=self._actions)
+            self.all_good.pack(fill="x", pady=(GAP, 0))
 
     def _show_detail(self) -> None:
         row = self.problems.current()

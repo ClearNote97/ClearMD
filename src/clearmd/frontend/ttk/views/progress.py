@@ -2,7 +2,6 @@
 
 import tkinter as tk
 import tkinter.font as tkfont
-from collections.abc import Callable
 from tkinter import ttk
 from typing import Any
 
@@ -10,25 +9,31 @@ from PIL import ImageTk
 
 from clearmd.frontend.presenter.models import ProgressView
 from clearmd.frontend.ttk import art
-from clearmd.frontend.ttk.brand import CARD, MUTED, PAGE, SOFT
+from clearmd.frontend.ttk.brand import CARD, MUTED, PAGE
 from clearmd.frontend.ttk.layout import GAP, HALF, SPACE
 from clearmd.i18n import Catalog
 
 
 class ConvertView(ttk.Frame):
     """A card: "3 of 37", the current file with its icon, the bar, the time left; for a long file
-    its timer and a reassurance. Cancel below."""
+    its timer and a reassurance. Before it starts, a card says what is ready and where it goes."""
 
-    def __init__(
-        self, parent: tk.Misc, *, fonts: dict[str, tkfont.Font], on_cancel: Callable[[], None]
-    ) -> None:
+    def __init__(self, parent: tk.Misc, *, fonts: dict[str, tkfont.Font]) -> None:
         super().__init__(parent, style=PAGE)
         self._catalog: Catalog | None = None
         self._icon: ImageTk.PhotoImage | None = None
         self._texts: list[tuple[Any, str]] = []
 
+        # Before the batch: what is ready and where it goes; then the progress (ADR-0029).
+        self.ready = ttk.Frame(self, style=CARD, padding=3 * SPACE)
+        self.ready_count = ttk.Label(self.ready, font=fonts["title"])
+        self.ready_count.pack(anchor="w")
+        self.ready_where = ttk.Label(self.ready, style=MUTED, wraplength=640, justify="left")
+        self.ready_where.pack(anchor="w", pady=(SPACE, 0))
+        self.ready.pack(fill="x")
+
         card = ttk.Frame(self, style=CARD, padding=3 * SPACE)
-        card.pack(fill="x")
+        self.progress_card = card
         self.counter = ttk.Label(card, font=fonts["title"])
         self.counter.pack(anchor="w")
         now = ttk.Label(card, style=MUTED)
@@ -43,13 +48,17 @@ class ConvertView(ttk.Frame):
         self.long_file = ttk.Label(card, style=MUTED)
         self.long_file.pack(anchor="w", pady=(SPACE, 0))
 
-        actions = ttk.Frame(self, style=PAGE)
-        actions.pack(fill="x", pady=(GAP, 0))
-        self.cancel = ttk.Button(actions, style=SOFT, command=on_cancel)
-        self.cancel.pack(side="right")
-        self._label(self.cancel, "gui.progress.cancel")
+    def show_ready(self, count: str, where: str) -> None:
+        """The batch has not started: what is ready, and where the results go."""
+        self.progress_card.pack_forget()
+        self.ready_count.configure(text=count)
+        self.ready_where.configure(text=where)
+        self.ready.pack(fill="x")
 
     def clear(self) -> None:
+        """The batch starts: the progress replaces the ready card."""
+        self.ready.pack_forget()
+        self.progress_card.pack(fill="x")
         for label in (self.counter, self.file, self.time_left, self.long_file):
             label.configure(text="", image="")
         self.bar.configure(value=0.0)

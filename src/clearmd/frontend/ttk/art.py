@@ -137,3 +137,25 @@ def numbered(number: int, file_icon: Image.Image, colour: str, *, digits: int) -
     )
     row.alpha_composite(file_icon, (number_width, 0))
     return row
+
+
+def blend(colour: str, ground: str, strength: float) -> str:
+    """``colour`` drawn at ``strength`` (0..1) over ``ground``: a dimmed text, as a plain colour."""
+    top, bottom = rgba(colour), rgba(ground)
+    mixed = (
+        round(t * strength + b * (1 - strength)) for t, b in zip(top[:3], bottom[:3], strict=True)
+    )
+    return "#" + "".join(f"{value:02X}" for value in mixed)
+
+
+def circle(diameter: int, *, outline: str, fill: str, width: float = 1.5) -> Image.Image:
+    """A smooth circle (Tk's own ovals are jagged): ``outline`` around ``fill``."""
+    s = SUPERSAMPLE * 2
+    big = Image.new("RGBA", (diameter * s, diameter * s), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(big)
+    draw.ellipse((0, 0, diameter * s - 1, diameter * s - 1), fill=rgba(outline))
+    inset = round(width * s)
+    draw.ellipse(
+        (inset, inset, diameter * s - 1 - inset, diameter * s - 1 - inset), fill=rgba(fill)
+    )
+    return big.resize((diameter, diameter), Image.Resampling.LANCZOS)

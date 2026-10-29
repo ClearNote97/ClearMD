@@ -68,6 +68,21 @@ def pump(app: TtkApp, *, until: Callable[[], bool] | None = None, seconds: float
         time.sleep(0.01)
 
 
+def confirm(app: TtkApp) -> None:
+    """Convert the plan: Next on Review, then Convert (ADR-0029)."""
+    if app.presenter.page == 2:
+        app.actions.primary.invoke()
+    app.actions.primary.invoke()
+
+
+def convert_more(app: TtkApp, *, keep: bool = True) -> None:
+    from clearmd.frontend.ttk.views.dialogs import KeepInputsDialog
+
+    app.actions.secondary.invoke()
+    assert isinstance(app.dialog, KeepInputsDialog)
+    app.dialog.answer(keep)
+
+
 def press_enter(app: TtkApp) -> None:
     """Enter on the window: it needs the keyboard focus first (Windows gives it only on demand)."""
     app.root.focus_force()
@@ -77,7 +92,7 @@ def press_enter(app: TtkApp) -> None:
 
 def to_review(app: TtkApp, *paths: Path) -> None:
     app.presenter.add_paths(list(paths))
-    app.main.convert.invoke()
+    app.actions.primary.invoke()
     pump(app, until=lambda: app.presenter.state is AppState.WAITING_DECISION, seconds=60)
 
 
@@ -121,7 +136,7 @@ def test_ac_01_one_state_at_a_time_and_each_enables_its_actions(
     app.show_state = recorded  # type: ignore[method-assign]
     assert Action.CONVERT not in (app.state.enabled if app.state else frozenset())
     to_review(app, tmp_path)
-    app.review.confirm.invoke()
+    confirm(app)
     pump(app, until=lambda: converted(app))
     states = [state for state, _ in seen]
     assert states[:3] == [AppState.READY, AppState.ANALYZING, AppState.WAITING_DECISION]
@@ -149,7 +164,7 @@ def test_ac_02_the_work_never_runs_on_the_ui_thread(
     app = window(fake)
     ticks: list[float] = []
     app.presenter.add_paths([tmp_path])
-    app.main.convert.invoke()
+    app.actions.primary.invoke()
     for _ in range(10):
         app.root.after(20, lambda: ticks.append(time.monotonic()))
         pump(app, seconds=0.03)
@@ -168,7 +183,7 @@ def test_ac_03_every_text_comes_from_the_catalogs_in_the_chosen_language(
     )
     app = window(FakeBackend(plan=plan, settings=replace_settings(QUIET, language="es")))
     es = load_catalog("es")
-    assert app.main.convert.cget("text") == es.text("gui.main.convert")
+    assert app.actions.primary.cget("text") == es.text("gui.nav.next")
     assert app.surface.header()["title"] == es.text("gui.page.choose_title")
     to_review(app, tmp_path)
     (skipped,) = [row for row in app.last_plan.rows if row.name == "notas.md"]  # type: ignore[union-attr]
@@ -266,7 +281,7 @@ def test_ac_08_existing_outputs_are_asked_about_only_with_ask(
     assert bool(app.review.existing.winfo_ismapped()) is asked
     if asked:
         app.review.decision.set("overwrite")
-    app.review.confirm.invoke()
+    confirm(app)
     pump(app, until=lambda: converted(app))
     assert fake.run_calls[-1]["overwrite"](plan.conversions[0]) is (setting != "skip")
 
@@ -293,7 +308,7 @@ def test_ac_09_the_progress_says_where_it_is_and_reassures_on_a_long_file(
     app = window(FakeBackend(plan=plan, settings=QUIET, before_finish=held))
     try:
         to_review(app, tmp_path)
-        app.review.confirm.invoke()
+        confirm(app)
         pump(app, until=lambda: app.converting.counter.cget("text") == "1 of 2")
         assert app.converting.file.cget("text").strip() == "Informe.pdf"
         assert app.converting.time_left.cget("text") == "about 2 min left"
@@ -317,11 +332,11 @@ def test_ac_10_cancel_is_always_there_and_stops_at_once(
     fake = FakeBackend(plan=plan, settings=QUIET, before_finish=held)
     app = window(fake)
     to_review(app, tmp_path)
-    app.review.confirm.invoke()
+    confirm(app)
     pump(app, until=held.started.is_set)
     pump(app, seconds=0.1)
-    assert app.converting.cancel.instate(["!disabled"])
-    app.converting.cancel.invoke()
+    assert app.actions.secondary.instate(["!disabled"])
+    app.actions.secondary.invoke()
     held.gate.set()
     pump(app, until=lambda: converted(app))
     assert app.presenter.state is AppState.CANCELLED
@@ -342,7 +357,7 @@ def test_ac_11_the_result_tells_counts_problems_and_opens_the_folder(
     )
     app = window(fake)
     to_review(app, tmp_path)
-    app.review.confirm.invoke()
+    confirm(app)
     pump(app, until=lambda: converted(app))
     assert app.results.stats.figures()[:3] == [
         ("Converted", "1"),
@@ -351,7 +366,7 @@ def test_ac_11_the_result_tells_counts_problems_and_opens_the_folder(
     ]
     assert "password" in app.results.detail.cget("text")
     assert fake.opened == [Path("/docs/ClearMD_Output")]  # opened by itself
-    app.results.open.invoke()
+    app.actions.primary.invoke()
     assert len(fake.opened) == 2
 
 
@@ -361,7 +376,7 @@ def test_ac_12_one_failed_file_never_stops_the_batch(
     plan = BatchPlan((planned("a.pdf"), planned("b.pdf"), planned("c.pdf")), (), ())
     app = window(FakeBackend(plan=plan, statuses={"a.pdf": OutcomeStatus.FAILED}, settings=QUIET))
     to_review(app, tmp_path)
-    app.review.confirm.invoke()
+    confirm(app)
     pump(app, until=lambda: converted(app))
     assert app.presenter.state is AppState.FINISHED_WITH_PROBLEMS
     assert ("Converted", "2") in app.results.stats.figures()
@@ -378,7 +393,7 @@ def test_ac_13_help_is_always_one_click_away(
     fake = FakeBackend(settings=replace_settings(QUIET, language=language), before_finish=held)
     app = window(fake)
     to_review(app, tmp_path)
-    app.review.confirm.invoke()
+    confirm(app)
     pump(app, until=held.started.is_set)
     pump(app, seconds=0.1)
     assert app.rail.help.instate(["!disabled"])  # even while converting
@@ -435,7 +450,7 @@ def test_ac_15_the_settings_window_saves_settings_toml_and_applies_it(
     written = tomllib.loads(settings_path().read_text(encoding="utf-8"))
     assert written["language"] == "es" and written["html_strategy"] == "article"
     assert load_settings()[0].language == "es"
-    assert app.main.convert.cget("text") == "Convertir"  # applied at once
+    assert app.actions.primary.cget("text") == "Siguiente"  # applied at once
     app.rail.settings.invoke()
     restored = app.dialog
     assert isinstance(restored, SettingsDialog)
@@ -471,9 +486,9 @@ def test_ac_17_the_8_px_grid_14_px_text_and_one_primary_action_per_screen(
             for part in value if isinstance(value, tuple) else str(value).split():
                 assert on_grid(int(float(part))), (str(widget), option, part)
     assert all(font.cget("size") <= BODY for font in app.fonts.values())  # pixels: negative
-    for page in app.pages:  # one primary action per screen; the progress has only Cancel
-        primaries = [w for w in widgets(page) if styled(w) == PRIMARY]
-        assert len(primaries) == (0 if page is app.converting else 1), page
+    # One primary action per screen: the page's bar holds the only one (ADR-0029).
+    primaries = [w for w in widgets(app.surface.page) if styled(w) == PRIMARY]
+    assert primaries == [app.actions.primary]
 
 
 def styled(widget: Any) -> str:
@@ -496,7 +511,7 @@ def test_ac_18_everything_works_with_the_keyboard(
         widget = widget.tk_focusNext()
         if widget is None or widget is app.main.add_files:
             break
-    assert {app.main.add_folder, app.main.inputs.tree, app.main.convert} <= set(chain)
+    assert {app.main.add_folder, app.main.inputs.tree, app.actions.primary} <= set(chain)
     press_enter(app)  # Enter: the primary action
     pump(app, until=lambda: app.presenter.state is AppState.WAITING_DECISION)
     app.rail.help.invoke()
@@ -529,7 +544,7 @@ def test_ac_20_clearmd_ttk_starts_the_gui_and_converts_like_the_cli(
     by_cli = copy_documents(tmp_path / "cli" / "Docs", *names)
     app = window(MemoryBackend(QUIET))
     to_review(app, by_gui)
-    app.review.confirm.invoke()
+    confirm(app)
     pump(app, until=lambda: converted(app), seconds=120)
     cli_main([str(by_cli), "--quiet"])
 
@@ -585,7 +600,7 @@ def test_ac_23_every_list_shows_number_icon_and_name(
     to_review(app, tmp_path)
     lists.append(app.review.files)
     assert [row.icon for row in app.last_plan.rows] == ["pdf", "docx", "markdown"]  # type: ignore[union-attr]
-    app.review.confirm.invoke()
+    confirm(app)
     pump(app, until=lambda: converted(app))
     lists.append(app.results.problems)
     for file_list in lists:

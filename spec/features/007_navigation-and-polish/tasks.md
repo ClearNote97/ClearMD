@@ -2,7 +2,7 @@
 
 - [x] **T01 — The presenter's pages.** `page`, `go_to`, `Primary` per page, editing rules,
       `convert_more`, the version (AC-02 – AC-05 logic).
-- [ ] **T02 — The rail and the pages.** Clickable dimmed steps, circles, compact mode, the version;
+- [x] **T02 — The rail and the pages.** Clickable dimmed steps, circles, compact mode, the version;
       primary buttons with their hints; the Convert page; the convert-more dialog (AC-01 – AC-05,
       AC-10).
 - [ ] **T03 — The lists.** Checkboxes, header checkbox, Clear selection, click on empty, separators,

@@ -16,12 +16,15 @@ STRONG = -14  # body size, bold: buttons, headings
 EYEBROW = -14  # the step counter, bold
 WORDMARK = -20  # Clear·MD on the rail
 
-MIN_WIDTH = 960
-MIN_HEIGHT = 640
+MIN_WIDTH = 800
+MIN_HEIGHT = 560
+COMPACT_BELOW = 1000  # a narrower window gets the compact rail (feature 007)
 START_SIZE = "1080x720"
 
 RADIUS = 12  # cards and buttons (ADR-0027)
 RAIL_WIDTH = 216
+COMPACT_RAIL_WIDTH = 72
+REDRAW_MS = 80  # backgrounds are drawn again once a resize settles (AC-09)
 
 
 def on_grid(value: int) -> bool:

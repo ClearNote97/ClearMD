@@ -13,7 +13,6 @@ from clearmd.frontend.ttk.brand import (
     LINK,
     MUTED,
     PAGE,
-    PRIMARY,
     SOFT,
     SOFT_ON_CARD,
     Palette,
@@ -38,7 +37,6 @@ class MainView(ttk.Frame):
         on_clear: Callable[[], None],
         on_next_to: Callable[[], None],
         on_pick_folder: Callable[[], None],
-        on_convert: Callable[[], None],
     ) -> None:
         super().__init__(parent, style=PAGE)
         self._on_remove = on_remove
@@ -103,10 +101,6 @@ class MainView(ttk.Frame):
         self._label(self.pick, "gui.main.pick_folder")
         self.output_label = ttk.Label(output, style=MUTED, anchor="w")
         self.output_label.pack(fill="x", pady=(SPACE, 0))
-
-        self.convert = ttk.Button(bottom, style=PRIMARY, command=on_convert)
-        self.convert.pack(side="right", anchor="s", padx=(GAP, 0))
-        self._label(self.convert, "gui.main.convert")
 
     # --- What the presenter shows ------------------------------------------------------------
 

@@ -321,6 +321,16 @@ converting = "Converting… wait for it to finish, or cancel it."
 done = "This batch is done: see Results, or Convert more."
 no_results = "Convert something first: the results appear here."
 
+[gui.more]
+title = "Convert more"
+question = "Keep the files you chose?"
+explain = "Keep them to convert them again or add more; start empty for a new batch."
+keep = "Keep them"
+clear = "Start empty"
+
+[gui.convert]
+ready = "Ready to convert: {count}"
+
 [gui.steps]
 choose = "Choose"
 review = "Review"

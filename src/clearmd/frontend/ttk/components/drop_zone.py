@@ -8,7 +8,7 @@ from PIL import ImageTk
 
 from clearmd.frontend.ttk import art
 from clearmd.frontend.ttk.brand import Palette
-from clearmd.frontend.ttk.layout import RADIUS, SPACE
+from clearmd.frontend.ttk.layout import RADIUS, REDRAW_MS, SPACE
 
 
 class DropZone(tk.Canvas):
@@ -21,7 +21,8 @@ class DropZone(tk.Canvas):
         self._text = ""
         self._picture: ImageTk.PhotoImage | None = None
         self.configure(cursor="hand2")
-        self.bind("<Configure>", lambda _event: self._draw())
+        self._pending: str | None = None
+        self.bind("<Configure>", lambda _event: self._resized())
         self.bind("<Button-1>", lambda _event: on_click())
 
     def apply_palette(self, palette: Palette) -> None:
@@ -36,7 +37,14 @@ class DropZone(tk.Canvas):
     def text(self) -> str:
         return self._text
 
+    def _resized(self) -> None:
+        """A dashed border is a picture: drawn again only once the size settles (AC-09)."""
+        if self._pending is not None:
+            self.after_cancel(self._pending)
+        self._pending = self.after(REDRAW_MS, self._draw)
+
     def _draw(self) -> None:
+        self._pending = None
         p = self._palette
         width, height = self.winfo_width(), self.winfo_height()
         if p is None or width < 4 * RADIUS:

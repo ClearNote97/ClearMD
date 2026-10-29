@@ -35,6 +35,7 @@ PAIRS = (
     ("rail_muted", "rail"),
     ("text", "shape"),  # a selected row
     ("muted", "shape"),
+    ("accent_text", "shape"),  # the Strong button (Convert more)
 )
 
 

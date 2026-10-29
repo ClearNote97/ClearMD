@@ -5,6 +5,7 @@ import time
 import tkinter as tk
 import tkinter.font as tkfont
 from collections.abc import Iterator
+from functools import partial
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -41,6 +42,21 @@ def pump(window: TtkApp, *, until: Any = None, seconds: float = 2.0) -> None:
         time.sleep(0.01)
 
 
+def confirm(app: TtkApp) -> None:
+    """Convert the plan: Next on Review, then Convert (ADR-0029)."""
+    if app.presenter.page == 2:
+        app.actions.primary.invoke()
+    app.actions.primary.invoke()
+
+
+def convert_more(app: TtkApp, *, keep: bool = True) -> None:
+    from clearmd.frontend.ttk.views.dialogs import KeepInputsDialog
+
+    app.actions.secondary.invoke()
+    assert isinstance(app.dialog, KeepInputsDialog)
+    app.dialog.answer(keep)
+
+
 def press_enter(app: TtkApp) -> None:
     """Enter on the window: it needs the keyboard focus first (Windows gives it only on demand)."""
     app.root.focus_force()
@@ -61,7 +77,7 @@ def test_the_window_shows_the_first_step_with_convert_disabled(app: TtkApp) -> N
     assert app.surface.header()["eyebrow"] == "Step 1 of 4"
     assert app.surface.header()["title"] == "Choose what to convert"
     assert app.rail.step_texts() == ["> Choose", "Review", "Convert", "Results"]
-    assert app.main.convert.instate(["disabled"])
+    assert app.actions.primary.instate(["disabled"])
     assert app.main.remove.instate(["disabled"])
 
 
@@ -75,7 +91,7 @@ def test_inputs_are_numbered_with_their_icons_and_enable_convert(
     tree = app.main.inputs.tree
     assert all(tree.item(item, "image") for item in tree.get_children())
     assert not app.main.inputs.empty.winfo_ismapped()
-    assert app.main.convert.instate(["!disabled"])
+    assert app.actions.primary.instate(["!disabled"])
 
 
 def test_removing_the_selection_and_clearing(app: TtkApp, tmp_path: Path) -> None:
@@ -116,7 +132,7 @@ def test_both_clearmd_themes_apply(app: TtkApp) -> None:
 def test_the_language_changes_every_label(app: TtkApp) -> None:
     app.presenter.save_settings(Settings(language="es", show_welcome=False))
     pump(app, seconds=0.1)
-    assert app.main.convert.cget("text") == "Convertir"
+    assert app.actions.primary.cget("text") == "Siguiente"
     assert app.main.add_folder.cget("text") == "Agregar carpeta"
     assert app.rail.step_texts()[0] == "> Elegir"
     assert app.surface.header()["eyebrow"] == "Paso 1 de 4"
@@ -161,7 +177,7 @@ def test_review_shows_the_figures_and_each_file_then_converting_ends_in_results(
     try:
         app.start()
         app.presenter.add_paths([tmp_path])
-        app.main.convert.invoke()
+        app.actions.primary.invoke()
         pump(app, until=lambda: app.presenter.state is AppState.WAITING_DECISION)
         assert shown(app) is app.review
         assert app.review.stats.figures() == [
@@ -172,7 +188,7 @@ def test_review_shows_the_figures_and_each_file_then_converting_ends_in_results(
         assert app.review.files.names() == ["notes.md", "a.pdf", "b.docx"]  # attention first
         assert app.review.existing.winfo_ismapped()  # the setting is "ask"
         app.review.decision.set("overwrite")
-        app.review.confirm.invoke()
+        confirm(app)
         pump(app, until=lambda: app.presenter.state is AppState.FINISHED)
         assert fake.run_calls[-1]["overwrite"](plan.conversions[1]) is True
         assert shown(app) is app.results
@@ -180,7 +196,7 @@ def test_review_shows_the_figures_and_each_file_then_converting_ends_in_results(
         assert ("Converted", "2") in app.results.stats.figures()
         assert app.results.problems.names() == ["notes.md"]  # skipped: said why, with what to do
         assert fake.opened  # the folder opens by itself (open_output_when_done)
-        app.results.again.invoke()
+        convert_more(app)
         assert shown(app) is app.main and app.main.inputs.names() == [f"{tmp_path.name}/"]
     finally:
         app.close()
@@ -199,14 +215,14 @@ def test_progress_shows_the_file_and_cancel_stops(display: str, tmp_path: Path) 
     try:
         app.start()
         app.presenter.add_paths([tmp_path])
-        app.main.convert.invoke()
+        app.actions.primary.invoke()
         pump(app, until=lambda: app.presenter.state is AppState.WAITING_DECISION)
-        app.review.confirm.invoke()
+        confirm(app)
         pump(app, until=lambda: app.converting.counter.cget("text") == "1 of 2")
         assert shown(app) is app.converting
         assert app.converting.file.cget("text").strip() == "a.pdf"
-        assert app.converting.cancel.instate(["!disabled"])
-        app.converting.cancel.invoke()
+        assert app.actions.secondary.instate(["!disabled"])
+        app.actions.secondary.invoke()
         gate.set()
         pump(app, until=lambda: app.presenter.state is AppState.CANCELLED)
         assert app.presenter.state is AppState.CANCELLED and shown(app) is app.results
@@ -220,9 +236,11 @@ def test_a_clean_batch_says_every_file_was_converted(display: str, tmp_path: Pat
     try:
         app.start()
         app.presenter.add_paths([tmp_path])
-        app.main.convert.invoke()
+        app.actions.primary.invoke()
         pump(app, until=lambda: app.presenter.state is AppState.WAITING_DECISION)
-        press_enter(app)  # Enter confirms on the review
+        press_enter(app)  # Enter on Review: Next
+        pump(app, until=lambda: app.presenter.page == 3)
+        press_enter(app)  # Enter on Convert: Convert
         pump(app, until=lambda: app.presenter.state is AppState.FINISHED)
         pump(app, seconds=0.1)
         assert app.results.all_good.winfo_ismapped()
@@ -247,16 +265,16 @@ def test_problems_are_listed_in_the_results(display: str, tmp_path: Path) -> Non
     try:
         app.start()
         app.presenter.add_paths([tmp_path])
-        app.main.convert.invoke()
+        app.actions.primary.invoke()
         pump(app, until=lambda: app.presenter.state is AppState.WAITING_DECISION)
-        app.review.confirm.invoke()
+        confirm(app)
         pump(app, until=lambda: app.presenter.state is AppState.FINISHED_WITH_PROBLEMS)
         assert app.results.problems.names() == ["a.pdf"]
         assert app.results.detail.cget("text") == (
             "a.pdf: This file is password-protected. Remove the password and try again."
         )
         assert not app.results.all_good.winfo_ismapped()
-        app.results.open.invoke()
+        app.actions.primary.invoke()
         assert fake.opened
     finally:
         app.close()
@@ -311,7 +329,7 @@ def test_settings_save_applies_the_language_and_theme(app: TtkApp) -> None:
     assert app.dialog is None
     assert app.presenter.settings.language == "es" and not app.presenter.settings.recursive
     assert app.style.theme_use() == "clearmd-dark"
-    assert app.main.convert.cget("text") == "Convertir"
+    assert app.actions.primary.cget("text") == "Siguiente"
 
 
 def test_restore_defaults_resets_the_controls_until_saved(app: TtkApp) -> None:
@@ -342,10 +360,10 @@ def test_a_real_batch_through_the_window_writes_the_markdown(display: str, tmp_p
     try:
         app.start()
         app.presenter.add_paths([folder])
-        app.main.convert.invoke()
+        app.actions.primary.invoke()
         pump(app, until=lambda: app.presenter.state is AppState.WAITING_DECISION, seconds=30)
         assert app.review.stats.figures()[:2] == [("To convert", "4"), ("Skipped", "1")]
-        app.review.confirm.invoke()
+        confirm(app)
         finished = {AppState.FINISHED, AppState.FINISHED_WITH_PROBLEMS}
         pump(app, until=lambda: app.presenter.state in finished, seconds=120)
         assert app.presenter.state is AppState.FINISHED_WITH_PROBLEMS  # the encrypted PDF
@@ -379,7 +397,7 @@ def test_tab_goes_through_the_first_step_in_reading_order(app: TtkApp, tmp_path:
     chain = focus_chain(app, main.add_files)
     expected = [
         main.add_files, main.add_folder, main.inputs.tree, main.remove, main.clear,
-        main.next_to, main.in_folder, main.pick, main.convert,
+        main.next_to, main.in_folder, main.pick, app.actions.primary,
     ]  # fmt: skip
     positions = [chain.index(widget) for widget in expected]
     assert positions == sorted(positions)
@@ -444,9 +462,9 @@ def test_c1_closing_while_converting_waits_for_the_summary(display: str, tmp_pat
     app = TtkApp(Slow(settings=Settings(show_welcome=False)))
     app.start()
     app.presenter.add_paths([tmp_path])
-    app.main.convert.invoke()
+    app.actions.primary.invoke()
     pump(app, until=lambda: app.presenter.state is AppState.WAITING_DECISION)
-    app.review.confirm.invoke()
+    confirm(app)
     pump(app, until=lambda: app.presenter.state is AppState.CONVERTING)
     app.close()
     assert run_until_closed(app)
@@ -458,7 +476,7 @@ def test_c2_an_unexpected_error_stays_on_screen(display: str, tmp_path: Path) ->
     try:
         app.start()
         app.presenter.add_paths([tmp_path])
-        app.main.convert.invoke()
+        app.actions.primary.invoke()
         pump(app, until=lambda: app.presenter.state is AppState.READY and app.last_plan is None)
         pump(app, seconds=0.2)
         assert "Something unexpected went wrong" in app.message.cget("text")
@@ -504,9 +522,9 @@ def test_a3_a_settings_save_keeps_the_selected_problem(display: str, tmp_path: P
     try:
         app.start()
         app.presenter.add_paths([tmp_path])
-        app.main.convert.invoke()
+        app.actions.primary.invoke()
         pump(app, until=lambda: app.presenter.state is AppState.WAITING_DECISION)
-        app.review.confirm.invoke()
+        confirm(app)
         pump(app, until=lambda: app.presenter.state is AppState.FINISHED_WITH_PROBLEMS)
         tree = app.results.problems.tree
         tree.selection_set(tree.get_children()[1])
@@ -527,7 +545,7 @@ def test_a4_a_plan_shown_again_keeps_the_answer_about_existing_results(
     try:
         app.start()
         app.presenter.add_paths([tmp_path])
-        app.main.convert.invoke()
+        app.actions.primary.invoke()
         pump(app, until=lambda: app.presenter.state is AppState.WAITING_DECISION)
         app.review.decision.set("overwrite")
         assert app.last_plan is not None
@@ -564,3 +582,77 @@ def test_without_tkdnd_the_window_still_works_without_dropping(
         )
     finally:
         app.close()
+
+
+# --- Navigation (feature 007, ADR-0029) ----------------------------------------------------------
+
+
+def click_step(app: TtkApp, step: int) -> None:
+    rail = app.rail
+    x1, y1, x2, y2 = rail.bbox(f"step{step}")
+    rail.event_generate("<Button-1>", x=(x1 + x2) // 2, y=(y1 + y2) // 2)
+    pump(app, seconds=0.05)
+
+
+def test_every_step_opens_from_the_rail_and_the_keyboard(app: TtkApp) -> None:
+    click_step(app, 4)
+    assert shown(app) is app.results and app.rail.step_texts()[3] == "> Results"
+    click_step(app, 2)
+    assert shown(app) is app.review
+    app.root.focus_force()
+    app.root.update()
+    app.root.event_generate("<Control-Key-3>", when="tail")
+    pump(app, until=lambda: app.presenter.page == 3, seconds=1)
+    assert shown(app) is app.converting
+
+
+def test_a_disabled_primary_says_why(app: TtkApp) -> None:
+    assert app.actions.primary.instate(["disabled"])
+    assert app.actions.primary.cget("text") == "Next"
+    assert app.actions.hint.cget("text") == "Add at least one file or folder."
+    app.presenter.go_to(4)
+    assert app.actions.primary.cget("text") == "Open results folder"
+    assert "Convert something first" in app.actions.hint.cget("text")
+
+
+def test_convert_shows_what_is_ready_before_it_starts(app: TtkApp, tmp_path: Path) -> None:
+    app.presenter.add_paths([tmp_path])
+    app.actions.primary.invoke()
+    pump(app, until=lambda: app.presenter.page == 2)
+    app.actions.primary.invoke()  # Next on Review
+    assert shown(app) is app.converting
+    assert app.converting.ready_count.cget("text") == "Ready to convert: 1"
+    assert app.actions.primary.cget("text") == "Convert"
+    assert app.actions.secondary.cget("text") == "Back"
+
+
+def on_page(app: TtkApp, page: int) -> bool:
+    return app.presenter.page == page
+
+
+def test_convert_more_asks_whether_to_keep_the_files(display: str, tmp_path: Path) -> None:
+    for keep, expected in ((True, [f"{tmp_path.name}/"]), (False, [])):
+        app = TtkApp(FakeBackend(settings=Settings(show_welcome=False)))
+        try:
+            app.start()
+            app.presenter.add_paths([tmp_path])
+            app.actions.primary.invoke()
+            pump(app, until=partial(on_page, app, 2))
+            confirm(app)
+            pump(app, until=partial(on_page, app, 4))
+            assert app.actions.secondary.cget("text") == "Convert more"
+            assert str(app.actions.secondary.cget("style")).startswith("Strong")
+            convert_more(app, keep=keep)
+            assert shown(app) is app.main and app.main.inputs.names() == expected
+        finally:
+            app.close()
+
+
+def test_a_narrow_window_gets_the_compact_rail_and_the_version_is_shown(app: TtkApp) -> None:
+    assert app.rail._version.startswith(("v", "dev"))
+    app.root.geometry("820x600")
+    pump(app, until=lambda: app.rail._compact, seconds=2)
+    assert app.rail._compact and app.rail.settings.cget("text") == "⚙"
+    app.root.geometry("1200x720")
+    pump(app, until=lambda: not app.rail._compact, seconds=2)
+    assert not app.rail._compact

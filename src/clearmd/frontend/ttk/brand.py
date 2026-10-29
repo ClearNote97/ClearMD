@@ -92,6 +92,7 @@ PALETTES = {"light": LIGHT, "dark": DARK}
 PRIMARY = "Primary.ClearMD.TButton"  # the one primary action of a screen
 SOFT = "Soft.ClearMD.TButton"  # a secondary action: white, a thin border
 SOFT_ON_CARD = "SoftOnCard.ClearMD.TButton"  # the same, inside a card
+STRONG = "Strong.ClearMD.TButton"  # a second action that matters as much (Convert more)
 RAIL = "Rail.ClearMD.TButton"  # Settings and Help on the dark rail
 LINK = "Link.ClearMD.TButton"  # a quiet action on the ground
 CARD = "Card.ClearMD.TFrame"  # a white, rounded card
@@ -99,6 +100,7 @@ PAGE = "Page.ClearMD.TFrame"  # the working area's ground
 MUTED = "Muted.ClearMD.TLabel"  # secondary text on a card
 WARNING = "Warning.ClearMD.TLabel"  # a message on the ground
 ON_PAGE = "OnPage.ClearMD.TLabel"  # text on the ground
+HINT = "Hint.ClearMD.TLabel"  # why an action is disabled, on the ground
 CHECK_ON_PAGE = "OnPage.ClearMD.TCheckbutton"  # a check box on the ground
 
 _BUTTON_HEIGHT = 44  # a comfortable target (UX §5)
@@ -211,6 +213,11 @@ class Look:
             font=fonts["strong"], padding=(16, 0),
         )  # fmt: skip
         self._button(
+            p, STRONG, fill=p.shape, hover=p.border, text=p.accent_text, border=p.accent_text,
+            disabled_fill=p.ground, disabled_text=p.muted, ground=p.ground,
+            font=fonts["strong"], padding=(16, 0),
+        )  # fmt: skip
+        self._button(
             p, RAIL, fill=p.rail, hover=p.rail_hover, text=p.rail_text,
             disabled_fill=p.rail, disabled_text=p.rail_muted, ground=p.rail,
             font=fonts["body"], padding=(8, 0),
@@ -230,6 +237,7 @@ class Look:
         style.configure(MUTED, background=p.card, foreground=p.muted)
         style.configure(ON_PAGE, background=p.ground, foreground=p.text)
         style.configure(WARNING, background=p.ground, foreground=p.warning)
+        style.configure(HINT, background=p.ground, foreground=p.muted)
 
         style.configure("TRadiobutton", background=p.card, foreground=p.text)
         style.configure("TCheckbutton", background=p.card, foreground=p.text)

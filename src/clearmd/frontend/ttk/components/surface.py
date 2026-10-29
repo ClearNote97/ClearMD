@@ -8,7 +8,7 @@ from PIL import ImageTk
 
 from clearmd.frontend.ttk import art
 from clearmd.frontend.ttk.brand import PAGE, Palette
-from clearmd.frontend.ttk.layout import GAP, HALF, MARGIN, SPACE
+from clearmd.frontend.ttk.layout import GAP, HALF, MARGIN, REDRAW_MS, SPACE
 
 
 class Surface(tk.Canvas):
@@ -22,7 +22,8 @@ class Surface(tk.Canvas):
         self._ground: ImageTk.PhotoImage | None = None
         self._ground_key: tuple[int, int, str] | None = None  # drawn again only when it changes
         self.page = ttk.Frame(self, style=PAGE)
-        self.bind("<Configure>", lambda _event: self._draw())
+        self._pending: str | None = None
+        self.bind("<Configure>", lambda _event: self._resized())
 
     def apply_palette(self, palette: Palette) -> None:
         self._palette = palette
@@ -41,13 +42,23 @@ class Surface(tk.Canvas):
         title = self._fonts["title"].metrics("linespace")
         return GAP + body + HALF + title + HALF + body
 
-    def _draw(self) -> None:
+    def _resized(self) -> None:
+        """Lay out at once; draw the ground again only once the size settles (AC-09)."""
+        self._draw(paint=False)
+        if self._pending is not None:
+            self.after_cancel(self._pending)
+        self._pending = self.after(REDRAW_MS, self._draw)
+
+    def _draw(self, *, paint: bool = True) -> None:
+        self._pending = None
         p = self._palette
         width, height = self.winfo_width(), self.winfo_height()
         if p is None or width < 2 * MARGIN or height < 2 * MARGIN:
             return
         self.delete("all")
-        if self._ground is None or self._ground_key != (width, height, p.mode):
+        key = (width, height, p.mode)
+        new_theme = self._ground_key is None or self._ground_key[2] != p.mode
+        if self._ground is None or (key != self._ground_key and (paint or new_theme)):
             picture = art.surface(width, height, p.ground, p.shape)
             self._ground = ImageTk.PhotoImage(picture, master=self)
             self._ground_key = (width, height, p.mode)
