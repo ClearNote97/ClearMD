@@ -27,9 +27,9 @@ _SKIPPED = {0x0D, 0xFEFF}
 _SOFT_HYPHENS = {0x02, 0xAD, 0xFFFE}  # what PDFium gives for a hyphen that breaks a word
 SOFT_HYPHEN = "­"
 UNREADABLE = "�"
-_BOLD_WEIGHT = 600
 _BOLD_NAMES = ("bold", "black", "heavy", "semibold", "demi")
 _FORCE_BOLD = 1 << 18  # the font descriptor's ForceBold flag
+MAX_PAGE_CHARS = 200_000  # a dense page of a book holds ~5,000; past this, the rest is left out
 MIN_SHIFT_SHARE = 0.03  # a font whose text holds this share of control characters is suspect
 MIN_LETTER_SHARE = 0.75  # and is read back only if its moved codes are then mostly letters
 VOWELS = frozenset("aeiouáéíóúAEIOUÁÉÍÓÚ")
@@ -44,8 +44,9 @@ _MAC_ORDER = (
 _MAC_FIRST = 98
 
 # PDFium's load errors (fpdfview.h), by name.
-_PASSWORD = {raw.FPDF_ERR_PASSWORD}
-_BROKEN = {raw.FPDF_ERR_FILE, raw.FPDF_ERR_FORMAT, raw.FPDF_ERR_SECURITY}  # 5: a handler it lacks
+# A security handler PDFium does not have (5) is encryption it cannot open: locked, not broken.
+_PASSWORD = {raw.FPDF_ERR_PASSWORD, raw.FPDF_ERR_SECURITY}
+_BROKEN = {raw.FPDF_ERR_FILE, raw.FPDF_ERR_FORMAT}
 
 
 @dataclass
@@ -71,6 +72,7 @@ class Document:
     pages: list[Page]
     decoded_fonts: int = 0  # fonts read back from moved codes (the summary tells it)
     unreadable: int = 0  # characters that could not be read (shown as "�")
+    cut_pages: int = 0  # pages with more characters than any page holds: their first part kept
 
 
 class _Chars:
@@ -87,35 +89,36 @@ class _Chars:
 
 
 class _Fonts:
-    """A number per font of the document, by its name, flags and whether PDFium has a map for
-    it (the same in both passes, whatever PDFium does with its objects; two fonts both called
-    "Helvetica", one without a map, stay two); its codes, and whether that map is missing."""
+    """A number per font of the document: PDFium keeps each font once per open document, so its
+    address (with its name and flags) names it in both passes, and two fonts that share a name
+    stay two (adversarial check of 008). Its codes; how many PDFium could not map; its weight."""
 
     def __init__(self) -> None:
-        self.number: dict[tuple[bytes, int, bool], int] = {}
+        self.number: dict[tuple[int, bytes, int], int] = {}
         self.codes: list[Counter[int]] = []
-        self.unmapped: list[bool] = []
+        self.errors: list[int] = []  # characters PDFium found no map for
         self.bold: list[bool] = []
 
-    def at(self, textpage: object, index: int) -> int:
+    def at(self, textpage: object, index: int, address: int) -> int:
         name = ctypes.create_string_buffer(128)
         flags = ctypes.c_int()
         raw.FPDFText_GetFontInfo(textpage, index, name, len(name), ctypes.byref(flags))
-        unmapped = raw.FPDFText_HasUnicodeMapError(textpage, index) == 1
-        key = (name.value, flags.value, unmapped)
+        key = (address, name.value, flags.value)
         if key not in self.number:
             self.number[key] = len(self.codes)
             self.codes.append(Counter())
-            self.unmapped.append(unmapped)
-            # By the weight the font declares, or else by its name ("Helvetica-Bold",
-            # "Arial,Bold"): the standard fonts and many embedded ones declare no weight.
+            self.errors.append(0)
+            # By its name ("Helvetica-Bold", "Arial,Bold") or the ForceBold flag only: a font
+            # that declares no weight gets one from its stems, and plain Arial reads 695.
             lowered = name.value.decode("latin-1").lower()
             self.bold.append(
-                raw.FPDFText_GetFontWeight(textpage, index) >= _BOLD_WEIGHT
-                or bool(flags.value & _FORCE_BOLD)
-                or any(word in lowered for word in _BOLD_NAMES)
+                bool(flags.value & _FORCE_BOLD) or any(word in lowered for word in _BOLD_NAMES)
             )
         return self.number[key]
+
+    def unmapped(self, font: int) -> bool:
+        """Most of its characters had no map (one mapped space first proves nothing)."""
+        return self.errors[font] * 2 >= max(sum(self.codes[font].values()), 1)
 
 
 def _finite(value: float) -> float:
@@ -127,12 +130,14 @@ def _each_font(textpage: object, fonts: _Fonts) -> Iterator[tuple[int, int]]:
     object, not per character."""
     last_object: int | None = None
     font = 0
-    for index in range(max(raw.FPDFText_CountChars(textpage), 0)):
+    for index in range(min(max(raw.FPDFText_CountChars(textpage), 0), MAX_PAGE_CHARS)):
         handle = raw.FPDFText_GetTextObject(textpage, index)
         address = ctypes.cast(handle, ctypes.c_void_p).value or 0
         if address != last_object:
             last_object = address
-            font = fonts.at(textpage, index)
+            pointer = raw.FPDFTextObj_GetFont(handle) if handle else None
+            font_address = (ctypes.cast(pointer, ctypes.c_void_p).value or 0) if pointer else 0
+            font = fonts.at(textpage, index, font_address)
         yield index, font
 
 
@@ -140,6 +145,8 @@ def _count(textpage: object, fonts: _Fonts) -> None:
     """The first pass: each font's codes."""
     for index, font in _each_font(textpage, fonts):
         fonts.codes[font][raw.FPDFText_GetUnicode(textpage, index)] += 1
+        if raw.FPDFText_HasUnicodeMapError(textpage, index) == 1:
+            fonts.errors[font] += 1
 
 
 def _page_chars(textpage: object, fonts: _Fonts) -> _Chars:
@@ -233,36 +240,38 @@ def read(document: object) -> Document:
     for textpage, _height in _text_pages(document):
         if textpage is not None:
             _count(textpage, fonts)
-    shifts = [
-        _shift(codes) if unmapped else 0
-        for codes, unmapped in zip(fonts.codes, fonts.unmapped, strict=True)
-    ]
+    shifts = [_shift(codes) if fonts.unmapped(n) else 0 for n, codes in enumerate(fonts.codes)]
+    unmapped = [fonts.unmapped(n) for n in range(len(fonts.codes))]
     result = Document([], decoded_fonts=sum(1 for distance in shifts if distance))
     for textpage, height in _text_pages(document):
-        page = (
-            Page()
-            if textpage is None
-            else _page(_page_chars(textpage, fonts), shifts, fonts, result)
-        )
+        if textpage is not None and raw.FPDFText_CountChars(textpage) > MAX_PAGE_CHARS:
+            result.cut_pages += 1
+        chars = None if textpage is None else _page_chars(textpage, fonts)
+        while len(shifts) < len(fonts.codes):  # a font first met in the second pass: as read
+            shifts.append(0)
+            unmapped.append(False)
+        page = Page() if chars is None else _page(chars, shifts, unmapped, result)
         page.height = height
         result.pages.append(page)
     return result
 
 
-def _page(chars: _Chars, shifts: list[int], fonts: _Fonts, document: Document) -> Page:
+def _page(chars: _Chars, shifts: list[int], unmapped: list[bool], document: Document) -> Page:
     page = Page()
     start = 0
     for index in range(len(chars.codes) + 1):
         if index == len(chars.codes) or chars.codes[index] == _LINE_END:
             if index > start:
-                line = _line(chars, range(start, index), shifts, fonts, document)
+                line = _line(chars, range(start, index), shifts, unmapped, document)
                 if line.text.strip():
                     page.lines.append(line)
             start = index + 1
     return page
 
 
-def _line(chars: _Chars, span: range, shifts: list[int], fonts: _Fonts, document: Document) -> Line:
+def _line(
+    chars: _Chars, span: range, shifts: list[int], unmapped: list[bool], document: Document
+) -> Line:
     text: list[str] = []
     high = 0  # PDFium gives a character past U+FFFF as two halves (a surrogate pair)
     visible: list[int] = []
@@ -272,15 +281,22 @@ def _line(chars: _Chars, span: range, shifts: list[int], fonts: _Fonts, document
         if raw_code in _SKIPPED:
             continue
         code = _decoded(raw_code, shifts[font])
+        if high and not 0xDC00 <= code < 0xE000:  # a first half with no second: unreadable
+            document.unreadable += 1
+            text.append(UNREADABLE)
+            high = 0
         if 0xD800 <= code < 0xDC00:
             high = code
             continue
         if 0xDC00 <= code < 0xE000:
             if high:
                 text.append(chr(0x10000 + ((high - 0xD800) << 10) + (code - 0xDC00)))
+            else:
+                document.unreadable += 1
+                text.append(UNREADABLE)
             high = 0
+            visible.append(index)
             continue
-        high = 0
         if code in _SOFT_HYPHENS:
             text.append(SOFT_HYPHEN)
         elif code == 0x09 or code == 0x20:
@@ -290,12 +306,15 @@ def _line(chars: _Chars, span: range, shifts: list[int], fonts: _Fonts, document
             # A code no map turned into a character: never dropped silently (ADR-0022).
             document.unreadable += 1
             text.append(UNREADABLE)
-        elif fonts.unmapped[font] and not shifts[font]:
+        elif unmapped[font] and not shifts[font]:
             document.unreadable += 1  # a font without a map, not read back: its letters are wrong
             text.append(chr(code))
         else:
             text.append(chr(code))
         visible.append(index)
+    if high:
+        document.unreadable += 1
+        text.append(UNREADABLE)
     shown = visible or list(span)
     sizes = Counter(round(chars.sizes[index], 1) for index in shown)
     return Line(

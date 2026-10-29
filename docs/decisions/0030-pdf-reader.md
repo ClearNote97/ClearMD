@@ -61,8 +61,16 @@ are the letters moved by a fixed distance. PDFium also reads rotated text the ri
 - **Fonts are read back only when PDFium says they have no map.** A code with no letter is
   shown as "�" and counted, never dropped. That includes a code past the standard order and a
   font without a map that is not read back.
-- **Memory:** two passes, the fonts' codes first, then one page at a time. About 3 MiB per MiB of
-  uncompressed text (pdfminer: 8.7); about 5 s per MiB.
+- **Memory and time:** two passes, the fonts' codes first, then one page at a time.
+  - Measured on 20 MiB of text: 9 MiB of memory per MiB plain, 19 compressed; 6 s per MiB plain,
+    14 compressed. The planning uses 16 MiB and 15 s per MiB.
+  - A page with more than 200,000 characters keeps its first part, and the summary says so.
+- **Bold** comes from the font's name or its ForceBold flag only. PDFium gives a font that
+  declares no weight one from its stems, and plain Arial reads 695 (adversarial check).
+  - A bold number starts a heading only where a block may start.
+  - A "heading" followed in lowercase is the start of a sentence, and is turned back into text.
+- **Fonts are told apart** by PDFium's own object (stable while the document is open), name and
+  flags. A font has "no map" when most of its characters lack one.
 - **List items are neutralized** like any line, and headings keep a final `#` (ADR-0023).
 - ClearMD opens the document with PDFium's own call, so a load error is read when it happens; a
   PDF without pages is an empty document.

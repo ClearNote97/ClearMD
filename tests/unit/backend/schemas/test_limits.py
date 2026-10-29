@@ -21,11 +21,11 @@ def test_every_format_has_a_measured_speed() -> None:
 
 def test_weights_are_seconds_per_mib_from_the_benchmark() -> None:
     limits = Limits()
-    # The benchmarks: TeX (pylatexenc) is the slowest since PDF is read by PDFium (ADR-0030,
-    # about 5 s per MiB of text); plain text the fastest.
-    assert limits.weight(FormatId.TEX) == max(limits.weights.values())
+    # PDF is the slowest (PDFium and ClearMD's cleaning, ADR-0030: up to 14 s per MiB of
+    # compressed text), plain text the fastest.
+    assert limits.weight(FormatId.PDF) == max(limits.weights.values())
     assert limits.weight(FormatId.TXT) == min(limits.weights.values())
-    assert 4 < limits.weight(FormatId.PDF) < 10
+    assert 10 < limits.weight(FormatId.PDF) < 20
 
 
 def test_estimated_seconds_of_a_file() -> None:

@@ -1,12 +1,13 @@
 **ClearMD — documents to Markdown, 100 % local.** / **Documentos a Markdown, 100 % local.**
 
-**New in 0.2.0 / Novedades de la 0.2.0**
-- Move freely between the four steps; each step's button says why when it is disabled. /
-  Muévete libremente entre los cuatro pasos; el botón de cada paso dice por qué está deshabilitado.
-- Checkboxes in the lists, *Clear selection*, and *Convert more* asks whether to keep your files. /
-  Casillas en las listas, *Quitar selección*, y *Convertir más* pregunta si conservas tus archivos.
-- A smoother window that can shrink; the version in the help; a splash that shows the loading. /
-  Una ventana más fluida que se puede achicar; la versión en la ayuda; un inicio que muestra la carga.
+**New in 0.3.0 / Novedades de la 0.3.0**
+- **PDFs come out readable**: words keep their spaces; headers, footers and page numbers that
+  repeat on the pages are left out; paragraphs, footnotes and headings are found. / **Los PDF
+  salen legibles**: las palabras conservan sus espacios; se quitan los encabezados, pies y números
+  de página que se repiten; se reconocen párrafos, notas al pie y títulos.
+- Text in fonts without a character map is read back; what cannot be read, and scanned pages,
+  are told in the summary. / El texto en fuentes sin mapa de caracteres se recupera; lo que no se
+  puede leer, y las páginas escaneadas, se avisan en el resumen.
 
 | File | What |
 |---|---|

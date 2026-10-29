@@ -125,15 +125,18 @@ def _page_number(text: str) -> tuple[str, int] | None:
     return ("roman", number) if number else None
 
 
-def _running_keys(line: Line, index: int) -> set[tuple[str, int, float]]:
+RunningKey = tuple[str, int | None, int, float]  # text (or its shape), page offset, place, size
+
+
+def _running_keys(line: Line, index: int) -> set[RunningKey]:
     """The same text at the same place, in the same size; with a number in it, the number is
     the same on every page ("2022") or follows the pages ("2 | Valencia", "Page 3"): "Table 4"
     on four pages is content."""
     place, size = round(line.top / PLACE_POINTS), _size_key(line.size)
-    keys = {(" ".join(line.text.casefold().split()), place, size)}
+    keys: set[RunningKey] = {(" ".join(line.text.casefold().split()), None, place, size)}
     numbers = _DIGITS.findall(line.text)
     if numbers:
-        keys.add((f"{_shape(line.text)}|{int(numbers[0][:6]) - index}", place, size))
+        keys.add((_shape(line.text), int(numbers[0][:6]) - index, place, size))
     return keys
 
 
@@ -151,7 +154,7 @@ def _without_running(
     if with_text < MIN_PAGES_FOR_RUNNING:
         return pages, 0
     threshold = max(MIN_RUNNING_PAGES, math.ceil(RUNNING_SHARE * with_text))
-    seen: Counter[tuple[str, int, float]] = Counter()
+    seen: Counter[RunningKey] = Counter()
     in_body: set[str] = set()
     numbers: Counter[tuple[str, int]] = Counter()
     for page, lines in enumerate(pages):
@@ -172,8 +175,9 @@ def _without_running(
             if found is not None and _in_margin(lines[index], heights[page]):
                 numbers[found[0], found[1] - page] += 1
     running = {key for key, count in seen.items() if count >= threshold}
-    running = {key for key in running if _shape(key[0].split("|")[0]) not in in_body}
-    numbering = {key for key, count in numbers.items() if count >= threshold}
+    running = {key for key in running if _shape(key[0]) not in in_body}
+    # A run of page numbers is one at three pages already (the roman ii-viii of a front matter).
+    numbering = {key for key, count in numbers.items() if count >= MIN_RUNNING_PAGES}
     kept: list[list[Line]] = []
     removed = 0
     for page, lines in enumerate(pages):
@@ -198,6 +202,7 @@ def _without_running(
 
 
 def _heading_like(line: Line) -> bool:
+    """Words, not too long, no sentence's end ("II. MARCO TEÓRICO." in capitals may end so)."""
     text = line.text
     visible = [char for char in text if not char.isspace()]
     letters = sum(char.isalpha() for char in visible)
@@ -205,7 +210,7 @@ def _heading_like(line: Line) -> bool:
         len(text) <= MAX_HEADING_CHARS
         and letters >= 3
         and letters >= MIN_LETTER_SHARE * len(visible)
-        and not text.endswith((".", ",", ";"))
+        and (not text.endswith((".", ",", ";")) or (text.endswith(".") and text.isupper()))
         and "=" not in text
     )
 
@@ -301,7 +306,7 @@ class _Writer:
             self.blocks.append(f"{MARK}- " + neutralize(text.lstrip(), keep_marks=True))
         else:
             self.blocks.append(text)
-        ended = self._kind == "heading" or bool(_SENTENCE_END.search(self._parts[-1]))
+        ended = self._kind != "text" or bool(_SENTENCE_END.search(self._parts[-1]))
         kind = self._kind
         self._parts = []
         self._kind = ""
@@ -329,7 +334,7 @@ class _Writer:
         """A paragraph goes on to the next page only when its sentence does; a heading or a list
         item ends with its page."""
         ended = self._parts and _SENTENCE_END.search(self._parts[-1])
-        if self._kind in {"heading", "item"} or ended:
+        if self._kind == "heading" or ended:
             self._flush()
         self._last = None
 
@@ -339,10 +344,14 @@ class _Writer:
         gap = self._gap(line)
         last = self._last
         resized = last is not None and _resized(last, line)
-        level = self._heading_level(line)
+        level = self._heading_level(line, gap)
         if self._kind == "text" and self._grown and not gap and not resized:
             self._parts.append(line.text)  # a paragraph in a larger font goes on
-        elif level and not self._continues_text(line):
+        elif self._numbered and self._cut_sentence(line, gap, resized):
+            self._kind, self._numbered = "text", False  # "15 Juzgados … que" + "completan": text
+            self._grown = False
+            self._parts.append(line.text)
+        elif level:
             self._heading(line, level, gap)
         elif self._heading_goes_on(line, gap, resized):
             self._parts.append(line.text)
@@ -351,8 +360,10 @@ class _Writer:
             self._kind = "item"
             self._parts.append(item)
         else:
-            new = self._parts and not line.text[:1].islower() and self._ended()
-            if self._kind in {"heading", ""} or gap or resized or new:
+            lower = line.text[:1].islower()
+            new = self._parts and not lower and self._ended()
+            ends_item = self._kind == "item" and not lower  # an item goes on only in lowercase
+            if self._kind in {"heading", ""} or gap or resized or new or ends_item:
                 self._flush()
             if not self._kind:
                 self._kind = "text"
@@ -361,6 +372,7 @@ class _Writer:
         self._last = line
 
     _grown = False  # the paragraph started as a heading: a larger font, too long for one
+    _numbered = False  # the heading came from a bold number, not from its size
 
     def _heading(self, line: Line, level: int, gap: bool) -> None:
         same = self._kind == "heading" and level == self._level and not gap
@@ -372,7 +384,19 @@ class _Writer:
             self._flush()
             self._release()  # footnotes before a heading, never between it and its text
             self._kind, self._level = "heading", level
+            self._numbered = self._levels.get(_size_key(line.size)) is None
         self._parts.append(line.text)
+
+    def _cut_sentence(self, line: Line, gap: bool, resized: bool) -> bool:
+        """The line after a bold numbered "heading" goes on in lowercase, close and in the same
+        size: that was the start of a sentence, not a heading (adversarial check of 008)."""
+        return (
+            self._kind == "heading"
+            and not gap
+            and not resized
+            and line.text[:1].islower()
+            and not line.bold
+        )
 
     def _heading_goes_on(self, line: Line, gap: bool, resized: bool) -> bool:
         """The second line of a bold numbered heading: bold too, same size, close, after a first
@@ -390,10 +414,6 @@ class _Writer:
             and len(self._parts) < MAX_HEADING_LINES
             and _heading_like(line)
         )
-
-    def _continues_text(self, line: Line) -> bool:
-        """A large-font line right after a large-font paragraph is more of that paragraph."""
-        return self._kind == "text" and self._grown
 
     def _item(self, line: Line) -> str | None:
         text = line.text
@@ -430,15 +450,19 @@ class _Writer:
         blank = last.bottom - line.top
         return blank > PARAGRAPH_GAP * height or line.top > last.top + height  # or a new column
 
-    def _heading_level(self, line: Line) -> int:
+    def _heading_level(self, line: Line, gap: bool) -> int:
         if not _heading_like(line):
             return 0
         found = self._levels.get(_size_key(line.size))
         if found:
             return found
         numbered = _NUMBERED.match(line.text)
+        # A bold number starts a heading only where a block may start: a page's top, a blank,
+        # after a sentence's end or another block; never in the middle of a paragraph.
+        starts = self._last is None or gap or self._kind != "text" or self._ended_sentence()
         if (
-            not line.bold
+            not starts
+            or not line.bold
             or numbered is None
             or len(line.text) > 90
             or _INSIDE_SENTENCE.search(line.text, numbered.end())

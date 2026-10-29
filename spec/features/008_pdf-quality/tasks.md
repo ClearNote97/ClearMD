@@ -6,5 +6,5 @@
       (AC-01 – AC-04).
 - [x] **T03 — The cleaner.** Running lines, headings, paragraphs, footnotes, hyphenation, lists,
       escaping (AC-05 – AC-09).
-- [ ] **T04 — The product.** Registry, dependencies, notes en/es, the executable (AC-10).
-- [ ] **T05 — Close.** Acceptance, docs, reviews, v0.3.0.
+- [x] **T04 — The product.** Registry, dependencies, notes en/es, the executable (AC-10).
+- [x] **T05 — Close.** Acceptance, docs, reviews, v0.3.0.

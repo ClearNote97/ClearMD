@@ -143,11 +143,13 @@ def test_a_numbered_bold_line_is_a_heading_by_its_numbers(tmp_path: Path) -> Non
         Text("3.1 Data and Variables", 600, 11, "bold"),
         *paragraph(BODY, top=580),
         Text("IV. RESULTADOS", 500, 11, "bold"),
+        *paragraph(BODY, top=480),
+        Text("II. MARCO TEÓRICO.", 400, 11, "bold"),
     ]
     lines = convert(tmp_path, [page]).markdown.splitlines()
     assert "## 1 Introduction" in lines
     assert "### 3.1 Data and Variables" in lines
-    assert "## IV. RESULTADOS" in lines
+    assert "## IV. RESULTADOS" in lines and "## II. MARCO TEÓRICO." in lines
 
 
 def test_bold_text_that_is_a_sentence_or_a_formula_is_no_heading(tmp_path: Path) -> None:
@@ -334,8 +336,8 @@ def test_s8_6_pdfiums_load_errors_are_mapped_by_name() -> None:
 
     from clearmd.backend.services.conversion.pdf import reader
 
-    assert raw.FPDF_ERR_SECURITY in reader._BROKEN and raw.FPDF_ERR_PAGE not in reader._BROKEN
-    assert reader._PASSWORD == {raw.FPDF_ERR_PASSWORD}
+    assert reader._BROKEN == {raw.FPDF_ERR_FILE, raw.FPDF_ERR_FORMAT}
+    assert reader._PASSWORD == {raw.FPDF_ERR_PASSWORD, raw.FPDF_ERR_SECURITY}  # encrypted
 
 
 def test_c8_5_text_that_cannot_be_read_is_never_dropped_silently(tmp_path: Path) -> None:
@@ -419,18 +421,73 @@ def test_c8_14_a_symbol_font_is_never_read_back_into_letters() -> None:
 
 
 def test_surrogate_pairs_are_one_character() -> None:
-    from collections import Counter
+    from clearmd.backend.services.conversion.pdf.reader import Document, _Chars, _line
 
-    from clearmd.backend.services.conversion.pdf.reader import Document, _Chars, _Fonts, _line
-
-    chars, fonts = _Chars(), _Fonts()
-    fonts.codes.append(Counter())
-    fonts.unmapped.append(False)
-    fonts.bold.append(False)
-    for code in (0xD835, 0xDC9C, 0x42):
+    chars = _Chars()
+    for code in (0xD835, 0xDC9C, 0x42, 0xD835, 0x43):
         chars.codes.append(code)
         chars.fonts.append(0)
         chars.bold.append(0)
         for column, value in ((chars.sizes, 11.0), (chars.bottoms, 700.0), (chars.tops, 711.0)):
             column.append(value)
-    assert _line(chars, range(3), [0], fonts, Document([])).text == "𝒜B"
+    document = Document([])
+    assert _line(chars, range(5), [0], [False], document).text == "𝒜B�C"  # a half alone: "�"
+    assert document.unreadable == 1
+
+
+# --- Adversarial check of 008 (A8-*) ----------------------------------------------------------
+
+
+def test_a8_2_a_header_with_a_bar_goes_even_when_a_page_holds_a_bare_number(
+    tmp_path: Path,
+) -> None:
+    pages = [
+        [Text(f"{n} | N. E. Valencia and C. Almanza", 760, 8),
+         *paragraph([f"{n} {line}" for line in BODY], top=700), Text("12", 400)]
+        for n in range(1, 6)
+    ]  # fmt: skip
+    assert "Valencia and C. Almanza" not in convert(tmp_path, pages).markdown
+
+
+def test_a8_4_a_short_run_of_roman_page_numbers_goes(tmp_path: Path) -> None:
+    roman = ["ii", "iii", "iv"]
+    pages = [
+        [Text(numeral, 40, 9), *paragraph([f"{numeral.upper()} {line}" for line in BODY], top=700)]
+        for numeral in roman
+    ] + [paragraph([f"{n} {line}" for line in BODY], top=700) for n in range(3)]
+    lines = lines_of(convert(tmp_path, pages).markdown)
+    assert not any(line.strip() in roman for line in lines)
+
+
+def test_a8_7_an_item_goes_on_across_a_page_in_lowercase(tmp_path: Path) -> None:
+    first = [*paragraph(BODY, top=700), *paragraph(["• Measure the efficiency of the"], top=640)]
+    second = paragraph(["courts of the country.", "Results show the courts improved."], top=700)
+    lines = lines_of(convert(tmp_path, [first, second]).markdown)
+    assert "- Measure the efficiency of the courts of the country." in lines
+
+
+def test_a8_7_a_subtitle_after_a_blank_is_a_heading_again(tmp_path: Path) -> None:
+    words = [
+        "A Very Long Title That Goes",
+        "On For Four Lines Of Large",
+        "Type In The Front",
+        "Page",
+    ]
+    title = [Text(line, 740 - 22 * index, 18) for index, line in enumerate(words)]
+    page = [*title, Text("A Subtitle In The Same Size", 560, 18), *paragraph(BODY * 4, top=500)]
+    assert "# A Subtitle In The Same Size" in convert(tmp_path, [page]).markdown.splitlines()
+
+
+def test_a8_7_a_held_footnote_goes_after_a_list_without_periods(tmp_path: Path) -> None:
+    first = [
+        *paragraph(["The judicial system is one of the main tenets,"], top=700),
+        *paragraph(["1 Corporación Excelencia en la Justicia."], top=80, size=8),
+    ]
+    second = paragraph(
+        ["because of these objectives:", "• Identify the framework", "• Measure the efficiency"],
+        top=700,
+    )
+    blocks = convert(tmp_path, [first, second]).markdown.strip().split("\n\n")
+    # Right after the paragraph it cut (its ":" ends it), before the list: never held to the end.
+    assert blocks[1] == "1 Corporación Excelencia en la Justicia."
+    assert blocks[2:] == ["- Identify the framework", "- Measure the efficiency"]

@@ -50,6 +50,8 @@ class PdfConverter:
             notes.append(ConversionNote(NoteKind.PDF_TEXT_DECODED))
         if document.unreadable:
             notes.append(ConversionNote(NoteKind.PDF_TEXT_UNREADABLE))
+        if document.cut_pages:
+            notes.append(ConversionNote(NoteKind.PAGE_CUT))
         if cleaned.running_removed:
             notes.append(ConversionNote(NoteKind.PDF_RUNNING_REMOVED))
         return ConversionResult(cleaned.markdown, tuple(notes))
