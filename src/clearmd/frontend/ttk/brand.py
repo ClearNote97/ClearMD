@@ -262,6 +262,17 @@ class Look:
             padding=(8, 8),
         )
         style.map("Treeview.Heading", background=[("active", p.card)])
+        # Faint separators between the headings, where a column can be resized (feature 007).
+        cell = self._image(p, art.heading_cell(36, p.card, p.border))
+        style.element_create(
+            "Heading.ClearMD.cell", "image", cell, border=(0, 0, 2, 0), sticky="nsew"
+        )
+        text: Any = ("Treeheading.text", {"sticky": "we"})
+        image: Any = ("Treeheading.image", {"side": "left", "sticky": ""})
+        inner: Any = ("Treeheading.padding", {"sticky": "nsew", "children": [image, text]})
+        style.layout(
+            "Treeview.Heading", [("Heading.ClearMD.cell", {"sticky": "nsew", "children": [inner]})]
+        )
         # A soft tint for the selection: the row's number, icon and text stay readable on it.
         style.map("Treeview", background=[("selected", p.shape)], foreground=[("selected", p.text)])
         style.configure("Horizontal.TProgressbar", thickness=8)

@@ -548,7 +548,9 @@ class Presenter:
             kind = RowKind.EXISTS if item.exists else RowKind.CONVERT
             icon = icon_of_format(item.detection.format)
             name, location = _shown(item.source)
-            rows.append(PlanRow(kind, name, location, self._format(item), icon))
+            key = "gui.plan.exists" if item.exists else "gui.plan.ready"
+            detail = self.catalog.text(key, format=self._format(item))
+            rows.append(PlanRow(kind, name, location, detail, icon))
         for skipped in plan.skipped:
             reason = skip_reason(self.catalog, skipped)
             detail = f"{reason}. {skip_action(self.catalog, skipped)}"

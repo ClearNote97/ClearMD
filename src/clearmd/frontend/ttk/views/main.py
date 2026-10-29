@@ -70,6 +70,9 @@ class MainView(ttk.Frame):
         self.remove.pack(side="left")
         self.clear = ttk.Button(editing, style=LINK, command=on_clear)
         self.clear.pack(side="left", padx=(SPACE, 0))
+        self.deselect = ttk.Button(editing, style=LINK, command=self.inputs.clear_selection)
+        self.deselect.pack(side="left", padx=(SPACE, 0))
+        self._label(self.deselect, "gui.main.deselect")
         self._label(self.remove, "gui.main.remove")
         self._label(self.clear, "gui.main.clear")
 

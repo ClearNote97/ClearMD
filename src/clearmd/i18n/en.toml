@@ -239,6 +239,8 @@ overwrite = "Replace them with new ones"
 back = "Back"
 confirm = "Convert"
 nothing = "There is nothing to convert here. Go back and choose other files."
+ready = "✓ Ready to convert · {format}"
+exists = "↻ Its result already exists · {format}: choose below"
 
 [gui.progress]
 counter = "{index} of {total}"
@@ -367,3 +369,4 @@ pick_files_title = "Choose documents"
 pick_folder_title = "Choose a folder"
 pick_output_title = "Where should the results go?"
 documents = "Documents"
+deselect = "Deselect all"
