@@ -133,7 +133,8 @@ anteriores._
 | **004** Modo artículo para HTML | ✅ lista | 1287 tests en total · revisada |
 | **005** Primera app de escritorio (ttkbootstrap) | ✅ lista | 1622 tests en total · revisada |
 | **006** CI + ejecutables para Windows y Linux | ✅ lista | CI en Linux y Windows · ejecutables verificados con un lote real |
-| **007–008** Apps en PySide6 y flet | ⏳ | |
+| **007–010** Navegación, PDF de calidad, un resumen humano, un ejecutable liviano | ⏳ | |
+| **011–012** Apps en PySide6 y flet | ⏳ | |
 
 El plan completo está en el [roadmap](./spec/roadmap.md). ClearMD tiene **línea de comandos** y su primera **app de
 escritorio** (`clearmd-ttk`), ambas también como ejecutables para Windows y Linux, construidos y verificados por la CI.

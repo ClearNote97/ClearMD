@@ -29,21 +29,26 @@ class Action(StrEnum):
 
 
 _EDITING = frozenset({Action.ADD, Action.CHOOSE_OUTPUT, Action.SETTINGS, Action.HELP})
-_FINISHED = frozenset({Action.BACK, Action.OPEN_RESULTS, Action.SETTINGS, Action.HELP})
+_FINISHED = frozenset({Action.BACK, Action.OPEN_RESULTS} | _EDITING)
+WORKING = frozenset({AppState.ANALYZING, AppState.CONVERTING})
 
 
 def enabled_actions(
     state: AppState, *, has_inputs: bool, can_confirm: bool, has_results: bool
 ) -> frozenset[Action]:
     """The actions a view enables in ``state``: Convert and Remove only with inputs, Confirm only
-    with something to convert, Cancel only while working, Help always (UX §4)."""
+    with something to convert, Cancel only while working, Help always (UX §4). Outside the work,
+    the inputs can always be edited (ADR-0029: editing drops a plan or a result)."""
+    remove = {Action.REMOVE} if has_inputs else set()
     if state is AppState.READY:
-        return _EDITING | ({Action.CONVERT, Action.REMOVE} if has_inputs else set())
-    if state in {AppState.ANALYZING, AppState.CONVERTING}:
+        return _EDITING | remove | ({Action.CONVERT} if has_inputs else set())
+    if state in WORKING:
         return frozenset({Action.CANCEL, Action.HELP})
     if state is AppState.WAITING_DECISION:
-        return frozenset({Action.BACK, Action.HELP} | ({Action.CONFIRM} if can_confirm else set()))
-    return _FINISHED if has_results else _FINISHED - {Action.OPEN_RESULTS}
+        confirm = {Action.CONFIRM} if can_confirm else set()
+        return frozenset({Action.BACK} | _EDITING | remove | confirm)
+    finished = _FINISHED | remove
+    return finished if has_results else finished - {Action.OPEN_RESULTS}
 
 
 STEPS = ("choose", "review", "convert", "results")  # the flow, as the rail shows it (ADR-0027)

@@ -12,6 +12,7 @@ import time
 from collections.abc import Callable, Sequence
 from dataclasses import replace
 from functools import partial
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 from clearmd.backend.api import (
@@ -41,6 +42,7 @@ from clearmd.frontend.presenter.models import (
     OutputMode,
     PlanRow,
     PlanView,
+    Primary,
     ProgressView,
     ResultRow,
     ResultView,
@@ -50,7 +52,7 @@ from clearmd.frontend.presenter.models import (
     Tone,
 )
 from clearmd.frontend.presenter.ports import ApiBackend, Backend, View
-from clearmd.frontend.presenter.state import AppState, enabled_actions, step_of
+from clearmd.frontend.presenter.state import WORKING, AppState, enabled_actions, step_of
 from clearmd.frontend.presenter.system_theme import detect_system_theme
 from clearmd.i18n import Catalog, load_catalog, printable, resolve_language
 
@@ -94,6 +96,7 @@ class Presenter:
         self._theme: str | None = None
         self._shutting_down = False  # the window is closing: nothing is opened any more
         self._scan_count: tuple[int, int] | None = None  # (generation, latest count), SCAN_MS
+        self.page = 1  # the step on screen (ADR-0029)
 
     # --- Start -----------------------------------------------------------------------------------
 
@@ -126,6 +129,14 @@ class Presenter:
             self._view.apply_theme(theme)
 
     @property
+    def version(self) -> str:
+        """ClearMD's version, as shown in the window and the help."""
+        try:
+            return version("clearmd")
+        except PackageNotFoundError:  # running from sources without metadata
+            return "dev"
+
+    @property
     def output_folder(self) -> Path | None:
         """The folder chosen for the results; ``None``: next to the originals."""
         return self._output_folder
@@ -134,7 +145,7 @@ class Presenter:
 
     def add_paths(self, paths: Sequence[Path]) -> None:
         """Files or folders, from the dialogs or dropped on the window; never listed twice."""
-        if self.state is not AppState.READY:  # the plan was made from the inputs as they were
+        if not self._editable():
             return
         known = {_key(path) for path in self._inputs}
         for path in paths:
@@ -146,34 +157,113 @@ class Presenter:
         self._set(self.state)
 
     def remove_input(self, path: Path) -> None:
-        if self.state is not AppState.READY:
+        if not self._editable():
             return
         self._inputs = [known for known in self._inputs if _key(known) != _key(Path(path))]
         self._show_inputs()
         self._set(self.state)
 
     def clear_inputs(self) -> None:
-        if self.state is not AppState.READY:
+        if not self._editable():
             return
         self._inputs.clear()
         self._show_inputs()
         self._set(self.state)
 
     def choose_output_next_to(self) -> None:
-        if self.state is not AppState.READY:
+        if not self._editable():
             return
         self._output_folder = None
         self._show_output()
+        self._set(self.state)
 
     def choose_output_folder(self, folder: Path) -> None:
         """Results in ``folder``, remembered as the suggestion for next time (ADR-0016) when its
         path can be stored (a name with control characters still receives the results)."""
-        if self.state is not AppState.READY:
+        if not self._editable():
             return
         self._output_folder = Path(os.path.abspath(folder))
         self._show_output()
+        self._set(self.state)
         if valid_path_setting(str(self._output_folder)):
             self._save(replace(self.settings, last_output_folder=str(self._output_folder)))
+
+    def _editable(self) -> bool:
+        """Inputs and output change outside the work only; a change drops a plan or a result
+        (it was made from the inputs as they were, ADR-0029)."""
+        if self.state in WORKING:
+            return False
+        if self.state is not AppState.READY:
+            self._plan = None
+            self._report = None
+            self.state = AppState.READY
+        return True
+
+    # --- Pages (ADR-0029) ------------------------------------------------------------------------
+
+    def go_to(self, page: int) -> None:
+        """Show a step; only what is on screen changes."""
+        if 1 <= page <= 4:
+            self.page = page
+            self._set(self.state)
+
+    def press_primary(self, overwrite: bool | None = None) -> None:
+        """The page's primary action: Next, Next, Convert, Open results folder."""
+        if not self._primary().enabled:
+            return
+        if self.page == 1:
+            if self.state is AppState.WAITING_DECISION:
+                self.go_to(2)
+            else:
+                self.analyze()
+        elif self.page == 2:
+            self.go_to(3)
+        elif self.page == 3:
+            self.confirm(overwrite)
+        else:
+            self.open_results()
+
+    def convert_more(self, *, keep: bool) -> None:
+        """From the results to Choose again, with the chosen files or without them."""
+        if self.state in WORKING:
+            return
+        self._plan = None
+        self._report = None
+        if not keep:
+            self._inputs.clear()
+        self.page = 1
+        self._show_inputs()
+        self._set(AppState.READY)
+
+    def _primary(self) -> Primary:
+        text = self.catalog.text
+        plan = self._plan
+        ready = self.state is AppState.WAITING_DECISION and bool(plan and plan.conversions)
+
+        def why() -> str:
+            if self.state is AppState.ANALYZING:
+                return text("gui.nav.analyzing")
+            if self.state is AppState.CONVERTING:
+                return text("gui.nav.converting")
+            if self.state is AppState.WAITING_DECISION:
+                return text("gui.nav.nothing")
+            if self._report is not None:
+                return text("gui.nav.done")
+            return text("gui.nav.need_plan")
+
+        if self.page == 1:
+            if self.state in WORKING:
+                return Primary(text("gui.nav.next"), False, why())
+            if not self._inputs:
+                return Primary(text("gui.nav.next"), False, text("gui.nav.need_inputs"))
+            return Primary(text("gui.nav.next"), True)
+        if self.page == 2:
+            return Primary(text("gui.nav.next"), ready, "" if ready else why())
+        if self.page == 3:
+            return Primary(text("gui.main.convert"), ready, "" if ready else why())
+        has_results = bool(self._result_folders())
+        hint = "" if has_results else text("gui.nav.no_results")
+        return Primary(text("gui.result.open"), has_results, hint)
 
     # --- Plan, confirm, convert ------------------------------------------------------------------
 
@@ -183,6 +273,7 @@ class Presenter:
             return
         generation = self._next_generation()
         inputs = list(self._inputs)
+        self.page = 1  # the scan is told on Choose; Review opens with the plan
         options = {
             "recursive": self.settings.recursive,
             "output_root": self._output_folder,
@@ -221,6 +312,7 @@ class Presenter:
         language = self.catalog.language  # read here: the worker never touches the presenter
         self._done = 0
         self._current = None
+        self.page = 3  # the progress is shown on Convert (ADR-0029)
         self._set(AppState.CONVERTING)
 
         def on_event(event: BatchEvent) -> None:
@@ -258,6 +350,7 @@ class Presenter:
             if self._cancel is not None:
                 self._cancel.cancel()  # and the scan stops at its next folder
             self._cancel = None
+            self.page = 1
             self._set(AppState.READY)
         elif self.state is AppState.CONVERTING and self._cancel is not None:
             self._cancel.cancel()
@@ -270,11 +363,7 @@ class Presenter:
 
     def back(self) -> None:
         """From the plan or the result, to the inputs again (they are kept)."""
-        if self.state in {AppState.ANALYZING, AppState.CONVERTING}:
-            return
-        self._plan = None
-        self._report = None
-        self._set(AppState.READY)
+        self.convert_more(keep=True)
 
     def open_results(self) -> None:
         problems = []
@@ -349,6 +438,7 @@ class Presenter:
     def _planned(self, plan: BatchPlan) -> None:
         self._plan = plan
         self._view.show_plan(self._plan_view(plan))
+        self.page = 2
         self._set(AppState.WAITING_DECISION)
 
     def _started(self, index: int, total: int, name: str, left: float | None, icon: str) -> None:
@@ -380,6 +470,7 @@ class Presenter:
             else AppState.FINISHED
         )
         self._view.show_result(self._result_view(report, state))
+        self.page = 4  # the results open by themselves (ADR-0029)
         self._set(state)
         opens = self.settings.open_output_when_done and not self._shutting_down
         if state is not AppState.CANCELLED and opens:
@@ -404,7 +495,8 @@ class Presenter:
             has_results=bool(self._result_folders()),
         )
         label = self.catalog.text(f"gui.state.{state.value}")
-        self._view.show_state(StateView(state, label, enabled, step_of(state)))
+        view = StateView(state, label, enabled, step_of(state), self.page, self._primary())
+        self._view.show_state(view)
 
     def _show_inputs(self) -> None:
         rows = []

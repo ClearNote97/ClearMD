@@ -46,3 +46,4 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 | [0026](./0026-presenter-and-ttk-gui.md) | The presenter and the first GUI (ttkbootstrap) | accepted; refined by 0027 |
 | [0027](./0027-visual-identity.md) | Visual identity: the rail and cards, teal, the C·M↓ logo, own file icons | accepted |
 | [0028](./0028-ci-and-executables.md) | CI on Linux and Windows; one-file executables built and checked on GitHub Actions | accepted |
+| [0029](./0029-step-navigation.md) | Free navigation between the steps; one primary action per step, with its reason when disabled | accepted |

@@ -41,6 +41,15 @@ already tested (ADR-0001).
 
 ## Next
 
+- [ ] **007 — Navigation and window polish** ([spec](./features/007_navigation-and-polish/spec.md)):
+      free navigation between the four steps, Next / Next / Convert, checkboxes and separators in
+      the lists, a smooth resize and a compact rail, the version on screen, a splash with progress.
+- [ ] **008 — PDF quality:** PDFium for the text, ClearMD's own post-processing (repeated headers
+      and page numbers, hyphenation, paragraphs, headings, rotated text), unreadable text told.
+- [ ] **009 — A summary in human language, and its PDF** in the app's look; the format chosen on
+      the first screen and in Settings.
+- [ ] **010 — A light executable:** own detection for files without an extension (no magika),
+      own Excel converter (no pandas), no babel.
 - [ ] **006b — Hardening of the executables:** **code signing** of the Windows executables
       (SignPath, free for open source — once the repository is public) so SmartScreen does not
       scare non-technical users; a Windows Job Object as the worker's hard memory cap; an advisory
@@ -48,13 +57,13 @@ already tested (ADR-0001).
 
 ## Later
 
-- [ ] **007 — PySide6-Essentials GUI** (*onedir* distribution because of LGPL, ADR-0003).
-- [ ] **008 — flet GUI.**
+- [ ] **011 — PySide6-Essentials GUI** (*onedir* distribution because of LGPL, ADR-0003).
+- [ ] **012 — flet GUI.**
+- [ ] A small Windows installer (a Start menu shortcut), optional.
 - [ ] Incremental mode: skip files unchanged since the last run.
 - [ ] Minor formats: `.eml`, `.rtf`, subtitles.
 - [ ] A second queue lane for heavy files, or parallel workers — only if the benchmark shows blocking
       (ADR-0015).
-- [ ] Optional summary formats (e.g. PDF).
 - [ ] **Publish on PyPI** (`pip install clearmd` / `uv tool install clearmd`), at the end (ADR-0018).
 
 ## Version 2

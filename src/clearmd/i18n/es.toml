@@ -311,6 +311,16 @@ subtitle = "Documentos a Markdown, en tu computador"
 local = "100 % local · nada sale de tu equipo"
 unexpected_error = "Algo inesperado salió mal: {detail}. Tus documentos originales no se modificaron y lo que ya se convirtió se conserva. Por favor repórtalo."
 
+[gui.nav]
+next = "Siguiente"
+need_inputs = "Agrega al menos un archivo o una carpeta."
+need_plan = "Pulsa Siguiente en Elegir para ver qué va a pasar."
+analyzing = "Buscando documentos… el plan se abre en Revisar."
+nothing = "Aquí no hay nada para convertir. Vuelve a Elegir."
+converting = "Convirtiendo… espera a que termine o cancélalo."
+done = "Este lote terminó: mira los Resultados o Convierte más."
+no_results = "Primero convierte algo: aquí aparecen los resultados."
+
 [gui.steps]
 choose = "Elegir"
 review = "Revisar"

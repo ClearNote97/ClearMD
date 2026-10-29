@@ -129,7 +129,8 @@ _Plus the failed and skipped files with a plain-words reason, and the history of
 | **004** HTML article mode | ✅ done | 1287 tests in total · reviewed |
 | **005** First desktop app (ttkbootstrap) | ✅ done | 1622 tests in total · reviewed |
 | **006** CI + Windows/Linux executables | ✅ done | CI on Linux and Windows · executables checked by a real batch |
-| **007–008** PySide6 and flet apps | ⏳ | |
+| **007–010** Navigation, PDF quality, a human summary, a light executable | ⏳ | |
+| **011–012** PySide6 and flet apps | ⏳ | |
 
 Full plan in the [roadmap](./spec/roadmap.md). ClearMD has a **command line** and its first **desktop app**
 (`clearmd-ttk`), both also as Windows and Linux executables built and checked by CI.

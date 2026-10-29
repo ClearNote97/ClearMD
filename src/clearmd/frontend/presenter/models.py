@@ -8,11 +8,22 @@ from clearmd.frontend.presenter.state import Action, AppState
 
 
 @dataclass(frozen=True)
+class Primary:
+    """The page's primary action (ADR-0029): its label, whether it can run, and why not."""
+
+    label: str
+    enabled: bool
+    hint: str = ""  # one line, only when it is disabled
+
+
+@dataclass(frozen=True)
 class StateView:
     state: AppState
     label: str
     enabled: frozenset[Action]
-    step: int  # 1 Choose, 2 Review, 3 Convert, 4 Results (ADR-0027: the rail highlights it)
+    step: int  # 1 Choose, 2 Review, 3 Convert, 4 Results: where the batch is
+    page: int = 1  # the step on screen (ADR-0029: every step can be opened)
+    primary: Primary = Primary("", False)
 
 
 @dataclass(frozen=True)
