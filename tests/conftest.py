@@ -1,6 +1,7 @@
 """Shared fixtures: no network (ADR-0005, AC-39), an isolated settings folder per test, and one
 display for every GUI test of the session."""
 
+import gc
 import socket
 from collections.abc import Iterator
 from pathlib import Path
@@ -49,3 +50,12 @@ def _no_pause_between_pages(monkeypatch: pytest.MonkeyPatch) -> None:
     """Tests press buttons faster than a person: the window's pause after a page change (against a
     held Enter, security audit of 007) is off, except where a test turns it on."""
     monkeypatch.setattr("clearmd.frontend.ttk.app.PRIMARY_PAUSE_SECONDS", 0.0)
+
+
+@pytest.fixture(autouse=True)
+def _collect_on_the_main_thread() -> Iterator[None]:
+    """Tk objects of a closed test window die here, on the main thread. Left to the garbage
+    collector, they may be freed on a worker thread (planning, converting), which calls Tk from
+    there: it raises, or waits for a main loop that never runs (a plan that never arrived, CI)."""
+    yield
+    gc.collect()
