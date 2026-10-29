@@ -81,13 +81,13 @@ The value is in the method — a small product built like a serious one:
 
 **The desktop app** — a real batch, from choosing a folder to the results (no internet involved):
 
-![ClearMD converting a folder](./docs/screenshots/005/flow-light-en.gif)
+![ClearMD converting a folder](./docs/screenshots/007/flow-light-en.gif)
 
 | Choose | Review | Results |
 |---|---|---|
-| ![Choose](./docs/screenshots/005/1-choose-light-en.png) | ![Review](./docs/screenshots/005/2-review-light-en.png) | ![Results](./docs/screenshots/005/4-results-dark-en.png) |
+| ![Choose](./docs/screenshots/007/1-choose-light-en.png) | ![Review](./docs/screenshots/007/2-review-light-en.png) | ![Results](./docs/screenshots/007/4-results-dark-en.png) |
 
-Light and dark, English and Spanish: every screen is in [`docs/screenshots/005/`](./docs/screenshots/005/).
+Light and dark, English and Spanish: every screen is in [`docs/screenshots/007/`](./docs/screenshots/007/).
 
 **The command line** — a mixed folder, with a password-protected PDF, a document without extension, two files that would get the same
 name, and a zip bomb disguised as a Word file:
@@ -129,7 +129,8 @@ _Plus the failed and skipped files with a plain-words reason, and the history of
 | **004** HTML article mode | ✅ done | 1287 tests in total · reviewed |
 | **005** First desktop app (ttkbootstrap) | ✅ done | 1622 tests in total · reviewed |
 | **006** CI + Windows/Linux executables | ✅ done | CI on Linux and Windows · executables checked by a real batch |
-| **007–010** Navigation, PDF quality, a human summary, a light executable | ⏳ | |
+| **007** Free navigation, checkboxes, a smoother window | ✅ done | v0.2.0 · reviewed |
+| **008–010** PDF quality, a human summary, a light executable | ⏳ | |
 | **011–012** PySide6 and flet apps | ⏳ | |
 
 Full plan in the [roadmap](./spec/roadmap.md). ClearMD has a **command line** and its first **desktop app**

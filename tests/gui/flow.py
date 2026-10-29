@@ -88,6 +88,8 @@ def flow(language: str, theme: str) -> list[tuple[Image.Image, int]]:
         run(app, 0.3)
         frames.append((grab(app), 2800))
         app.presenter.go_to(3)
+        run(app, 1.0)  # as a person would: the Convert page is seen, then pressed
+        frames.append((grab(app), 1500))
         app.actions.primary.invoke()
         wait(app, {AppState.FINISHED, AppState.FINISHED_WITH_PROBLEMS}, frames)
         run(app, 0.4)

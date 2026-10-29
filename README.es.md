@@ -84,13 +84,13 @@ El valor está en el método — un producto pequeño construido como uno serio:
 
 **La app de escritorio** — un lote real, desde elegir una carpeta hasta los resultados (sin internet):
 
-![ClearMD convirtiendo una carpeta](./docs/screenshots/005/flow-light-es.gif)
+![ClearMD convirtiendo una carpeta](./docs/screenshots/007/flow-light-es.gif)
 
 | Elegir | Revisar | Resultados |
 |---|---|---|
-| ![Elegir](./docs/screenshots/005/1-choose-light-es.png) | ![Revisar](./docs/screenshots/005/2-review-light-es.png) | ![Resultados](./docs/screenshots/005/4-results-dark-es.png) |
+| ![Elegir](./docs/screenshots/007/1-choose-light-es.png) | ![Revisar](./docs/screenshots/007/2-review-light-es.png) | ![Resultados](./docs/screenshots/007/4-results-dark-es.png) |
 
-Claro y oscuro, español e inglés: todas las pantallas están en [`docs/screenshots/005/`](./docs/screenshots/005/).
+Claro y oscuro, español e inglés: todas las pantallas están en [`docs/screenshots/007/`](./docs/screenshots/007/).
 
 **La línea de comandos** — una carpeta mixta, con un PDF protegido con contraseña, un documento sin extensión, dos archivos que quedarían
 con el mismo nombre y una bomba ZIP disfrazada de Word:
@@ -133,7 +133,8 @@ anteriores._
 | **004** Modo artículo para HTML | ✅ lista | 1287 tests en total · revisada |
 | **005** Primera app de escritorio (ttkbootstrap) | ✅ lista | 1622 tests en total · revisada |
 | **006** CI + ejecutables para Windows y Linux | ✅ lista | CI en Linux y Windows · ejecutables verificados con un lote real |
-| **007–010** Navegación, PDF de calidad, un resumen humano, un ejecutable liviano | ⏳ | |
+| **007** Navegación libre, casillas, una ventana más fluida | ✅ lista | v0.2.0 · revisada |
+| **008–010** PDF de calidad, un resumen humano, un ejecutable liviano | ⏳ | |
 | **011–012** Apps en PySide6 y flet | ⏳ | |
 
 El plan completo está en el [roadmap](./spec/roadmap.md). ClearMD tiene **línea de comandos** y su primera **app de

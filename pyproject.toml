@@ -1,6 +1,6 @@
 [project]
 name = "clearmd"
-version = "0.1.0"
+version = "0.2.0"
 description = "Turn documents into Markdown. 100% local: your files never leave your machine."
 readme = "README.md"
 license = "MIT"

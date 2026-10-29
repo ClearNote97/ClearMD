@@ -39,11 +39,13 @@ already tested (ADR-0001).
       for Windows and Linux, each build checked by a real batch; GitHub (pre-)releases with the
       third-party notices (ADR-0028).
 
+- [x] **007 — Navigation and window polish** ([spec](./features/007_navigation-and-polish/spec.md)):
+      free navigation between the four steps, Next / Next / Convert, checkboxes and separators in
+      the lists, a smooth resize and a compact rail, the version on screen, a splash with progress. Reviewed (code, security,
+      adversarial).
+
 ## Next
 
-- [ ] **007 — Navigation and window polish** ([spec](./features/007_navigation-and-polish/spec.md)):
-      free navigation between the four steps, Next / Next / Convert, checkboxes and separators in
-      the lists, a smooth resize and a compact rail, the version on screen, a splash with progress.
 - [ ] **008 — PDF quality:** PDFium for the text, ClearMD's own post-processing (repeated headers
       and page numbers, hyphenation, paragraphs, headings, rotated text), unreadable text told.
 - [ ] **009 — A summary in human language, and its PDF** in the app's look; the format chosen on
