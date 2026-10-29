@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 from build_fixtures import MARKERS
-from run_benchmark import SEED, make_pdf, make_xlsx
+from run_benchmark import SEED, make_csv, make_pdf
 from support import WINDOWS, put
 from support.worker_factories import FAKE
 
@@ -606,20 +606,22 @@ def test_ac_38_quiet_shows_only_the_summary_and_errors(
 def test_ac_24_a_worker_over_the_memory_limit_is_stopped_and_replaced(
     workdir: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    make_xlsx(workdir / "sales.xlsx", 2 * 1024**2, random.Random(SEED))  # ~400 MiB peak
+    # A 12 MiB CSV peaks near 280 MiB (markitdown's table); Excel no longer does since ClearMD
+    # reads it itself (feature 010: ~40 MiB for 2 MiB).
+    make_csv(workdir / "sales.csv", 12 * 1024**2, random.Random(SEED))
     after = put(workdir, "sample.txt", "zz_after.txt")
     # The plan must not skip it (AC-42), so its estimate is zeroed; the real use is not.
     base = composition.default_limits()
     limits = replace(
         base,
         worker_memory=230 * 1024**2,
-        memory_per_mib={**base.memory_per_mib, FormatId.XLSX: 0.0},
-        weights={**base.weights, FormatId.XLSX: 0.0},  # convert it first
+        memory_per_mib={**base.memory_per_mib, FormatId.CSV: 0.0},
+        weights={**base.weights, FormatId.CSV: 0.0},  # convert it first
     )
     monkeypatch.setattr(composition, "default_limits", lambda: limits)
-    assert main([str(workdir / "sales.xlsx"), str(after)]) == 1
+    assert main([str(workdir / "sales.csv"), str(after)]) == 1
     err = capsys.readouterr().err
-    assert "⏹ Stopped: sales.xlsx — Exceeded the memory limit" in err
+    assert "⏹ Stopped: sales.csv — Exceeded the memory limit" in err
     assert "close other programs" in err
     assert (workdir / "ClearMD_Output" / "OutputMD" / "zz_after.md").is_file()  # new worker
 

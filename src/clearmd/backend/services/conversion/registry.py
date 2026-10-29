@@ -54,22 +54,24 @@ class ConverterRegistry:
 
 
 def build_registry() -> ConverterRegistry:
-    """The real registry: markitdown, ClearMD's own converters, and magika for content."""
+    """The real registry: markitdown, ClearMD's own converters and content signatures."""
     from clearmd.backend.services.conversion.html import ArticleConverter
     from clearmd.backend.services.conversion.markitdown_adapter import MarkItDownConverter
     from clearmd.backend.services.conversion.odt import OdtConverter
     from clearmd.backend.services.conversion.pdf import PdfConverter
     from clearmd.backend.services.conversion.tex import TexConverter
-    from clearmd.backend.services.detection.content import MagikaDetector
+    from clearmd.backend.services.conversion.xlsx import XlsxConverter
+    from clearmd.backend.services.detection.content import SignatureDetector
 
     markitdown = MarkItDownConverter()
     converters: dict[FormatId, DocumentConverter] = dict.fromkeys(markitdown.converters, markitdown)
     converters[FormatId.TEX] = TexConverter()
     converters[FormatId.ODT] = OdtConverter()
     converters[FormatId.PDF] = PdfConverter()  # PDFium + ClearMD's cleaning (ADR-0030)
+    converters[FormatId.XLSX] = XlsxConverter()  # openpyxl, no pandas (ADR-0032)
     article = ArticleConverter()  # no article: the whole page, written by ClearMD too
     return ConverterRegistry(
         converters,
-        content_detector=MagikaDetector(),
+        content_detector=SignatureDetector(),
         strategies={(FormatId.HTML, Strategy.ARTICLE): article},
     )

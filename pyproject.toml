@@ -12,7 +12,8 @@ dependencies = [
     # Encoding of .tex files that declare none (feature 002); markitdown pulls it in too.
     "charset-normalizer>=3.4",
     # Pre-1.0: exact version, upgraded on purpose and with tests (ADR-0004).
-    "markitdown[docx,pptx,xlsx]==0.1.9",
+    "markitdown[docx,pptx]==0.1.9",
+    "openpyxl>=3.1,<4",  # Excel, ClearMD's own converter (feature 010, ADR-0032)
     "pypdfium2>=5.14,<6",  # PDF text (feature 008, ADR-0030)
     # Per-OS configuration paths (ADR-0002, ADR-0012).
     "platformdirs>=4.13",

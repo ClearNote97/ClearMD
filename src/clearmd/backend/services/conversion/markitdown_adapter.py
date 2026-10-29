@@ -26,7 +26,6 @@ from markitdown.converters import (
     IpynbConverter,
     PlainTextConverter,
     PptxConverter,
-    XlsxConverter,
 )
 
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
@@ -87,7 +86,6 @@ def _converters() -> Mapping[FormatId, DocumentConverter]:
         {
             FormatId.DOCX: DocxConverter(),  # type: ignore[no-untyped-call]
             FormatId.PPTX: PptxConverter(),  # type: ignore[no-untyped-call]
-            FormatId.XLSX: XlsxConverter(),  # type: ignore[no-untyped-call]
             FormatId.HTML: HtmlConverter(),
             FormatId.CSV: CsvConverter(),  # type: ignore[no-untyped-call]
             FormatId.EPUB: EpubConverter(),  # type: ignore[no-untyped-call]

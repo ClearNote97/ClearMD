@@ -146,7 +146,7 @@ def test_a_crash_while_detecting_means_unsupported_and_a_new_worker(runner: Work
     assert runner.convert(_item("notes.txt"), CancelToken()).markdown == "# converted notes.txt"
 
 
-def test_real_magika_detects_in_the_worker() -> None:
+def test_the_real_detection_by_content_runs_in_the_worker() -> None:
     worker = WorkerRunner(REAL, Limits(time_per_file=60))
     try:
         detection = worker.detect(DOCUMENTS_DIR / "docx_without_extension")

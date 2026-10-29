@@ -20,9 +20,10 @@ cp "$here/tests/fixtures/tex/paper.tex" "$work/in/"
 cp "$here/tests/fixtures/odt/report.odt" "$work/in/"
 expected=$(ls "$work/in" | wc -l)
 
-"$dist/clearmd-cli$suffix" "$work/in" --lang es
+"$dist/clearmd-cli$suffix" "$work/in" --lang es --summary-pdf
 written=$(find "$work/ClearMD_Output/OutputMD" -name '*.md' | wc -l)
 test -f "$work/ClearMD_Output/Resumen_ClearMD.md"
+test -f "$work/ClearMD_Output/Resumen_ClearMD.pdf"
 if [[ "$written" -ne "$expected" ]]; then
   echo "expected $expected Markdown files, found $written" >&2
   exit 1
@@ -35,3 +36,14 @@ else
   HOME="$work" timeout 120 "$dist/ClearMD$suffix" --smoke
 fi
 echo "window: opened and closed"
+
+# A light executable (feature 010): each program under this size.
+MAX_MB=50
+for program in "$dist/ClearMD$suffix" "$dist/clearmd-cli$suffix"; do
+  size=$(( $(wc -c < "$program") / 1024 / 1024 ))
+  if (( size >= MAX_MB )); then
+    echo "$program is $size MB, over $MAX_MB MB" >&2
+    exit 1
+  fi
+  echo "$(basename "$program"): $size MB"
+done

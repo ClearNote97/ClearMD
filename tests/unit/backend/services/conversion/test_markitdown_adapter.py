@@ -19,7 +19,8 @@ from clearmd.backend.services.conversion.markitdown_adapter import (
     map_exception,
 )
 
-CONVERTIBLE = sorted(name for name in MARKERS if not name.endswith(".pdf"))  # PDF: ADR-0030
+# PDF and Excel are ClearMD's own (ADR-0030, ADR-0032).
+CONVERTIBLE = sorted(name for name in MARKERS if not name.endswith((".pdf", ".xlsx")))
 
 
 TARGET = Path("out.md")  # markitdown writes no links to other files
@@ -94,6 +95,7 @@ def test_no_image_audio_or_zip_converter_is_ever_registered() -> None:
         FormatId.TEX,
         FormatId.ODT,
         FormatId.PDF,
+        FormatId.XLSX,
     }
 
 

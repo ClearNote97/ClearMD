@@ -56,8 +56,9 @@ already tested (ADR-0001).
 
 ## Next
 
-- [ ] **010 — A light executable:** own detection for files without an extension (no magika),
-      own Excel converter (no pandas), no babel.
+- [ ] **010 — A light executable** ([spec](./features/010_light-executable/spec.md), ADR-0032): own
+      detection for files without an extension (no magika), own Excel converter (no pandas),
+      babel's data for two languages; about 90 → 40 MB.
 - [ ] **006b — Hardening of the executables:** **code signing** of the Windows executables
       (SignPath, free for open source — once the repository is public) so SmartScreen does not
       scare non-technical users; a Windows Job Object as the worker's hard memory cap; an advisory

@@ -9,6 +9,9 @@ import sys
 from importlib.metadata import Distribution, distributions
 
 BUILD_ONLY = {"pyinstaller", "pyinstaller-hooks-contrib", "altgraph", "setuptools", "packaging"}
+# Installed with markitdown, left out of the executables (packaging/clearmd.spec, ADR-0032).
+NOT_SHIPPED = {"magika", "onnxruntime", "numpy", "pandas", "flatbuffers", "coloredlogs",
+               "humanfriendly", "sympy", "mpmath", "protobuf", "click"}  # fmt: skip
 
 
 def describe(distribution: Distribution) -> str:
@@ -39,7 +42,8 @@ def _decoded(data: bytes) -> str:
 
 def main() -> int:
     found = sorted(distributions(), key=lambda d: d.metadata["Name"].lower())
-    bundled = [d for d in found if d.metadata["Name"].lower() not in BUILD_ONLY]
+    left_out = BUILD_ONLY | NOT_SHIPPED
+    bundled = [d for d in found if d.metadata["Name"].lower() not in left_out]
     print("ClearMD bundles the following open-source software. Thank you to their authors.\n")
     separator = "\n\n" + "=" * 78 + "\n\n"
     print(separator.join(describe(d) for d in bundled))

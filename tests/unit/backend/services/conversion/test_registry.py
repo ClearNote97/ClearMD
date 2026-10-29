@@ -10,18 +10,20 @@ def test_every_supported_format_has_a_converter() -> None:
     from clearmd.backend.services.conversion.odt import OdtConverter
     from clearmd.backend.services.conversion.pdf import PdfConverter
     from clearmd.backend.services.conversion.tex import TexConverter
+    from clearmd.backend.services.conversion.xlsx import XlsxConverter
 
     registry = build_registry()
     assert isinstance(registry.for_format(FormatId.TEX), TexConverter)
     assert isinstance(registry.for_format(FormatId.ODT), OdtConverter)
     assert isinstance(registry.for_format(FormatId.PDF), PdfConverter)  # ADR-0030
-    others = set(FormatId) - {FormatId.TEX, FormatId.ODT, FormatId.PDF}
+    assert isinstance(registry.for_format(FormatId.XLSX), XlsxConverter)  # ADR-0032
+    others = set(FormatId) - {FormatId.TEX, FormatId.ODT, FormatId.PDF, FormatId.XLSX}
     assert all(isinstance(registry.for_format(fmt), MarkItDownConverter) for fmt in others)
 
 
 def test_all_formats_share_one_markitdown_instance() -> None:
     registry = build_registry()
-    assert registry.for_format(FormatId.XLSX) is registry.for_format(FormatId.DOCX)
+    assert registry.for_format(FormatId.PPTX) is registry.for_format(FormatId.DOCX)
 
 
 def test_a_format_without_converter_is_unsupported() -> None:
@@ -30,7 +32,7 @@ def test_a_format_without_converter_is_unsupported() -> None:
     assert raised.value.code is ErrorCode.UNSUPPORTED_FORMAT
 
 
-def test_the_real_registry_detects_content_with_magika() -> None:
+def test_the_real_registry_detects_content_by_signature() -> None:
     from support import DOCUMENTS_DIR
 
     registry = build_registry()

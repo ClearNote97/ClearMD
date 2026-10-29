@@ -17,11 +17,26 @@ ASSETS = ROOT / "src" / "clearmd" / "frontend" / "assets" / "logo"
 WINDOWS = sys.platform == "win32"
 
 datas = collect_data_files("clearmd", excludes=["**/README.md"])
-for package in ("magika", "markitdown", "trafilatura", "justext", "courlan", "htmldate"):
+for package in ("markitdown", "trafilatura", "justext", "courlan", "htmldate"):
     datas += collect_data_files(package)
 # importlib.metadata: ClearMD's version (in its summaries) and markitdown's plugin lookup.
-for distribution in ("clearmd", "markitdown", "magika"):
+for distribution in ("clearmd", "markitdown"):
     datas += copy_metadata(distribution)
+
+# A light executable (feature 010, ADR-0032): no magika and its model runtime (ClearMD detects
+# content by its own signatures), no pandas and numpy (its own Excel converter).
+HEAVY = ["magika", "onnxruntime", "numpy", "pandas"]
+# babel (through trafilatura's courlan) ships every language's data; ClearMD speaks two.
+BABEL_KEPT = ("root.dat", "en.dat", "es.dat")
+
+
+def light(datas):
+    def kept(entry) -> bool:
+        target = entry[0].replace("\\", "/")
+        if "babel/locale-data/" not in target:
+            return True
+        return target.rsplit("/", 1)[-1] in BABEL_KEPT
+    return [entry for entry in datas if kept(entry)]
 
 # The worker builds its converters from a name (``module:function``): import everything of ClearMD.
 # Pillow finds Tk through a module it imports by name (the window's images, ADR-0027).
@@ -34,12 +49,14 @@ def analysis(script: str) -> Analysis:  # noqa: F821
         pathex=[str(ROOT / "src")],
         datas=datas,
         hiddenimports=hidden,
-        excludes=["pytest", "mypy", "ruff"],
+        excludes=["pytest", "mypy", "ruff", *HEAVY],
+        runtime_hooks=[str(ROOT / "packaging" / "no_magika.py")],
         noarchive=False,
     )
 
 
 gui = analysis("launch_gui.py")
+gui.datas = light(gui.datas)
 gui_splash = Splash(  # noqa: F821
     str(ASSETS / "splash.png"),
     binaries=gui.binaries,
@@ -67,6 +84,7 @@ gui_exe = EXE(  # noqa: F821
 )
 
 cli = analysis("launch_cli.py")
+cli.datas = light(cli.datas)
 cli_exe = EXE(  # noqa: F821
     PYZ(cli.pure),  # noqa: F821
     cli.scripts,

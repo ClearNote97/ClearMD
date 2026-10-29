@@ -33,7 +33,7 @@ from clearmd.backend.use_cases.cancel import CancelToken
 REAL_REGISTRY = "clearmd.backend.services.conversion.registry:build_registry"
 POLL_SECONDS = 0.1
 JOIN_SECONDS = 5.0
-# Loading Python, markitdown and the magika model; generous for packaged apps and antivirus scans.
+# Loading Python and the converters' libraries; generous for packaged apps and antivirus scans.
 STARTUP_SECONDS = 120.0
 # Virtual memory the libraries reserve without using it (a loaded worker: ~1.4 GiB virtual for
 # ~170 MiB resident, mostly onnxruntime threads); the OS hard cap is the limit plus this.
