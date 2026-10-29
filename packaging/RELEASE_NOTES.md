@@ -1,5 +1,14 @@
 **ClearMD — documents to Markdown, 100 % local.** / **Documentos a Markdown, 100 % local.**
 
+**New in 0.4.0 / Novedades de la 0.4.0**
+- **A summary you can read at a glance**: how it went first, where your files are, what needs
+  your attention and what to do, names instead of long paths, the history folded. / **Un resumen
+  que se entiende de un vistazo**: primero cómo te fue, dónde están tus archivos, qué necesita tu
+  atención y qué hacer, nombres en vez de rutas largas, el historial plegado.
+- **The summary as a PDF too**, in the app's look: choose "Markdown + PDF" on the first step or
+  in Settings. / **El resumen también en PDF**, con el aspecto de la app: elige
+  "Markdown + PDF" en el primer paso o en Ajustes.
+
 **New in 0.3.0 / Novedades de la 0.3.0**
 - **PDFs come out readable**: words keep their spaces; headers, footers and page numbers that
   repeat on the pages are left out; paragraphs, footnotes and headings are found. / **Los PDF

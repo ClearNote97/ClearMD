@@ -47,6 +47,25 @@ relative paths, sections in a fixed order whatever happened. The author asked fo
   - in Settings too;
   - on the command line: `--summary-pdf`.
 
+### After review (code review, security audit and adversarial check of 009)
+
+- The headline's mark:
+  - ✅ when everything tried was converted. Files only left out (hidden, already Markdown,
+    unsupported) are listed, not a failure.
+  - ⚠️ when nothing was tried and something was left out.
+- A file's folder is its result's, inside `OutputMD`, whatever the output choice. A file left
+  out is placed the same way, so no absolute path is ever shown.
+- Singular and plural come from the catalog (`.one`, `.other`), in the summary, the command line
+  and the window. Counts carry the language's thousands mark, and the history still recognises
+  them.
+- The PDF:
+  - Widths are each character's advance, measured once per font (at most 256), so words are
+    spaced by the font.
+  - Text from the user's files is capped (names 200 characters, details 500), its middle left out.
+  - The table's header comes again on every page.
+- An older `Resumen_ClearMD.pdf` is removed whenever the PDF is not written again, only if it is
+  a regular file.
+
 ## Consequences
 
 - The summary answers "did it work, and what do I do?" in its first lines.

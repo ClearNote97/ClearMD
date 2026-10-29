@@ -172,3 +172,27 @@ def test_c9_9_the_table_header_comes_again_on_every_page(tmp_path: Path) -> None
         document.close()
     assert len(pages) >= 2
     assert all("Document Folder Result Format Time" in page for page in pages)
+
+
+def test_a9_3_the_converted_heading_never_ends_a_page_alone(tmp_path: Path) -> None:
+    failed = tuple(
+        ConversionOutcome(_item(tmp_path, f"f{n}.pdf", f"f{n}.md", FormatId.PDF),
+                          OutcomeStatus.FAILED, ErrorCode.CONVERSION_FAILED, "x " * 120)
+        for n in range(15)
+    )  # fmt: skip
+    done = tuple(
+        ConversionOutcome(_item(tmp_path, f"c{n}.pdf", f"c{n}.md", FormatId.PDF),
+                          OutcomeStatus.CONVERTED)
+        for n in range(2)
+    )  # fmt: skip
+    report = OutputRootReport(tmp_path / "ClearMD_Output", NOW, NOW, failed + done, (), False)
+    document = pdfium.PdfDocument(str(write(report)))
+    try:
+        for page in document:
+            lines = page.get_textpage().get_text_range().splitlines()
+            if "Document Folder Result Format Time" in lines:
+                index = lines.index("Document Folder Result Format Time")
+                assert any(line.startswith("c0.pdf") or line.startswith("c1.pdf")
+                           for line in lines[index + 1 :])  # fmt: skip
+    finally:
+        document.close()

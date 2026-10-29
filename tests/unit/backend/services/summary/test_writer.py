@@ -463,3 +463,22 @@ def test_c9_7_singular_and_plural(
     assert lines[2].startswith(headline)
     if language == "es" and converted == 1:
         assert "1 convertido · 0 omitidos · 2 con error" in lines[4]
+
+
+# --- Adversarial check of 009 (A9-*) ---------------------------------------------------------
+
+
+def test_a9_1_a_batch_of_thousands_stays_in_the_history(tmp_path: Path) -> None:
+    outcomes = tuple(
+        ConversionOutcome(_item(tmp_path, f"d{n}.txt", f"d{n}.md", FormatId.TXT),
+                          OutcomeStatus.CONVERTED)
+        for n in range(1500)
+    )  # fmt: skip
+    report = OutputRootReport(tmp_path / "ClearMD_Output", NOW, NOW, outcomes, (), False)
+    report.root.mkdir()
+    writer = MarkdownSummaryWriter(load_catalog("es"), version="0.1.0")
+    writer.write(report)
+    writer.write(report)
+    text = (report.root / "Resumen_ClearMD.md").read_text(encoding="utf-8")
+    history = text.split("<!-- clearmd:history -->\n", 1)[1]
+    assert history.startswith("- 2026-10-25 15:30 · ClearMD 0.1.0 · 1.500 convertidos · ")

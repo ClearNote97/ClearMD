@@ -158,14 +158,12 @@ def _print_summary(catalog: Catalog, report: BatchReport) -> None:
     for outcome in report.outcomes:
         count[outcome.status] += 1
     skipped = len(report.skipped) + count[OutcomeStatus.KEPT]
-    line = catalog.text(
-        "cli.summary",
-        converted=count[OutcomeStatus.CONVERTED],
-        skipped=skipped,
-        failed=count[OutcomeStatus.FAILED],
+    line = catalog.totals(
+        count[OutcomeStatus.CONVERTED],
+        skipped,
+        count[OutcomeStatus.FAILED],
+        count[OutcomeStatus.STOPPED],
     )
-    if count[OutcomeStatus.STOPPED]:
-        line += catalog.text("cli.summary_stopped", stopped=count[OutcomeStatus.STOPPED])
     print(line)
     for root in _output_roots(report):
         print(catalog.text("cli.results", path=_p(root)))

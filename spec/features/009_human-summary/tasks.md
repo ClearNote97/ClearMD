@@ -5,4 +5,4 @@
       (AC-01 – AC-07).
 - [x] **T03 — The PDF.** PDFium, DejaVu, the app's look, pages (AC-08, AC-09).
 - [x] **T04 — The choice.** The setting, step 1, Settings, `--summary-pdf` (AC-10).
-- [ ] **T05 — Close.** Screenshots, acceptance, docs, reviews, v0.4.0 (AC-11).
+- [x] **T05 — Close.** Screenshots, acceptance, docs, reviews, v0.4.0 (AC-11).

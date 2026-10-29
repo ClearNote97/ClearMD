@@ -655,14 +655,12 @@ class Presenter:
         for root in report.unwritten_pdfs:
             detail = self.catalog.text("gui.result.no_pdf_summary")
             rows.append(ResultRow(*_shown(root), detail, FOLDER))
-        counts = self.catalog.text(
-            "cli.summary",
-            converted=count[OutcomeStatus.CONVERTED],
-            skipped=len(report.skipped) + count[OutcomeStatus.KEPT],
-            failed=count[OutcomeStatus.FAILED],
+        counts = self.catalog.totals(
+            count[OutcomeStatus.CONVERTED],
+            len(report.skipped) + count[OutcomeStatus.KEPT],
+            count[OutcomeStatus.FAILED],
+            count[OutcomeStatus.STOPPED],
         )
-        if count[OutcomeStatus.STOPPED]:
-            counts += self.catalog.text("cli.summary_stopped", stopped=count[OutcomeStatus.STOPPED])
         headline = self.catalog.text(f"gui.state.{state.value}")
         stats = [
             self._stat("gui.result.stat_converted", count[OutcomeStatus.CONVERTED], Tone.ACCENT),

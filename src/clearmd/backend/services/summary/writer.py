@@ -27,7 +27,8 @@ HISTORY_END = "<!-- /clearmd:history -->"
 HISTORY_LIMIT = 200
 NOTE_ITEMS = 20
 # Only lines ClearMD itself wrote survive into the history: date · ClearMD version · totals.
-_HISTORY_LINE = re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2} · ClearMD [0-9A-Za-z.+-]+ · [\w ·]+")
+# The counts may have a thousands mark (1,500 / 1.500): a big batch stays in the history too.
+_HISTORY_LINE = re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2} · ClearMD [0-9A-Za-z.+-]+ · [\w ·.,]+")
 
 
 def _code(text: str) -> str:

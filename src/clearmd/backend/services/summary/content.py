@@ -98,9 +98,7 @@ class SummaryBuilder:
         self._version = version
 
     def plural(self, key: str, count: int, **values: object) -> str:
-        """English and Spanish need two forms: one, and every other number."""
-        form = "one" if count == 1 else "other"
-        return self._catalog.text(f"{key}.{form}", count=self._catalog.count(count), **values)
+        return self._catalog.plural(key, count, **values)
 
     def build(self, report: OutputRootReport) -> SummaryContent:
         by = {kind: [o for o in report.outcomes if o.status is kind] for kind in OutcomeStatus}
@@ -162,15 +160,13 @@ class SummaryBuilder:
     def _batch_line(
         self, report: OutputRootReport, by: dict[OutcomeStatus, list[ConversionOutcome]]
     ) -> str:
-        parts = [
-            report.started_at.strftime(DATE_FORMAT),
-            f"ClearMD {self._version}",
-            self.plural("summary.count.converted", len(by[OutcomeStatus.CONVERTED])),
-            self.plural("summary.count.skipped", len(report.skipped) + len(by[OutcomeStatus.KEPT])),
-            self.plural("summary.count.failed", len(by[OutcomeStatus.FAILED])),
-        ]
-        if by[OutcomeStatus.STOPPED]:
-            parts.append(self.plural("summary.count.stopped", len(by[OutcomeStatus.STOPPED])))
+        totals = self._catalog.totals(
+            len(by[OutcomeStatus.CONVERTED]),
+            len(report.skipped) + len(by[OutcomeStatus.KEPT]),
+            len(by[OutcomeStatus.FAILED]),
+            len(by[OutcomeStatus.STOPPED]),
+        )
+        parts = [report.started_at.strftime(DATE_FORMAT), f"ClearMD {self._version}", totals]
         if report.cancelled:
             parts.append(self._catalog.text("summary.batch_cancelled"))
         return " · ".join(parts)

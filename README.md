@@ -131,7 +131,8 @@ _Plus the failed and skipped files with a plain-words reason, and the history of
 | **006** CI + Windows/Linux executables | ✅ done | CI on Linux and Windows · executables checked by a real batch |
 | **007** Free navigation, checkboxes, a smoother window | ✅ done | v0.2.0 · reviewed |
 | **008** PDF quality: PDFium reads, ClearMD cleans | ✅ done | v0.3.0 · reviewed |
-| **009–010** A human summary, a light executable | ⏳ | |
+| **009** A summary in human language, and its PDF | ✅ done | v0.4.0 · reviewed · [samples](./docs/screenshots/009/) |
+| **010** A light executable | ⏳ | |
 | **011–012** PySide6 and flet apps | ⏳ | |
 
 Full plan in the [roadmap](./spec/roadmap.md). ClearMD has a **command line** and its first **desktop app**

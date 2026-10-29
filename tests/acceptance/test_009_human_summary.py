@@ -215,3 +215,15 @@ def test_c9_6_the_setting_decides_and_a_flag_overrides_it(
     assert (workdir / "ClearMD_Output" / "Resumen_ClearMD.pdf").is_file()  # the setting
     main([str(workdir / "docs"), "--quiet", "--overwrite", "--no-summary-pdf"])
     assert not (workdir / "ClearMD_Output" / "Resumen_ClearMD.pdf").exists()  # the flag
+
+
+def test_a9_2_a_file_left_out_is_placed_like_the_others_with_an_output_folder(
+    workdir: Path,
+) -> None:
+    put(workdir, "sample.txt", "thesis/a.txt")
+    put(workdir, "sample.txt", "thesis/b.xyz")
+    elsewhere = workdir / "results"
+    elsewhere.mkdir()
+    main([str(workdir / "docs"), "--quiet", "--output-root", str(elsewhere)])
+    text = (elsewhere / "ClearMD_Output" / "Resumen_ClearMD.md").read_text(encoding="utf-8")
+    assert "- `b.xyz` in `docs/thesis` — " in text and str(workdir) not in text

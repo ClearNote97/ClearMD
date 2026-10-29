@@ -197,7 +197,8 @@ def _latin(text: str) -> str:
 def _shown(text: str, limit: int = MAX_SHOWN) -> str:
     """Text from the user's files, drawn as it may be printed; a very long one with its middle
     left out (a folder 4,000 characters deep is still one line or two, security audit of 009)."""
-    shown = " ".join(printable(text).split())
+    assert limit >= 3
+    shown = " ".join(printable(text[: limit * 8]).split())  # never the whole of a huge text
     if len(shown) <= limit:
         return shown
     half = (limit - 1) // 2
@@ -238,7 +239,8 @@ def _fit(text: str, size: float, width: float, bold: bool = False) -> str:
     """One cell's text, cut with "…" when it does not fit."""
     if _width(text, size, bold) <= width:
         return text
-    return text[: _cut(text, size, width - _width("…", size, bold), bold)] + "…"
+    room = width - _width("…", size, bold)
+    return text[: _cut(text, size, room, bold)] + "…" if room > 0 else ""
 
 
 class PdfReport:
@@ -379,6 +381,7 @@ class PdfReport:
                 x += width
             canvas.y -= 17
 
+        canvas.room(17 + 18)  # the header and a first row together, never the header alone
         pages = canvas.pages
         row(header, bold=True, ground=SHAPE)
         for converted in content.converted:

@@ -80,8 +80,8 @@ def atomic_write_bytes(target: Path, data: bytes, *, inside: Path) -> None:
 def remove_regular_file(target: Path, *, inside: Path) -> None:
     """Remove ``target`` (within ``inside``) if it is a regular file: never a link, a junction or
     a folder, and never through one."""
+    status = os.lstat(target)  # none: FileNotFoundError, and no folder is ever made for it
     _real_folders_down_to(target.parent, inside)
-    status = os.lstat(target)
     if stat.S_ISREG(status.st_mode) and not _is_link(status):
         target.unlink()
 

@@ -8,6 +8,7 @@ the plan is put in cost order (T12).
 from collections.abc import Callable, Sequence
 from dataclasses import replace
 from pathlib import Path
+from typing import Any
 
 from clearmd.backend.schemas.errors import SkipReason
 from clearmd.backend.schemas.events import BatchEvent, PlanReady
@@ -48,6 +49,11 @@ def _label(candidate: Candidate, detection: Detection) -> str:
     return candidate.path.suffix.lstrip(".").lower() or detection.format.value
 
 
+def _found(candidate: Candidate) -> dict[str, Any]:
+    """Where a file left out was found: its summary places it as its results would have been."""
+    return {"input": candidate.input, "input_is_dir": candidate.input_is_dir}
+
+
 def build_plan(
     inputs: Sequence[Path],
     *,
@@ -81,7 +87,12 @@ def build_plan(
         detection = detector.detect(candidate.path)
         if detection is None:
             skipped.append(
-                SkippedItem(candidate.path, SkipReason.UNSUPPORTED_FORMAT, output_root=root)
+                SkippedItem(
+                    candidate.path,
+                    SkipReason.UNSUPPORTED_FORMAT,
+                    output_root=root,
+                    **_found(candidate),
+                )
             )
             continue
         size = memory_size = candidate.size
@@ -93,7 +104,12 @@ def build_plan(
                     reason, measured, limit = unsafe
                     skipped.append(
                         SkippedItem(
-                            candidate.path, reason, measured=measured, limit=limit, output_root=root
+                            candidate.path,
+                            reason,
+                            measured=measured,
+                            limit=limit,
+                            output_root=root,
+                            **_found(candidate),
                         )
                     )
                     continue
@@ -116,6 +132,7 @@ def build_plan(
                     measured=needed,
                     limit=limits.worker_memory,
                     output_root=root,
+                    **_found(candidate),
                 )
             )
             continue

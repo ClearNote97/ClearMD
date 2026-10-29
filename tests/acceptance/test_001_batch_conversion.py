@@ -539,7 +539,7 @@ def test_ac_31_messages_follow_lang(workdir: Path, capsys: pytest.CaptureFixture
     source = put(workdir, "sample.txt", "notas.txt")
     assert main([str(source), "--lang", "es"]) == 0
     captured = capsys.readouterr()
-    assert "1 convertidos · 0 omitidos · 0 con error" in captured.out
+    assert "1 convertido · 0 omitidos · 0 con error" in captured.out  # singular (feature 009)
     assert "Resultados:" in captured.out
     assert _summary(workdir).startswith("# Resumen de ClearMD")
 
@@ -550,7 +550,7 @@ def test_ac_31_the_language_setting_is_used_without_lang(
     _settings('language = "es"\n')
     source = put(workdir, "sample.txt", "notas.txt")
     assert main([str(source)]) == 0
-    assert "convertidos" in capsys.readouterr().out
+    assert "1 convertido · " in capsys.readouterr().out
 
 
 def test_ac_35_exit_codes(workdir: Path) -> None:
