@@ -77,6 +77,10 @@ class TtkApp:
         self.root.minsize(MIN_WIDTH, MIN_HEIGHT)
         self.root.geometry(START_SIZE)
         _forget_dead_style()
+        # ttkbootstrap speaks to tkinter's default root, not to the one it is given: this window
+        # is it, so its styles and messages (Tcl's msgcat) are made in this interpreter, never in
+        # one left by an earlier window (CI on Windows, Python 3.12).
+        tk._default_root = self.root  # type: ignore[attr-defined]
         self.style = tb.Style()
         register_themes(self.style)
         self.fonts = self._fonts()
