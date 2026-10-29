@@ -57,12 +57,19 @@ def _real_folders_down_to(folder: Path, inside: Path) -> None:
 
 def atomic_write(target: Path, text: str, *, inside: Path) -> None:
     """Write UTF-8 with LF endings at ``target`` (within ``inside``); never half-written."""
+    # A lone surrogate (from a broken source) is replaced rather than failing the file.
+    atomic_write_bytes(
+        target, text.replace("\r\n", "\n").encode("utf-8", errors="replace"), inside=inside
+    )
+
+
+def atomic_write_bytes(target: Path, data: bytes, *, inside: Path) -> None:
+    """Write ``data`` at ``target`` (within ``inside``, never through a link), never halfway."""
     _real_folders_down_to(target.parent, inside)
     descriptor, temporary = tempfile.mkstemp(prefix=".", suffix=TEMP_SUFFIX, dir=target.parent)
     try:
         with os.fdopen(descriptor, "wb") as stream:
-            # A lone surrogate (from a broken source) is replaced rather than failing the file.
-            stream.write(text.replace("\r\n", "\n").encode("utf-8", errors="replace"))
+            stream.write(data)
         os.chmod(temporary, 0o666 & ~_UMASK)  # mkstemp creates 0600; results are normal files
         os.replace(temporary, target)
     except BaseException:

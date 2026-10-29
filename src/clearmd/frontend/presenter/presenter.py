@@ -34,7 +34,7 @@ from clearmd.backend.schemas.models import (
     OutcomeStatus,
     PlannedConversion,
 )
-from clearmd.backend.schemas.settings import Settings, valid_path_setting
+from clearmd.backend.schemas.settings import CHOICES, Settings, valid_path_setting
 from clearmd.frontend.presenter.icons import FOLDER, icon_for, icon_of_format
 from clearmd.frontend.presenter.models import (
     InputRow,
@@ -347,6 +347,7 @@ class Presenter:
                     on_event=on_event,
                     cancel=token,
                     language=language,
+                    summary_pdf=self.settings.summary_format == "markdown_pdf",
                 )
             except Exception as error:  # noqa: BLE001 -- told to the user, the app goes on
                 self._later(generation, partial(self._unexpected, error))
@@ -405,6 +406,14 @@ class Presenter:
         if self._report is not None:  # the results, in the new language
             self._view.show_result(self._result_view(self._report, self.state))
         self._set(self.state)
+
+    def choose_summary_format(self, summary_format: str) -> None:
+        """Markdown, or Markdown + PDF: chosen on step 1 and remembered (ADR-0031)."""
+        valid = summary_format in CHOICES["summary_format"]
+        if not valid or summary_format == self.settings.summary_format or self.state in WORKING:
+            self._show_output()  # the radio buttons show the choice as it is
+            return
+        self.save_settings(replace(self.settings, summary_format=summary_format))
 
     def restore_defaults(self) -> None:
         self.save_settings(Settings())
@@ -533,11 +542,19 @@ class Presenter:
         suggestion = Path(remembered) if remembered else None
         if self._output_folder is None:
             label = self.catalog.text("gui.output.next_to_detail")
-            choice = OutputChoice(OutputMode.NEXT_TO, None, suggestion, label)
+            choice = OutputChoice(
+                OutputMode.NEXT_TO, None, suggestion, label, self.settings.summary_format
+            )
         else:
             path = printable(str(self._output_folder))
             label = self.catalog.text("gui.output.folder", path=path)
-            choice = OutputChoice(OutputMode.FOLDER, self._output_folder, suggestion, label)
+            choice = OutputChoice(
+                OutputMode.FOLDER,
+                self._output_folder,
+                suggestion,
+                label,
+                self.settings.summary_format,
+            )
         self._view.show_output_choice(choice)
 
     def _show_progress(self) -> None:
@@ -633,6 +650,9 @@ class Presenter:
             rows.append(ResultRow(*_shown(skipped.path), detail, icon))
         for root in report.unwritten_summaries:
             detail = self.catalog.text("gui.result.no_summary")
+            rows.append(ResultRow(*_shown(root), detail, FOLDER))
+        for root in report.unwritten_pdfs:
+            detail = self.catalog.text("gui.result.no_pdf_summary")
             rows.append(ResultRow(*_shown(root), detail, FOLDER))
         counts = self.catalog.text(
             "cli.summary",

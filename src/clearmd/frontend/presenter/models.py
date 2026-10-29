@@ -46,6 +46,7 @@ class OutputChoice:
     folder: Path | None  # the chosen folder, in FOLDER mode
     suggestion: Path | None  # the folder remembered from last time, offered when picking
     label: str
+    summary_format: str = "markdown"  # or "markdown_pdf" (ADR-0031)
 
 
 class RowKind(StrEnum):

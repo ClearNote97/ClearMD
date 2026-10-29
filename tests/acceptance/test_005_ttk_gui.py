@@ -446,7 +446,7 @@ def test_ac_15_the_settings_window_saves_settings_toml_and_applies_it(
     assert isinstance(dialog, SettingsDialog)
     assert set(dialog.values) == {
         "language", "theme", "open_output_when_done", "on_existing_output", "recursive",
-        "html_strategy", "show_welcome",
+        "html_strategy", "show_welcome", "summary_format",  # the last one: feature 009
     }  # fmt: skip
     dialog.values["language"].set("Español")
     dialog.values["html_strategy"].set("Only the article")

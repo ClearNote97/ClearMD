@@ -849,3 +849,23 @@ def test_c7_4_an_edit_that_changes_nothing_keeps_the_plan() -> None:
     presenter.remove_input(Path("/not-listed"))
     presenter.choose_output_next_to()  # already next to the originals
     assert state(view).state is AppState.WAITING_DECISION
+
+
+# --- Feature 009: the summary's format ---------------------------------------------------------
+
+
+def test_the_summary_format_is_chosen_remembered_and_sent_to_the_batch() -> None:
+    presenter, view, fake, _ = make()
+    assert view.last("output").summary_format == "markdown"
+    presenter.choose_summary_format("markdown_pdf")
+    assert fake.settings.summary_format == "markdown_pdf"
+    assert view.last("output").summary_format == "markdown_pdf"
+    presenter.choose_summary_format("docx")  # not a format: nothing changes
+    assert fake.settings.summary_format == "markdown_pdf"
+    presenter.add_paths([Path("/docs")])
+    presenter.press_primary()
+    view.drain()
+    presenter.go_to(3)
+    presenter.press_primary(False)
+    view.drain()
+    assert fake.run_calls[-1]["summary_pdf"] is True

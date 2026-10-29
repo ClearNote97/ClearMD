@@ -321,7 +321,7 @@ def test_settings_save_applies_the_language_and_theme(app: TtkApp) -> None:
     assert isinstance(dialog, SettingsDialog)
     assert set(dialog.values) == {
         "language", "theme", "open_output_when_done", "on_existing_output", "recursive",
-        "html_strategy", "show_welcome",
+        "html_strategy", "show_welcome", "summary_format",
     }  # fmt: skip
     dialog.values["language"].set("Español")
     dialog.values["theme"].set("Dark")

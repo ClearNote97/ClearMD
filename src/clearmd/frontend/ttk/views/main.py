@@ -37,6 +37,7 @@ class MainView(ttk.Frame):
         on_clear: Callable[[], None],
         on_next_to: Callable[[], None],
         on_pick_folder: Callable[[], None],
+        on_summary: Callable[[str], None] = lambda _format: None,
     ) -> None:
         super().__init__(parent, style=PAGE)
         self._on_remove = on_remove
@@ -106,6 +107,27 @@ class MainView(ttk.Frame):
         self._label(self.pick, "gui.main.pick_folder")
         self.output_label = ttk.Label(output, style=MUTED, anchor="w")
         self.output_label.pack(fill="x", pady=(SPACE, 0))
+        # The summary's format, before starting (ADR-0031): remembered, as in Settings.
+        summary = ttk.Frame(output, style="TFrame")
+        summary.pack(fill="x", pady=(GAP, 0))
+        summary_title = ttk.Label(summary, font=fonts["strong"])
+        summary_title.pack(side="left")
+        self._label(summary_title, "gui.main.summary_title")
+        self.summary_format = tk.StringVar(value="markdown")
+        self.summary_buttons = []
+        for value, key in (
+            ("markdown", "gui.main.summary_md"),
+            ("markdown_pdf", "gui.main.summary_pdf"),
+        ):
+            button = ttk.Radiobutton(
+                summary,
+                variable=self.summary_format,
+                value=value,
+                command=lambda: on_summary(self.summary_format.get()),
+            )
+            button.pack(side="left", padx=(GAP, 0))
+            self._label(button, key)
+            self.summary_buttons.append(button)
 
     # --- What the presenter shows ------------------------------------------------------------
 
@@ -121,6 +143,7 @@ class MainView(ttk.Frame):
     def show_output_choice(self, choice: OutputChoice) -> None:
         self.output_mode.set(choice.mode.value)
         self.output_label.configure(text=choice.label)
+        self.summary_format.set(choice.summary_format)
 
     def apply_language(self, catalog: Catalog) -> None:
         for widget, key in self._texts:

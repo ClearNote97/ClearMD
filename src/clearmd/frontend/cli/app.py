@@ -72,6 +72,9 @@ def build_parser(catalog: Catalog) -> argparse.ArgumentParser:
     parser.add_argument(
         "--html", choices=[strategy.value for strategy in Strategy], help=help_("cli.help.html")
     )
+    parser.add_argument(
+        "--summary-pdf", action="store_true", default=None, help=help_("cli.help.summary_pdf")
+    )
     parser.add_argument("--dry-run", action="store_true", help=help_("cli.help.dry_run"))
     parser.add_argument("--open", action="store_true", help=help_("cli.help.open"))
     parser.add_argument("--lang", choices=SUPPORTED_LANGUAGES, help=help_("cli.help.lang"))
@@ -165,6 +168,8 @@ def _print_summary(catalog: Catalog, report: BatchReport) -> None:
         print(catalog.text("cli.results", path=_p(root)))
     for root in report.unwritten_summaries:
         print(catalog.text("cli.summary_not_written", path=_p(root)), file=sys.stderr)
+    for root in report.unwritten_pdfs:
+        print(catalog.text("cli.pdf_not_written", path=_p(root)), file=sys.stderr)
 
 
 def _summary_roots(report: BatchReport) -> list[Path]:
@@ -264,7 +269,13 @@ def _decision(
 
 
 def _run_cancellable(
-    catalog: Catalog, plan: BatchPlan, decision: Decision, progress: _Progress, stream: TextIO
+    catalog: Catalog,
+    plan: BatchPlan,
+    decision: Decision,
+    progress: _Progress,
+    stream: TextIO,
+    *,
+    summary_pdf: bool = False,
 ) -> BatchReport:
     """Run the batch in a thread; Ctrl+C cancels it at once and its summary is still written."""
     cancel = CancelToken()
@@ -282,6 +293,7 @@ def _run_cancellable(
                 on_event=progress,
                 cancel=cancel,
                 language=catalog.language,
+                summary_pdf=summary_pdf,
             )
         except BaseException as error:  # re-raised in the main thread
             errors.append(error)
@@ -366,7 +378,8 @@ def _main(argv: Sequence[str] | None) -> int:
     if decision is None:
         return EXIT_DECISION_REQUIRED
     progress = _Progress(catalog, quiet=args.quiet, stream=err)
-    report = _run_cancellable(catalog, plan, decision, progress, err)
+    summary_pdf = bool(args.summary_pdf) or settings.summary_format == "markdown_pdf"
+    report = _run_cancellable(catalog, plan, decision, progress, err, summary_pdf=summary_pdf)
     _print_summary(catalog, report)
     if args.open:
         for root in _summary_roots(report):

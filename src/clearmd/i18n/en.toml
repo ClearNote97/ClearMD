@@ -92,6 +92,7 @@ quiet = "show only the summary and errors"
 dry_run = "show the plan and write nothing"
 open = "open the results folder(s) when done"
 lang = "language for this run (default: the language setting, English)"
+summary_pdf = "also write the summary as a PDF, Resumen_ClearMD.pdf (default: the summary_format setting)"
 
 [cli]
 progress = "[{index}/{total}] {name}"
@@ -120,6 +121,7 @@ unexpected_error = "Something unexpected went wrong and ClearMD stopped: {detail
 time_left = "{duration} left"
 warning_slow = "⚠ {name} — may take more than {limit} ({estimate}) and be stopped"
 cannot_open = "ClearMD could not open {path}. Open it from your file browser."
+pdf_not_written = "⚠ The PDF summary in {path} could not be written; the Markdown summary is there."
 
 [time]
 under_a_minute = "less than a minute"
@@ -285,6 +287,7 @@ again = "Convert more"
 all_good = "Every file was converted. Your results are in the ClearMD_Output folder."
 problems = "What needs your attention"
 column_what = "What happened"
+no_pdf_summary = "the PDF summary could not be written there; the Markdown one was."
 
 [gui.settings]
 not_saved = "ClearMD could not save the settings. Your changes apply until you close it."
@@ -314,6 +317,10 @@ welcome_help = "The three steps, each time ClearMD opens."
 restore = "Restore defaults"
 save = "Save"
 cancel = "Cancel"
+summary = "Summary format"
+summary_help = "Resumen_ClearMD.md always; with PDF, Resumen_ClearMD.pdf too, to read or print."
+summary_markdown = "Markdown"
+summary_markdown_pdf = "Markdown + PDF"
 
 [gui.help]
 title = "How to use ClearMD"
@@ -395,3 +402,6 @@ pick_folder_title = "Choose a folder"
 pick_output_title = "Where should the results go?"
 documents = "Documents"
 deselect = "Deselect all"
+summary_title = "Summary:"
+summary_md = "Markdown"
+summary_pdf = "Markdown + PDF"

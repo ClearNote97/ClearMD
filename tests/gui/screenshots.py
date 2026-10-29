@@ -171,7 +171,9 @@ def converting(app: TtkApp, held: Held) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Screenshots of the ttk GUI")
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--only", help="comma-separated screens (default: all)")
     args = parser.parse_args()
+    only = set(args.only.split(",")) if args.only else None
     demo_files()
     with virtual_display(WIDTH + 64, HEIGHT + 64) as display:
         if display is None:
@@ -195,10 +197,14 @@ def main() -> int:
                     ("1-choose-compact", FakeBackend(plan=PLAN), compact),
                 ]
                 for name, fake, prepare in shots:
+                    if only is not None and name not in only:
+                        continue
                     app = window(language, theme, fake)
                     prepare(app)
                     capture(app, args.out / f"{name}-{theme}-{language}.png")
                     app.close()
+                if only is not None:
+                    continue
                 app = window(language, theme, FakeBackend(plan=PLAN), welcome=True)
                 welcome(app)
                 capture(app, args.out / f"0-welcome-{theme}-{language}.png")

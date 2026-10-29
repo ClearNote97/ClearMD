@@ -108,9 +108,11 @@ def run_batch(
     on_event: Callable[[BatchEvent], None] | None = None,
     cancel: CancelToken | None = None,
     language: str = "en",
+    summary_pdf: bool = False,
 ) -> BatchReport:
     """Convert every planned file in the worker process, write the results and, in each
-    ClearMD_Output folder, its Resumen_ClearMD.md (also when the batch was cancelled)."""
+    ClearMD_Output folder, its Resumen_ClearMD.md (also when the batch was cancelled), and its
+    Resumen_ClearMD.pdf when ``summary_pdf`` (ADR-0031)."""
     runner = composition.build_runner(composition.default_limits())
     try:
         report = execute_plan(
@@ -125,14 +127,24 @@ def run_batch(
     finally:
         runner.close()
     writer = composition.build_summary_writer(language)
+    reporter = composition.build_pdf_report(language) if summary_pdf else None
     unwritten: list[Path] = []
+    unwritten_pdfs: list[Path] = []
     for root_report in by_output_root(report):
         try:
             writer.write(root_report)
         except (OSError, ValueError):  # ValueError: e.g. text that cannot be encoded
             if not _root_was_refused(root_report):  # those already say why, file by file
                 unwritten.append(root_report.root)
-    return replace(report, unwritten_summaries=tuple(unwritten))
+            continue
+        if reporter is not None:
+            try:
+                reporter.write(root_report)
+            except Exception:  # noqa: BLE001 -- the Markdown is written: the batch goes on, told
+                unwritten_pdfs.append(root_report.root)
+    return replace(
+        report, unwritten_summaries=tuple(unwritten), unwritten_pdfs=tuple(unwritten_pdfs)
+    )
 
 
 def _root_was_refused(root_report: OutputRootReport) -> bool:

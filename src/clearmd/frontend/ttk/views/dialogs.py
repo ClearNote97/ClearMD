@@ -131,6 +131,9 @@ class SettingsDialog(Dialog):
                 v: text(f"gui.settings.existing_{v}") for v in ("ask", "overwrite", "skip")
             },
             "html_strategy": {v: text(f"gui.settings.html_{v}") for v in ("full", "article")},
+            "summary_format": {
+                v: text(f"gui.settings.summary_{v}") for v in ("markdown", "markdown_pdf")
+            },
         }
         self.values: dict[str, tk.Variable] = {}
         self._fonts = fonts
@@ -141,6 +144,7 @@ class SettingsDialog(Dialog):
             ("on_existing_output", "existing"),
             ("recursive", "recursive"),
             ("html_strategy", "html"),
+            ("summary_format", "summary"),
             ("show_welcome", "welcome"),
         )
         self.body.columnconfigure(0, weight=1)

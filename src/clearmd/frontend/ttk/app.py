@@ -153,6 +153,7 @@ class TtkApp:
             on_clear=lambda: self.presenter.clear_inputs(),
             on_next_to=lambda: self.presenter.choose_output_next_to(),
             on_pick_folder=self.pick_output_folder,
+            on_summary=lambda value: self.presenter.choose_summary_format(value),
         )
         self.review = ReviewView(page, fonts=self.fonts)
         self.converting = ConvertView(page, fonts=self.fonts)
@@ -387,6 +388,7 @@ class TtkApp:
             (main.next_to, Action.CHOOSE_OUTPUT),
             (main.in_folder, Action.CHOOSE_OUTPUT),
             (main.pick, Action.CHOOSE_OUTPUT),
+            *((button, Action.CHOOSE_OUTPUT) for button in main.summary_buttons),
             (self.rail.settings, Action.SETTINGS),
             (self.rail.help, Action.HELP),
         ):

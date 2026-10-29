@@ -9,6 +9,7 @@ from clearmd.backend.services.clock import SystemClock
 from clearmd.backend.services.detection.chain import ChainDetector
 from clearmd.backend.services.detection.content_policy import ExtensionlessOnly
 from clearmd.backend.services.detection.extension import ExtensionDetector
+from clearmd.backend.services.summary.pdf_report import PdfReport
 from clearmd.backend.services.summary.writer import MarkdownSummaryWriter
 from clearmd.backend.services.worker.supervisor import REAL_REGISTRY, WorkerRunner
 from clearmd.i18n import load_catalog
@@ -42,3 +43,7 @@ def build_clock() -> SystemClock:
 
 def build_summary_writer(language: str) -> MarkdownSummaryWriter:
     return MarkdownSummaryWriter(load_catalog(language), version=version("clearmd"))
+
+
+def build_pdf_report(language: str) -> PdfReport:
+    return PdfReport(load_catalog(language), version=version("clearmd"))

@@ -36,8 +36,10 @@ relative paths, sections in a fixed order whatever happened. The author asked fo
   - It holds the same content, in the app's look: the teal band, the status marks drawn as
     coloured circles, the table.
   - Its text is real and selectable. It has no links and no actions.
-  - It is written with PDFium (already bundled, ADR-0030), with DejaVu Sans embedded (its license
-    ships with it).
+  - It is written with PDFium (already bundled, ADR-0030) in Helvetica, a PDF standard font every
+    reader has, so nothing is embedded and the file weighs a few KB. It draws the Windows Latin
+    characters (all of English and Spanish). Any other character in a name is drawn as "?"; the
+    Markdown keeps the name whole. Embedding a font would add about 400 KB to every summary.
   - If it cannot be written, the Markdown still is, and the batch says the summary was not written
     there.
 - **The format is a setting**, `summary_format` = `markdown` (default) or `markdown_pdf`:
@@ -48,7 +50,6 @@ relative paths, sections in a fixed order whatever happened. The author asked fo
 ## Consequences
 
 - The summary answers "did it work, and what do I do?" in its first lines.
-- The PDF adds about 400 KB per output folder (the embedded font) and two font files to the
-  executable (about 1.4 MB).
+- The PDF adds a few KB per output folder and nothing to the executable.
 - The summary's tests change. Its guarantees (escaping, history, the planted-link checks) stay,
   with their tests.
