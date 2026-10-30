@@ -40,10 +40,8 @@ SIZE_CHANGE = 0.1  # text this much larger or smaller is another block (a captio
 MIN_LETTER_SHARE = 0.6  # a heading is words: a formula in a large font is not one
 
 _DIGITS = re.compile(r"\d+")
-# A table of contents' entry ends with its leaders and its page: "Encuesta ....... 16" (013).
-_TOC_ENTRY = re.compile(
-    r"(?:\.{4,}|…{2,}|(?:\. ){4,})\s*(?:\d{1,5}|[ivxlcdm]{1,8}|[IVXLCDM]{1,8})$"
-)
+# A table of contents' entry ends with its page, after leaders: "Encuesta ....... 16" (013).
+_TOC_PAGE = re.compile(r"(?<![\w])(?:\d{1,5}|[ivxlcdm]{1,8}|[IVXLCDM]{1,8})$")
 # A table's or a figure's caption starts its own block (013): "Table 3: …", "Figura 2. …".
 _CAPTION = re.compile(
     r"(?:Table|Tabla|Cuadro|Figure|Figura|Fig\.|Gráfico|Gráfica|Ilustración)\s+[0-9IVXLC]+[.:]\s"
@@ -171,7 +169,7 @@ def _without_running(
         edges = _edges(lines)
         keys = set()
         for index, line in enumerate(lines):
-            if line.image:
+            if _is_block(line):
                 continue  # a picture is never a running line: a logo stays (review of 012)
             if index not in edges:
                 in_body.add(_shape(line.text))
@@ -198,7 +196,7 @@ def _without_running(
         for index, line in enumerate(lines):
             at_end = index in (0, len(lines) - 1) and _in_margin(line, heights[page])
             number = _page_number(line.text) if at_end else None
-            if line.image:
+            if _is_block(line):
                 out.append(line)
             elif number is not None and (number[0], number[1] - page) in numbering:
                 removed += 1
@@ -310,7 +308,6 @@ class _Writer:
         self._level = 0
         self._typical = 80.0  # a full line's length on this page, in characters
         self._held: list[str] = []  # footnotes, written once the paragraph they cut ends
-        self._caption = False  # the paragraph is a caption: its table or picture follows it
         self.headings = 0
 
     # --- Blocks ----------------------------------------------------------------------------
@@ -333,7 +330,6 @@ class _Writer:
         kind = self._kind
         self._parts = []
         self._kind = ""
-        self._caption = False
         if kind != "heading" and ended:
             self._release()
 
@@ -365,35 +361,19 @@ class _Writer:
     # --- Lines -----------------------------------------------------------------------------
 
     def add(self, line: Line) -> None:
-        if line.equation:  # a display equation: its own block, its rows kept (013)
+        block = _block_markdown(line)
+        if block is not None:  # a table, an equation, a picture: its own block (012, 013)
+            self._flush()  # after the text above it, in the page's order (review of 013)
+            self.blocks.append(block)
+            self._last = None  # no gap is measured from a block
+            return
+        if _CAPTION.match(line.text):  # "Table 3: …": its own paragraph, its table after it
             self._flush()
-            code = "\n".join(line.equation)
-            fence = fence_for(code)
-            self.blocks.append(f"{MARK}{fence}\n{code}\n{MARK}{fence}")
-            self._last = None
-            return
-        if line.table:  # a table found on the page: its own block (013)
-            if self._kind != "text" or self._ended_sentence() or self._caption:
-                self._flush()
-            self.blocks.append(_table_block(line.table))
-            self._last = None  # a sentence it cut goes on after it, as across a page
-            return
-        if line.image:  # a picture: its own block, where it stands on the page (012)
-            self._flush()  # after the text above it ("Figure 1 - Sales by region")
-            self.blocks.append(f"{MARK}![]({link_target(line.image)})")
-            self._last = None
-            return
-        if _CAPTION.match(line.text):
-            if self._kind == "text" and not self._ended_sentence():
-                self.blocks.append(escape_text(line.text))  # the paragraph goes on after it
-                self._last = None
-                return
-            self._flush()
-            self._kind, self._caption = "text", True
+            self._kind = "text"
             self._parts.append(line.text)
             self._last = line
             return
-        entry = _TOC_ENTRY.search(line.text) is not None
+        entry = _toc_entry(line.text)
         last = self._last
         if entry and self._kind == "text" and last is not None and self._short(last):
             self._flush()  # its title ("Índice") above the first entry, in the body's size
@@ -550,11 +530,41 @@ def _table_block(rows: tuple[tuple[str, ...], ...]) -> str:
     return "\n".join(lines)
 
 
+def _is_block(line: Line) -> bool:
+    """A picture, a table or an equation: no text of its own to weigh, repeat or hold."""
+    return bool(line.image or line.table or line.equation)
+
+
+def _block_markdown(line: Line) -> str | None:
+    if line.equation:  # its rows kept, fenced longer than any run of backticks in it
+        code = "\n".join(line.equation)
+        fence = fence_for(code)
+        return f"{MARK}{fence}\n{code}\n{MARK}{fence}"
+    if line.table:
+        return _table_block(line.table)
+    if line.image:
+        return f"{MARK}![]({link_target(line.image)})"
+    return None
+
+
+def _toc_entry(text: str) -> bool:
+    """A table of contents' entry: its leaders, then its page ("Encuesta ....... 16"). Read from
+    the end of the line, never a pattern over it (a line of dots costs nothing; review of 013)."""
+    stripped = text.rstrip()
+    found = _TOC_PAGE.search(stripped[-12:])
+    if found is None:
+        return False
+    before = stripped[: len(stripped) - len(found.group())].rstrip()
+    return before.endswith(("....", "……", ". . . ."))
+
+
 def _footnotes(lines: list[Line], body: float) -> tuple[list[Line], list[Line]]:
     """The page's text, and the small lines under it (its footnotes)."""
     start = len(lines)
     while (
-        start > 0 and not lines[start - 1].image and lines[start - 1].size < FOOTNOTE_RATIO * body
+        start > 0
+        and not _is_block(lines[start - 1])
+        and lines[start - 1].size < FOOTNOTE_RATIO * body
     ):
         start -= 1
     if start == 0 or start == len(lines) or not body:

@@ -1,5 +1,12 @@
 **ClearMD — documents to Markdown, 100 % local.** / **Documentos a Markdown, 100 % local.**
 
+**New in 0.8.0 / Novedades de la 0.8.0**
+- A PDF's tables become Markdown tables (ruled or not, upright or sideways), its numbered
+  equations stay whole (a picture with the images folder), its table of contents one entry per
+  line. / Las tablas de un PDF salen como tablas Markdown (con o sin bordes, derechas o giradas),
+  sus ecuaciones numeradas enteras (como imagen con la carpeta de imágenes) y su índice con una
+  entrada por línea.
+
 **New in 0.7.0 / Novedades de la 0.7.0**
 - Optionally, each document's images in a folder next to its Markdown (`report_images`;
   `_imagenes` in Spanish): docx, pptx, ODT, EPUB and PDF. Chosen on step 1 and in Settings; off

@@ -40,16 +40,25 @@ executable (ADR-0032), and a second PDF reader beside PDFium.
     line ending in ":", or one starting a clause: "where", "donde"), within five line heights;
   - with the images folder: cropped from the page at 144 dpi, trimmed to its ink (a neighbour's
     sliver at the edge goes); else a code block that keeps its rows and columns.
-- **Captions** ("Table 3:", "Tabla 3.", "Figura 2:") start their own block; one that cuts a
-  sentence leaves the sentence to go on after it and its table.
+- **Blocks in the page's order:** a table, an equation or a picture closes the paragraph above
+  it, as the page sets them (a sentence a table cuts goes on in a new paragraph after it);
+  captions ("Table 3:", "Tabla 3.", "Figura 2:") start their own paragraph. A block is never
+  taken for a footnote, a running header or a heading (it has no text of its own to weigh).
 - **Running headers** on a page set sideways are told by their text alone (their place differs).
 - **A table of contents:** a line ending in leaders and a page number ends its entry; a short
   title above the first entry is its own line.
+
+- **Bounded work** (review of 013): every step sorts first and looks up by bisection; a table
+  has at most 400 rows and 40 columns, a ruled grid 5,000 cells, a page 50 grids and 200
+  equation numbers; a document crops at most 500 equations, within the pictures' pixel budget
+  (ADR-0033); a table of contents is read from the line's end, never by a pattern over it.
 
 ## Consequences
 
 - Tables, equations and contents read as they were laid out, with no new dependency.
 - Heuristics: a table without rules whose columns do not line up stays text; an unnumbered
   equation stays text; a stream table's header spanning columns is placed in its first one.
+- Reading a PDF costs about a fifth more (each character's angle and sides are read): 53
+  pages/s instead of 66 on the author's 86-page thesis.
 - Every cell, every equation row is document text, escaped (ADR-0023); an equation's block is
   fenced longer than any run of backticks in it.

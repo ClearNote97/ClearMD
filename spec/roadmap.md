@@ -66,10 +66,11 @@ already tested (ADR-0001).
 - [x] **012 — Images in a folder:** `<document>_images` (`_imagenes` in Spanish), a setting off
       by default, chosen on step 1 and in Settings. Reviewed.
 
+- [x] **013 — PDF tables and equations:** tables after Camelot's stream and lattice methods on
+      PDFium; equations as images when images are kept; the table of contents line by line. Reviewed.
+
 ## Next
 
-- [ ] **013 — PDF tables and equations:** tables after Camelot's stream and lattice methods on
-      PDFium; equations as images when images are kept; the table of contents line by line.
 - [ ] **006b — Hardening of the executables:** **code signing** of the Windows executables
       (SignPath, free for open source — once the repository is public) so SmartScreen does not
       scare non-technical users; a Windows Job Object as the worker's hard memory cap; an advisory

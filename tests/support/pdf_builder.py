@@ -19,6 +19,7 @@ class Text:
     x: float = 72
     rotated: bool = False  # upside down (180°)
     sideways: bool = False  # turned a quarter, to read upwards (a table set sideways, 013)
+    downwards: bool = False  # turned a quarter the other way, to read downwards
 
 
 @dataclass(frozen=True)
@@ -64,7 +65,12 @@ def _stream(texts: Sequence[Text | Box]) -> bytes:
         if isinstance(item, Box):
             out += b"%g %g %g %g re f\n" % (item.x, item.y, item.width, item.height)
             continue
-        matrix = b"-1 0 0 -1" if item.rotated else b"0 1 -1 0" if item.sideways else b"1 0 0 1"
+        matrix = (
+            b"-1 0 0 -1" if item.rotated
+            else b"0 1 -1 0" if item.sideways
+            else b"0 -1 1 0" if item.downwards
+            else b"1 0 0 1"
+        )  # fmt: skip
         out += b"BT /%s %g Tf %s %g %g Tm (" % (
             _FONTS[item.font].encode(),
             item.size,

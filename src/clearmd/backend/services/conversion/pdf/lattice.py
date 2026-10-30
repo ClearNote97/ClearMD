@@ -9,6 +9,7 @@ them from the page's own drawing (thin paths), as PDFium gives them.
 Pure: rules and words in, tables out.
 """
 
+import bisect
 from dataclasses import dataclass
 
 from clearmd.backend.services.conversion.pdf.tables import Table, Word
@@ -18,6 +19,8 @@ MIN_RULE = 10.0  # points: shorter is a tick, not a cell's side
 NEAR = 2.0  # points: rules this close are one line of the grid, and meet
 MIN_LINES = 3  # of each direction: two rows and two columns (a frame alone is no table)
 MAX_RULES = 2000  # a page's rules looked at (each pair is compared once)
+MAX_GRIDS = 50  # a page's grids looked at
+MAX_CELLS = 5000  # a grid's cells at most (rows times columns): more is no table
 
 
 @dataclass(frozen=True)
@@ -45,7 +48,8 @@ def find_lattices(rules: list[Rule], words: list[Word]) -> list[tuple[Table, lis
     among the rest)."""
     found: list[tuple[Table, list[Word]]] = []
     free = list(words)
-    for group in _grids(rules[:MAX_RULES]):
+    grids = [group for group in _grids(rules[:MAX_RULES]) if len(group) >= 2 * MIN_LINES]
+    for group in grids[:MAX_GRIDS]:
         table, taken = _table(group, free)
         if table is not None:
             found.append((table, taken))
@@ -97,25 +101,25 @@ def _lines(values: list[float]) -> list[float]:
 
 def _table(group: list[Rule], words: list[Word]) -> tuple[Table | None, list[Word]]:
     xs = _lines([item.at for item in group if not item.horizontal])
-    ys = _lines([item.at for item in group if item.horizontal])
-    if len(xs) < MIN_LINES or len(ys) < MIN_LINES:
+    ys = _lines([item.at for item in group if item.horizontal])  # bottom first
+    if len(xs) < MIN_LINES or len(ys) < MIN_LINES or (len(xs) - 1) * (len(ys) - 1) > MAX_CELLS:
         return None, []
-    ys.reverse()  # top first
     cells: dict[tuple[int, int], list[Word]] = {}
     taken = []
     for word in words:
         x, y = (word.left + word.right) / 2, (word.bottom + word.top) / 2
-        column = next((i for i in range(len(xs) - 1) if xs[i] <= x < xs[i + 1]), None)
-        row = next((i for i in range(len(ys) - 1) if ys[i] >= y > ys[i + 1]), None)
-        if column is not None and row is not None:
-            cells.setdefault((row, column), []).append(word)
-            taken.append(word)
+        if not (xs[0] <= x < xs[-1] and ys[0] < y <= ys[-1]):
+            continue
+        column = bisect.bisect_right(xs, x) - 1
+        row = len(ys) - 1 - bisect.bisect_left(ys, y)  # top first
+        cells.setdefault((row, column), []).append(word)
+        taken.append(word)
     rows = sorted({row for row, _ in cells})
     columns = sorted({column for _, column in cells})
     if len(rows) < 2 or len(columns) < 2:
         return None, []
     grid = tuple(tuple(_text(cells.get((row, column), [])) for column in columns) for row in rows)
-    return Table(top=ys[0], bottom=ys[-1], left=xs[0], right=xs[-1], rows=grid), taken
+    return Table(top=ys[-1], bottom=ys[0], left=xs[0], right=xs[-1], rows=grid), taken
 
 
 def _text(words: list[Word]) -> str:

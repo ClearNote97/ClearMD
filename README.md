@@ -135,6 +135,7 @@ _Plus the failed and skipped files with a plain-words reason, and the history of
 | **010** A light executable: about 90 MB to 40 | ✅ done | v0.5.0 · reviewed |
 | **011** Window polish II: the rail's sections, the page's card, every hint | ✅ done | v0.6.0 · reviewed |
 | **012** A document's images in a folder next to its Markdown (optional) | ✅ done | v0.7.0 · reviewed |
+| **013** PDF tables (after Camelot), equations and tables of contents | ✅ done | v0.8.0 · reviewed |
 | **011–012** PySide6 and flet apps | ⏳ | |
 
 Full plan in the [roadmap](./spec/roadmap.md). ClearMD has a **command line** and its first **desktop app**

@@ -139,6 +139,7 @@ anteriores._
 | **010** Un ejecutable liviano: de unos 90 MB a 40 | ✅ lista | v0.5.0 · revisada |
 | **011** Pulido de ventana II: secciones del riel, el área demarcada, cada mensajito | ✅ lista | v0.6.0 · revisada |
 | **012** Las imágenes de cada documento en una carpeta junto a su Markdown (opcional) | ✅ lista | v0.7.0 · revisada |
+| **013** Tablas de PDF (a la manera de Camelot), ecuaciones e índices | ✅ lista | v0.8.0 · revisada |
 | **011–012** Apps en PySide6 y flet | ⏳ | |
 
 El plan completo está en el [roadmap](./spec/roadmap.md). ClearMD tiene **línea de comandos** y su primera **app de

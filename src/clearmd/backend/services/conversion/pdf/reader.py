@@ -45,6 +45,8 @@ COLUMN_SHARE = 0.5  # of a letter's height: an equation's columns, about a lette
 MAX_COLUMN = 200  # an equation's piece starts at most this far right
 CROP_SCALE = 2.0  # an equation's picture: 144 dots per inch
 CROP_PAD = 3.0  # points around it
+MAX_CROPS = 500  # equations cropped in a document: past it, the others are written as text
+MAX_PAGE_POINTS = 14_400.0  # PDF's largest page side (200 inches)
 INK_LEVEL = 160  # a grey this dark is ink
 APART_PIXELS = 6  # a blank this tall (at 144 dpi) parts the equation from a neighbour's sliver
 TRIM_MARGIN = 6  # pixels of white kept around the ink
@@ -181,10 +183,16 @@ def _page_chars(textpage: object, fonts: _Fonts) -> _Chars:
     """The second pass, one page at a time: its characters, compact."""
     chars = _Chars()
     rect = raw.FS_RECTF()
+    box, unicode, angle = (
+        raw.FPDFText_GetLooseCharBox,
+        raw.FPDFText_GetUnicode,
+        raw.FPDFText_GetCharAngle,
+    )
+    pointer = ctypes.byref(rect)
     for index, font in _each_font(textpage, fonts):
-        raw.FPDFText_GetLooseCharBox(textpage, index, ctypes.byref(rect))
+        box(textpage, index, pointer)
         bottom, top = _finite(rect.bottom), _finite(rect.top)
-        code = raw.FPDFText_GetUnicode(textpage, index)
+        code = unicode(textpage, index)
         chars.codes.append(min(code, 0x10FFFF + 1))  # past Unicode: unreadable
         chars.fonts.append(font)
         chars.sizes.append(max(top - bottom, 0.0))
@@ -192,7 +200,8 @@ def _page_chars(textpage: object, fonts: _Fonts) -> _Chars:
         chars.tops.append(top)
         chars.lefts.append(_finite(rect.left))
         chars.rights.append(_finite(rect.right))
-        chars.turns.append(_turn(raw.FPDFText_GetCharAngle(textpage, index)))
+        turned = angle(textpage, index)
+        chars.turns.append(UPRIGHT if turned == 0.0 else _turn(turned))  # nearly all: upright
         chars.bold.append(fonts.bold[font])
     return chars
 
@@ -374,11 +383,13 @@ def _picture_png(obj: object, budget: list[int]) -> bytes | None:
         picture.close()
 
 
-def _pictured(page: object, line: Line, images: ImageSink) -> Line:
-    """An equation, as it looks on the page, when the images folder is on (013)."""
-    if not line.equation:
+def _pictured(page: object, line: Line, images: ImageSink, budget: list[int]) -> Line:
+    """An equation, as it looks on the page, when the images folder is on (013): within the
+    document's pixels and crops (each renders the page; review of 013), else its text."""
+    if not line.equation or budget[1] <= 0:
         return line
-    data = _cropped(page, line)
+    budget[1] -= 1
+    data = _cropped(page, line, budget)
     link = images.add(data) if data is not None else None
     if link is None:
         return line
@@ -403,7 +414,8 @@ def read(document: object, images: ImageSink | None = None) -> Document:
     shifts = [_shift(codes) if fonts.unmapped(n) else 0 for n, codes in enumerate(fonts.codes)]
     unmapped = [fonts.unmapped(n) for n in range(len(fonts.codes))]
     result = Document([], decoded_fonts=sum(1 for distance in shifts if distance))
-    budget = [MAX_DOCUMENT_PIXELS]  # the pictures' pixels decoded in the whole document
+    # The pixels pictures and equations may take in the whole document, and the equations cropped.
+    budget = [MAX_DOCUMENT_PIXELS, MAX_CROPS]
     for textpage, height, handle in _text_pages(document):
         if textpage is not None and raw.FPDFText_CountChars(textpage) > MAX_PAGE_CHARS:
             result.cut_pages += 1
@@ -414,7 +426,7 @@ def read(document: object, images: ImageSink | None = None) -> Document:
         rules = _rules(handle) if handle is not None and chars is not None else []
         page = Page() if chars is None else _page(chars, shifts, unmapped, result, rules)
         if images is not None and handle is not None:
-            page.lines = [_pictured(handle, line, images) for line in page.lines]
+            page.lines = [_pictured(handle, line, images, budget) for line in page.lines]
             page.lines = _placed(page.lines, _pictures(document, handle, images, budget))
         page.height = height
         result.pages.append(page)
@@ -466,7 +478,7 @@ def _equations(lines: list[Line], words: list[Word]) -> list[Line]:
         group = lines[found.start : found.stop]
         block = Line(
             "",
-            group[0].size,
+            0.0,  # a block, not text: never a footnote, a heading, a running line (review of 013)
             False,
             max(line.top for line in group),
             min(line.bottom for line in group),
@@ -500,17 +512,22 @@ def _laid_out(group: list[Line]) -> tuple[str, ...]:
     return tuple(out)
 
 
-def _cropped(page: object, line: Line) -> bytes | None:
-    """The equation's place on the page, rendered: a PNG, or None (a turned page, too large)."""
+def _cropped(page: object, line: Line, budget: list[int]) -> bytes | None:
+    """The equation's place on the page, rendered: a PNG, or None (a turned or outsized page, a
+    crop past the budget, nothing drawn there, a failure: its text is written instead)."""
     if raw.FPDFPage_GetRotation(page) != 0:
         return None
-    height = raw.FPDF_GetPageHeightF(page)
-    width = raw.FPDF_GetPageWidthF(page)
-    left, right = line.left - CROP_PAD, line.right + CROP_PAD
-    bottom, top = line.bottom - CROP_PAD, line.top + CROP_PAD
+    height = _finite(raw.FPDF_GetPageHeightF(page))
+    width = _finite(raw.FPDF_GetPageWidthF(page))
+    if not (0 < width <= MAX_PAGE_POINTS and 0 < height <= MAX_PAGE_POINTS):
+        return None  # past PDF's own limit: an offset ctypes cannot hold (review of 013)
+    left, right = max(line.left - CROP_PAD, 0.0), min(line.right + CROP_PAD, width)
+    bottom, top = max(line.bottom - CROP_PAD, 0.0), min(line.top + CROP_PAD, height)
     pixels_x, pixels_y = round((right - left) * CROP_SCALE), round((top - bottom) * CROP_SCALE)
-    if not 0 < pixels_x * pixels_y <= MAX_PICTURE_PIXELS:
+    pixels = pixels_x * pixels_y
+    if not 0 < pixels <= min(MAX_PICTURE_PIXELS, budget[0]):
         return None
+    budget[0] -= pixels
     bitmap = raw.FPDFBitmap_Create(pixels_x, pixels_y, 0)
     if not bitmap:
         return None
@@ -528,14 +545,19 @@ def _cropped(page: object, line: Line) -> bytes | None:
             0,
             raw.FPDF_ANNOT,
         )
+        trimmed = _trimmed(picture.to_pil().convert("RGB"))
+        if trimmed is None:
+            return None
         data = io.BytesIO()
-        _trimmed(picture.to_pil().convert("RGB")).save(data, "PNG")
+        trimmed.save(data, "PNG")
         return data.getvalue()
+    except (ValueError, OSError, MemoryError):
+        return None
     finally:
         picture.close()
 
 
-def _trimmed(image: Image.Image) -> Image.Image:
+def _trimmed(image: Image.Image) -> Image.Image | None:
     """The equation's ink, a margin around it: a sliver of the line above or below, at the edge
     and apart from it, goes (a font's boxes reach far past its letters)."""
     ink = image.convert("L").point(lambda value: 255 if value < INK_LEVEL else 0)
@@ -552,10 +574,10 @@ def _trimmed(image: Image.Image) -> Image.Image:
     if len(bands) > 1 and bands[0][0] == 0:
         bands.pop(0)  # the line above's foot
     if not bands:
-        return image
+        return None  # no ink: nothing drawn there, the text says more
     box = ink.crop((0, bands[0][0], width, bands[-1][1] + 1)).getbbox()
     if box is None:
-        return image
+        return None
     left, right = max(box[0] - TRIM_MARGIN, 0), min(box[2] + TRIM_MARGIN, width)
     top, bottom = max(bands[0][0] - TRIM_MARGIN, 0), min(bands[-1][1] + 1 + TRIM_MARGIN, height)
     return image.crop((left, top, right, bottom))
@@ -567,6 +589,8 @@ def _new_row(chars: _Chars, last: int, index: int) -> bool:
     turn = chars.turns[index]
     if chars.codes[index] <= 0x20 or chars.rights[index] <= chars.lefts[index]:
         return False
+    if ASLANT in (turn, chars.turns[last]):
+        return False  # an aslant glyph in a line (a slanted symbol) stays in it (review of 013)
     if turn != chars.turns[last]:
         return True
     if turn not in (CLOCKWISE, COUNTERCLOCKWISE):
@@ -588,7 +612,7 @@ def _tabled(lines: list[Line], words: dict[int, list[Word]], rules: list[Rule]) 
         for table in find_tables(turned):
             # The table's box on the page: (bottom, top, left, right).
             box = {
-                UPRIGHT: (table.bottom, table.top, -math.inf, math.inf),
+                UPRIGHT: (table.bottom, table.top, table.left, table.right),
                 CLOCKWISE: (-table.right, -table.left, table.bottom, table.top),
                 COUNTERCLOCKWISE: (table.left, table.right, -table.top, -table.bottom),
             }[turn]
@@ -602,13 +626,12 @@ def _replaced(
     low, high, left, right = box
     inside = [
         i for i, line in enumerate(lines)
-        if line.turn == turn
+        if line.turn == turn and not (line.table or line.image or line.equation)
         and line.bottom >= low - ROW_SLACK and line.top <= high + ROW_SLACK
         and line.left >= left - ROW_SLACK and line.right <= right + ROW_SLACK
     ]  # fmt: skip
     if inside:
-        first = lines[inside[0]]
-        block = Line("", first.size, False, high, low, table=table.rows)
+        block = Line("", 0.0, False, high, low, table=table.rows, left=left, right=right)
         lines = [line for i, line in enumerate(lines) if i not in set(inside)]
         lines.insert(inside[0], block)
     return lines
@@ -628,7 +651,7 @@ def _line(
 
     def end_word() -> None:
         turn = chars.turns[word[0]] if word else ASLANT
-        if words is not None and turn in words and all(chars.turns[i] == turn for i in word):
+        if words is not None and turn in words and chars.turns[word[-1]] == turn:
             words[turn].append(_word("".join(word_text), chars, word, turn))
         word.clear()
         word_text.clear()
@@ -698,10 +721,17 @@ def _line(
 def _word(text: str, chars: _Chars, indices: list[int], turn: int) -> Word:
     """A word's box in its frame: the page turned so its text reads upright (a clockwise turn
     takes the page's top to the frame's left)."""
-    left = min(chars.lefts[i] for i in indices)
-    right = max(chars.rights[i] for i in indices)
-    bottom = min(chars.bottoms[i] for i in indices)
-    top = max(chars.tops[i] for i in indices)
+    first, last = indices[0], indices[-1] + 1
+    if last - first == len(indices):  # one run of characters, as nearly always: slices (fast)
+        left, right = min(chars.lefts[first:last]), max(chars.rights[first:last])
+        bottom, top = min(chars.bottoms[first:last]), max(chars.tops[first:last])
+        if turn == UPRIGHT:
+            return Word(text, left, right, bottom, top, max(chars.sizes[first:last]))
+    else:
+        left = min(chars.lefts[i] for i in indices)
+        right = max(chars.rights[i] for i in indices)
+        bottom = min(chars.bottoms[i] for i in indices)
+        top = max(chars.tops[i] for i in indices)
     if turn == CLOCKWISE:
         return Word(text, -top, -bottom, left, right, max(_width(chars, i) for i in indices))
     if turn == COUNTERCLOCKWISE:
