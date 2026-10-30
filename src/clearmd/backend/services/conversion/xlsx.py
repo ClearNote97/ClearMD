@@ -53,23 +53,24 @@ def _cell(value: Any) -> str:
 
 
 def _rows(sheet: Any) -> list[list[Any]]:
-    """The sheet's rows, read as they are: the size a sheet declares is not trusted (a tiny file
-    declaring a million wide rows asked gigabytes, code review and security audit of 010). Empty
-    rows go, trailing empty cells go, and the rest is evened out to the widest row."""
+    """The sheet's rows, read as they are: the size a sheet declares is not trusted, and no row is
+    padded while it is read (a tiny file declaring a million wide rows asked gigabytes; asking
+    openpyxl for a width pads every row to it: code review, security audit and adversarial check
+    of 010). Empty rows go, trailing empty cells go, and the rest is evened out to the widest row,
+    within a budget of cells that counts that evening out."""
     sheet.reset_dimensions()
     rows: list[list[Any]] = []
-    cells = 0
-    for row in sheet.iter_rows(values_only=True, max_row=MAX_ROWS, max_col=MAX_COLUMNS):
-        values = list(row)
+    for index, row in enumerate(sheet.iter_rows(values_only=True)):
+        if index >= MAX_ROWS:
+            break
+        values = list(row[:MAX_COLUMNS])
         while values and values[-1] in (None, ""):
             values.pop()
-        if not values:
-            continue
-        cells += len(values)
-        if cells > MAX_CELLS:
-            raise ConversionError(ErrorCode.OUT_OF_MEMORY, f"more than {MAX_CELLS} cells")
-        rows.append(values)
+        if values:
+            rows.append(values)
     width = max((len(row) for row in rows), default=0)
+    if width * len(rows) > MAX_CELLS:
+        raise ConversionError(ErrorCode.OUT_OF_MEMORY, f"more than {MAX_CELLS} cells")
     return [row + [None] * (width - len(row)) for row in rows]
 
 
@@ -112,7 +113,10 @@ class XlsxConverter:
             try:
                 blocks = []
                 for sheet in book.worksheets:
-                    rows = _rows(sheet)
+                    try:
+                        rows = _rows(sheet)
+                    except ValueError as error:  # a cell reference past Excel's columns
+                        raise ConversionError(ErrorCode.CORRUPT_FILE, str(error)[:200]) from error
                     name = heading_text(escape_text(" ".join(str(sheet.title).split())))
                     blocks.append(f"{MARK}## {name}")
                     if rows:

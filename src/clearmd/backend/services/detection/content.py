@@ -41,6 +41,7 @@ _MIMETYPES = {
     b"application/epub+zip": FormatId.EPUB,
 }
 _HTML_STARTS = ("<!doctype html", "<html", "<head", "<body")
+_TAG_ENDS = (" ", ">", "\n", "\t", "\r", "/")
 _NOTEBOOK = re.compile(r'\A\s*\{\s*"cells"\s*:\s*\[')  # nbformat writes its keys sorted
 _TEX = re.compile(r"\\(?:documentclass|begin\{document\})")
 _TEX_COMMANDS = re.compile(r"\\(?:section|subsection|chapter|begin|usepackage)\*?\{")
@@ -102,7 +103,12 @@ def _is_html(text: str) -> bool:
             return False
         rest = rest[end + 3 :].lstrip()
     lowered = rest[:16].lower()
-    return any(lowered.startswith(start) for start in _HTML_STARTS)
+    for start in _HTML_STARTS:
+        # The tag's name ends there: "<header>" or "<bodyguard>" is not a page (adversarial check).
+        boundary = lowered[len(start) : len(start) + 1]
+        if lowered.startswith(start) and boundary in _TAG_ENDS:
+            return True
+    return False
 
 
 def _is_notebook(text: str, cut: bool) -> bool:

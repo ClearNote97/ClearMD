@@ -1,5 +1,11 @@
 **ClearMD — documents to Markdown, 100 % local.** / **Documentos a Markdown, 100 % local.**
 
+**New in 0.5.0 / Novedades de la 0.5.0**
+- **Less than half the size**: the app weighs about 40 MB instead of 90, and starts faster. /
+  **Menos de la mitad de peso**: la app pesa unos 40 MB en vez de 90, y abre más rápido.
+- Excel workbooks convert faster and with far less memory. / Los libros de Excel se convierten
+  más rápido y con mucha menos memoria.
+
 **New in 0.4.0 / Novedades de la 0.4.0**
 - **A summary you can read at a glance**: how it went first, where your files are, what needs
   your attention and what to do, names instead of long paths, the history folded. / **Un resumen

@@ -171,3 +171,8 @@ def test_s10_5_deep_json_or_an_encrypted_entry_is_unsupported_not_an_error(
     tmp_path: Path,
 ) -> None:
     assert _detect(tmp_path, '{"cells": [{"cell_type": ' + "[" * 60_000) in {None, FormatId.TXT}
+
+
+@pytest.mark.parametrize("start", ["<header>x</header>", "<bodyguard>x</bodyguard>"])
+def test_a10_6_a_tag_that_only_begins_like_html_is_no_page(tmp_path: Path, start: str) -> None:
+    assert _detect(tmp_path, start) is not FormatId.HTML

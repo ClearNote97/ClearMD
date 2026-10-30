@@ -41,8 +41,12 @@ echo "window: opened and closed"
 # none of the libraries it leaves out inside.
 MAX_MB=50
 for program in "$dist/ClearMD$suffix" "$dist/clearmd-cli$suffix"; do
-  heavy=$(cd "$here" && uv run --no-default-groups --group build pyi-archive_viewer -r "$program" \
-    | grep -E "'(numpy|pandas|onnxruntime|magika)[.']" || true)
+  listing=$(cd "$here" && uv run --no-default-groups --group build pyi-archive_viewer -r "$program")
+  if [[ -z "$listing" ]]; then
+    echo "$program could not be listed" >&2
+    exit 1
+  fi
+  heavy=$(echo "$listing" | grep -E "'(numpy|pandas|onnxruntime|magika)[./']" || true)
   if [[ -n "$heavy" ]]; then
     echo "$program holds a library it should leave out:" >&2
     echo "$heavy" | head -5 >&2

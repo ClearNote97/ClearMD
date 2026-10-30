@@ -49,6 +49,10 @@ each did a small job:
   An old `.xls` is unsupported; only an encrypted workbook is "password-protected".
 - An archive whose declared sizes cannot be true, or whose compression no document uses, counts
   as too large unpacked.
+  - An entry that declares as much as it holds compressed, and inflates to more, still passes
+    planning.
+  - The worker's memory cap stops it, and the file fails alone: planning does not inflate the
+    archives it inspects.
 - Macro-enabled `.docm`, `.xlsm` and `.pptm` without an extension are read as their documents
   (text only, macros never run). JSON, YAML and XML read as plain text.
 

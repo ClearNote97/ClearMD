@@ -154,3 +154,40 @@ def test_c10_9_an_old_xls_is_unsupported_not_locked(tmp_path: Path) -> None:
     with pytest.raises(ConversionError) as raised:
         convert(locked)
     assert raised.value.code is ErrorCode.PASSWORD_PROTECTED
+
+
+# --- Adversarial check of 010 (A10-*) ----------------------------------------------------------
+
+
+def test_a10_1_rows_far_apart_or_far_down_read_at_once(tmp_path: Path) -> None:
+    import time
+
+    rows = f'<row r="1">{cell("A1", "h")}</row><row r="1048576">{cell("A1048576", "z")}</row>'
+    path = _inflated(tmp_path, "", rows)
+    start = time.perf_counter()
+    markdown = convert(path)
+    assert time.perf_counter() - start < 10
+    assert "| h |" in markdown and "| z |" in markdown
+
+
+def test_a10_2_the_cell_budget_counts_the_evening_out(tmp_path: Path) -> None:
+    from clearmd.backend.services.conversion import xlsx
+
+    rows = "".join(f'<row r="{n}">{cell(f"A{n}", "x")}</row>' for n in range(1, 2001))
+    rows += f'<row r="2001">{cell("XFD2001", "far")}</row>'
+    path = _inflated(tmp_path, "", rows)
+    old = xlsx.MAX_CELLS
+    xlsx.MAX_CELLS = 1_000_000  # 2,001 rows x 16,384 columns is over it
+    try:
+        with pytest.raises(ConversionError) as raised:
+            convert(path)
+    finally:
+        xlsx.MAX_CELLS = old
+    assert raised.value.code is ErrorCode.OUT_OF_MEMORY
+
+
+def test_a10_5_a_column_past_excels_is_a_corrupt_file(tmp_path: Path) -> None:
+    path = _inflated(tmp_path, "", f'<row r="1">{cell("AAAA1", "x")}</row>')
+    with pytest.raises(ConversionError) as raised:
+        convert(path)
+    assert raised.value.code is ErrorCode.CORRUPT_FILE
