@@ -63,10 +63,11 @@ already tested (ADR-0001).
       Help as sections of the rail, the shape whole above an outlined page, the hint says what is
       missing on every page. Reviewed.
 
+- [x] **012 — Images in a folder:** `<document>_images` (`_imagenes` in Spanish), a setting off
+      by default, chosen on step 1 and in Settings. Reviewed.
+
 ## Next
 
-- [ ] **012 — Images in a folder:** `<document>_images` (`_imagenes` in Spanish), a setting off
-      by default, chosen on step 1 and in Settings.
 - [ ] **013 — PDF tables and equations:** tables after Camelot's stream and lattice methods on
       PDFium; equations as images when images are kept; the table of contents line by line.
 - [ ] **006b — Hardening of the executables:** **code signing** of the Windows executables

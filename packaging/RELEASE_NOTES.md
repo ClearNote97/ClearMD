@@ -1,5 +1,12 @@
 **ClearMD — documents to Markdown, 100 % local.** / **Documentos a Markdown, 100 % local.**
 
+**New in 0.7.0 / Novedades de la 0.7.0**
+- Optionally, each document's images in a folder next to its Markdown (`report_images`;
+  `_imagenes` in Spanish): docx, pptx, ODT, EPUB and PDF. Chosen on step 1 and in Settings; off
+  by default. / Opcional: las imágenes de cada documento en una carpeta junto a su Markdown
+  (`informe_imagenes`): docx, pptx, ODT, EPUB y PDF. Se elige en el paso 1 y en Ajustes; apagado
+  por defecto.
+
 **New in 0.6.0 / Novedades de la 0.6.0**
 - Settings and Help are sections of the rail; the page sits in a soft card under a whole shape;
   every step says what is missing. / Ajustes y Ayuda son secciones del riel; la página va en un

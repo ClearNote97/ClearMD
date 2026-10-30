@@ -239,40 +239,88 @@ def _text_pages(document: object) -> Iterator[tuple[object | None, float, object
 
 
 MIN_PICTURE_POINTS = 24.0  # smaller: a bullet, a rule, a logo's speck
-MAX_PICTURE_PIXELS = 40_000_000  # rendered no larger (a picture's own pixel count, read first)
+MAX_PICTURE_PIXELS = 40_000_000  # a picture's own pixels, read before it is decoded
+MAX_DOCUMENT_PIXELS = 400_000_000  # all of a document's pictures (a logo on every page counts)
+MAX_PAGE_OBJECTS = 100_000  # a page's objects looked at for pictures, forms' included
+MAX_FORM_DEPTH = 4  # forms inside forms
 
 
-def _pictures(document: object, page: object, sink: ImageSink) -> list[Line]:
-    """The page's pictures as lines at their place, each kept by the sink (012)."""
+def _pictures(document: object, page: object, sink: ImageSink, budget: list[int]) -> list[Line]:
+    """The page's pictures as lines at their place, each kept by the sink (012). Each is decoded
+    at its own size, checked before (never rendered at the size it is drawn: a 2 x 2 picture
+    drawn 12,000 points wide, review of 012), within the document's budget of pixels; those
+    inside a form object are found too, placed where the form stands."""
     lines: list[Line] = []
-    left, bottom, right, top = (ctypes.c_float() for _ in range(4))
-    width, height = ctypes.c_uint(), ctypes.c_uint()
-    for index in range(max(raw.FPDFPage_CountObjects(page), 0)):
-        obj = raw.FPDFPage_GetObject(page, index)
-        if not obj or raw.FPDFPageObj_GetType(obj) != raw.FPDF_PAGEOBJ_IMAGE:
-            continue
-        raw.FPDFPageObj_GetBounds(obj, *(ctypes.byref(v) for v in (left, bottom, right, top)))
-        box = [_finite(v.value) for v in (left, bottom, right, top)]
-        if box[2] - box[0] < MIN_PICTURE_POINTS or box[3] - box[1] < MIN_PICTURE_POINTS:
-            continue
-        if not raw.FPDFImageObj_GetImagePixelSize(obj, ctypes.byref(width), ctypes.byref(height)):
-            continue
-        if width.value * height.value > MAX_PICTURE_PIXELS:
+    for obj, box in _image_objects(page):
+        data = _picture_png(obj, budget)
+        link = sink.add(data) if data is not None else None
+        if data is None:
             sink.left_out += 1
-            continue
-        bitmap = raw.FPDFImageObj_GetRenderedBitmap(document, page, obj)
-        if not bitmap:
-            continue
-        picture = pdfium.PdfBitmap.from_raw(bitmap)
-        try:
-            data = io.BytesIO()
-            picture.to_pil().convert("RGB").save(data, "PNG")
-        finally:
-            picture.close()
-        link = sink.add(data.getvalue())
         if link is not None:
             lines.append(Line("", 0.0, False, box[3], box[1], image=link))
     return lines
+
+
+def _image_objects(page: object) -> Iterator[tuple[object, list[float]]]:
+    """The page's image objects with their place: (left, bottom, right, top)."""
+    left, bottom, right, top = (ctypes.c_float() for _ in range(4))
+    visited = 0
+    pending: list[tuple[object, int, list[float] | None]] = [(page, 0, None)]
+    while pending:
+        holder, depth, place = pending.pop(0)
+        in_form = holder is not page
+        count = (
+            raw.FPDFFormObj_CountObjects(holder) if in_form else raw.FPDFPage_CountObjects(holder)
+        )
+        for index in range(max(count, 0)):
+            visited += 1
+            if visited > MAX_PAGE_OBJECTS:
+                return
+            obj = (
+                raw.FPDFFormObj_GetObject(holder, index)
+                if in_form
+                else raw.FPDFPage_GetObject(holder, index)
+            )
+            if not obj:
+                continue
+            kind = raw.FPDFPageObj_GetType(obj)
+            if kind not in (raw.FPDF_PAGEOBJ_IMAGE, raw.FPDF_PAGEOBJ_FORM):
+                continue
+            box = place
+            if box is None:
+                raw.FPDFPageObj_GetBounds(
+                    obj, *(ctypes.byref(v) for v in (left, bottom, right, top))
+                )
+                box = [_finite(v.value) for v in (left, bottom, right, top)]
+            if kind == raw.FPDF_PAGEOBJ_FORM:
+                if depth < MAX_FORM_DEPTH:
+                    pending.append((obj, depth + 1, box))
+            elif box[2] - box[0] >= MIN_PICTURE_POINTS and box[3] - box[1] >= MIN_PICTURE_POINTS:
+                yield obj, box
+
+
+def _picture_png(obj: object, budget: list[int]) -> bytes | None:
+    """The picture at its own size, as PNG; None when it is too large or cannot be decoded."""
+    width, height = ctypes.c_uint(), ctypes.c_uint()
+    if not raw.FPDFImageObj_GetImagePixelSize(obj, ctypes.byref(width), ctypes.byref(height)):
+        return None
+    pixels = width.value * height.value
+    if not 0 < pixels <= MAX_PICTURE_PIXELS or pixels > budget[0]:
+        return None
+    budget[0] -= pixels
+    bitmap = raw.FPDFImageObj_GetBitmap(obj)
+    if not bitmap:
+        return None
+    picture = pdfium.PdfBitmap.from_raw(bitmap)
+    picture.warn_on_close = False  # closed only once the PNG is written from a copy of it
+    try:
+        data = io.BytesIO()
+        picture.to_pil().convert("RGB").save(data, "PNG")
+        return data.getvalue()
+    except (ValueError, OSError, MemoryError):
+        return None
+    finally:
+        picture.close()
 
 
 def _placed(lines: list[Line], pictures: list[Line]) -> list[Line]:
@@ -293,6 +341,7 @@ def read(document: object, images: ImageSink | None = None) -> Document:
     shifts = [_shift(codes) if fonts.unmapped(n) else 0 for n, codes in enumerate(fonts.codes)]
     unmapped = [fonts.unmapped(n) for n in range(len(fonts.codes))]
     result = Document([], decoded_fonts=sum(1 for distance in shifts if distance))
+    budget = [MAX_DOCUMENT_PIXELS]  # the pictures' pixels decoded in the whole document
     for textpage, height, handle in _text_pages(document):
         if textpage is not None and raw.FPDFText_CountChars(textpage) > MAX_PAGE_CHARS:
             result.cut_pages += 1
@@ -302,7 +351,7 @@ def read(document: object, images: ImageSink | None = None) -> Document:
             unmapped.append(False)
         page = Page() if chars is None else _page(chars, shifts, unmapped, result)
         if images is not None and handle is not None:
-            page.lines = _placed(page.lines, _pictures(document, handle, images))
+            page.lines = _placed(page.lines, _pictures(document, handle, images, budget))
         page.height = height
         result.pages.append(page)
     return result

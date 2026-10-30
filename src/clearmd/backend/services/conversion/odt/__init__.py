@@ -87,10 +87,18 @@ class OdtConverter:
             content = package.content()
             styles = Styles(content, package.styles())
 
+            links: dict[str, str | None] = {}  # a picture read once, however often it is shown
+
             def picture(href: str) -> str | None:
                 name = picture_part(href)
-                data = package.picture(name, MAX_IMAGE_BYTES) if name else None
-                return images.add(data) if images is not None and data else None
+                if images is None or not name:
+                    return None
+                if name not in links:
+                    data = package.picture(name, MAX_IMAGE_BYTES)
+                    links[name] = images.add(data) if data else None
+                    if not data:
+                        images.left_out += 1  # missing, or past the limit
+                return links[name]
 
             renderer = OdtRenderer(
                 styles,

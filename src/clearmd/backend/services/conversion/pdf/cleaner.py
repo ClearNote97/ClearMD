@@ -162,6 +162,8 @@ def _without_running(
         edges = _edges(lines)
         keys = set()
         for index, line in enumerate(lines):
+            if line.image:
+                continue  # a picture is never a running line: a logo stays (review of 012)
             if index not in edges:
                 in_body.add(_shape(line.text))
             elif (
@@ -187,7 +189,9 @@ def _without_running(
         for index, line in enumerate(lines):
             at_end = index in (0, len(lines) - 1) and _in_margin(line, heights[page])
             number = _page_number(line.text) if at_end else None
-            if number is not None and (number[0], number[1] - page) in numbering:
+            if line.image:
+                out.append(line)
+            elif number is not None and (number[0], number[1] - page) in numbering:
                 removed += 1
             elif (
                 index in edges
@@ -343,8 +347,7 @@ class _Writer:
 
     def add(self, line: Line) -> None:
         if line.image:  # a picture: its own block, where it stands on the page (012)
-            if self._kind != "text" or self._ended_sentence():
-                self._flush()
+            self._flush()  # after the text above it ("Figure 1 - Sales by region")
             self.blocks.append(f"{MARK}![]({link_target(line.image)})")
             return
         gap = self._gap(line)

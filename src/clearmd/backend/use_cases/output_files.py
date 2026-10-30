@@ -7,6 +7,7 @@ a fresh random name created exclusively, and ``os.replace`` swaps a planted link
 following it.
 """
 
+import contextlib
 import os
 import re
 import stat
@@ -93,19 +94,30 @@ _OWN_IMAGE = re.compile(r"image-\d{3,4}\.(?:png|jpg|gif|bmp|webp)")
 
 
 def write_images(folder: Path, images: Sequence[ExtractedImage], *, inside: Path) -> None:
-    """A document's images in ``folder`` (feature 012): its earlier images there go first (a
-    picture removed from the document does not stay), only ClearMD's own names, only regular
-    files, never through a link."""
-    if not images and not folder.exists():
-        return
-    _real_folders_down_to(folder, inside)
-    for entry in os.scandir(folder):
-        if _OWN_IMAGE.fullmatch(entry.name) and entry.is_file(follow_symlinks=False):
-            remove_regular_file(Path(entry.path), inside=inside)
+    """A document's images in ``folder`` (feature 012), written before its Markdown: a folder
+    that cannot be written leaves the earlier Markdown as it was. Only ClearMD's own names (all
+    checked first), only regular files, never through a link; its earlier images that are not
+    written again go, and a folder left empty too (review of 012)."""
     for image in images:
         if not _OWN_IMAGE.fullmatch(image.name):  # names come from ClearMD alone
             raise UnsafeOutput(f"not an image name ClearMD gives: {image.name!r}")
+    if not images and not os.path.lexists(folder):
+        return
+    _real_folders_down_to(folder, inside)
+    for image in images:
         atomic_write_bytes(folder / image.name, image.data, inside=inside)
+    written = {image.name for image in images}
+    with os.scandir(folder) as entries:
+        old = [
+            Path(entry.path) for entry in entries
+            if _OWN_IMAGE.fullmatch(entry.name) and entry.name not in written
+            and entry.is_file(follow_symlinks=False)
+        ]  # fmt: skip
+    for path in old:
+        remove_regular_file(path, inside=inside)
+    if not images:
+        with contextlib.suppress(OSError):  # the user's own files in it: it stays
+            folder.rmdir()
 
 
 def sweep_temporary_files(root: Path) -> None:

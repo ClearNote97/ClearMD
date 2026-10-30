@@ -496,7 +496,6 @@ class OdtRenderer:
                 return shown
             # Not a formula (a chart, another embedded object): a placeholder, like an image.
         if formula is not None or frame.find("draw:image") is not None:
-            self.counts.images += 1
             title = frame.find("svg:title")
             description = frame.find("svg:desc")
             label = next(
@@ -516,6 +515,8 @@ class OdtRenderer:
                 link = self._pictures(image.get("xlink:href"))
                 if link is not None:
                     return f"![{escape_text(label)}]({link_target(link)})"
+            else:  # a placeholder; a picture the images folder left out is counted there
+                self.counts.images += 1
             shown = f"{self._image_word}: {label}" if label else self._image_word
             return f"*{escape_text(shown)}*"
         box = frame.find("draw:text-box")
