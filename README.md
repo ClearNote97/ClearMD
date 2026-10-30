@@ -257,6 +257,10 @@ backend — a desktop tool ([ADR-0009](./docs/decisions/0009-template-pruning.md
 
   Each one brings its own dependencies, under their own licenses (all permissive); `uv.lock` lists them.
 
+- **Inspired by [Camelot](https://github.com/camelot-dev/camelot)** (Vinayak Mehta and contributors, MIT): ClearMD
+  finds a PDF's tables after its *stream* and *lattice* methods, written anew on PDFium's text and drawing
+  (ADR-0034); Camelot itself is not a dependency.
+
 ## ⚖️ License
 
 [MIT](./LICENSE) © 2026 Nicolás Enrique Valencia Santiago.

@@ -261,6 +261,10 @@ web — una herramienta de escritorio ([ADR-0009](./docs/decisions/0009-template
 
   Cada una trae sus propias dependencias, con sus licencias (todas permisivas); `uv.lock` las lista.
 
+- **Inspirado en [Camelot](https://github.com/camelot-dev/camelot)** (Vinayak Mehta y colaboradores, MIT): ClearMD
+  encuentra las tablas de un PDF siguiendo sus métodos *stream* y *lattice*, escritos de nuevo sobre el texto y
+  el dibujo que da PDFium (ADR-0034); Camelot no es una dependencia.
+
 ## ⚖️ Licencia
 
 [MIT](./LICENSE) © 2026 Nicolás Enrique Valencia Santiago.

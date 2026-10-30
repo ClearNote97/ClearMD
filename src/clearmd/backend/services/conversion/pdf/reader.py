@@ -21,9 +21,13 @@ from dataclasses import dataclass, field
 
 import pypdfium2 as pdfium
 import pypdfium2.raw as raw
+from PIL import Image
 
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.services.conversion.images import ImageSink
+from clearmd.backend.services.conversion.pdf.equations import Placed, find_equations
+from clearmd.backend.services.conversion.pdf.lattice import Rule, find_lattices, rule
+from clearmd.backend.services.conversion.pdf.tables import Table, Word, find_tables
 
 _LINE_END = 0x0A
 _SKIPPED = {0x0D, 0xFEFF}
@@ -32,6 +36,18 @@ SOFT_HYPHEN = "­"
 UNREADABLE = "�"
 _BOLD_NAMES = ("bold", "black", "heavy", "semibold", "demi")
 _FORCE_BOLD = 1 << 18  # the font descriptor's ForceBold flag
+TURN_RADIANS = 0.01  # a character turned less than this from a quarter turn is on it
+UPRIGHT, CLOCKWISE, COUNTERCLOCKWISE, ASLANT = range(4)  # how a character is turned
+NEW_ROW_SHARE = 0.5  # of a sideways letter's height: a character this far across is on another row
+ROW_SLACK = 1.0  # points: a line within a table's top and bottom is one of its rows
+ROW_SHARE = 0.35  # of a letter's height: pieces this close vertically are on one row
+COLUMN_SHARE = 0.5  # of a letter's height: an equation's columns, about a letter wide
+MAX_COLUMN = 200  # an equation's piece starts at most this far right
+CROP_SCALE = 2.0  # an equation's picture: 144 dots per inch
+CROP_PAD = 3.0  # points around it
+INK_LEVEL = 160  # a grey this dark is ink
+APART_PIXELS = 6  # a blank this tall (at 144 dpi) parts the equation from a neighbour's sliver
+TRIM_MARGIN = 6  # pixels of white kept around the ink
 MAX_PAGE_CHARS = 200_000  # a dense page of a book holds ~5,000; past this, the rest is left out
 MIN_SHIFT_SHARE = 0.03  # a font whose text holds this share of control characters is suspect
 MIN_LETTER_SHARE = 0.75  # and is read back only if its moved codes are then mostly letters
@@ -60,6 +76,11 @@ class Line:
     top: float  # page coordinates (origin at the bottom): a larger gap starts a paragraph
     bottom: float
     image: str = ""  # a picture's link in the images folder: the line is the picture (012)
+    turn: int = UPRIGHT  # a line of a table set sideways is turned (013)
+    equation: tuple[str, ...] = ()  # the line is a display equation, its rows as laid out (013)
+    left: float = 0.0
+    right: float = 0.0
+    table: tuple[tuple[str, ...], ...] = ()  # the line is a table found on the page (013)
 
 
 LETTER_HEIGHT = 792.0  # points: a page whose height PDFium cannot give
@@ -89,6 +110,9 @@ class _Chars:
         self.sizes = array("f")
         self.bottoms = array("f")
         self.tops = array("f")
+        self.lefts = array("f")
+        self.rights = array("f")
+        self.turns = array("B")  # upright, a quarter turn either way, or aslant
         self.bold = array("B")
 
 
@@ -166,8 +190,20 @@ def _page_chars(textpage: object, fonts: _Fonts) -> _Chars:
         chars.sizes.append(max(top - bottom, 0.0))
         chars.bottoms.append(bottom)
         chars.tops.append(top)
+        chars.lefts.append(_finite(rect.left))
+        chars.rights.append(_finite(rect.right))
+        chars.turns.append(_turn(raw.FPDFText_GetCharAngle(textpage, index)))
         chars.bold.append(fonts.bold[font])
     return chars
+
+
+def _turn(angle: float) -> int:
+    """How a character is turned, from PDFium's angle (radians, 0 to 2π, measured clockwise: a
+    table set sideways to read upwards is at 3π/2)."""
+    for target, turn in ((0, UPRIGHT), (2 * math.pi, UPRIGHT), (0.5 * math.pi, CLOCKWISE)):
+        if abs(angle - target) < TURN_RADIANS:
+            return turn
+    return COUNTERCLOCKWISE if abs(angle - 1.5 * math.pi) < TURN_RADIANS else ASLANT
 
 
 def _shift(codes: Counter[int]) -> int:
@@ -261,6 +297,21 @@ def _pictures(document: object, page: object, sink: ImageSink, budget: list[int]
     return lines
 
 
+def _rules(page: object) -> list[Rule]:
+    """The page's thin paths: the rules a ruled table is drawn with (013)."""
+    found: list[Rule] = []
+    left, bottom, right, top = (ctypes.c_float() for _ in range(4))
+    for index in range(min(max(raw.FPDFPage_CountObjects(page), 0), MAX_PAGE_OBJECTS)):
+        obj = raw.FPDFPage_GetObject(page, index)
+        if not obj or raw.FPDFPageObj_GetType(obj) != raw.FPDF_PAGEOBJ_PATH:
+            continue
+        raw.FPDFPageObj_GetBounds(obj, *(ctypes.byref(v) for v in (left, bottom, right, top)))
+        found_rule = rule(*(_finite(v.value) for v in (left, bottom, right, top)))
+        if found_rule is not None:
+            found.append(found_rule)
+    return found
+
+
 def _image_objects(page: object) -> Iterator[tuple[object, list[float]]]:
     """The page's image objects with their place: (left, bottom, right, top)."""
     left, bottom, right, top = (ctypes.c_float() for _ in range(4))
@@ -323,6 +374,17 @@ def _picture_png(obj: object, budget: list[int]) -> bytes | None:
         picture.close()
 
 
+def _pictured(page: object, line: Line, images: ImageSink) -> Line:
+    """An equation, as it looks on the page, when the images folder is on (013)."""
+    if not line.equation:
+        return line
+    data = _cropped(page, line)
+    link = images.add(data) if data is not None else None
+    if link is None:
+        return line
+    return Line("", line.size, False, line.top, line.bottom, image=link, left=line.left)
+
+
 def _placed(lines: list[Line], pictures: list[Line]) -> list[Line]:
     """Each picture before the first line below its top: the reading order of the page."""
     for picture in sorted(pictures, key=lambda line: -line.top):
@@ -349,31 +411,228 @@ def read(document: object, images: ImageSink | None = None) -> Document:
         while len(shifts) < len(fonts.codes):  # a font first met in the second pass: as read
             shifts.append(0)
             unmapped.append(False)
-        page = Page() if chars is None else _page(chars, shifts, unmapped, result)
+        rules = _rules(handle) if handle is not None and chars is not None else []
+        page = Page() if chars is None else _page(chars, shifts, unmapped, result, rules)
         if images is not None and handle is not None:
+            page.lines = [_pictured(handle, line, images) for line in page.lines]
             page.lines = _placed(page.lines, _pictures(document, handle, images, budget))
         page.height = height
         result.pages.append(page)
     return result
 
 
-def _page(chars: _Chars, shifts: list[int], unmapped: list[bool], document: Document) -> Page:
+def _page(
+    chars: _Chars,
+    shifts: list[int],
+    unmapped: list[bool],
+    document: Document,
+    rules: list[Rule] | None = None,
+) -> Page:
     page = Page()
+    words: dict[int, list[Word]] = {UPRIGHT: [], CLOCKWISE: [], COUNTERCLOCKWISE: []}
     start = 0
+    last = -1  # the last character drawn (with a width): where a sideways row goes on from
     for index in range(len(chars.codes) + 1):
-        if index == len(chars.codes) or chars.codes[index] == _LINE_END:
+        ended = index == len(chars.codes) or chars.codes[index] == _LINE_END
+        if not ended and last >= start and _new_row(chars, last, index):
+            ended = True  # PDFium runs a sideways table's rows into one line: one per row
+            next_start = index
+        else:
+            next_start = index + 1
+        if ended:
             if index > start:
-                line = _line(chars, range(start, index), shifts, unmapped, document)
+                line = _line(chars, range(start, index), shifts, unmapped, document, words)
                 if line.text.strip():
                     page.lines.append(line)
-            start = index + 1
+            start = next_start
+        if (
+            index < len(chars.codes)
+            and chars.codes[index] > 0x20  # a space PDFium adds is drawn nowhere in particular
+            and chars.rights[index] > chars.lefts[index]
+        ):
+            last = index
+    page.lines = _equations(_tabled(page.lines, words, rules or []), words[UPRIGHT])
     return page
 
 
+def _equations(lines: list[Line], words: list[Word]) -> list[Line]:
+    """Each display equation's scattered lines, one block that keeps their layout."""
+    placed = [
+        Placed(line.text, line.top, line.bottom, line.size, line.right,
+               bool(line.table or line.image or line.turn != UPRIGHT))
+        for line in lines
+    ]  # fmt: skip
+    for found in reversed(find_equations(placed, words)):
+        group = lines[found.start : found.stop]
+        block = Line(
+            "",
+            group[0].size,
+            False,
+            max(line.top for line in group),
+            min(line.bottom for line in group),
+            left=min(line.left for line in group),
+            right=max(line.right for line in group),
+            equation=_laid_out(group),
+        )
+        lines = [*lines[: found.start], block, *lines[found.stop :]]
+    return lines
+
+
+def _laid_out(group: list[Line]) -> tuple[str, ...]:
+    """The equation's rows, top first, each piece at its place (in half-letter columns)."""
+    left = min(line.left for line in group)
+    rows: list[list[Line]] = []
+    for line in sorted(group, key=lambda line: (-line.bottom, line.left)):
+        if rows and abs(rows[-1][0].bottom - line.bottom) <= ROW_SHARE * max(line.size, 1.0):
+            rows[-1].append(line)
+        else:
+            rows.append([line])
+    out = []
+    for row in rows:
+        text = ""
+        for line in sorted(row, key=lambda line: line.left):
+            column = round((line.left - left) / max(COLUMN_SHARE * line.size, 1.0))
+            text = text.ljust(min(column, MAX_COLUMN)) + (
+                " " if text and column <= len(text) else ""
+            )
+            text += line.text
+        out.append(text.rstrip())
+    return tuple(out)
+
+
+def _cropped(page: object, line: Line) -> bytes | None:
+    """The equation's place on the page, rendered: a PNG, or None (a turned page, too large)."""
+    if raw.FPDFPage_GetRotation(page) != 0:
+        return None
+    height = raw.FPDF_GetPageHeightF(page)
+    width = raw.FPDF_GetPageWidthF(page)
+    left, right = line.left - CROP_PAD, line.right + CROP_PAD
+    bottom, top = line.bottom - CROP_PAD, line.top + CROP_PAD
+    pixels_x, pixels_y = round((right - left) * CROP_SCALE), round((top - bottom) * CROP_SCALE)
+    if not 0 < pixels_x * pixels_y <= MAX_PICTURE_PIXELS:
+        return None
+    bitmap = raw.FPDFBitmap_Create(pixels_x, pixels_y, 0)
+    if not bitmap:
+        return None
+    picture = pdfium.PdfBitmap.from_raw(bitmap)
+    picture.warn_on_close = False  # closed only once the PNG is written from a copy of it
+    try:
+        raw.FPDFBitmap_FillRect(bitmap, 0, 0, pixels_x, pixels_y, 0xFFFFFFFF)
+        raw.FPDF_RenderPageBitmap(
+            bitmap,
+            page,
+            round(-left * CROP_SCALE),
+            round(-(height - top) * CROP_SCALE),
+            round(width * CROP_SCALE),
+            round(height * CROP_SCALE),
+            0,
+            raw.FPDF_ANNOT,
+        )
+        data = io.BytesIO()
+        _trimmed(picture.to_pil().convert("RGB")).save(data, "PNG")
+        return data.getvalue()
+    finally:
+        picture.close()
+
+
+def _trimmed(image: Image.Image) -> Image.Image:
+    """The equation's ink, a margin around it: a sliver of the line above or below, at the edge
+    and apart from it, goes (a font's boxes reach far past its letters)."""
+    ink = image.convert("L").point(lambda value: 255 if value < INK_LEVEL else 0)
+    width, height = ink.size
+    rows = [ink.crop((0, y, width, y + 1)).getbbox() is not None for y in range(height)]
+    bands: list[list[int]] = []
+    for y, inked in enumerate(rows):
+        if inked and bands and y - bands[-1][1] <= APART_PIXELS:
+            bands[-1][1] = y
+        elif inked:
+            bands.append([y, y])
+    if len(bands) > 1 and bands[-1][1] == height - 1:
+        bands.pop()  # the line below's top
+    if len(bands) > 1 and bands[0][0] == 0:
+        bands.pop(0)  # the line above's foot
+    if not bands:
+        return image
+    box = ink.crop((0, bands[0][0], width, bands[-1][1] + 1)).getbbox()
+    if box is None:
+        return image
+    left, right = max(box[0] - TRIM_MARGIN, 0), min(box[2] + TRIM_MARGIN, width)
+    top, bottom = max(bands[0][0] - TRIM_MARGIN, 0), min(bands[-1][1] + 1 + TRIM_MARGIN, height)
+    return image.crop((left, top, right, bottom))
+
+
+def _new_row(chars: _Chars, last: int, index: int) -> bool:
+    """A character turned otherwise than the last one (a page's header, then its sideways table's
+    title), or a sideways one on another row: its row is across the page."""
+    turn = chars.turns[index]
+    if chars.codes[index] <= 0x20 or chars.rights[index] <= chars.lefts[index]:
+        return False
+    if turn != chars.turns[last]:
+        return True
+    if turn not in (CLOCKWISE, COUNTERCLOCKWISE):
+        return False
+    height = max(_width(chars, index), _width(chars, last), 1.0)
+    return abs(chars.lefts[index] - chars.lefts[last]) > NEW_ROW_SHARE * height
+
+
+def _tabled(lines: list[Line], words: dict[int, list[Word]], rules: list[Rule]) -> list[Line]:
+    """The lines a table found on the page covers give way to it, where its first one stood:
+    ruled tables first (their words then taken), then the others by their aligned words. A table
+    set sideways is found in its own frame (the page turned upright), then placed back."""
+    for table, taken in find_lattices(rules, words[UPRIGHT]):
+        box = (table.bottom, table.top, table.left, table.right)
+        lines = _replaced(lines, table, UPRIGHT, box)
+        gone = {id(word) for word in taken}
+        words = {**words, UPRIGHT: [word for word in words[UPRIGHT] if id(word) not in gone]}
+    for turn, turned in words.items():
+        for table in find_tables(turned):
+            # The table's box on the page: (bottom, top, left, right).
+            box = {
+                UPRIGHT: (table.bottom, table.top, -math.inf, math.inf),
+                CLOCKWISE: (-table.right, -table.left, table.bottom, table.top),
+                COUNTERCLOCKWISE: (table.left, table.right, -table.top, -table.bottom),
+            }[turn]
+            lines = _replaced(lines, table, turn, box)
+    return lines
+
+
+def _replaced(
+    lines: list[Line], table: Table, turn: int, box: tuple[float, float, float, float]
+) -> list[Line]:
+    low, high, left, right = box
+    inside = [
+        i for i, line in enumerate(lines)
+        if line.turn == turn
+        and line.bottom >= low - ROW_SLACK and line.top <= high + ROW_SLACK
+        and line.left >= left - ROW_SLACK and line.right <= right + ROW_SLACK
+    ]  # fmt: skip
+    if inside:
+        first = lines[inside[0]]
+        block = Line("", first.size, False, high, low, table=table.rows)
+        lines = [line for i, line in enumerate(lines) if i not in set(inside)]
+        lines.insert(inside[0], block)
+    return lines
+
+
 def _line(
-    chars: _Chars, span: range, shifts: list[int], unmapped: list[bool], document: Document
+    chars: _Chars,
+    span: range,
+    shifts: list[int],
+    unmapped: list[bool],
+    document: Document,
+    words: dict[int, list[Word]] | None = None,
 ) -> Line:
     text: list[str] = []
+    word: list[int] = []  # the indices of the word being read, and its text
+    word_text: list[str] = []
+
+    def end_word() -> None:
+        turn = chars.turns[word[0]] if word else ASLANT
+        if words is not None and turn in words and all(chars.turns[i] == turn for i in word):
+            words[turn].append(_word("".join(word_text), chars, word, turn))
+        word.clear()
+        word_text.clear()
+
     high = 0  # PDFium gives a character past U+FFFF as two halves (a surrogate pair)
     visible: list[int] = []
     for index in span:
@@ -397,11 +656,14 @@ def _line(
                 text.append(UNREADABLE)
             high = 0
             visible.append(index)
+            word.append(index)
+            word_text.append(text[-1])
             continue
         if code in _SOFT_HYPHENS:
             text.append(SOFT_HYPHEN)
         elif code == 0x09 or code == 0x20:
             text.append(" ")
+            end_word()
             continue
         elif code < 0x20 or code == 0x7F or code > 0x10FFFF or code == 0xFFFD:
             # A code no map turned into a character: never dropped silently (ADR-0022).
@@ -413,9 +675,12 @@ def _line(
         else:
             text.append(chr(code))
         visible.append(index)
+        word.append(index)
+        word_text.append(text[-1])
     if high:
         document.unreadable += 1
         text.append(UNREADABLE)
+    end_word()
     shown = visible or list(span)
     sizes = Counter(round(chars.sizes[index], 1) for index in shown)
     return Line(
@@ -424,4 +689,25 @@ def _line(
         sum(chars.bold[index] for index in shown) * 2 > len(shown),
         max(chars.tops[index] for index in shown),
         min(chars.bottoms[index] for index in shown),
+        turn=Counter(chars.turns[index] for index in shown).most_common(1)[0][0],
+        left=min(chars.lefts[index] for index in shown),
+        right=max(chars.rights[index] for index in shown),
     )
+
+
+def _word(text: str, chars: _Chars, indices: list[int], turn: int) -> Word:
+    """A word's box in its frame: the page turned so its text reads upright (a clockwise turn
+    takes the page's top to the frame's left)."""
+    left = min(chars.lefts[i] for i in indices)
+    right = max(chars.rights[i] for i in indices)
+    bottom = min(chars.bottoms[i] for i in indices)
+    top = max(chars.tops[i] for i in indices)
+    if turn == CLOCKWISE:
+        return Word(text, -top, -bottom, left, right, max(_width(chars, i) for i in indices))
+    if turn == COUNTERCLOCKWISE:
+        return Word(text, bottom, top, -right, -left, max(_width(chars, i) for i in indices))
+    return Word(text, left, right, bottom, top, max(chars.sizes[i] for i in indices))
+
+
+def _width(chars: _Chars, index: int) -> float:
+    return max(chars.rights[index] - chars.lefts[index], 0.0)

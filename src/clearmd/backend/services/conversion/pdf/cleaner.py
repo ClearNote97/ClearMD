@@ -1,10 +1,10 @@
 """From PDFium's lines to Markdown: what a PDF repeats on every page goes, paragraphs and words
 broken across lines are joined, headings are told by their size (feature 008, ADR-0030).
 
-Only text: no OCR, no tables rebuilt, no images, one reading order (PDFium's: a page in columns
-may be read across). Every piece of document text is escaped (ADR-0023); the block lines ClearMD
-writes itself (headings, list items) carry ``MARK``, and what follows a list marker is
-neutralized like any other line.
+No OCR; tables found by where their words stand (feature 013, ``tables``); one reading order
+(PDFium's: a page in columns may be read across). Every piece of document text is escaped
+(ADR-0023); the block lines ClearMD writes itself (headings, list items, table rows) carry
+``MARK``, and what follows a list marker is neutralized like any other line.
 """
 
 import math
@@ -15,12 +15,13 @@ from dataclasses import dataclass, field
 from clearmd.backend.services.conversion.markdown_out import (
     MARK,
     escape_text,
+    fence_for,
     heading_text,
     link_target,
     neutralize,
     tidy,
 )
-from clearmd.backend.services.conversion.pdf.reader import SOFT_HYPHEN, Document, Line
+from clearmd.backend.services.conversion.pdf.reader import SOFT_HYPHEN, UPRIGHT, Document, Line
 
 EDGE_LINES = 3  # a running header or footer is among the first or last lines of a page
 MIN_PAGES_FOR_RUNNING = 4  # fewer pages: nothing is taken for a running line
@@ -39,6 +40,14 @@ SIZE_CHANGE = 0.1  # text this much larger or smaller is another block (a captio
 MIN_LETTER_SHARE = 0.6  # a heading is words: a formula in a large font is not one
 
 _DIGITS = re.compile(r"\d+")
+# A table of contents' entry ends with its leaders and its page: "Encuesta ....... 16" (013).
+_TOC_ENTRY = re.compile(
+    r"(?:\.{4,}|…{2,}|(?:\. ){4,})\s*(?:\d{1,5}|[ivxlcdm]{1,8}|[IVXLCDM]{1,8})$"
+)
+# A table's or a figure's caption starts its own block (013): "Table 3: …", "Figura 2. …".
+_CAPTION = re.compile(
+    r"(?:Table|Tabla|Cuadro|Figure|Figura|Fig\.|Gráfico|Gráfica|Ilustración)\s+[0-9IVXLC]+[.:]\s"
+)
 # A page number, alone on the first or last line: "7", "- 7 -", "Page 7 of 20", "xii".
 _PAGE_NUMBER = re.compile(
     r"[-–—|·\s]*(?:(?:page|p[áa]g(?:ina)?\.?|p\.)\s*)?(\d{1,4}|[ivxlcdm]{1,7})"
@@ -200,10 +209,18 @@ def _without_running(
                 and _running_keys(line, page) & running
             ):
                 removed += 1
+            elif line.turn != UPRIGHT and index in edges and _turned_running(line, page, running):
+                removed += 1  # a page set sideways: its header is turned with it, elsewhere
             else:
                 out.append(line)
         kept.append(out)
     return kept, removed
+
+
+def _turned_running(line: Line, page: int, running: set[RunningKey]) -> bool:
+    """The running line's text (and its page offset), wherever and however large it is."""
+    texts = {key[:2] for key in running}
+    return any(key[:2] in texts for key in _running_keys(line, page))
 
 
 def _heading_like(line: Line) -> bool:
@@ -293,6 +310,7 @@ class _Writer:
         self._level = 0
         self._typical = 80.0  # a full line's length on this page, in characters
         self._held: list[str] = []  # footnotes, written once the paragraph they cut ends
+        self._caption = False  # the paragraph is a caption: its table or picture follows it
         self.headings = 0
 
     # --- Blocks ----------------------------------------------------------------------------
@@ -315,6 +333,7 @@ class _Writer:
         kind = self._kind
         self._parts = []
         self._kind = ""
+        self._caption = False
         if kind != "heading" and ended:
             self._release()
 
@@ -346,10 +365,43 @@ class _Writer:
     # --- Lines -----------------------------------------------------------------------------
 
     def add(self, line: Line) -> None:
+        if line.equation:  # a display equation: its own block, its rows kept (013)
+            self._flush()
+            code = "\n".join(line.equation)
+            fence = fence_for(code)
+            self.blocks.append(f"{MARK}{fence}\n{code}\n{MARK}{fence}")
+            self._last = None
+            return
+        if line.table:  # a table found on the page: its own block (013)
+            if self._kind != "text" or self._ended_sentence() or self._caption:
+                self._flush()
+            self.blocks.append(_table_block(line.table))
+            self._last = None  # a sentence it cut goes on after it, as across a page
+            return
         if line.image:  # a picture: its own block, where it stands on the page (012)
             self._flush()  # after the text above it ("Figure 1 - Sales by region")
             self.blocks.append(f"{MARK}![]({link_target(line.image)})")
+            self._last = None
             return
+        if _CAPTION.match(line.text):
+            if self._kind == "text" and not self._ended_sentence():
+                self.blocks.append(escape_text(line.text))  # the paragraph goes on after it
+                self._last = None
+                return
+            self._flush()
+            self._kind, self._caption = "text", True
+            self._parts.append(line.text)
+            self._last = line
+            return
+        entry = _TOC_ENTRY.search(line.text) is not None
+        last = self._last
+        if entry and self._kind == "text" and last is not None and self._short(last):
+            self._flush()  # its title ("Índice") above the first entry, in the body's size
+        self._text(line)
+        if entry and self._kind == "text":
+            self._flush()  # a table of contents: one entry per line (013)
+
+    def _text(self, line: Line) -> None:
         gap = self._gap(line)
         last = self._last
         resized = last is not None and _resized(last, line)
@@ -484,6 +536,18 @@ class _Writer:
         self._flush()
         self._release()
         return "\n\n".join(self.blocks)
+
+
+def _cell(text: str) -> str:
+    return escape_text(" ".join(text.split())).replace("|", "\\|")
+
+
+def _table_block(rows: tuple[tuple[str, ...], ...]) -> str:
+    header, *body = rows
+    lines = [MARK + "| " + " | ".join(_cell(text) for text in header) + " |"]
+    lines.append(MARK + "|" + "---|" * len(header))
+    lines += [MARK + "| " + " | ".join(_cell(text) for text in row) + " |" for row in body]
+    return "\n".join(lines)
 
 
 def _footnotes(lines: list[Line], body: float) -> tuple[list[Line], list[Line]]:

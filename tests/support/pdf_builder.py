@@ -1,6 +1,8 @@
 """Small PDFs written by hand for the PDF converter's tests (feature 008): pages of text at given
-places, sizes and weights; a font without a character map; rotated text; a page with no text."""
+places, sizes and weights; a font without a character map; rotated or sideways text; a page with
+no text."""
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 # The Macintosh standard glyph order from 98 on, as ClearMD's reader decodes it (ADR-0030).
@@ -16,6 +18,17 @@ class Text:
     font: str = "regular"  # "regular", "bold", or "glyphs": codes, no character map
     x: float = 72
     rotated: bool = False  # upside down (180°)
+    sideways: bool = False  # turned a quarter, to read upwards (a table set sideways, 013)
+
+
+@dataclass(frozen=True)
+class Box:
+    """A filled box: a thin one is a rule (a ruled table's cell side, 013)."""
+
+    x: float
+    y: float
+    width: float
+    height: float
 
 
 _FONTS = {"regular": "F1", "bold": "F2", "glyphs": "F3"}
@@ -45,10 +58,13 @@ def _codes(text: str, font: str) -> bytes:
     return bytes(out)
 
 
-def _stream(texts: list[Text]) -> bytes:
+def _stream(texts: Sequence[Text | Box]) -> bytes:
     out = bytearray()
     for item in texts:
-        matrix = b"-1 0 0 -1" if item.rotated else b"1 0 0 1"
+        if isinstance(item, Box):
+            out += b"%g %g %g %g re f\n" % (item.x, item.y, item.width, item.height)
+            continue
+        matrix = b"-1 0 0 -1" if item.rotated else b"0 1 -1 0" if item.sideways else b"1 0 0 1"
         out += b"BT /%s %g Tf %s %g %g Tm (" % (
             _FONTS[item.font].encode(),
             item.size,
@@ -60,7 +76,7 @@ def _stream(texts: list[Text]) -> bytes:
     return bytes(out)
 
 
-def build_pdf(pages: list[list[Text]]) -> bytes:
+def build_pdf(pages: Sequence[Sequence[Text | Box]]) -> bytes:
     """A PDF with one page per list (an empty list: a page with no text, like a scan)."""
     glyph_codes = sorted(set(range(1, 256)))
     differences = " ".join(f"{code} /g{code}" for code in glyph_codes)
