@@ -365,6 +365,7 @@ nothing = "Aquí no hay nada para convertir. Vuelve a Elegir."
 converting = "Convirtiendo… espera a que termine o cancélalo."
 done = "Este lote terminó: mira los Resultados o Convierte más."
 no_results = "Primero convierte algo: aquí aparecen los resultados."
+need_inputs_first = "Aún no hay nada elegido: agrega archivos o carpetas en Elegir."
 
 [gui.more]
 title = "Convertir más"

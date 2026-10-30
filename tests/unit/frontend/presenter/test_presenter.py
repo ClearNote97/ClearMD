@@ -714,6 +714,7 @@ def test_convert_runs_on_its_page_and_results_open_at_the_end() -> None:
 
 def test_review_and_convert_explain_what_is_missing() -> None:
     presenter, view, _, _ = make()
+    presenter.add_paths([Path("/docs")])  # chosen, not planned yet
     presenter.go_to(2)
     assert state(view).primary.hint == "Press Next on Choose to see what will happen."
     presenter.go_to(3)
@@ -869,3 +870,16 @@ def test_the_summary_format_is_chosen_remembered_and_sent_to_the_batch() -> None
     presenter.press_primary(False)
     view.drain()
     assert fake.run_calls[-1]["summary_pdf"] is True
+
+
+# --- Feature 011: the hint says what is missing on every page ----------------------------------
+
+
+def test_with_nothing_chosen_every_page_says_to_choose_first() -> None:
+    presenter, view, _, _ = make()
+    for page in (2, 3, 4):
+        presenter.go_to(page)
+        assert state(view).primary.hint == "Nothing chosen yet: add files or folders on Choose."
+    presenter.add_paths([Path("/docs")])
+    presenter.go_to(2)
+    assert state(view).primary.hint == "Press Next on Choose to see what will happen."

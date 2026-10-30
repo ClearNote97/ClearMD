@@ -125,12 +125,15 @@ class Rail(tk.Canvas):
             self._pending = None
 
     def _buttons_text(self) -> None:
+        """Settings and Help are sections of the rail like the steps (feature 011): their mark
+        where a step has its number, then the word; only the mark when the rail is compact."""
         if self._compact:  # icon-like texts: the full words would not fit
             self.settings.configure(text="⚙")
             self.help.configure(text="?")
         else:
-            self.settings.configure(text=self._texts["settings"])
-            self.help.configure(text=self._texts["help"])
+            self.settings.configure(text=f"⚙   {self._texts['settings']}")
+            words = self._texts["help"].removeprefix("?").strip()  # the catalog's own "?" once
+            self.help.configure(text=f"?    {words}")
 
     # --- Drawing -----------------------------------------------------------------------------
 
@@ -223,9 +226,15 @@ class Rail(tk.Canvas):
             lines = max(1, body.measure(self._local) // (width - 2 * GAP) + 1)
             texts_height = (lines + (1 if self._version else 0)) * line
         buttons_bottom = foot - texts_height - SPACE
-        anchor_x = left + width // 2 if self._compact else x - SPACE
+        # As wide as the steps' band, their height (feature 011); centred marks when compact.
+        anchor_x = left + width // 2 if self._compact else left + SPACE
         anchor: Literal["s", "sw"] = "s" if self._compact else "sw"
-        self.create_window(anchor_x, buttons_bottom, window=self.help, anchor=anchor)
-        self.create_window(
-            anchor_x, buttons_bottom - 44 - HALF, window=self.settings, anchor=anchor
+        band = width - GAP if not self._compact else width - 2 * SPACE
+        places = (
+            (self.help, buttons_bottom),
+            (self.settings, buttons_bottom - _STEP_HEIGHT - HALF),
         )
+        for button, bottom_y in places:
+            self.create_window(
+                anchor_x, bottom_y, window=button, anchor=anchor, width=band, height=_STEP_HEIGHT
+            )

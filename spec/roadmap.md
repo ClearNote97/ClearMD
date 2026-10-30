@@ -61,6 +61,13 @@ already tested (ADR-0001).
 
 ## Next
 
+- [ ] **011 — Window polish II** ([spec](./features/011_window-polish-2/spec.md)): Settings and
+      Help as sections of the rail, the shape whole above an outlined page, the hint says what is
+      missing on every page.
+- [ ] **012 — Images in a folder:** `<document>_images` (`_imagenes` in Spanish), a setting off
+      by default, chosen on step 1 and in Settings.
+- [ ] **013 — PDF tables and equations:** tables after Camelot's stream and lattice methods on
+      PDFium; equations as images when images are kept; the table of contents line by line.
 - [ ] **006b — Hardening of the executables:** **code signing** of the Windows executables
       (SignPath, free for open source — once the repository is public) so SmartScreen does not
       scare non-technical users; a Windows Job Object as the worker's hard memory cap; an advisory
@@ -68,8 +75,8 @@ already tested (ADR-0001).
 
 ## Later
 
-- [ ] **011 — PySide6-Essentials GUI** (*onedir* distribution because of LGPL, ADR-0003).
-- [ ] **012 — flet GUI.**
+- [ ] **014 — PySide6-Essentials GUI** (*onedir* distribution because of LGPL, ADR-0003).
+- [ ] **015 — flet GUI.**
 - [ ] A small Windows installer (a Start menu shortcut), optional.
 - [ ] Incremental mode: skip files unchanged since the last run.
 - [ ] Minor formats: `.eml`, `.rtf`, subtitles.

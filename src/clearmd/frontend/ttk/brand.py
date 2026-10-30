@@ -14,7 +14,7 @@ from PIL import ImageTk
 from ttkbootstrap.style.theme import ThemeDefinition
 
 from clearmd.frontend.ttk import art
-from clearmd.frontend.ttk.layout import RADIUS
+from clearmd.frontend.ttk.layout import HALF, RADIUS, SPACE
 
 
 @dataclass(frozen=True)
@@ -164,6 +164,7 @@ class Look:
         ground: str,
         font: Any,
         padding: tuple[int, int],
+        align: str = "",
     ) -> None:
         size, radius = 3 * RADIUS, RADIUS - 2
 
@@ -187,7 +188,7 @@ class Look:
             border=RADIUS,
             sticky="nsew",
         )
-        label: Any = ("Button.label", {"sticky": ""})
+        label: Any = ("Button.label", {"sticky": align})
         padding_node: Any = ("Button.padding", {"children": [label]})
         self._style.layout(name, [(element, {"sticky": "nsew", "children": [padding_node]})])
         self._style.configure(
@@ -220,7 +221,7 @@ class Look:
         self._button(
             p, RAIL, fill=p.rail, hover=p.rail_hover, text=p.rail_text,
             disabled_fill=p.rail, disabled_text=p.rail_muted, ground=p.rail,
-            font=fonts["body"], padding=(8, 0),
+            font=fonts["body"], padding=(SPACE + HALF, 0), align="w",
         )  # fmt: skip
         self._button(
             p, LINK, fill=p.ground, hover=p.border, text=p.accent_text,

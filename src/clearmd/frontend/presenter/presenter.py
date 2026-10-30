@@ -262,6 +262,8 @@ class Presenter:
                 return text("gui.nav.nothing")
             if self._report is not None:
                 return text("gui.nav.done")
+            if not self._inputs:  # what is missing first, as Choose says it (feature 011)
+                return text("gui.nav.need_inputs_first")
             return text("gui.nav.need_plan")
 
         if self.page == 1:
@@ -275,7 +277,9 @@ class Presenter:
         if self.page == 3:
             return Primary(text("gui.main.convert"), ready, "" if ready else why())
         has_results = bool(self._result_folders())
-        hint = "" if has_results else text("gui.nav.no_results")
+        hint = "" if has_results else why() if self.state in WORKING else text("gui.nav.no_results")
+        if not has_results and not self._inputs and self.state not in WORKING:
+            hint = text("gui.nav.need_inputs_first")
         return Primary(text("gui.result.open"), has_results, hint)
 
     # --- Plan, confirm, convert ------------------------------------------------------------------

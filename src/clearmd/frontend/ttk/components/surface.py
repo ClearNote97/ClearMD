@@ -10,6 +10,8 @@ from clearmd.frontend.ttk import art
 from clearmd.frontend.ttk.brand import PAGE, Palette
 from clearmd.frontend.ttk.layout import GAP, HALF, MARGIN, REDRAW_MS, SPACE
 
+INSET = SPACE + HALF  # the page's margin inside its card outline
+
 
 class Surface(tk.Canvas):
     """Header texts are canvas text, so the shape shows behind them; the page is a frame below."""
@@ -69,8 +71,13 @@ class Surface(tk.Canvas):
         self.delete("all")
         key = (width, height, p.mode)
         new_theme = self._ground_key is None or self._ground_key[2] != p.mode
+        top = self._header_height() + GAP
+        # The page's card outline (feature 011), the page inside it with a margin.
+        box = (SPACE, top, width - GAP, height - GAP)
         if self._ground is None or (key != self._ground_key and (paint or new_theme)):
-            picture = art.surface(width, height, p.ground, p.shape)
+            picture = art.surface(
+                width, height, p.ground, p.shape, band=top, box=box, border=p.border
+            )
             self._ground = ImageTk.PhotoImage(picture, master=self)
             self._ground_key = (width, height, p.mode)
         self.create_image(0, 0, image=self._ground, anchor="nw")
@@ -88,8 +95,7 @@ class Surface(tk.Canvas):
             x, y, text=self._texts["subtitle"], fill=p.muted, font=self._fonts["body"],
             anchor="nw", width=width - 2 * MARGIN,
         )  # fmt: skip
-        top = self._header_height() + GAP
         self.create_window(
-            SPACE, top, window=self.page, anchor="nw",
-            width=width - SPACE - GAP, height=height - top - GAP,
+            SPACE + INSET, top + INSET, window=self.page, anchor="nw",
+            width=width - SPACE - GAP - 2 * INSET, height=height - top - GAP - 2 * INSET,
         )  # fmt: skip

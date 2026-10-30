@@ -365,6 +365,7 @@ nothing = "Nothing here can be converted. Go back to Choose."
 converting = "Converting… wait for it to finish, or cancel it."
 done = "This batch is done: see Results, or Convert more."
 no_results = "Convert something first: the results appear here."
+need_inputs_first = "Nothing chosen yet: add files or folders on Choose."
 
 [gui.more]
 title = "Convert more"

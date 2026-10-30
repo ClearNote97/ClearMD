@@ -9,6 +9,8 @@ from importlib.resources import files
 
 from PIL import Image, ImageDraw, ImageFont
 
+from clearmd.frontend.ttk.layout import RADIUS, SPACE
+
 SUPERSAMPLE = 4
 ASSETS = files("clearmd.frontend") / "assets"
 
@@ -95,15 +97,32 @@ def _dashes(
         draw.arc((x, y, x + diameter, y + diameter), start, start + 90, fill=fill, width=width)
 
 
-def surface(width: int, height: int, ground: str, shape: str) -> Image.Image:
-    """The working area's ground with a soft organic shape in the top right corner."""
+def surface(
+    width: int,
+    height: int,
+    ground: str,
+    shape: str,
+    *,
+    band: int,
+    box: tuple[int, int, int, int] | None = None,
+    border: str = "",
+) -> Image.Image:
+    """The working area's ground: a soft organic shape in the top right corner, whole within the
+    header ``band`` (never cut by the page below it, feature 011), and the page's ``box`` drawn as
+    a soft card outline."""
     s = 2  # a large, soft shape: little supersampling needed
     big = Image.new("RGBA", (width * s, height * s), rgba(ground))
     draw = ImageDraw.Draw(big)
     w = width * s
     blob = rgba(shape)
-    draw.ellipse((w - 300 * s, -210 * s, w + 140 * s, 120 * s), fill=blob)
-    draw.ellipse((w - 420 * s, -150 * s, w - 120 * s, 70 * s), fill=blob)
+    bottom = max(band - SPACE, 40) * s
+    draw.ellipse((w - 300 * s, bottom - 330 * s, w + 140 * s, bottom), fill=blob)
+    draw.ellipse((w - 420 * s, bottom - 270 * s, w - 120 * s, bottom - 50 * s), fill=blob)
+    if box is not None and border:
+        left, top, right, lower = (value * s for value in box)
+        draw.rounded_rectangle(
+            (left, top, right, lower), radius=RADIUS * s, outline=rgba(border), width=s
+        )
     return big.resize((width, height), Image.Resampling.LANCZOS)
 
 

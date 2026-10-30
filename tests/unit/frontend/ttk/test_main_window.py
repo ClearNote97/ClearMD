@@ -614,6 +614,8 @@ def test_a_disabled_primary_says_why(app: TtkApp) -> None:
     assert app.actions.hint.cget("text") == "Add at least one file or folder."
     app.presenter.go_to(4)
     assert app.actions.primary.cget("text") == "Open results folder"
+    assert "Nothing chosen yet" in app.actions.hint.cget("text")  # what is missing first (011)
+    app.presenter.add_paths([Path("/docs/a.pdf")])
     assert "Convert something first" in app.actions.hint.cget("text")
 
 
