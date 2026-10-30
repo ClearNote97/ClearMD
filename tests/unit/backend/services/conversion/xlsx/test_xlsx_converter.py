@@ -119,16 +119,20 @@ def cell(ref: str, text: str) -> str:
 
 
 def test_c10_2_a_declared_size_is_not_trusted(tmp_path: Path) -> None:
-    import resource
     import time
+    import tracemalloc  # on every system (resource is POSIX only)
 
     rows = f'<row r="1">{cell("A1", "h")}</row><row r="20000">{cell("A20000", "z")}</row>'
     path = _inflated(tmp_path, '<dimension ref="A1:XFD20000"/>', rows)
-    before = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    tracemalloc.start()
     start = time.perf_counter()
-    markdown = convert(path)
+    try:
+        markdown = convert(path)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
     assert time.perf_counter() - start < 10
-    assert resource.getrusage(resource.RUSAGE_SELF).ru_maxrss - before < 200 * 1024  # KiB
+    assert peak < 200 * 1024**2
     assert "| h |" in markdown and "| z |" in markdown
 
 
