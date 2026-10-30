@@ -31,6 +31,7 @@ from clearmd.backend.services.conversion.markdown_out import (
     indent,
     indent_all,
     inline_code,
+    link_target,
     math_line,
     neutralize,
     own_line,
@@ -127,8 +128,11 @@ class OdtRenderer:
         formula: FormulaHandler | None = None,
         language: str = "",
         source_size: int = 0,
+        pictures: Callable[[str], str | None] | None = None,
     ) -> None:
         self.styles = styles
+        # A picture's link in the images folder, from its href; None: images left out (012).
+        self._pictures = pictures
         self._room = GROWTH_FACTOR * source_size + GROWTH_EXTRA
         self._writer = InlineWriter(self._spend)
         self.counts = _Counts()
@@ -507,6 +511,11 @@ class OdtRenderer:
                 ),
                 "",
             )
+            image = frame.find("draw:image")
+            if image is not None and self._pictures is not None and formula is None:
+                link = self._pictures(image.get("xlink:href"))
+                if link is not None:
+                    return f"![{escape_text(label)}]({link_target(link)})"
             shown = f"{self._image_word}: {label}" if label else self._image_word
             return f"*{escape_text(shown)}*"
         box = frame.find("draw:text-box")

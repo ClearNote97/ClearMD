@@ -26,6 +26,7 @@ from clearmd.backend.use_cases.output_files import (
     atomic_write,
     prepare_root,
     sweep_temporary_files,
+    write_images,
 )
 from clearmd.backend.use_cases.ports import Clock, ConversionRunner
 
@@ -62,6 +63,8 @@ def _convert_one(
         return ConversionOutcome(item, status, error.code, error.detail, limit=error.limit)
     try:
         atomic_write(item.target, result.markdown, inside=item.output_root)
+        if item.images:
+            write_images(item.target.parent / item.images, result.images, inside=item.output_root)
     except OSError as error:  # this file only: disk full, name too long, locked, a folder...
         return ConversionOutcome(
             item, OutcomeStatus.FAILED, ErrorCode.WRITE_FAILED, _describe(error)

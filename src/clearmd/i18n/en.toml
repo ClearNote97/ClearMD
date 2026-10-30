@@ -93,6 +93,7 @@ dry_run = "show the plan and write nothing"
 open = "open the results folder(s) when done"
 lang = "language for this run (default: the language setting, English)"
 summary_pdf = "also write the summary as a PDF, Resumen_ClearMD.pdf (default: the summary_format setting)"
+images = "keep each document's images in a folder next to its Markdown (default: the images setting, off)"
 
 [cli]
 progress = "[{index}/{total}] {name}"
@@ -205,6 +206,7 @@ pdf_pages_without_text = "pages without text, probably scanned images (ClearMD d
 pdf_text_decoded = "some text used fonts without a character map; ClearMD read it back"
 pdf_text_unreadable = "some characters could not be read: they are shown as “�”, or as letters that may be wrong"
 pdf_running_removed = "headers, footers and page numbers repeated on the pages were left out"
+images_left_out = "images left out (a format Markdown viewers do not show, or past the limits): {items}"
 and_more = " and {count} more"
 
 [note.reason]
@@ -332,6 +334,10 @@ summary = "Summary format"
 summary_help = "Resumen_ClearMD.md always; with PDF, Resumen_ClearMD.pdf too, to read or print."
 summary_markdown = "Markdown"
 summary_markdown_pdf = "Markdown + PDF"
+images = "Images"
+images_help = "Leave them out, or keep each document's images in a folder next to its Markdown (name_images)."
+images_omit = "Leave out"
+images_folder = "In a folder"
 
 [gui.help]
 title = "How to use ClearMD"
@@ -419,3 +425,9 @@ deselect = "Deselect all"
 summary_title = "Summary:"
 summary_md = "Markdown"
 summary_pdf = "Markdown + PDF"
+images_title = "Images:"
+images_omit = "Leave out"
+images_folder = "In a folder"
+
+[images]
+suffix = "_images"

@@ -41,6 +41,7 @@ class MainView(ttk.Frame):
         on_next_to: Callable[[], None],
         on_pick_folder: Callable[[], None],
         on_summary: Callable[[str], None] = lambda _format: None,
+        on_images: Callable[[str], None] = lambda _images: None,
     ) -> None:
         super().__init__(parent, style=PAGE)
         self._on_remove = on_remove
@@ -86,8 +87,12 @@ class MainView(ttk.Frame):
         bottom.pack(side="bottom", fill="x", pady=(SPACE, 0), before=editing)
         output = ttk.Frame(bottom, style=CARD, padding=GAP)
         output.pack(side="left", fill="x", expand=True)
-        title = ttk.Label(output, font=fonts["strong"])
-        title.pack(anchor="w")
+        heading = ttk.Frame(
+            output, style="TFrame"
+        )  # the title, and the images' choice at its right
+        heading.pack(fill="x")
+        title = ttk.Label(heading, font=fonts["strong"])
+        title.pack(side="left")
         self._label(title, "gui.main.output_title")
         choices = ttk.Frame(output, style="TFrame")
         choices.pack(fill="x", pady=(SPACE, 0))
@@ -131,6 +136,25 @@ class MainView(ttk.Frame):
             button.pack(side="left", padx=(GAP, 0))
             self._label(button, key)
             self.summary_buttons.append(button)
+        # Each document's images, left out or in a folder next to it (ADR-0033): remembered. On
+        # the title's row, at its right: the list keeps its rows in a short window, and a narrow
+        # one cuts nothing (review of 011).
+        pictures = ttk.Frame(heading, style="TFrame")
+        pictures.pack(side="right")
+        images_title = ttk.Label(pictures, font=fonts["strong"])
+        images_title.pack(side="left")
+        self._label(images_title, "gui.main.images_title")
+        self.images = tk.StringVar(value="omit")
+        for value, key in (("omit", "gui.main.images_omit"), ("folder", "gui.main.images_folder")):
+            button = ttk.Radiobutton(
+                pictures,
+                variable=self.images,
+                value=value,
+                command=lambda: on_images(self.images.get()),
+            )
+            button.pack(side="left", padx=(GAP, 0))
+            self._label(button, key)
+            self.summary_buttons.append(button)  # enabled and disabled with the output's
 
     # --- What the presenter shows ------------------------------------------------------------
 
@@ -168,6 +192,7 @@ class MainView(ttk.Frame):
         self.output_mode.set(choice.mode.value)
         self.output_label.configure(text=choice.label)
         self.summary_format.set(choice.summary_format)
+        self.images.set(choice.images)
 
     def apply_language(self, catalog: Catalog) -> None:
         for widget, key in self._texts:

@@ -78,6 +78,12 @@ def build_parser(catalog: Catalog) -> argparse.ArgumentParser:
         default=None,
         help=help_("cli.help.summary_pdf"),
     )
+    parser.add_argument(
+        "--images",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help=help_("cli.help.images"),
+    )
     parser.add_argument("--dry-run", action="store_true", help=help_("cli.help.dry_run"))
     parser.add_argument("--open", action="store_true", help=help_("cli.help.open"))
     parser.add_argument("--lang", choices=SUPPORTED_LANGUAGES, help=help_("cli.help.lang"))
@@ -277,6 +283,7 @@ def _run_cancellable(
     stream: TextIO,
     *,
     summary_pdf: bool = False,
+    images: bool = False,
 ) -> BatchReport:
     """Run the batch in a thread; Ctrl+C cancels it at once and its summary is still written."""
     cancel = CancelToken()
@@ -295,6 +302,7 @@ def _run_cancellable(
                 cancel=cancel,
                 language=catalog.language,
                 summary_pdf=summary_pdf,
+                images=images,
             )
         except BaseException as error:  # re-raised in the main thread
             errors.append(error)
@@ -383,7 +391,10 @@ def _main(argv: Sequence[str] | None) -> int:
     summary_pdf = (
         settings.summary_format == "markdown_pdf" if args.summary_pdf is None else args.summary_pdf
     )
-    report = _run_cancellable(catalog, plan, decision, progress, err, summary_pdf=summary_pdf)
+    images = settings.images == "folder" if args.images is None else args.images
+    report = _run_cancellable(
+        catalog, plan, decision, progress, err, summary_pdf=summary_pdf, images=images
+    )
     _print_summary(catalog, report)
     if args.open:
         for root in _summary_roots(report):

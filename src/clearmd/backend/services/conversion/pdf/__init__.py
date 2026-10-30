@@ -10,6 +10,7 @@ from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.schemas.limits import Limits
 from clearmd.backend.schemas.models import ConversionResult, Detection
 from clearmd.backend.schemas.notes import ConversionNote, NoteItem, NoteKind
+from clearmd.backend.services.conversion.images import ImageSink
 from clearmd.backend.services.conversion.pdf.cleaner import clean
 from clearmd.backend.services.conversion.pdf.reader import opened, read
 from clearmd.backend.services.conversion.safe_files import read_regular_file
@@ -33,13 +34,20 @@ def page_ranges(numbers: list[int]) -> tuple[NoteItem, ...]:
 
 
 class PdfConverter:
-    def convert(self, source: Path, detection: Detection, target: Path) -> ConversionResult:
+    def convert(
+        self,
+        source: Path,
+        detection: Detection,
+        target: Path,
+        *,
+        images: ImageSink | None = None,
+    ) -> ConversionResult:
         try:
             data = read_regular_file(source, MAX_BYTES)
         except OSError as error:
             raise ConversionError(ErrorCode.SOURCE_UNREADABLE, str(error)) from error
         with opened(data) as pdf:
-            document = read(pdf)
+            document = read(pdf, images)
         del data
         cleaned = clean(document)
         notes: list[ConversionNote] = []

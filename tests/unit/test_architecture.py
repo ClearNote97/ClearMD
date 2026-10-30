@@ -60,6 +60,8 @@ RULES: dict[str, Rule] = {
             "clearmd.backend.services.conversion.xmltree",
             "clearmd.backend.services.conversion.inline",
             "clearmd.backend.services.conversion.odt",
+            # Its pictures, kept in the images folder (012): the standard library and the above.
+            "clearmd.backend.services.conversion.images",
         ),
     ),
     # The article renderer: trafilatura's XML in, ClearMD's Markdown out; the standard library.

@@ -65,11 +65,12 @@ class WorkerRunner:
             item.detection.method.value,
             str(item.target),
             item.strategy.value,
+            item.images,
         )
         response = self._request(request, cancel)
         if not isinstance(response, Converted):
             raise ConversionError(ErrorCode.CONVERSION_FAILED, f"unexpected reply {response!r}")
-        return ConversionResult(response.markdown, response.notes)
+        return ConversionResult(response.markdown, response.notes, response.images)
 
     def warm_up(self, cancel: CancelToken) -> None:
         """Start the worker now, so no file's time includes the start-up (AC-41)."""

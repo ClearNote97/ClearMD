@@ -32,6 +32,7 @@ class NoteKind(StrEnum):
     PDF_TEXT_DECODED = "pdf_text_decoded"
     PDF_TEXT_UNREADABLE = "pdf_text_unreadable"
     PDF_RUNNING_REMOVED = "pdf_running_removed"
+    IMAGES_LEFT_OUT = "images_left_out"
 
     @property
     def key(self) -> str:

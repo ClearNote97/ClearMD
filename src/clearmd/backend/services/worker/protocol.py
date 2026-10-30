@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 
+from clearmd.backend.schemas.models import ExtractedImage
 from clearmd.backend.schemas.notes import ConversionNote
 
 
@@ -17,6 +18,7 @@ class ConvertRequest:
     method: str
     target: str  # where the Markdown will be written: links to images start there
     strategy: str = "full"  # Strategy: HTML may be converted to its article only (004)
+    images: str = ""  # the images folder's name; empty: images left out (012)
 
 
 @dataclass(frozen=True)
@@ -33,6 +35,7 @@ class Detected:
 class Converted:
     markdown: str
     notes: tuple[ConversionNote, ...] = ()
+    images: tuple[ExtractedImage, ...] = ()
 
 
 @dataclass(frozen=True)

@@ -29,6 +29,7 @@ from clearmd.backend.use_cases.execution import execute_plan
 from clearmd.backend.use_cases.output_files import remove_regular_file
 from clearmd.backend.use_cases.planning import build_plan
 from clearmd.backend.use_cases.reporting import by_output_root
+from clearmd.i18n import load_catalog
 
 __all__ = [
     "CancelToken",
@@ -110,10 +111,19 @@ def run_batch(
     cancel: CancelToken | None = None,
     language: str = "en",
     summary_pdf: bool = False,
+    images: bool = False,
 ) -> BatchReport:
     """Convert every planned file in the worker process, write the results and, in each
     ClearMD_Output folder, its Resumen_ClearMD.md (also when the batch was cancelled), and its
     Resumen_ClearMD.pdf when ``summary_pdf`` (ADR-0031)."""
+    if images:  # each document's images in "<name>_images" next to it, in the user's language
+        suffix = load_catalog(language).text("images.suffix")
+        plan = replace(
+            plan,
+            conversions=tuple(
+                replace(item, images=f"{item.target.stem}{suffix}") for item in plan.conversions
+            ),
+        )
     runner = composition.build_runner(composition.default_limits())
     try:
         report = execute_plan(

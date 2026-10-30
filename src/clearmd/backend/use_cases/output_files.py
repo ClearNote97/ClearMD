@@ -8,11 +8,14 @@ following it.
 """
 
 import os
+import re
 import stat
 import tempfile
+from collections.abc import Sequence
 from pathlib import Path
 
 from clearmd.backend.schemas.formats import RESULTS_DIR_NAME, TEMP_SUFFIX
+from clearmd.backend.schemas.models import ExtractedImage
 
 # The process umask, read once at import (single-threaded then): results get normal permissions.
 _UMASK = os.umask(0)
@@ -84,6 +87,25 @@ def remove_regular_file(target: Path, *, inside: Path) -> None:
     _real_folders_down_to(target.parent, inside)
     if stat.S_ISREG(status.st_mode) and not _is_link(status):
         target.unlink()
+
+
+_OWN_IMAGE = re.compile(r"image-\d{3,4}\.(?:png|jpg|gif|bmp|webp)")
+
+
+def write_images(folder: Path, images: Sequence[ExtractedImage], *, inside: Path) -> None:
+    """A document's images in ``folder`` (feature 012): its earlier images there go first (a
+    picture removed from the document does not stay), only ClearMD's own names, only regular
+    files, never through a link."""
+    if not images and not folder.exists():
+        return
+    _real_folders_down_to(folder, inside)
+    for entry in os.scandir(folder):
+        if _OWN_IMAGE.fullmatch(entry.name) and entry.is_file(follow_symlinks=False):
+            remove_regular_file(Path(entry.path), inside=inside)
+    for image in images:
+        if not _OWN_IMAGE.fullmatch(image.name):  # names come from ClearMD alone
+            raise UnsafeOutput(f"not an image name ClearMD gives: {image.name!r}")
+        atomic_write_bytes(folder / image.name, image.data, inside=inside)
 
 
 def sweep_temporary_files(root: Path) -> None:

@@ -4,8 +4,9 @@ from pathlib import Path
 
 from clearmd.backend.schemas.errors import ConversionError
 from clearmd.backend.schemas.models import ConversionResult, Detection
+from clearmd.backend.services.conversion.images import MAX_IMAGE_BYTES, ImageSink
 from clearmd.backend.services.conversion.odt.mathml import Unsupported, starmath, to_latex
-from clearmd.backend.services.conversion.odt.package import OdtPackage, object_part
+from clearmd.backend.services.conversion.odt.package import OdtPackage, object_part, picture_part
 from clearmd.backend.services.conversion.odt.render import FormulaResult, OdtRenderer
 from clearmd.backend.services.conversion.odt.styles import Styles
 from clearmd.backend.services.conversion.xmltree import Element
@@ -74,15 +75,29 @@ class _Formulas:
 class OdtConverter:
     """Archive → parts → styles → render, with images as placeholders and formulas as LaTeX."""
 
-    def convert(self, source: Path, detection: Detection, target: Path) -> ConversionResult:
+    def convert(
+        self,
+        source: Path,
+        detection: Detection,
+        target: Path,
+        *,
+        images: ImageSink | None = None,
+    ) -> ConversionResult:
         with OdtPackage.open(source) as package:
             content = package.content()
             styles = Styles(content, package.styles())
+
+            def picture(href: str) -> str | None:
+                name = picture_part(href)
+                data = package.picture(name, MAX_IMAGE_BYTES) if name else None
+                return images.add(data) if images is not None and data else None
+
             renderer = OdtRenderer(
                 styles,
                 formula=_Formulas(package),
                 language=styles.language or _meta_language(package),
                 source_size=len(content.text()),
+                pictures=picture if images is not None else None,
             )
             markdown = renderer.document(content)
         return ConversionResult(markdown, renderer.notes())

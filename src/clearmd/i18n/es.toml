@@ -93,6 +93,7 @@ dry_run = "mostrar el plan sin escribir nada"
 open = "abrir la(s) carpeta(s) de resultados al terminar"
 lang = "idioma de esta ejecución (por defecto: el ajuste language, inglés)"
 summary_pdf = "escribe también el resumen en PDF, Resumen_ClearMD.pdf (por defecto: el ajuste summary_format)"
+images = "guarda las imágenes de cada documento en una carpeta junto a su Markdown (por defecto: el ajuste images, apagado)"
 
 [cli]
 progress = "[{index}/{total}] {name}"
@@ -205,6 +206,7 @@ pdf_pages_without_text = "páginas sin texto, seguramente imágenes escaneadas (
 pdf_text_decoded = "parte del texto usaba fuentes sin mapa de caracteres; ClearMD lo recuperó"
 pdf_text_unreadable = "algunos caracteres no se pudieron leer: aparecen como “�” o como letras que pueden estar mal"
 pdf_running_removed = "se omitieron los encabezados, pies y números de página que se repiten en las páginas"
+images_left_out = "imágenes que no se guardaron (un formato que los visores de Markdown no muestran, o por los límites): {items}"
 and_more = " y {count} más"
 
 [note.reason]
@@ -332,6 +334,10 @@ summary = "Formato del resumen"
 summary_help = "Siempre Resumen_ClearMD.md; con PDF, también Resumen_ClearMD.pdf, para leerlo o imprimirlo."
 summary_markdown = "Markdown"
 summary_markdown_pdf = "Markdown + PDF"
+images = "Imágenes"
+images_help = "No incluirlas, o guardar las imágenes de cada documento en una carpeta junto a su Markdown (nombre_imagenes)."
+images_omit = "No incluir"
+images_folder = "En una carpeta"
 
 [gui.help]
 title = "Cómo usar ClearMD"
@@ -419,3 +425,9 @@ deselect = "Deseleccionar todo"
 summary_title = "Resumen:"
 summary_md = "Markdown"
 summary_pdf = "Markdown + PDF"
+images_title = "Imágenes:"
+images_omit = "No incluir"
+images_folder = "En una carpeta"
+
+[images]
+suffix = "_imagenes"

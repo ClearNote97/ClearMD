@@ -16,6 +16,7 @@ from clearmd.backend.services.conversion.markdown_out import (
     MARK,
     escape_text,
     heading_text,
+    link_target,
     neutralize,
     tidy,
 )
@@ -341,6 +342,11 @@ class _Writer:
     # --- Lines -----------------------------------------------------------------------------
 
     def add(self, line: Line) -> None:
+        if line.image:  # a picture: its own block, where it stands on the page (012)
+            if self._kind != "text" or self._ended_sentence():
+                self._flush()
+            self.blocks.append(f"{MARK}![]({link_target(line.image)})")
+            return
         gap = self._gap(line)
         last = self._last
         resized = last is not None and _resized(last, line)
@@ -480,7 +486,9 @@ class _Writer:
 def _footnotes(lines: list[Line], body: float) -> tuple[list[Line], list[Line]]:
     """The page's text, and the small lines under it (its footnotes)."""
     start = len(lines)
-    while start > 0 and lines[start - 1].size < FOOTNOTE_RATIO * body:
+    while (
+        start > 0 and not lines[start - 1].image and lines[start - 1].size < FOOTNOTE_RATIO * body
+    ):
         start -= 1
     if start == 0 or start == len(lines) or not body:
         return lines, []

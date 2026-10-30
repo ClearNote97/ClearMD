@@ -36,6 +36,17 @@ class PlannedConversion:
     exists: bool
     cost: float
     strategy: Strategy = Strategy.FULL
+    # The images folder's name next to the Markdown ("report_images"); empty: images left out
+    # (feature 012, ADR-0033).
+    images: str = ""
+
+
+@dataclass(frozen=True)
+class ExtractedImage:
+    """One of a document's images, named by ClearMD, to be written in its images folder."""
+
+    name: str  # image-001.png
+    data: bytes
 
 
 @dataclass(frozen=True)
@@ -109,6 +120,7 @@ class ConversionResult:
 
     markdown: str
     notes: tuple[ConversionNote, ...] = ()
+    images: tuple[ExtractedImage, ...] = ()  # written next to the Markdown (feature 012)
 
 
 @dataclass(frozen=True)

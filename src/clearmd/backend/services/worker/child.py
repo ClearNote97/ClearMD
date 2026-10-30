@@ -4,11 +4,13 @@ import importlib
 import signal
 from multiprocessing.connection import Connection
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.schemas.formats import FormatId, Strategy
 from clearmd.backend.schemas.models import Detection, DetectionMethod
+from clearmd.backend.schemas.notes import ConversionNote, NoteItem, NoteKind
+from clearmd.backend.services.conversion.images import ImageSink
 from clearmd.backend.services.conversion.registry import DocumentConverter
 from clearmd.backend.services.worker.protocol import (
     Converted,
@@ -70,7 +72,10 @@ def handle(
     detection = Detection(format_id, DetectionMethod(request.method))
     try:
         converter = registry.for_format(format_id, Strategy(request.strategy))
-        result = converter.convert(Path(request.source), detection, Path(request.target))
+        # The images, only when asked: a converter that keeps none takes no sink (012).
+        sink = ImageSink.for_folder(request.images) if request.images else None
+        options: dict[str, Any] = {"images": sink} if sink is not None else {}
+        result = converter.convert(Path(request.source), detection, Path(request.target), **options)
     except ConversionError as error:
         return Failed(error.code.value, error.detail)
     except MemoryError:
@@ -82,7 +87,11 @@ def handle(
             ErrorCode.CONVERSION_FAILED.value,
             f"result too large: {len(result.markdown)} characters, limit {max_result_chars}",
         )
-    return Converted(result.markdown, result.notes)
+    notes = result.notes
+    if sink is not None and sink.left_out:  # pictures a viewer cannot show, or past the limits
+        notes = (*notes, ConversionNote(NoteKind.IMAGES_LEFT_OUT, (NoteItem(str(sink.left_out)),)))
+    images = tuple(sink.images) if sink is not None else result.images
+    return Converted(result.markdown, notes, images)
 
 
 def worker_main(

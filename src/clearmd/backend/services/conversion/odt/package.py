@@ -39,6 +39,18 @@ def object_part(href: str) -> str | None:
     return "/".join(parts) + "/content.xml"
 
 
+def picture_part(href: str) -> str | None:
+    """The archive entry of a picture (``Pictures/1.png``), or ``None`` when the reference leaves
+    the archive, as for formula objects."""
+    name = href.strip().replace("\\", "/")
+    if not name or name.startswith(("/", "~")) or _SCHEME_OR_DRIVE.match(name):
+        return None
+    parts = [part for part in PurePosixPath(name).parts if part not in (".", "")]
+    if not parts or ".." in parts:
+        return None
+    return "/".join(parts)
+
+
 def _entry_name(path: str) -> str:
     """A manifest path as an archive name: "./content.xml" and "/content.xml" are "content.xml"."""
     name = path.strip().replace("\\", "/")
@@ -98,6 +110,13 @@ class OdtPackage:
         if self._archive is None:
             raise ValueError("the package is closed")
         return self._archive
+
+    def picture(self, name: str, max_bytes: int) -> bytes | None:
+        """A picture's bytes from the archive, or None when absent or too large (012)."""
+        try:
+            return self._read(name, max_bytes)
+        except ConversionError:
+            return None
 
     def _read(self, name: str, max_bytes: int | None = None) -> bytes | None:
         archive = self._zip()

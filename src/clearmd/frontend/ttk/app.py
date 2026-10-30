@@ -159,6 +159,7 @@ class TtkApp:
             on_next_to=lambda: self.presenter.choose_output_next_to(),
             on_pick_folder=self.pick_output_folder,
             on_summary=lambda value: self.presenter.choose_summary_format(value),
+            on_images=lambda value: self.presenter.choose_images(value),
         )
         self.review = ReviewView(page, fonts=self.fonts)
         self.converting = ConvertView(page, fonts=self.fonts)

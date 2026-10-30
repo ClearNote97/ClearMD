@@ -335,6 +335,7 @@ class Presenter:
         self._cancel = token = CancelToken()
         language = self.catalog.language  # read here: the worker never touches the presenter
         summary_pdf = self.settings.summary_format == "markdown_pdf"
+        images = self.settings.images == "folder"
         self._done = 0
         self._current = None
         self.page = 3  # the progress is shown on Convert (ADR-0029)
@@ -360,6 +361,7 @@ class Presenter:
                     cancel=token,
                     language=language,
                     summary_pdf=summary_pdf,
+                    images=images,
                 )
             except Exception as error:  # noqa: BLE001 -- told to the user, the app goes on
                 self._later(generation, partial(self._unexpected, error))
@@ -426,6 +428,14 @@ class Presenter:
             self._show_output()  # the radio buttons show the choice as it is
             return
         self.save_settings(replace(self.settings, summary_format=summary_format))
+
+    def choose_images(self, images: str) -> None:
+        """Images left out, or in a folder next to each Markdown: chosen on step 1 (ADR-0033)."""
+        valid = images in CHOICES["images"]
+        if not valid or images == self.settings.images or self.state in WORKING:
+            self._show_output()
+            return
+        self.save_settings(replace(self.settings, images=images))
 
     def restore_defaults(self) -> None:
         self.save_settings(Settings())
@@ -555,7 +565,12 @@ class Presenter:
         if self._output_folder is None:
             label = self.catalog.text("gui.output.next_to_detail")
             choice = OutputChoice(
-                OutputMode.NEXT_TO, None, suggestion, label, self.settings.summary_format
+                OutputMode.NEXT_TO,
+                None,
+                suggestion,
+                label,
+                self.settings.summary_format,
+                self.settings.images,
             )
         else:
             path = printable(str(self._output_folder))
@@ -566,6 +581,7 @@ class Presenter:
                 suggestion,
                 label,
                 self.settings.summary_format,
+                self.settings.images,
             )
         self._view.show_output_choice(choice)
 

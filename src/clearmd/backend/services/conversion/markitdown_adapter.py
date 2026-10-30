@@ -31,6 +31,7 @@ from markitdown.converters import (
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.schemas.formats import FormatId
 from clearmd.backend.schemas.models import ConversionResult, Detection
+from clearmd.backend.services.conversion.images import ImageSink, epub_images, take_data_images
 from clearmd.backend.services.conversion.safe_files import open_regular_file
 
 _CORRUPT: tuple[type[BaseException], ...] = (
@@ -101,12 +102,25 @@ class MarkItDownConverter:
     def __init__(self) -> None:
         self.converters = _converters()
 
-    def convert(self, source: Path, detection: Detection, target: Path) -> ConversionResult:
+    def convert(
+        self,
+        source: Path,
+        detection: Detection,
+        target: Path,
+        *,
+        images: ImageSink | None = None,
+    ) -> ConversionResult:
         converter = self.converters[detection.format]
         hint = StreamInfo(extension=f".{detection.format.value}", filename=source.name)
+        # With an images folder (012): docx and pptx pictures come back as data: URIs, made
+        # files by the sink; an EPUB's are read from its package.
+        options = {"keep_data_uris": True} if images is not None else {}
         with _open_regular_file(source) as stream:
             try:
-                result = converter.convert(stream, hint)
+                result = converter.convert(stream, hint, **options)
             except Exception as error:
                 raise map_exception(error) from error
-        return ConversionResult(result.markdown)  # markitdown reports nothing it skipped
+        markdown = take_data_images(result.markdown, images)
+        if images is not None and detection.format is FormatId.EPUB:
+            markdown = epub_images(source, markdown, images)
+        return ConversionResult(markdown)  # markitdown reports nothing it skipped

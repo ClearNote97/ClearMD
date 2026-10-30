@@ -11,6 +11,7 @@ load error is read when it happens, and a PDF without pages is an empty document
 """
 
 import ctypes
+import io
 import math
 from array import array
 from collections import Counter
@@ -18,9 +19,11 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 
+import pypdfium2 as pdfium
 import pypdfium2.raw as raw
 
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
+from clearmd.backend.services.conversion.images import ImageSink
 
 _LINE_END = 0x0A
 _SKIPPED = {0x0D, 0xFEFF}
@@ -56,6 +59,7 @@ class Line:
     bold: bool
     top: float  # page coordinates (origin at the bottom): a larger gap starts a paragraph
     bottom: float
+    image: str = ""  # a picture's link in the images folder: the line is the picture (012)
 
 
 LETTER_HEIGHT = 792.0  # points: a page whose height PDFium cannot give
@@ -214,18 +218,19 @@ def opened(data: bytes) -> Iterator[object]:
         del buffer
 
 
-def _text_pages(document: object) -> Iterator[tuple[object | None, float]]:
-    """Each page's text page (None: a page PDFium could not load) and height, closed after."""
+def _text_pages(document: object) -> Iterator[tuple[object | None, float, object | None]]:
+    """Each page's text page (None: a page PDFium could not load), height and page, closed
+    after."""
     for index in range(max(raw.FPDF_GetPageCount(document), 0)):
         page = raw.FPDF_LoadPage(document, index)
         if not page:
-            yield None, LETTER_HEIGHT
+            yield None, LETTER_HEIGHT, None
             continue
         try:
             height = _finite(raw.FPDF_GetPageHeightF(page))
             textpage = raw.FPDFText_LoadPage(page)
             try:
-                yield (textpage or None), (height if height > 0 else LETTER_HEIGHT)
+                yield (textpage or None), (height if height > 0 else LETTER_HEIGHT), page
             finally:
                 if textpage:
                     raw.FPDFText_ClosePage(textpage)
@@ -233,17 +238,62 @@ def _text_pages(document: object) -> Iterator[tuple[object | None, float]]:
             raw.FPDF_ClosePage(page)
 
 
-def read(document: object) -> Document:
+MIN_PICTURE_POINTS = 24.0  # smaller: a bullet, a rule, a logo's speck
+MAX_PICTURE_PIXELS = 40_000_000  # rendered no larger (a picture's own pixel count, read first)
+
+
+def _pictures(document: object, page: object, sink: ImageSink) -> list[Line]:
+    """The page's pictures as lines at their place, each kept by the sink (012)."""
+    lines: list[Line] = []
+    left, bottom, right, top = (ctypes.c_float() for _ in range(4))
+    width, height = ctypes.c_uint(), ctypes.c_uint()
+    for index in range(max(raw.FPDFPage_CountObjects(page), 0)):
+        obj = raw.FPDFPage_GetObject(page, index)
+        if not obj or raw.FPDFPageObj_GetType(obj) != raw.FPDF_PAGEOBJ_IMAGE:
+            continue
+        raw.FPDFPageObj_GetBounds(obj, *(ctypes.byref(v) for v in (left, bottom, right, top)))
+        box = [_finite(v.value) for v in (left, bottom, right, top)]
+        if box[2] - box[0] < MIN_PICTURE_POINTS or box[3] - box[1] < MIN_PICTURE_POINTS:
+            continue
+        if not raw.FPDFImageObj_GetImagePixelSize(obj, ctypes.byref(width), ctypes.byref(height)):
+            continue
+        if width.value * height.value > MAX_PICTURE_PIXELS:
+            sink.left_out += 1
+            continue
+        bitmap = raw.FPDFImageObj_GetRenderedBitmap(document, page, obj)
+        if not bitmap:
+            continue
+        picture = pdfium.PdfBitmap.from_raw(bitmap)
+        try:
+            data = io.BytesIO()
+            picture.to_pil().convert("RGB").save(data, "PNG")
+        finally:
+            picture.close()
+        link = sink.add(data.getvalue())
+        if link is not None:
+            lines.append(Line("", 0.0, False, box[3], box[1], image=link))
+    return lines
+
+
+def _placed(lines: list[Line], pictures: list[Line]) -> list[Line]:
+    """Each picture before the first line below its top: the reading order of the page."""
+    for picture in sorted(pictures, key=lambda line: -line.top):
+        at = next((i for i, line in enumerate(lines) if line.top < picture.top), len(lines))
+        lines.insert(at, picture)
+    return lines
+
+
+def read(document: object, images: ImageSink | None = None) -> Document:
     """Two passes: the fonts' codes first (a moved font is known only from all its text), then
     the lines, page by page: only one page's characters are ever held (code review of 008)."""
     fonts = _Fonts()
-    for textpage, _height in _text_pages(document):
+    for textpage, _height, _page_handle in _text_pages(document):
         if textpage is not None:
             _count(textpage, fonts)
     shifts = [_shift(codes) if fonts.unmapped(n) else 0 for n, codes in enumerate(fonts.codes)]
     unmapped = [fonts.unmapped(n) for n in range(len(fonts.codes))]
     result = Document([], decoded_fonts=sum(1 for distance in shifts if distance))
-    for textpage, height in _text_pages(document):
+    for textpage, height, handle in _text_pages(document):
         if textpage is not None and raw.FPDFText_CountChars(textpage) > MAX_PAGE_CHARS:
             result.cut_pages += 1
         chars = None if textpage is None else _page_chars(textpage, fonts)
@@ -251,6 +301,8 @@ def read(document: object) -> Document:
             shifts.append(0)
             unmapped.append(False)
         page = Page() if chars is None else _page(chars, shifts, unmapped, result)
+        if images is not None and handle is not None:
+            page.lines = _placed(page.lines, _pictures(document, handle, images))
         page.height = height
         result.pages.append(page)
     return result

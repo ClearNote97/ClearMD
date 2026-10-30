@@ -17,6 +17,7 @@ class Settings:
     html_strategy: str = "full"
     show_welcome: bool = True
     summary_format: str = "markdown"  # or "markdown_pdf": Resumen_ClearMD.pdf too (ADR-0031)
+    images: str = "omit"  # or "folder": each document's images next to it (ADR-0033)
     # The folder the user last picked for the results; empty: next to the originals (ADR-0016/0026).
     last_output_folder: str = ""
 
@@ -29,6 +30,7 @@ CHOICES: Mapping[str, frozenset[str]] = MappingProxyType(
         "on_existing_output": frozenset({"ask", "overwrite", "skip"}),
         "html_strategy": frozenset({"full", "article"}),
         "summary_format": frozenset({"markdown", "markdown_pdf"}),
+        "images": frozenset({"omit", "folder"}),
     }
 )
 

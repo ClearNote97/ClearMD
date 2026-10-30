@@ -134,6 +134,7 @@ class SettingsDialog(Dialog):
             "summary_format": {
                 v: text(f"gui.settings.summary_{v}") for v in ("markdown", "markdown_pdf")
             },
+            "images": {v: text(f"gui.settings.images_{v}") for v in ("omit", "folder")},
         }
         self.values: dict[str, tk.Variable] = {}
         self._fonts = fonts
@@ -145,6 +146,7 @@ class SettingsDialog(Dialog):
             ("recursive", "recursive"),
             ("html_strategy", "html"),
             ("summary_format", "summary"),
+            ("images", "images"),
             ("show_welcome", "welcome"),
         )
         self.body.columnconfigure(0, weight=1)
