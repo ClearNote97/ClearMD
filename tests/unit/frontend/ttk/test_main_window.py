@@ -753,7 +753,7 @@ def test_c7_1_after_an_edit_review_convert_and_results_are_emptied(
 
 
 def test_c7_2_the_smallest_window_shows_every_control(app: TtkApp, tmp_path: Path) -> None:
-    app.root.geometry("800x560")
+    app.root.geometry("800x600")
     app.presenter.add_paths([tmp_path / f"{n}.pdf" for n in range(30)])
     pump(app, seconds=0.4)
     assert app.main.output_label.winfo_ismapped() and app.main.next_to.winfo_ismapped()

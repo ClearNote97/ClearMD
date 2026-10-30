@@ -15,7 +15,7 @@ from PIL import ImageTk
 
 from clearmd.frontend.presenter.state import STEPS
 from clearmd.frontend.ttk import art
-from clearmd.frontend.ttk.brand import RAIL, Palette
+from clearmd.frontend.ttk.brand import RAIL, RAIL_COMPACT, Palette
 from clearmd.frontend.ttk.layout import (
     COMPACT_RAIL_WIDTH,
     GAP,
@@ -98,7 +98,7 @@ class Rail(tk.Canvas):
         self._local = catalog.text("gui.app.local")
         self._texts = {
             "settings": catalog.text("gui.main.settings"),
-            "help": catalog.text("gui.main.help"),
+            "help": catalog.text("gui.main.help_word"),
         }
         self._buttons_text()
         self._draw()
@@ -125,15 +125,18 @@ class Rail(tk.Canvas):
             self._pending = None
 
     def _buttons_text(self) -> None:
-        """Settings and Help are sections of the rail like the steps (feature 011): their mark
-        where a step has its number, then the word; only the mark when the rail is compact."""
+        """Settings and Help are sections of the rail like the steps (feature 011): their words
+        start where the steps' words do (the style's padding, not spaces: any font); the compact
+        rail shows their marks alone, centred."""
+        style = RAIL_COMPACT if self._compact else RAIL
+        for button in (self.settings, self.help):
+            button.configure(style=style)
         if self._compact:  # icon-like texts: the full words would not fit
             self.settings.configure(text="⚙")
             self.help.configure(text="?")
         else:
-            self.settings.configure(text=f"⚙   {self._texts['settings']}")
-            words = self._texts["help"].removeprefix("?").strip()  # the catalog's own "?" once
-            self.help.configure(text=f"?    {words}")
+            self.settings.configure(text=self._texts["settings"])
+            self.help.configure(text=self._texts["help"])
 
     # --- Drawing -----------------------------------------------------------------------------
 
@@ -229,7 +232,7 @@ class Rail(tk.Canvas):
         # As wide as the steps' band, their height (feature 011); centred marks when compact.
         anchor_x = left + width // 2 if self._compact else left + SPACE
         anchor: Literal["s", "sw"] = "s" if self._compact else "sw"
-        band = width - GAP if not self._compact else width - 2 * SPACE
+        band = width - GAP
         places = (
             (self.help, buttons_bottom),
             (self.settings, buttons_bottom - _STEP_HEIGHT - HALF),

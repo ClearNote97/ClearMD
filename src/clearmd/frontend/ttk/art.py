@@ -9,7 +9,7 @@ from importlib.resources import files
 
 from PIL import Image, ImageDraw, ImageFont
 
-from clearmd.frontend.ttk.layout import RADIUS, SPACE
+from clearmd.frontend.ttk.layout import SPACE
 
 SUPERSAMPLE = 4
 ASSETS = files("clearmd.frontend") / "assets"
@@ -104,12 +104,9 @@ def surface(
     shape: str,
     *,
     band: int,
-    box: tuple[int, int, int, int] | None = None,
-    border: str = "",
 ) -> Image.Image:
     """The working area's ground: a soft organic shape in the top right corner, whole within the
-    header ``band`` (never cut by the page below it, feature 011), and the page's ``box`` drawn as
-    a soft card outline."""
+    header ``band`` (never cut by the page below it, feature 011)."""
     s = 2  # a large, soft shape: little supersampling needed
     big = Image.new("RGBA", (width * s, height * s), rgba(ground))
     draw = ImageDraw.Draw(big)
@@ -118,11 +115,6 @@ def surface(
     bottom = max(band - SPACE, 40) * s
     draw.ellipse((w - 300 * s, bottom - 330 * s, w + 140 * s, bottom), fill=blob)
     draw.ellipse((w - 420 * s, bottom - 270 * s, w - 120 * s, bottom - 50 * s), fill=blob)
-    if box is not None and border:
-        left, top, right, lower = (value * s for value in box)
-        draw.rounded_rectangle(
-            (left, top, right, lower), radius=RADIUS * s, outline=rgba(border), width=s
-        )
     return big.resize((width, height), Image.Resampling.LANCZOS)
 
 

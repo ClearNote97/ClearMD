@@ -137,6 +137,7 @@ anteriores._
 | **008** PDF de calidad: PDFium lee, ClearMD limpia | ✅ lista | v0.3.0 · revisada |
 | **009** Un resumen en lenguaje humano, y su PDF | ✅ lista | v0.4.0 · revisada · [muestras](./docs/screenshots/009/) |
 | **010** Un ejecutable liviano: de unos 90 MB a 40 | ✅ lista | v0.5.0 · revisada |
+| **011** Pulido de ventana II: secciones del riel, el área demarcada, cada mensajito | ✅ lista | v0.6.0 · revisada |
 | **011–012** Apps en PySide6 y flet | ⏳ | |
 
 El plan completo está en el [roadmap](./spec/roadmap.md). ClearMD tiene **línea de comandos** y su primera **app de

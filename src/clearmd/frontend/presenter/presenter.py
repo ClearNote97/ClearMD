@@ -277,9 +277,16 @@ class Presenter:
         if self.page == 3:
             return Primary(text("gui.main.convert"), ready, "" if ready else why())
         has_results = bool(self._result_folders())
-        hint = "" if has_results else why() if self.state in WORKING else text("gui.nav.no_results")
-        if not has_results and not self._inputs and self.state not in WORKING:
+        if has_results:
+            hint = ""
+        elif self.state in WORKING:
+            hint = why()
+        elif self._report is not None:  # a batch ran and wrote nothing (review of 011)
+            hint = text("gui.nav.nothing_written")
+        elif not self._inputs:
             hint = text("gui.nav.need_inputs_first")
+        else:
+            hint = text("gui.nav.no_results")
         return Primary(text("gui.result.open"), has_results, hint)
 
     # --- Plan, confirm, convert ------------------------------------------------------------------

@@ -1,5 +1,10 @@
 **ClearMD — documents to Markdown, 100 % local.** / **Documentos a Markdown, 100 % local.**
 
+**New in 0.6.0 / Novedades de la 0.6.0**
+- Settings and Help are sections of the rail; the page sits in a soft card under a whole shape;
+  every step says what is missing. / Ajustes y Ayuda son secciones del riel; la página va en un
+  área demarcada bajo una nube entera; cada paso dice qué falta.
+
 **New in 0.5.0 / Novedades de la 0.5.0**
 - **Less than half the size**: the app weighs about 40 MB instead of 90, and starts faster. /
   **Menos de la mitad de peso**: la app pesa unos 40 MB en vez de 90, y abre más rápido.

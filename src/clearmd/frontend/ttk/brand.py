@@ -14,7 +14,7 @@ from PIL import ImageTk
 from ttkbootstrap.style.theme import ThemeDefinition
 
 from clearmd.frontend.ttk import art
-from clearmd.frontend.ttk.layout import HALF, RADIUS, SPACE
+from clearmd.frontend.ttk.layout import RADIUS
 
 
 @dataclass(frozen=True)
@@ -94,6 +94,8 @@ SOFT = "Soft.ClearMD.TButton"  # a secondary action: white, a thin border
 SOFT_ON_CARD = "SoftOnCard.ClearMD.TButton"  # the same, inside a card
 STRONG = "Strong.ClearMD.TButton"  # a second action that matters as much (Convert more)
 RAIL = "Rail.ClearMD.TButton"  # Settings and Help on the dark rail
+RAIL_COMPACT = "RailCompact.ClearMD.TButton"  # their marks alone, centred (compact rail)
+RAIL_TEXT_X = 40  # with the face's own inner border (12 px): a step's word's start (rail.py)
 LINK = "Link.ClearMD.TButton"  # a quiet action on the ground
 CARD = "Card.ClearMD.TFrame"  # a white, rounded card
 PAGE = "Page.ClearMD.TFrame"  # the working area's ground
@@ -163,7 +165,7 @@ class Look:
         disabled_text: str,
         ground: str,
         font: Any,
-        padding: tuple[int, int],
+        padding: tuple[int, ...],
         align: str = "",
     ) -> None:
         size, radius = 3 * RADIUS, RADIUS - 2
@@ -221,7 +223,12 @@ class Look:
         self._button(
             p, RAIL, fill=p.rail, hover=p.rail_hover, text=p.rail_text,
             disabled_fill=p.rail, disabled_text=p.rail_muted, ground=p.rail,
-            font=fonts["body"], padding=(SPACE + HALF, 0), align="w",
+            font=fonts["body"], padding=(RAIL_TEXT_X, 0, 0, 0), align="w",
+        )  # fmt: skip
+        self._button(
+            p, RAIL_COMPACT, fill=p.rail, hover=p.rail_hover, text=p.rail_text,
+            disabled_fill=p.rail, disabled_text=p.rail_muted, ground=p.rail,
+            font=fonts["body"], padding=(0, 0),
         )  # fmt: skip
         self._button(
             p, LINK, fill=p.ground, hover=p.border, text=p.accent_text,

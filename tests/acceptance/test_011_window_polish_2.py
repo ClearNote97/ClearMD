@@ -1,7 +1,7 @@
 """Feature 011 — one test per acceptance criterion (spec/features/011_*/spec.md)."""
 
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
@@ -12,6 +12,7 @@ from support.gui_fakes import FakeBackend
 from clearmd.backend.schemas.settings import Settings
 from clearmd.frontend.ttk import TtkApp, art
 from clearmd.frontend.ttk.brand import LIGHT
+from clearmd.i18n import load_catalog
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -20,42 +21,74 @@ ROOT = Path(__file__).resolve().parents[2]
 def app(display: str) -> Iterator[TtkApp]:
     window = TtkApp(FakeBackend(settings=Settings(show_welcome=False, theme="light")))
     window.start()
-    deadline = time.monotonic() + 0.5
-    while time.monotonic() < deadline:
-        window.root.update()
-        time.sleep(0.01)
+    pump(window, seconds=0.5)
     yield window
     shut(window)
 
 
+def pump(app: TtkApp, *, until: Callable[[], bool] | None = None, seconds: float = 1.0) -> None:
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        app.root.update()
+        if until is not None and until():
+            return
+        time.sleep(0.01)
+
+
 def test_ac_01_settings_and_help_are_sections_of_the_rail(app: TtkApp) -> None:
-    settings, help_ = app.rail.settings, app.rail.help
-    step_band = app.rail.winfo_width() - 2 * 8  # the rail's width less its gaps, as a step's
-    assert (
-        settings.winfo_width() >= step_band - 24 and help_.winfo_width() == settings.winfo_width()
-    )
+    rail, settings, help_ = app.rail, app.rail.settings, app.rail.help
     assert settings.winfo_height() == 44 == help_.winfo_height()
-    assert settings.cget("text").startswith("⚙") and help_.cget("text").startswith("?")
-    assert help_.cget("text").count("?") == 1
+    assert settings.winfo_width() == help_.winfo_width() == rail.winfo_width() - 2 * 16
+    assert settings.cget("text") == "Settings" and help_.cget("text") == "Help"
+    padding = app.style.lookup(str(settings.cget("style")), "padding")
+    assert str(padding[0]) == "40"  # with the face's border: where a step's word starts
+    app.root.geometry("900x600")  # the compact rail: the marks alone, centred
+    pump(app, until=lambda: rail._compact)
+    pump(app, seconds=0.3)
+    assert settings.cget("text") == "⚙" and help_.cget("text") == "?"
+    assert "Compact" in str(settings.cget("style"))
 
 
-def test_ac_02_the_shape_is_whole_in_the_header_and_the_page_is_outlined() -> None:
+def test_ac_02_the_shape_is_whole_in_the_header_and_the_page_is_outlined(app: TtkApp) -> None:
     band = 110
-    picture = art.surface(600, 400, LIGHT.ground, LIGHT.shape, band=band, box=(8, band, 584, 384),
-                          border=LIGHT.border)  # fmt: skip
+    picture = art.surface(600, 400, LIGHT.ground, LIGHT.shape, band=band).convert("RGB")
     ground = Image.new("RGB", (1, 1), LIGHT.ground).getpixel((0, 0))
-    row = [picture.convert("RGB").getpixel((x, band + 6)) for x in range(400, 570)]
-    assert all(pixel == ground for pixel in row)  # nothing of the shape under the band
-    assert picture.convert("RGB").getpixel((300, band)) != ground  # the card's outline
+    assert all(picture.getpixel((x, band)) == ground for x in range(300, 600))
+
+    def outlines() -> list[int]:
+        return [i for i in app.surface.find_all() if str(app.surface.type(i)) == "polygon"]
+
+    assert len(outlines()) == 1  # drawn on the canvas: it follows a resize at once
+    app.root.geometry("920x620")
+    app.root.update()
+    x1, y1, x2, y2 = app.surface.bbox(outlines()[0])
+    assert x2 >= app.surface.winfo_width() - 20
 
 
-def test_ac_03_every_page_says_what_is_missing(app: TtkApp) -> None:
+def test_ac_02_the_lists_keep_their_rows_at_the_smallest_window(
+    app: TtkApp, tmp_path: Path
+) -> None:
+    app.root.geometry("800x600")  # the smallest window (its minimum since feature 011)
+    app.presenter.add_paths([tmp_path / f"{n}.pdf" for n in range(6)])
+    pump(app, seconds=0.5)
+    tree = app.main.inputs.tree
+    assert app.root.minsize() == (800, 600)
+    assert tree.winfo_ismapped() and tree.winfo_height() > 80  # its heading and two rows
+
+
+def test_ac_03_every_page_says_what_is_missing_and_never_cut(app: TtkApp) -> None:
     for page in (2, 3, 4):
         app.presenter.go_to(page)
         assert app.actions.hint.cget("text").startswith("Nothing chosen yet")
     app.presenter.add_paths([Path("/docs")])
     app.presenter.go_to(2)
     assert app.actions.hint.cget("text") == "Press Next on Choose to see what will happen."
+    app.root.geometry("800x600")
+    pump(app, seconds=0.3)
+    wrap = int(str(app.actions.hint.cget("wraplength")) or 0)
+    assert 0 < wrap <= app.actions.hint.winfo_width()  # a long hint takes two lines
+    spanish = load_catalog("es")
+    assert spanish.text("gui.nav.need_inputs_first") and spanish.text("gui.nav.nothing_written")
 
 
 def test_ac_04_screenshots_in_both_themes_and_languages() -> None:

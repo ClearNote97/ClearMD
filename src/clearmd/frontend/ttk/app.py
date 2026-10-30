@@ -41,6 +41,7 @@ from clearmd.frontend.ttk.layout import (
     EYEBROW,
     MIN_HEIGHT,
     MIN_WIDTH,
+    SHORT_BELOW,
     SPACE,
     START_SIZE,
     STRONG,
@@ -275,6 +276,7 @@ class TtkApp:
     def _window_resized(self, event: Any) -> None:
         if event.widget is self.root:
             self.rail.set_compact(self.root.winfo_width() < COMPACT_BELOW)
+            self.main.set_short(self.root.winfo_height() < SHORT_BELOW)
 
     def show_help(self) -> None:
         """The "?" window: always available (UX §4)."""

@@ -17,7 +17,7 @@ EYEBROW = -14  # the step counter, bold
 WORDMARK = -20  # Clear·MD on the rail
 
 MIN_WIDTH = 800
-MIN_HEIGHT = 560
+MIN_HEIGHT = 600  # the lists keep two rows (review of 011; was 560)
 COMPACT_BELOW = 1000  # a narrower window gets the compact rail (feature 007)
 START_SIZE = "1080x720"
 
@@ -30,3 +30,7 @@ REDRAW_MS = 80  # backgrounds are drawn again once a resize settles (AC-09)
 def on_grid(value: int) -> bool:
     """Whether a padding or gap belongs to the grid (multiples of 8; 4 for tight pairs)."""
     return value % SPACE == 0 or value == HALF
+
+
+INSET = 12  # the page's margin inside its card outline, at the sides only (feature 011)
+SHORT_BELOW = 700  # px of window height: Choose's add buttons go side by side (review of 011)

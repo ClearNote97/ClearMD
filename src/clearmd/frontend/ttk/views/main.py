@@ -22,6 +22,9 @@ from clearmd.frontend.ttk.components.file_list import Column, FileList, ListRow
 from clearmd.frontend.ttk.layout import GAP, HALF, SPACE
 from clearmd.i18n import Catalog
 
+TALL_DROP = 11 * SPACE  # the drop zone beside the two buttons, one over the other
+SHORT_DROP = 6 * SPACE  # beside them side by side, in a short window (review of 011)
+
 
 class MainView(ttk.Frame):
     """Add files / Add folder and the drop zone, the numbered list, the output choice, Convert."""
@@ -48,9 +51,9 @@ class MainView(ttk.Frame):
         buttons = ttk.Frame(entry, style=PAGE)
         buttons.pack(side="left", fill="y")
         self.add_files = ttk.Button(buttons, style=SOFT, command=on_add_files)
-        self.add_files.pack(fill="x")
         self.add_folder = ttk.Button(buttons, style=SOFT, command=on_add_folder)
-        self.add_folder.pack(fill="x", pady=(SPACE, 0))
+        self._short = False
+        self._stack_buttons()
         self._label(self.add_files, "gui.main.add_files")
         self._label(self.add_folder, "gui.main.add_folder")
         self.drop_zone = DropZone(entry, fonts=fonts, on_click=on_add_files)
@@ -139,6 +142,27 @@ class MainView(ttk.Frame):
                 for row in rows
             ]
         )  # fmt: skip
+
+    def set_short(self, short: bool) -> None:
+        """A short window: the add buttons side by side and a lower drop zone, so the list keeps
+        its rows (review of 011: at 800 x 560 it had none)."""
+        if short != self._short:
+            self._short = short
+            self._stack_buttons()
+
+    def _stack_buttons(self) -> None:
+        self.add_files.pack_forget()
+        self.add_folder.pack_forget()
+        if self._short:
+            self.add_files.pack(side="left", fill="y")
+            self.add_folder.pack(side="left", fill="y", padx=(SPACE, 0))
+            if hasattr(self, "drop_zone"):
+                self.drop_zone.configure(height=SHORT_DROP)
+        else:
+            self.add_files.pack(fill="x")
+            self.add_folder.pack(fill="x", pady=(SPACE, 0))
+            if hasattr(self, "drop_zone"):
+                self.drop_zone.configure(height=TALL_DROP)
 
     def show_output_choice(self, choice: OutputChoice) -> None:
         self.output_mode.set(choice.mode.value)

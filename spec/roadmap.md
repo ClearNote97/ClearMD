@@ -59,11 +59,12 @@ already tested (ADR-0001).
       babel's data for two languages; about 90 → 40 MB. Reviewed (code, security,
       adversarial).
 
+- [x] **011 — Window polish II** ([spec](./features/011_window-polish-2/spec.md)): Settings and
+      Help as sections of the rail, the shape whole above an outlined page, the hint says what is
+      missing on every page. Reviewed.
+
 ## Next
 
-- [ ] **011 — Window polish II** ([spec](./features/011_window-polish-2/spec.md)): Settings and
-      Help as sections of the rail, the shape whole above an outlined page, the hint says what is
-      missing on every page.
 - [ ] **012 — Images in a folder:** `<document>_images` (`_imagenes` in Spanish), a setting off
       by default, chosen on step 1 and in Settings.
 - [ ] **013 — PDF tables and equations:** tables after Camelot's stream and lattice methods on

@@ -8,9 +8,7 @@ from PIL import ImageTk
 
 from clearmd.frontend.ttk import art
 from clearmd.frontend.ttk.brand import PAGE, Palette
-from clearmd.frontend.ttk.layout import GAP, HALF, MARGIN, REDRAW_MS, SPACE
-
-INSET = SPACE + HALF  # the page's margin inside its card outline
+from clearmd.frontend.ttk.layout import GAP, HALF, INSET, MARGIN, RADIUS, REDRAW_MS, SPACE
 
 
 class Surface(tk.Canvas):
@@ -22,7 +20,9 @@ class Surface(tk.Canvas):
         self._palette: Palette | None = None
         self._texts = {"eyebrow": "", "title": "", "subtitle": ""}
         self._ground: ImageTk.PhotoImage | None = None
-        self._ground_key: tuple[int, int, str] | None = None  # drawn again only when it changes
+        self._ground_key: tuple[int, int, str, int] | None = (
+            None  # drawn again only when it changes
+        )
         self.page = ttk.Frame(self, style=PAGE)
         self._pending: str | None = None
         self.bind("<Destroy>", lambda _event: self._cancel_pending(), add="+")
@@ -69,18 +69,6 @@ class Surface(tk.Canvas):
         if p is None or width < 2 * MARGIN or height < 2 * MARGIN:
             return
         self.delete("all")
-        key = (width, height, p.mode)
-        new_theme = self._ground_key is None or self._ground_key[2] != p.mode
-        top = self._header_height() + GAP
-        # The page's card outline (feature 011), the page inside it with a margin.
-        box = (SPACE, top, width - GAP, height - GAP)
-        if self._ground is None or (key != self._ground_key and (paint or new_theme)):
-            picture = art.surface(
-                width, height, p.ground, p.shape, band=top, box=box, border=p.border
-            )
-            self._ground = ImageTk.PhotoImage(picture, master=self)
-            self._ground_key = (width, height, p.mode)
-        self.create_image(0, 0, image=self._ground, anchor="nw")
         x, y = SPACE, GAP
         self.create_text(
             x, y, text=self._texts["eyebrow"].upper(), fill=p.accent_text,
@@ -91,11 +79,34 @@ class Surface(tk.Canvas):
             x, y, text=self._texts["title"], fill=p.text, font=self._fonts["title"], anchor="nw"
         )
         y += self._fonts["title"].metrics("linespace") + HALF
-        self.create_text(
+        subtitle = self.create_text(
             x, y, text=self._texts["subtitle"], fill=p.muted, font=self._fonts["body"],
             anchor="nw", width=width - 2 * MARGIN,
         )  # fmt: skip
+        # The header ends where its subtitle does, wrapped or not (review of 011).
+        box = self.bbox(subtitle)
+        top = max(box[3] if box else y, self._header_height()) + GAP
+        key = (width, height, p.mode, top)
+        new_theme = self._ground_key is None or self._ground_key[2] != p.mode
+        if self._ground is None or (key != self._ground_key and (paint or new_theme)):
+            picture = art.surface(width, height, p.ground, p.shape, band=top)
+            self._ground = ImageTk.PhotoImage(picture, master=self)
+            self._ground_key = key
+        ground = self.create_image(0, 0, image=self._ground, anchor="nw")
+        self.tag_lower(ground)
+        # The page's card outline: canvas lines, so it follows a resize at once (review of 011).
+        if height - GAP - top > 2 * RADIUS:
+            self._outline(SPACE, top, width - GAP, height - GAP, p.border)
         self.create_window(
-            SPACE + INSET, top + INSET, window=self.page, anchor="nw",
-            width=width - SPACE - GAP - 2 * INSET, height=height - top - GAP - 2 * INSET,
+            SPACE + INSET, top + HALF, window=self.page, anchor="nw",
+            width=width - SPACE - GAP - 2 * INSET, height=height - top - GAP - 2 * HALF,
         )  # fmt: skip
+
+    def _outline(self, left: int, top: int, right: int, bottom: int, colour: str) -> None:
+        r = RADIUS
+        points = [
+            left + r, top, right - r, top, right, top, right, top + r,
+            right, bottom - r, right, bottom, right - r, bottom, left + r, bottom,
+            left, bottom, left, bottom - r, left, top + r, left, top,
+        ]  # fmt: skip
+        self.create_polygon(points, smooth=True, fill="", outline=colour, width=1)

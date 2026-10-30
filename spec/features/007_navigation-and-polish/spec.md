@@ -32,7 +32,7 @@ Each criterion has an acceptance test (`tests/acceptance/test_007_navigation_and
 
 ### The window
 - [x] **AC-09** Resizing redraws the backgrounds once the size settles (not on every pixel); the
-  window can shrink to 800 × 560, and below 1000 px wide the rail is compact (logo and numbers).
+  window can shrink to 800 × 560 (600 since feature 011), and below 1000 px wide the rail is compact (logo and numbers).
 - [x] **AC-10** The version is on screen (the rail's footer) and in the help.
 - [x] **AC-11** The executable's splash shows the logo, *Turn your documents into Markdown*, and
   "Loading · Cargando… N %" (it starts before any setting is read: both languages) moving through the real stages of the start.

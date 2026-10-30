@@ -20,6 +20,10 @@ class ActionBar(ttk.Frame):
         self.secondary = ttk.Button(self, style=SOFT, command=self._secondary)
         self.hint = ttk.Label(self, style=HINT, anchor="e", justify="right")
         self.hint.pack(side="right", fill="x", expand=True, padx=(0, GAP))
+        # Two lines when the room is short (Spanish at 800 px): never cut mid-word (011).
+        self.hint.bind(
+            "<Configure>", lambda event: self.hint.configure(wraplength=max(event.width, 120))
+        )
         self._secondary_command: Callable[[], None] | None = None
 
     def _secondary(self) -> None:
