@@ -25,6 +25,7 @@ MAX_LABELS = 200  # equation numbers looked at on a page
 MAX_ROW_WORDS = 400  # words looked at on a number's row
 LINE_REACH = 40  # points: a line holding a number starts at most this far below it
 TITLE_RATIO = 1.15  # a line this much larger than the equation's number is a heading
+TITLE_LETTERS = 3  # if it has words: a tall "{" or "∑" alone is not
 _CAPTION = re.compile(r"(?:Table|Tabla|Cuadro|Figure|Figura|Fig\.)\s+[0-9IVXLC]+\b")
 _NUMBERED_HEADING = re.compile(r"\d{1,2}(?:\.\d{1,2})*\.?\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]")
 PROSE_WORDS = 3  # a line with this many words of four letters or more is prose
@@ -58,10 +59,10 @@ def find_equations(lines: list[Placed], words: list[Word]) -> list[range]:
     for index in sorted(labels):
         if index in taken:
             continue
-        stops = labels | taken
+        stops = set(labels) | taken
         start, end = index, index
         # What is found so far, bottom to top, and the number's size (a subscript's is no measure).
-        box = [lines[index].bottom, lines[index].top, lines[index].size]
+        box = [lines[index].bottom, lines[index].top, labels[index]]
         while (
             start - 1 >= 0
             and index - start < MAX_LINES
@@ -80,22 +81,23 @@ def find_equations(lines: list[Placed], words: list[Word]) -> list[range]:
     return found
 
 
-def _label_lines(lines: list[Placed], words: list[Word], right_edge: float) -> set[int]:
+def _label_lines(lines: list[Placed], words: list[Word], right_edge: float) -> dict[int, float]:
     """The lines that hold an equation's number, set apart at the right margin: the words sorted
-    once, each number's row found by bisection; a page's numbers at most ``MAX_LABELS``."""
+    once, each number's row found by bisection; a page's numbers at most ``MAX_LABELS``. Each
+    with the number's own size (its line may be mostly scripts)."""
     candidates = [
         word for word in words
         if LABEL.fullmatch(word.text) and word.right >= right_edge - LABEL_SLACK
     ][:MAX_LABELS]  # fmt: skip
     if not candidates:
-        return set()
+        return {}
     ordered = sorted(words, key=lambda w: w.bottom)
     bottoms = [word.bottom for word in ordered]
     by_bottom: dict[float, list[int]] = {}
     for index, line in enumerate(lines):
         if not line.other:
             by_bottom.setdefault(round(line.bottom), []).append(index)
-    labels: set[int] = set()
+    labels: dict[int, float] = {}
     for word in candidates:
         reach = ROW_EMS * word.size
         low = bisect.bisect_left(bottoms, word.bottom - reach)
@@ -112,7 +114,7 @@ def _label_lines(lines: list[Placed], words: list[Word], right_edge: float) -> s
                 line = lines[index]
                 holds = line.bottom <= word.bottom + 1 and line.top >= word.top - 1
                 if holds and line.text.endswith(word.text):
-                    labels.add(index)
+                    labels[index] = max(word.size, line.size)
     return labels
 
 
@@ -129,10 +131,11 @@ def _joins(line: Placed, index: int, box: list[float], stops: set[int]) -> bool:
 
 
 def _titled(line: Placed, size: float) -> bool:
-    """A heading ("3. Methods", or text larger than the equation's number) or a caption."""
+    """A heading ("3. Methods", or words larger than the equation's number) or a caption. A tall
+    brace, bracket or sum is the equation's own: no words (v0.8.0 cut equations there)."""
     text = line.text.strip()
     return (
-        line.size > TITLE_RATIO * size
+        (line.size > TITLE_RATIO * size and sum(char.isalpha() for char in text) >= TITLE_LETTERS)
         or _CAPTION.match(text) is not None
         or _NUMBERED_HEADING.match(text) is not None
     )

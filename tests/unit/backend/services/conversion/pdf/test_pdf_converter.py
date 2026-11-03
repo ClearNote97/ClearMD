@@ -429,6 +429,8 @@ def test_surrogate_pairs_are_one_character() -> None:
         chars.fonts.append(0)
         chars.bold.append(0)
         chars.turns.append(0)
+        chars.font_sizes.append(11.0)
+        chars.baselines.append(700.0)
         for column, value in (
             (chars.sizes, 11.0), (chars.bottoms, 700.0), (chars.tops, 711.0),
             (chars.lefts, 72.0), (chars.rights, 78.0),

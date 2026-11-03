@@ -359,3 +359,61 @@ def test_a_page_of_many_rows_is_quick() -> None:
     started = time.monotonic()
     find_tables(words)
     assert time.monotonic() - started < 5
+
+
+# --- Sub- and superscripts (014) ---------------------------------------------------------------
+
+
+def scripted(tmp_path: Path, pieces: list[Text]) -> str:
+    return convert(tmp_path, [pieces])
+
+
+def test_a_superscript_and_a_subscript_are_written_as_such(tmp_path: Path) -> None:
+    # Helvetica: "EF" is 1.278 em wide, "t" 0.278 em: each piece starts where the last ends.
+    markdown = scripted(
+        tmp_path,
+        [
+            Text("The efficiency", 700, 11, x=72),
+            Text("EF", 700, 11, x=150),
+            Text("t", 704, 7, x=164.1),
+            Text("o", 697, 7, x=164.1),
+            Text("(x) is the measure of it.", 700, 11, x=166.1),
+        ],
+    )
+    assert "The efficiency EFᵗₒ(x) is the measure of it." in markdown
+
+
+def test_a_footnote_mark_is_a_superscript(tmp_path: Path) -> None:
+    markdown = scripted(
+        tmp_path,
+        [
+            Text("Studies are rare, in relative", 700, 11, x=72),
+            Text("terms.", 700, 11, x=230),  # 2.778 em wide
+            Text("5", 704, 7, x=260.6),
+            Text("Since then, many have used it.", 700, 11, x=267.5),
+        ],
+    )
+    assert "in relative terms.⁵ Since then" in markdown
+
+
+def test_a_script_unicode_lacks_is_written_with_braces(tmp_path: Path) -> None:
+    markdown = scripted(
+        tmp_path,
+        [
+            Text("The power x", 700, 11, x=72),
+            Text("q", 704, 7, x=133),
+            Text(" grows.", 700, 11, x=137),
+        ],
+    )
+    assert "x^{q}" in markdown
+
+
+def test_a_tall_brace_is_part_of_its_equation() -> None:
+    lines = [
+        placed("as follows the program is defined here:", 700, 520),
+        placed("P(x) = {", 680, 300, 30),  # a brace 30 points tall: no heading
+        placed("y: y ≤ 1", 680, 360),
+        placed("(3)", 680, 520),
+    ]
+    words = [label("(3)", 508, 680)]
+    assert find_equations(lines, words) == [range(1, 4)]

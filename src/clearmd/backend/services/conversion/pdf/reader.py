@@ -30,6 +30,17 @@ from clearmd.backend.services.conversion.pdf.lattice import Rule, find_lattices,
 from clearmd.backend.services.conversion.pdf.tables import Table, Word, find_tables
 
 _LINE_END = 0x0A
+# The letters Unicode has as scripts: a script made only of them is written with them (014).
+_SUPERSCRIPTS = dict(
+    zip(
+        "0123456789+-−=()abcdefghijklmnoprstuvwxyzABDEGHIJKLMNOPRTUVW′″θ*",
+        "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻⁻⁼⁽⁾ᵃᵇᶜᵈᵉᶠᵍʰⁱʲᵏˡᵐⁿᵒᵖʳˢᵗᵘᵛʷˣʸᶻᴬᴮᴰᴱᴳᴴᴵᴶᴷᴸᴹᴺᴼᴾᴿᵀᵁⱽᵂ′″ᶿ*",
+        strict=True,
+    )
+)
+_SUBSCRIPTS = dict(
+    zip("0123456789+-−=()aehijklmnoprstuvx", "₀₁₂₃₄₅₆₇₈₉₊₋₋₌₍₎ₐₑₕᵢⱼₖₗₘₙₒₚᵣₛₜᵤᵥₓ", strict=True)
+)
 _SKIPPED = {0x0D, 0xFEFF}
 _SOFT_HYPHENS = {0x02, 0xAD, 0xFFFE}  # what PDFium gives for a hyphen that breaks a word
 SOFT_HYPHEN = "­"
@@ -38,6 +49,16 @@ _BOLD_NAMES = ("bold", "black", "heavy", "semibold", "demi")
 _FORCE_BOLD = 1 << 18  # the font descriptor's ForceBold flag
 TURN_RADIANS = 0.01  # a character turned less than this from a quarter turn is on it
 UPRIGHT, CLOCKWISE, COUNTERCLOCKWISE, ASLANT = range(4)  # how a character is turned
+LOOK_AHEAD = 4  # characters looked at past a line's end (its carriage return, a space)
+ROW_OVERLAP = 0.5  # of the shorter box: two characters this much level are on one row
+SCRIPT_GAP_EMS = 0.5  # a script starts at most this far from what it is set on
+SCRIPT_SIZE = 0.85  # a character this much smaller than its line's text may be a script
+RAISED_EMS = 0.12  # its baseline this far above the line's (in its size) is a superscript
+LOWERED_EMS = 0.08  # this far below, a subscript
+HUG_EMS = 0.12  # a space narrower than this (a word's is about a quarter) touches a script
+BASE_SHARE = 0.15  # a character within this share of the text's size is text
+TEXT_SHARE = 0.2  # of a line's characters: a size this many share may be the text's
+DELIMITER_RATIO = 1.6  # larger than the commonest size: a tall brace or bracket
 NEW_ROW_SHARE = 0.5  # of a sideways letter's height: a character this far across is on another row
 ROW_SLACK = 1.0  # points: a line within a table's top and bottom is one of its rows
 ROW_SHARE = 0.35  # of a letter's height: pieces this close vertically are on one row
@@ -115,6 +136,8 @@ class _Chars:
         self.lefts = array("f")
         self.rights = array("f")
         self.turns = array("B")  # upright, a quarter turn either way, or aslant
+        self.font_sizes = array("f")  # the font's size, as set: a script's is smaller (014)
+        self.baselines = array("f")  # where it stands: a script's is raised or lowered
         self.bold = array("B")
 
 
@@ -189,6 +212,15 @@ def _page_chars(textpage: object, fonts: _Fonts) -> _Chars:
         raw.FPDFText_GetCharAngle,
     )
     pointer = ctypes.byref(rect)
+    font_size, origin, placed = (
+        raw.FPDFText_GetFontSize,
+        raw.FPDFText_GetCharOrigin,
+        raw.FPDFText_GetMatrix,
+    )
+    matrix = raw.FS_MATRIX()
+    matrix_pointer = ctypes.byref(matrix)
+    x, y = ctypes.c_double(), ctypes.c_double()
+    origin_x, origin_y = ctypes.byref(x), ctypes.byref(y)
     for index, font in _each_font(textpage, fonts):
         box(textpage, index, pointer)
         bottom, top = _finite(rect.bottom), _finite(rect.top)
@@ -202,6 +234,15 @@ def _page_chars(textpage: object, fonts: _Fonts) -> _Chars:
         chars.rights.append(_finite(rect.right))
         turned = angle(textpage, index)
         chars.turns.append(UPRIGHT if turned == 0.0 else _turn(turned))  # nearly all: upright
+        # The size as drawn: the font's size scaled by its matrix ("1 Tf" and a 9.46 matrix).
+        scale = (
+            math.sqrt(abs(matrix.a * matrix.d - matrix.b * matrix.c))
+            if placed(textpage, index, matrix_pointer)
+            else 1.0
+        )
+        chars.font_sizes.append(_finite(font_size(textpage, index) * scale))
+        found = origin(textpage, index, origin_x, origin_y)
+        chars.baselines.append(_finite(y.value) if found else bottom)
         chars.bold.append(fonts.bold[font])
     return chars
 
@@ -444,8 +485,11 @@ def _page(
     words: dict[int, list[Word]] = {UPRIGHT: [], CLOCKWISE: [], COUNTERCLOCKWISE: []}
     start = 0
     last = -1  # the last character drawn (with a width): where a sideways row goes on from
+    extent = [math.inf, -math.inf]  # the line's bottom and top so far
     for index in range(len(chars.codes) + 1):
-        ended = index == len(chars.codes) or chars.codes[index] == _LINE_END
+        ended = index == len(chars.codes) or (
+            chars.codes[index] == _LINE_END and not _goes_on(chars, last, index, extent)
+        )
         if not ended and last >= start and _new_row(chars, last, index):
             ended = True  # PDFium runs a sideways table's rows into one line: one per row
             next_start = index
@@ -457,12 +501,15 @@ def _page(
                 if line.text.strip():
                     page.lines.append(line)
             start = next_start
+            extent[:] = [math.inf, -math.inf]
         if (
             index < len(chars.codes)
             and chars.codes[index] > 0x20  # a space PDFium adds is drawn nowhere in particular
             and chars.rights[index] > chars.lefts[index]
         ):
             last = index
+            extent[0] = min(extent[0], chars.bottoms[index])
+            extent[1] = max(extent[1], chars.tops[index])
     page.lines = _equations(_tabled(page.lines, words, rules or []), words[UPRIGHT])
     return page
 
@@ -476,12 +523,18 @@ def _equations(lines: list[Line], words: list[Word]) -> list[Line]:
     ]  # fmt: skip
     for found in reversed(find_equations(placed, words)):
         group = lines[found.start : found.stop]
+        top, bottom = max(line.top for line in group), min(line.bottom for line in group)
+        # A font's boxes reach past its letters: never into the lines just above and below.
+        if found.start > 0 and bottom < lines[found.start - 1].bottom < top:
+            top = lines[found.start - 1].bottom
+        if found.stop < len(lines) and bottom < lines[found.stop].top < top:
+            bottom = lines[found.stop].top
         block = Line(
             "",
             0.0,  # a block, not text: never a footnote, a heading, a running line (review of 013)
             False,
-            max(line.top for line in group),
-            min(line.bottom for line in group),
+            top,
+            bottom,
             left=min(line.left for line in group),
             right=max(line.right for line in group),
             equation=_laid_out(group),
@@ -583,6 +636,30 @@ def _trimmed(image: Image.Image) -> Image.Image | None:
     return image.crop((left, top, right, bottom))
 
 
+def _goes_on(chars: _Chars, last: int, index: int, extent: list[float]) -> bool:
+    """Whether a line PDFium ends goes on in the next one: the next character stands on the same
+    row, right after the last (a subscript PDFium put on a line of its own: "Rᴺ" then "₊")."""
+    following = next(
+        (i for i in range(index + 1, min(index + LOOK_AHEAD, len(chars.codes)))
+         if chars.codes[i] > 0x20 and chars.rights[i] > chars.lefts[i]),
+        None,
+    )  # fmt: skip
+    if last < 0 or following is None:
+        return False
+    if chars.turns[last] != UPRIGHT or chars.turns[following] != UPRIGHT:
+        return False
+    low, high = extent  # the line's, not its last character's (a superscript, then a subscript)
+    overlap = min(high, chars.tops[following]) - max(low, chars.bottoms[following])
+    height = min(high - low, chars.tops[following] - chars.bottoms[following])
+    size = max(chars.font_sizes[last], chars.font_sizes[following], 1.0)
+    return (
+        height > 0
+        and overlap >= ROW_OVERLAP * height
+        and chars.lefts[following] >= chars.lefts[last] - 1.0
+        and chars.lefts[following] - chars.rights[last] <= SCRIPT_GAP_EMS * size
+    )
+
+
 def _new_row(chars: _Chars, last: int, index: int) -> bool:
     """A character turned otherwise than the last one (a page's header, then its sideways table's
     title), or a sideways one on another row: its row is across the page."""
@@ -645,9 +722,12 @@ def _line(
     document: Document,
     words: dict[int, list[Word]] | None = None,
 ) -> Line:
-    text: list[str] = []
+    pieces: list[tuple[str, int]] = []  # each piece of text and the character it comes from
     word: list[int] = []  # the indices of the word being read, and its text
     word_text: list[str] = []
+
+    def put(piece: str, index: int = -1) -> None:
+        pieces.append((piece, index))
 
     def end_word() -> None:
         turn = chars.turns[word[0]] if word else ASLANT
@@ -663,51 +743,55 @@ def _line(
         raw_code = chars.codes[index]
         if raw_code in _SKIPPED:
             continue
+        if raw_code == _LINE_END:  # one PDFium ended where the row goes on: a space between
+            put(" ")  # (gone if it touches a script: "Rᴺ" and "₊")
+            end_word()
+            continue
         code = _decoded(raw_code, shifts[font])
         if high and not 0xDC00 <= code < 0xE000:  # a first half with no second: unreadable
             document.unreadable += 1
-            text.append(UNREADABLE)
+            put(UNREADABLE)
             high = 0
         if 0xD800 <= code < 0xDC00:
             high = code
             continue
         if 0xDC00 <= code < 0xE000:
             if high:
-                text.append(chr(0x10000 + ((high - 0xD800) << 10) + (code - 0xDC00)))
+                put(chr(0x10000 + ((high - 0xD800) << 10) + (code - 0xDC00)), index)
             else:
                 document.unreadable += 1
-                text.append(UNREADABLE)
+                put(UNREADABLE, index)
             high = 0
             visible.append(index)
             word.append(index)
-            word_text.append(text[-1])
+            word_text.append(pieces[-1][0])
             continue
         if code in _SOFT_HYPHENS:
-            text.append(SOFT_HYPHEN)
+            put(SOFT_HYPHEN, index)
         elif code == 0x09 or code == 0x20:
-            text.append(" ")
+            put(" ")
             end_word()
             continue
         elif code < 0x20 or code == 0x7F or code > 0x10FFFF or code == 0xFFFD:
             # A code no map turned into a character: never dropped silently (ADR-0022).
             document.unreadable += 1
-            text.append(UNREADABLE)
+            put(UNREADABLE, index)
         elif unmapped[font] and not shifts[font]:
             document.unreadable += 1  # a font without a map, not read back: its letters are wrong
-            text.append(chr(code))
+            put(chr(code), index)
         else:
-            text.append(chr(code))
+            put(chr(code), index)
         visible.append(index)
         word.append(index)
-        word_text.append(text[-1])
+        word_text.append(pieces[-1][0])
     if high:
         document.unreadable += 1
-        text.append(UNREADABLE)
+        put(UNREADABLE)
     end_word()
     shown = visible or list(span)
     sizes = Counter(round(chars.sizes[index], 1) for index in shown)
     return Line(
-        " ".join("".join(text).split()),
+        " ".join(_scripted(pieces, chars, visible).split()),
         sizes.most_common(1)[0][0],
         sum(chars.bold[index] for index in shown) * 2 > len(shown),
         max(chars.tops[index] for index in shown),
@@ -716,6 +800,95 @@ def _line(
         left=min(chars.lefts[index] for index in shown),
         right=max(chars.rights[index] for index in shown),
     )
+
+
+def _scripted(pieces: list[tuple[str, int]], chars: _Chars, visible: list[int]) -> str:
+    """The line's text, its sub- and superscripts written as such (014): a character smaller than
+    the line's text, its baseline raised or lowered, as "EFᵗₒ", "Rᴺ₊", "zⱼ", a footnote's "²";
+    a script with no such letter in Unicode as "^{…}" or "_{…}". The space PDFium puts around a
+    script that touches its base goes."""
+    marks = _scripts(chars, visible)
+    if not marks:
+        return "".join(piece for piece, _ in pieces)
+    kept: list[tuple[str, int, str]] = []
+    for position, (piece, index) in enumerate(pieces):
+        if piece == " " and _hugs(pieces, position, marks, chars):
+            continue
+        kept.append((piece, index, marks.get(index, "")))
+    out: list[str] = []
+    run: list[str] = []
+    mode = ""
+    for piece, _, mark in [*kept, ("", -1, "")]:
+        if mark != mode and run:
+            out.append(_script_text(run, mode))
+            run = []
+        mode = mark
+        if mark:
+            run.append(piece)
+        else:
+            out.append(piece)
+    return "".join(out)
+
+
+def _scripts(chars: _Chars, visible: list[int]) -> dict[int, str]:
+    """Each script's character and its kind: "^" raised, "_" lowered."""
+    upright = [i for i in visible if chars.turns[i] == UPRIGHT and chars.font_sizes[i] > 0]
+    if len(upright) < 2:
+        return {}
+    counts = Counter(round(chars.font_sizes[i], 1) for i in upright)
+    commonest = counts.most_common(1)[0][0]
+    # The text's size: the largest one many characters share ("((xᵗ⁺¹" has more script than
+    # text), never a tall delimiter's.
+    shared = [
+        size for size, count in counts.items()
+        if count >= max(2, TEXT_SHARE * len(upright)) and size <= DELIMITER_RATIO * commonest
+    ]  # fmt: skip
+    text_size = max(shared, default=commonest)
+    # The text a script is set on: letters and digits of the text's size (never a "∑" or "=",
+    # whose baseline is the symbol's own).
+    level = {
+        i for i in upright
+        if abs(chars.font_sizes[i] - text_size) <= BASE_SHARE * text_size
+        and (chr(chars.codes[i]).isalnum() or chr(chars.codes[i]) == ")")
+    }  # fmt: skip
+    normal = [i for i in upright if i in level]
+    if not normal:
+        return {}
+    marks: dict[int, str] = {}
+    for position, i in enumerate(upright):
+        if chars.font_sizes[i] >= SCRIPT_SIZE * text_size:
+            continue
+        # Raised or lowered from the text it is set on, the character before it (or after): a
+        # PDFium "line" may hold two rows of a paragraph, never one baseline.
+        base = next((j for j in reversed(upright[:position]) if j in level), None)
+        if base is None:
+            base = next((j for j in upright[position + 1 :] if j in level), normal[0])
+        shift = chars.baselines[i] - chars.baselines[base]
+        if shift > RAISED_EMS * text_size:
+            marks[i] = "^"
+        elif shift < -LOWERED_EMS * text_size:
+            marks[i] = "_"
+    return marks
+
+
+def _hugs(
+    pieces: list[tuple[str, int]], position: int, marks: dict[int, str], chars: _Chars
+) -> bool:
+    """A space between a script and what it is set on, narrower than a real one."""
+    before = next((i for _, i in reversed(pieces[:position]) if i >= 0), -1)
+    after = next((i for _, i in pieces[position + 1 :] if i >= 0), -1)
+    if before < 0 or after < 0 or not (before in marks or after in marks):
+        return False
+    gap = chars.lefts[after] - chars.rights[before]
+    return gap < HUG_EMS * max(chars.font_sizes[before], chars.font_sizes[after], 1.0)
+
+
+def _script_text(run: list[str], mode: str) -> str:
+    table = _SUPERSCRIPTS if mode == "^" else _SUBSCRIPTS
+    text = "".join(run)
+    if all(char in table for char in text):
+        return "".join(table[char] for char in text)
+    return f"{mode}{{{text}}}"
 
 
 def _word(text: str, chars: _Chars, indices: list[int], turn: int) -> Word:
