@@ -154,7 +154,7 @@ def test_ac_08_review_says_ready_to_convert(app: TtkApp, tmp_path: Path) -> None
 def test_ac_09_backgrounds_redraw_once_settled_small_window_and_compact_rail(
     app: TtkApp,
 ) -> None:
-    assert app.root.minsize() == (800, 600)  # 600 since feature 011
+    assert app.root.minsize() == (800, 624)  # 624 since feature 014
     app.root.geometry("820x600")
     pump(app, until=lambda: app.rail._compact, seconds=5)
     assert app.rail._compact

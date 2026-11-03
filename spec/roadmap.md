@@ -69,6 +69,10 @@ already tested (ADR-0001).
 - [x] **013 — PDF tables and equations:** tables after Camelot's stream and lattice methods on
       PDFium; equations as images when images are kept; the table of contents line by line. Reviewed.
 
+- [ ] **014 — Sub- and superscripts, window polish III**
+      ([spec](./features/014_scripts-and-window-polish-3/spec.md)): a PDF's scripts as such and its
+      equations whole; one gutter; each page's cards faded before there is anything in them.
+
 ## Next
 
 - [ ] **006b — Hardening of the executables:** **code signing** of the Windows executables
@@ -78,8 +82,8 @@ already tested (ADR-0001).
 
 ## Later
 
-- [ ] **014 — PySide6-Essentials GUI** (*onedir* distribution because of LGPL, ADR-0003).
-- [ ] **015 — flet GUI.**
+- [ ] **015 — PySide6-Essentials GUI** (*onedir* distribution because of LGPL, ADR-0003).
+- [ ] **016 — flet GUI.**
 - [ ] A small Windows installer (a Start menu shortcut), optional.
 - [ ] Incremental mode: skip files unchanged since the last run.
 - [ ] Minor formats: `.eml`, `.rtf`, subtitles.

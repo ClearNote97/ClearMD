@@ -427,6 +427,8 @@ class TtkApp:
 
     def show_output_choice(self, choice: OutputChoice) -> None:
         self.main.show_output_choice(choice)
+        if self.converting.dimmed:  # the waiting card says where results will go (014)
+            self.converting.ready_where.configure(text=str(self.main.output_label.cget("text")))
 
     def show_scan(self, text: str) -> None:
         self._scan = text
@@ -456,7 +458,7 @@ class TtkApp:
         self.last_plan = None
         self.last_result = None
         self.review.forget()
-        self.converting.forget()
+        self.converting.forget(str(self.main.output_label.cget("text")))
         self.results.forget()
 
     def show_message(self, text: str) -> None:

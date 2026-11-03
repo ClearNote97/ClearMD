@@ -68,11 +68,11 @@ def test_ac_02_the_shape_is_whole_in_the_header_and_the_page_is_outlined(app: Tt
 def test_ac_02_the_lists_keep_their_rows_at_the_smallest_window(
     app: TtkApp, tmp_path: Path
 ) -> None:
-    app.root.geometry("800x600")  # the smallest window (its minimum since feature 011)
+    app.root.geometry("800x624")  # the smallest window (its minimum since feature 014)
     app.presenter.add_paths([tmp_path / f"{n}.pdf" for n in range(6)])
     pump(app, seconds=0.5)
     tree = app.main.inputs.tree
-    assert app.root.minsize() == (800, 600)
+    assert app.root.minsize() == (800, 624)
     # Its heading and a row at least (two with Linux's fonts; Segoe UI is taller: one, CI).
     assert tree.winfo_ismapped() and tree.winfo_height() > 55
 
@@ -84,7 +84,7 @@ def test_ac_03_every_page_says_what_is_missing_and_never_cut(app: TtkApp) -> Non
     app.presenter.add_paths([Path("/docs")])
     app.presenter.go_to(2)
     assert app.actions.hint.cget("text") == "Press Next on Choose to see what will happen."
-    app.root.geometry("800x600")
+    app.root.geometry("800x624")
     pump(app, seconds=0.3)
     wrap = int(str(app.actions.hint.cget("wraplength")) or 0)
     assert 0 < wrap <= app.actions.hint.winfo_width()  # a long hint takes two lines

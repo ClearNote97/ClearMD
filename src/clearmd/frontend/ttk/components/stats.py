@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from tkinter import ttk
 
 from clearmd.frontend.presenter.models import Stat, Tone
-from clearmd.frontend.ttk.brand import CARD, MUTED, PAGE, Palette
+from clearmd.frontend.ttk.brand import CARD, DIM, DIM_CARD, MUTED, PAGE, Palette
 from clearmd.frontend.ttk.layout import GAP, HALF
 
 
@@ -18,14 +18,34 @@ class Stats(ttk.Frame):
         self._fonts = fonts
         self._palette: Palette | None = None
         self._stats: tuple[Stat, ...] = ()
+        self._waiting: tuple[str, ...] = ()  # the figures' names, faded, before there are any
         self._cards: list[tuple[ttk.Label, ttk.Label]] = []
+        self.dimmed = False
 
     def apply_palette(self, palette: Palette) -> None:
         self._palette = palette
-        self.show(self._stats)
+        if self.dimmed:
+            self.waiting(self._waiting)
+        else:
+            self.show(self._stats)
+
+    def waiting(self, labels: Sequence[str]) -> None:
+        """The cards before there is anything to count: faded, "—" for each figure (014)."""
+        self.show(())
+        self._waiting = tuple(labels)
+        self.dimmed = True
+        for index, name in enumerate(self._waiting):
+            card = ttk.Frame(self, style=DIM_CARD, padding=GAP)
+            card.pack(side="left", fill="x", expand=True, padx=(0 if index == 0 else GAP, 0))
+            figure = ttk.Label(card, text="—", style=DIM, font=self._fonts["title"])
+            figure.pack(anchor="w")
+            label = ttk.Label(card, text=name, style=DIM)
+            label.pack(anchor="w", pady=(HALF, 0))
+            self._cards.append((figure, label))
 
     def show(self, stats: Sequence[Stat]) -> None:
         self._stats = tuple(stats)
+        self.dimmed = False
         for child in self.winfo_children():
             child.destroy()
         self._cards.clear()

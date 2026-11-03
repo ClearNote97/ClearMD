@@ -9,7 +9,7 @@ from PIL import ImageTk
 
 from clearmd.frontend.presenter.models import ProgressView
 from clearmd.frontend.ttk import art
-from clearmd.frontend.ttk.brand import CARD, MUTED, PAGE
+from clearmd.frontend.ttk.brand import CARD, DIM, DIM_CARD, MUTED, PAGE
 from clearmd.frontend.ttk.layout import GAP, HALF, SPACE
 from clearmd.i18n import Catalog
 
@@ -31,6 +31,8 @@ class ConvertView(ttk.Frame):
         self.ready_where = ttk.Label(self.ready, style=MUTED, wraplength=640, justify="left")
         self.ready_where.pack(anchor="w", pady=(SPACE, 0))
         self.ready.pack(fill="x")
+        self.dimmed = False
+        self._fade(True)  # nothing chosen yet: it waits, faded (014)
 
         card = ttk.Frame(self, style=CARD, padding=3 * SPACE)
         self.progress_card = card
@@ -51,14 +53,26 @@ class ConvertView(ttk.Frame):
     def show_ready(self, count: str, where: str) -> None:
         """The batch has not started: what is ready, and where the results go."""
         self.progress_card.pack_forget()
+        self._fade(False)
         self.ready_count.configure(text=count)
         self.ready_where.configure(text=where)
         self.ready.pack(fill="x")
 
-    def forget(self) -> None:
-        """No plan any more: neither what was ready nor an old progress stays on screen."""
-        self.ready.pack_forget()
+    def forget(self, where: str = "") -> None:
+        """No plan any more: neither what was ready nor an old progress stays on screen; the
+        ready card waits, faded, with nothing counted (014)."""
         self.progress_card.pack_forget()
+        self._fade(True)
+        ready = self._catalog.text("gui.convert.ready", count="—") if self._catalog else "—"
+        self.ready_count.configure(text=ready)
+        self.ready_where.configure(text=where)
+        self.ready.pack(fill="x")
+
+    def _fade(self, dimmed: bool) -> None:
+        self.dimmed = dimmed
+        self.ready.configure(style=DIM_CARD if dimmed else CARD)
+        self.ready_count.configure(style=DIM if dimmed else "TLabel")
+        self.ready_where.configure(style=DIM if dimmed else MUTED)
 
     def clear(self) -> None:
         """The batch starts: the progress replaces the ready card."""
@@ -82,6 +96,8 @@ class ConvertView(ttk.Frame):
 
     def apply_language(self, catalog: Catalog) -> None:
         self._catalog = catalog
+        if self.dimmed:
+            self.ready_count.configure(text=catalog.text("gui.convert.ready", count="—"))
         for widget, key in self._texts:
             widget.configure(text=catalog.text(key))
 

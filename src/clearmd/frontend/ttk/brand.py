@@ -100,12 +100,18 @@ LINK = "Link.ClearMD.TButton"  # a quiet action on the ground
 CARD = "Card.ClearMD.TFrame"  # a white, rounded card
 PAGE = "Page.ClearMD.TFrame"  # the working area's ground
 MUTED = "Muted.ClearMD.TLabel"  # secondary text on a card
+# A card shown before there is anything to show in it: faded, like the rail's steps out of reach
+# (feature 014).
+DIM_CARD = "Dim.Card.ClearMD.TFrame"
+DIM = "Dim.ClearMD.TLabel"  # its text
 WARNING = "Warning.ClearMD.TLabel"  # a message on the ground
 ON_PAGE = "OnPage.ClearMD.TLabel"  # text on the ground
 HINT = "Hint.ClearMD.TLabel"  # why an action is disabled, on the ground
 CHECK_ON_PAGE = "OnPage.ClearMD.TCheckbutton"  # a check box on the ground
 
 _BUTTON_HEIGHT = 44  # a comfortable target (UX §5)
+DIM_STRENGTH = 0.45  # a faded card: this much of the card's colour on the ground's
+DIM_TEXT = 0.6  # its text: this much of the muted colour on the faded card
 
 
 def register_themes(style: tb.Style) -> None:
@@ -241,6 +247,16 @@ class Look:
         style.element_create("Card.ClearMD.face", "image", card_face, border=RADIUS, sticky="nsew")
         style.layout(CARD, [("Card.ClearMD.face", {"sticky": "nsew"})])
         style.configure(CARD, background=p.ground)
+        dim_fill = art.blend(p.card, p.ground, DIM_STRENGTH)
+        dim = art.rounded(
+            3 * RADIUS, 3 * RADIUS, RADIUS, dim_fill, border=p.border, ground=p.ground
+        )
+        style.element_create(
+            "Dim.Card.ClearMD.face", "image", self._image(p, dim), border=RADIUS, sticky="nsew"
+        )
+        style.layout(DIM_CARD, [("Dim.Card.ClearMD.face", {"sticky": "nsew"})])
+        style.configure(DIM_CARD, background=p.ground)
+        style.configure(DIM, background=dim_fill, foreground=art.blend(p.muted, dim_fill, DIM_TEXT))
         style.configure(PAGE, background=p.ground)
         style.configure(MUTED, background=p.card, foreground=p.muted)
         style.configure(ON_PAGE, background=p.ground, foreground=p.text)

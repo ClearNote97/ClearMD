@@ -8,7 +8,15 @@ from PIL import ImageTk
 
 from clearmd.frontend.ttk import art
 from clearmd.frontend.ttk.brand import PAGE, Palette
-from clearmd.frontend.ttk.layout import GAP, HALF, INSET, MARGIN, RADIUS, REDRAW_MS, SPACE
+from clearmd.frontend.ttk.layout import (
+    GAP,
+    GUTTER,
+    HALF,
+    INSET,
+    MARGIN,
+    RADIUS,
+    REDRAW_MS,
+)
 
 
 class Surface(tk.Canvas):
@@ -69,7 +77,7 @@ class Surface(tk.Canvas):
         if p is None or width < 2 * MARGIN or height < 2 * MARGIN:
             return
         self.delete("all")
-        x, y = SPACE, GAP
+        x, y = GUTTER, GUTTER  # the header starts where the card does
         self.create_text(
             x, y, text=self._texts["eyebrow"].upper(), fill=p.accent_text,
             font=self._fonts["eyebrow"], anchor="nw",
@@ -95,11 +103,12 @@ class Surface(tk.Canvas):
         ground = self.create_image(0, 0, image=self._ground, anchor="nw")
         self.tag_lower(ground)
         # The page's card outline: canvas lines, so it follows a resize at once (review of 011).
-        if height - GAP - top > 2 * RADIUS:
-            self._outline(SPACE, top, width - GAP, height - GAP, p.border)
+        # The same gutter on every side: from the rail, to the window's edges, and inside it.
+        if height - GUTTER - top > 2 * RADIUS:
+            self._outline(GUTTER, top, width - GUTTER, height - GUTTER, p.border)
         self.create_window(
-            SPACE + INSET, top + HALF, window=self.page, anchor="nw",
-            width=width - SPACE - GAP - 2 * INSET, height=height - top - GAP - 2 * HALF,
+            GUTTER + INSET, top + INSET, window=self.page, anchor="nw",
+            width=width - 2 * GUTTER - 2 * INSET, height=height - top - GUTTER - 2 * INSET,
         )  # fmt: skip
 
     def _outline(self, left: int, top: int, right: int, bottom: int, colour: str) -> None:

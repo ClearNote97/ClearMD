@@ -204,7 +204,7 @@ def test_ac_05_the_choice_fits_the_smallest_window_in_spanish(display: str) -> N
     window = TtkApp(FakeBackend(settings=Settings(show_welcome=False, language="es")))
     window.start()
     try:
-        window.root.geometry("800x600")
+        window.root.geometry("800x624")
         deadline = time.monotonic() + 1
         while time.monotonic() < deadline:
             window.root.update()

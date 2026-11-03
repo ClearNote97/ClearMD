@@ -168,6 +168,11 @@ def converting(app: TtkApp, held: Held) -> None:
     settle(app, until=lambda: held.files == 3)
 
 
+def _go(page: int) -> Callable[[TtkApp], None]:
+    """A page shown with nothing chosen."""
+    return lambda app: app.presenter.go_to(page)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Screenshots of the ttk GUI")
     parser.add_argument("--out", type=Path, required=True)
@@ -195,6 +200,11 @@ def main() -> int:
                     ("3-convert-ready", FakeBackend(plan=PLAN), convert_ready),
                     ("4-convert-more", FakeBackend(plan=PLAN, statuses=FAILED), convert_more),
                     ("1-choose-compact", FakeBackend(plan=PLAN), compact),
+                    # Nothing chosen: each page's cards wait, faded (feature 014).
+                    *(
+                        (f"{page}-empty", FakeBackend(plan=PLAN), _go(int(page[0])))
+                        for page in ("2-review", "3-convert", "4-results")
+                    ),
                 ]
                 for name, fake, prepare in shots:
                     if only is not None and name not in only:

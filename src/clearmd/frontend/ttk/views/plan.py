@@ -30,6 +30,7 @@ class ReviewView(ttk.Frame):
         self._asks = False
         self._plan_id = -1
         self._texts: list[tuple[Any, str]] = []
+        self._catalog: Catalog | None = None
 
         self.stats = Stats(self, fonts=fonts)
         self.stats.pack(fill="x")
@@ -77,8 +78,9 @@ class ReviewView(ttk.Frame):
             self.existing.pack(side="bottom", fill="x", pady=(GAP, 0), before=self.files)
 
     def forget(self) -> None:
-        """The plan was dropped (an edit): nothing of it stays on screen (code review of 007)."""
-        self.stats.show(())
+        """The plan was dropped (an edit): nothing of it stays on screen (code review of 007);
+        its cards wait, faded (014)."""
+        self._wait()
         self.files.show([])
         self.existing.pack_forget()
         self._asks = False
@@ -88,7 +90,15 @@ class ReviewView(ttk.Frame):
         """The answer about existing results, when the plan asks it (setting "ask")."""
         return self.decision.get() == OVERWRITE if self._asks else None
 
+    def _wait(self) -> None:
+        names = ("gui.plan.stat_convert", "gui.plan.stat_skipped", "gui.plan.stat_existing")
+        catalog = self._catalog
+        self.stats.waiting([catalog.text(name) for name in names] if catalog else [])
+
     def apply_language(self, catalog: Catalog) -> None:
+        self._catalog = catalog
+        if self.stats.dimmed or not self.stats.figures():
+            self._wait()
         for widget, key in self._texts:
             widget.configure(text=catalog.text(key))
         self.files.apply_headings(

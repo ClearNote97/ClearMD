@@ -25,6 +25,7 @@ class ResultsView(ttk.Frame):
     ) -> None:
         super().__init__(parent, style=PAGE)
         self._texts: list[tuple[Any, str]] = []
+        self._catalog: Catalog | None = None
 
         self.stats = Stats(self, fonts=fonts)
         self.stats.pack(fill="x")
@@ -72,8 +73,9 @@ class ResultsView(ttk.Frame):
             self.all_good.pack(fill="x", pady=(GAP, 0))
 
     def forget(self) -> None:
-        """The result was dropped (an edit): its figures and list leave the screen."""
-        self.stats.show(())
+        """The result was dropped (an edit): its figures and list leave the screen; its cards
+        wait, faded (014)."""
+        self._wait()
         for widget in (self.all_good, self.problems_title, self.problems, self.detail):
             widget.pack_forget()
 
@@ -81,7 +83,15 @@ class ResultsView(ttk.Frame):
         row = self.problems.current()
         self.detail.configure(text=f"{row.name}: {row.values[0]}" if row else "")
 
+    def _wait(self) -> None:
+        names = ("gui.result.stat_converted", "gui.result.stat_skipped", "gui.result.stat_failed")
+        catalog = self._catalog
+        self.stats.waiting([catalog.text(name) for name in names] if catalog else [])
+
     def apply_language(self, catalog: Catalog) -> None:
+        self._catalog = catalog
+        if self.stats.dimmed or not self.stats.figures():
+            self._wait()
         for widget, key in self._texts:
             widget.configure(text=catalog.text(key))
         self.problems.apply_headings(

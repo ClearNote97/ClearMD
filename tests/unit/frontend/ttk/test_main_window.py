@@ -749,11 +749,12 @@ def test_c7_1_after_an_edit_review_convert_and_results_are_emptied(
     app._primary()
     pump(app, until=lambda: app.presenter.page == 2)
     app.presenter.add_paths([tmp_path / "more.pdf"])
-    assert app.review.files.names() == [] and app.review.stats.figures() == []
+    assert app.review.files.names() == [] and app.review.stats.dimmed  # waiting, faded (014)
+    assert {value for _, value in app.review.stats.figures()} == {"—"}
 
 
 def test_c7_2_the_smallest_window_shows_every_control(app: TtkApp, tmp_path: Path) -> None:
-    app.root.geometry("800x600")
+    app.root.geometry("800x624")
     app.presenter.add_paths([tmp_path / f"{n}.pdf" for n in range(30)])
     pump(app, seconds=0.4)
     assert app.main.output_label.winfo_ismapped() and app.main.next_to.winfo_ismapped()
@@ -853,7 +854,8 @@ def test_a7_1_convert_more_leaves_nothing_of_the_last_batch(app: TtkApp, tmp_pat
     confirm(app)
     pump(app, until=lambda: app.presenter.page == 4)
     convert_more(app, keep=True)
-    assert app.review.files.names() == [] and app.results.stats.figures() == []
+    assert app.review.files.names() == [] and app.results.stats.dimmed  # waiting, faded (014)
+    assert {value for _, value in app.results.stats.figures()} == {"—"}
     assert not app.converting.progress_card.winfo_ismapped()
 
 
