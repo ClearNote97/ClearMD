@@ -111,7 +111,7 @@ CHECK_ON_PAGE = "OnPage.ClearMD.TCheckbutton"  # a check box on the ground
 
 _BUTTON_HEIGHT = 44  # a comfortable target (UX §5)
 DIM_STRENGTH = 0.45  # a faded card: this much of the card's colour on the ground's
-DIM_TEXT = 0.6  # its text: this much of the muted colour on the faded card
+DIM_TEXT = 0.8  # its text: this much of the muted colour on the faded card (3:1, review of 014)
 
 
 def register_themes(style: tb.Style) -> None:

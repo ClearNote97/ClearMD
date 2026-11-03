@@ -15,8 +15,8 @@ and inline mathematics hard to read.
 
 - **A script** is a character drawn smaller than its line's text (85 % or less), its baseline
   raised (12 % of the size) or lowered (8 %) from the letter it is set on.
-  - The size is the one drawn: the font's size scaled by the text's matrix (PDFs set "1 Tf" and
-    scale by the matrix).
+  - The size is the one drawn: the font's size scaled by the height of the text's matrix (PDFs
+    set "1 Tf" and scale by the matrix; a horizontal scale alone changes no size).
   - The text's size is the largest one many characters share, never a tall delimiter's.
   - The baseline is compared with the nearest letter or digit of the text's size (a PDFium
     "line" may hold two rows of a paragraph; a "∑" has its own baseline).
@@ -34,5 +34,10 @@ and inline mathematics hard to read.
 - Inline mathematics and footnote marks read as written; display equations stay whole.
 - A fraction or a sum with limits above and below, as text, stays hard to read: with the images
   folder it is a picture.
-- Reading a PDF costs two more calls per character (the matrix and the origin), offset by fewer
-  lines to clean: 59 pages/s on the author's thesis (53 in v0.8.0).
+- Reading a PDF asks PDFium two more things (the matrix and the origin), only when a font or a
+  size changes along the page: about a tenth slower, 70 pages/s on the author's thesis (78 in
+  v0.8.0). Each step is linear: a hostile page of 200,000 characters reads in under a second.
+- A lone operator set smaller between two terms ("1 ∗ 0.169") is no script; a footnote that
+  starts with a raised mark ("¹First note") is still a note of its own.
+- In the raw Markdown a subscript with no Unicode letter reads `\_{q}` (the underscore escaped,
+  as every document underscore is); a viewer shows `_{q}`.

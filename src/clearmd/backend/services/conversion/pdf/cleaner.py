@@ -57,7 +57,7 @@ _ROMAN_VALUES = {"i": 1, "v": 5, "x": 10, "l": 50, "c": 100, "d": 500, "m": 1000
 # "2 Methodology", "3.1 Data", "IV. RESULTADOS": numbered, then a capital (or "¿").
 _NUMBERED = re.compile(r"(?:(\d{1,2}(?:\.\d{1,2}){0,3})\.?|([IVXL]{1,5})\.)\s+[A-ZÁÉÍÓÚÑ¿]")
 _INSIDE_SENTENCE = re.compile(r"[.?!]\s+\S|=")
-_NOTE_START = re.compile(r"(?:\d{1,3}|[*†‡§])\s*\S")
+_NOTE_START = re.compile(r"(?:\d{1,3}|[⁰¹²³⁴⁵⁶⁷⁸⁹]{1,3}|[*†‡§])\s*\S")  # "¹" too (014)
 _BULLET = re.compile(r"[•●▪■◦‣∙·](?=\s)\s*")  # always a list item
 _DASH = re.compile(r"[-–*](?=\s)\s*")  # an item only where no sentence goes on
 _CIRCLE = re.compile(r"o(?=\s)\s*")  # Word's second-level bullet, only inside a list

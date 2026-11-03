@@ -136,7 +136,7 @@ _Plus the failed and skipped files with a plain-words reason, and the history of
 | **011** Window polish II: the rail's sections, the page's card, every hint | ✅ done | v0.6.0 · reviewed |
 | **012** A document's images in a folder next to its Markdown (optional) | ✅ done | v0.7.0 · reviewed |
 | **013** PDF tables (after Camelot), equations and tables of contents | ✅ done | v0.8.0 · reviewed |
-| **014** Sub- and superscripts in PDFs, one gutter, faded waiting cards | 🔄 | |
+| **014** Sub- and superscripts in PDFs, one gutter, faded waiting cards | ✅ done | v0.9.0 · reviewed |
 | **015–016** PySide6 and flet apps | ⏳ | |
 
 Full plan in the [roadmap](./spec/roadmap.md). ClearMD has a **command line** and its first **desktop app**

@@ -221,6 +221,10 @@ def _page_chars(textpage: object, fonts: _Fonts) -> _Chars:
     matrix_pointer = ctypes.byref(matrix)
     x, y = ctypes.c_double(), ctypes.c_double()
     origin_x, origin_y = ctypes.byref(x), ctypes.byref(y)
+    # The same font with the same box height is the same size, its baseline the same height above
+    # its box: PDFium is asked again only when either changes (review of 014: the two calls per
+    # character cost a quarter of the reading).
+    measured: tuple[int, float, float, float] | None = None  # font, height, size, baseline lift
     for index, font in _each_font(textpage, fonts):
         box(textpage, index, pointer)
         bottom, top = _finite(rect.bottom), _finite(rect.top)
@@ -233,16 +237,24 @@ def _page_chars(textpage: object, fonts: _Fonts) -> _Chars:
         chars.lefts.append(_finite(rect.left))
         chars.rights.append(_finite(rect.right))
         turned = angle(textpage, index)
-        chars.turns.append(UPRIGHT if turned == 0.0 else _turn(turned))  # nearly all: upright
-        # The size as drawn: the font's size scaled by its matrix ("1 Tf" and a 9.46 matrix).
-        scale = (
-            math.sqrt(abs(matrix.a * matrix.d - matrix.b * matrix.c))
-            if placed(textpage, index, matrix_pointer)
-            else 1.0
-        )
-        chars.font_sizes.append(_finite(font_size(textpage, index) * scale))
-        found = origin(textpage, index, origin_x, origin_y)
-        chars.baselines.append(_finite(y.value) if found else bottom)
+        upright = turned == 0.0
+        chars.turns.append(UPRIGHT if upright else _turn(turned))  # nearly all: upright
+        height = top - bottom
+        if upright and measured is not None and measured[:2] == (font, height):
+            chars.font_sizes.append(measured[2])
+            chars.baselines.append(bottom + measured[3])
+        else:
+            # The size as drawn: the font's size scaled by its matrix ("1 Tf" and a 9.46 matrix);
+            # its height, the matrix's y column ("50 Tz" or "3 0 0 1 cm" scale the width alone).
+            scale = (
+                math.hypot(matrix.c, matrix.d) if placed(textpage, index, matrix_pointer) else 1.0
+            )
+            size = _finite(font_size(textpage, index) * scale)
+            baseline = _finite(y.value) if origin(textpage, index, origin_x, origin_y) else bottom
+            chars.font_sizes.append(size)
+            chars.baselines.append(baseline)
+            if upright and code > 0x20:
+                measured = (font, height, size, baseline - bottom)
         chars.bold.append(fonts.bold[font])
     return chars
 
@@ -524,11 +536,19 @@ def _equations(lines: list[Line], words: list[Word]) -> list[Line]:
     for found in reversed(find_equations(placed, words)):
         group = lines[found.start : found.stop]
         top, bottom = max(line.top for line in group), min(line.bottom for line in group)
-        # A font's boxes reach past its letters: never into the lines just above and below.
-        if found.start > 0 and bottom < lines[found.start - 1].bottom < top:
-            top = lines[found.start - 1].bottom
-        if found.stop < len(lines) and bottom < lines[found.stop].top < top:
-            bottom = lines[found.stop].top
+        left, right = min(line.left for line in group), max(line.right for line in group)
+        highest = max(group, key=lambda line: line.top)
+        lowest = min(group, key=lambda line: line.bottom)
+        # A font's boxes reach past its letters: never into the lines just above and below it
+        # (across the equation, not a note beside it), never into its own first or last row.
+        if found.start > 0:
+            above = lines[found.start - 1]
+            if above.left < right and above.right > left and bottom < above.bottom < top:
+                top = max(above.bottom, highest.bottom)
+        if found.stop < len(lines):
+            below = lines[found.stop]
+            if below.left < right and below.right > left and bottom < below.top < top:
+                bottom = min(below.top, lowest.top)
         block = Line(
             "",
             0.0,  # a block, not text: never a footnote, a heading, a running line (review of 013)
@@ -810,9 +830,22 @@ def _scripted(pieces: list[tuple[str, int]], chars: _Chars, visible: list[int]) 
     marks = _scripts(chars, visible)
     if not marks:
         return "".join(piece for piece, _ in pieces)
+    # Each piece's nearest drawn character before and after it: one pass each way (linear,
+    # however many spaces a line holds; review of 014).
+    before, after = [-1] * len(pieces), [-1] * len(pieces)
+    last = -1
+    for position, (_, index) in enumerate(pieces):
+        before[position] = last
+        if index >= 0:
+            last = index
+    last = -1
+    for position in range(len(pieces) - 1, -1, -1):
+        after[position] = last
+        if pieces[position][1] >= 0:
+            last = pieces[position][1]
     kept: list[tuple[str, int, str]] = []
     for position, (piece, index) in enumerate(pieces):
-        if piece == " " and _hugs(pieces, position, marks, chars):
+        if piece == " " and _hugs(before[position], after[position], marks, chars):
             continue
         kept.append((piece, index, marks.get(index, "")))
     out: list[str] = []
@@ -854,15 +887,35 @@ def _scripts(chars: _Chars, visible: list[int]) -> dict[int, str]:
     normal = [i for i in upright if i in level]
     if not normal:
         return {}
+    # Raised or lowered from the text it is set on, the character before it (or after): a PDFium
+    # "line" may hold two rows of a paragraph, never one baseline. Found in one pass each way.
+    previous: list[int | None] = []
+    seen: int | None = None
+    for i in upright:
+        previous.append(seen)
+        if i in level:
+            seen = i
+    following: list[int | None] = [None] * len(upright)
+    seen = None
+    for position in range(len(upright) - 1, -1, -1):
+        following[position] = seen
+        if upright[position] in level:
+            seen = upright[position]
+    small = [chars.font_sizes[i] < SCRIPT_SIZE * text_size for i in upright]
     marks: dict[int, str] = {}
     for position, i in enumerate(upright):
-        if chars.font_sizes[i] >= SCRIPT_SIZE * text_size:
+        if not small[position]:
             continue
-        # Raised or lowered from the text it is set on, the character before it (or after): a
-        # PDFium "line" may hold two rows of a paragraph, never one baseline.
-        base = next((j for j in reversed(upright[:position]) if j in level), None)
+        lone = (
+            0 < position < len(upright) - 1 and not small[position - 1] and not small[position + 1]
+        )
+        if lone and not chr(chars.codes[i]).isalnum():
+            continue  # an operator set smaller between two terms ("1 ∗ 0.169"), no script
+        base = previous[position]
         if base is None:
-            base = next((j for j in upright[position + 1 :] if j in level), normal[0])
+            base = following[position]
+        if base is None:
+            base = normal[0]
         shift = chars.baselines[i] - chars.baselines[base]
         if shift > RAISED_EMS * text_size:
             marks[i] = "^"
@@ -871,12 +924,8 @@ def _scripts(chars: _Chars, visible: list[int]) -> dict[int, str]:
     return marks
 
 
-def _hugs(
-    pieces: list[tuple[str, int]], position: int, marks: dict[int, str], chars: _Chars
-) -> bool:
+def _hugs(before: int, after: int, marks: dict[int, str], chars: _Chars) -> bool:
     """A space between a script and what it is set on, narrower than a real one."""
-    before = next((i for _, i in reversed(pieces[:position]) if i >= 0), -1)
-    after = next((i for _, i in pieces[position + 1 :] if i >= 0), -1)
     if before < 0 or after < 0 or not (before in marks or after in marks):
         return False
     gap = chars.lefts[after] - chars.rights[before]

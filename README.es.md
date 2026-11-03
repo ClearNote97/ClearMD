@@ -140,7 +140,7 @@ anteriores._
 | **011** Pulido de ventana II: secciones del riel, el área demarcada, cada mensajito | ✅ lista | v0.6.0 · revisada |
 | **012** Las imágenes de cada documento en una carpeta junto a su Markdown (opcional) | ✅ lista | v0.7.0 · revisada |
 | **013** Tablas de PDF (a la manera de Camelot), ecuaciones e índices | ✅ lista | v0.8.0 · revisada |
-| **014** Subíndices y superíndices en PDF, un solo margen, tarjetas atenuadas | 🔄 | |
+| **014** Subíndices y superíndices en PDF, un solo margen, tarjetas atenuadas | ✅ lista | v0.9.0 · revisada |
 | **015–016** Apps en PySide6 y flet | ⏳ | |
 
 El plan completo está en el [roadmap](./spec/roadmap.md). ClearMD tiene **línea de comandos** y su primera **app de

@@ -1,5 +1,12 @@
 **ClearMD — documents to Markdown, 100 % local.** / **Documentos a Markdown, 100 % local.**
 
+**New in 0.9.0 / Novedades de la 0.9.0**
+- A PDF's sub- and superscripts read as such (EFᵗₒ, Rᴺ₊, a footnote's ²) and its equations stay
+  whole; one margin around and inside the page; each step's cards shown faded before there is
+  anything in them. / Los subíndices y superíndices de un PDF se leen como tales (EFᵗₒ, Rᴺ₊, la
+  llamada ² de una nota) y sus ecuaciones salen enteras; un solo margen alrededor y dentro de la
+  página; las tarjetas de cada paso se ven atenuadas mientras no hay nada en ellas.
+
 **New in 0.8.0 / Novedades de la 0.8.0**
 - A PDF's tables become Markdown tables (ruled or not, upright or sideways), its numbered
   equations stay whole (a picture with the images folder), its table of contents one entry per

@@ -69,9 +69,9 @@ already tested (ADR-0001).
 - [x] **013 — PDF tables and equations:** tables after Camelot's stream and lattice methods on
       PDFium; equations as images when images are kept; the table of contents line by line. Reviewed.
 
-- [ ] **014 — Sub- and superscripts, window polish III**
+- [x] **014 — Sub- and superscripts, window polish III**
       ([spec](./features/014_scripts-and-window-polish-3/spec.md)): a PDF's scripts as such and its
-      equations whole; one gutter; each page's cards faded before there is anything in them.
+      equations whole; one gutter; each page's cards faded before there is anything in them. Reviewed.
 
 ## Next
 
