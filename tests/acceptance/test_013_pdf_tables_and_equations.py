@@ -80,14 +80,15 @@ def equation_page() -> list[Text | Box]:
     ]
 
 
-def test_ac_04_an_equation_whole_as_text_or_as_a_picture(workdir: Path) -> None:
+def test_ac_04_an_equation_whole(workdir: Path) -> None:
+    """Whole, with its number: as LaTeX since 015 (its text or its picture when not understood,
+    tests/acceptance/test_015_equations_as_latex.py)."""
     markdown = converted(workdir, [equation_page()])
-    block = markdown.split("```")[1]
-    assert "EF = max t" in block and "s.t. z <= 1" in block and "(5)" in block
+    rows = r"\displaystyle EF = \max t \\ \displaystyle s.t. z <= 1"
+    latex = rf"\begin{{array}}{{l}} {rows} \end{{array}} \tag{{5}}"
+    assert f"$$\n{latex}\n$$" in markdown
     pictured = converted(workdir, [equation_page()], "--images", "--overwrite")
-    assert "![](paper_images/image-001.png)" in pictured and "```" not in pictured
-    out = workdir / "ClearMD_Output" / "OutputMD" / "docs" / "paper_images" / "image-001.png"
-    assert out.read_bytes().startswith(b"\x89PNG")
+    assert latex in pictured and "![](" not in pictured
 
 
 def test_ac_05_captions_and_a_table_of_contents(workdir: Path) -> None:

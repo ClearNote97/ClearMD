@@ -50,3 +50,7 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 | [0030](./0030-pdf-reader.md) | PDF read by PDFium and cleaned by ClearMD: spaces, glyph codes, running lines, paragraphs, headings | accepted |
 | [0031](./0031-human-summary.md) | A summary in human language, and its PDF in the app's look | accepted |
 | [0032](./0032-light-executable.md) | A light executable: own detection and Excel converter, two languages of babel | accepted |
+| [0033](./0033-images-in-a-folder.md) | A document's images in a folder next to its Markdown | accepted |
+| [0034](./0034-pdf-tables-and-equations.md) | A PDF's tables, equations and table of contents | accepted; refined by 0035, 0036 |
+| [0035](./0035-pdf-sub-and-superscripts.md) | A PDF's sub- and superscripts | accepted |
+| [0036](./0036-equations-as-latex.md) | A PDF's equations rebuilt as LaTeX | accepted |

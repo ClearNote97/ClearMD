@@ -15,7 +15,7 @@ import io
 import math
 from array import array
 from collections import Counter
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 
@@ -26,6 +26,7 @@ from PIL import Image
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.services.conversion.images import ImageSink
 from clearmd.backend.services.conversion.pdf.equations import Placed, find_equations
+from clearmd.backend.services.conversion.pdf.latex import Bar, Glyph, to_latex
 from clearmd.backend.services.conversion.pdf.lattice import Rule, find_lattices, rule
 from clearmd.backend.services.conversion.pdf.tables import Table, Word, find_tables
 
@@ -104,6 +105,8 @@ class Line:
     left: float = 0.0
     right: float = 0.0
     table: tuple[tuple[str, ...], ...] = ()  # the line is a table found on the page (013)
+    span: tuple[int, int] = (0, 0)  # its characters on the page (start, stop)
+    latex: str = ""  # an equation rebuilt as LaTeX from its pieces (015)
 
 
 LETTER_HEIGHT = 792.0  # points: a page whose height PDFium cannot give
@@ -339,6 +342,10 @@ def _text_pages(document: object) -> Iterator[tuple[object | None, float, object
 MIN_PICTURE_POINTS = 24.0  # smaller: a bullet, a rule, a logo's speck
 MAX_PICTURE_PIXELS = 40_000_000  # a picture's own pixels, read before it is decoded
 MAX_DOCUMENT_PIXELS = 400_000_000  # all of a document's pictures (a logo on every page counts)
+BAR_THICKNESS = 1.5  # points: a fraction's bar is a thin line
+MIN_BAR = 2.0  # points: shorter is a dot
+MAX_BAR = 400.0  # points: longer is a rule across the page
+MAX_BARS = 2000  # a page's bars looked at
 MAX_PAGE_OBJECTS = 100_000  # a page's objects looked at for pictures, forms' included
 MAX_FORM_DEPTH = 4  # forms inside forms
 
@@ -359,19 +366,24 @@ def _pictures(document: object, page: object, sink: ImageSink, budget: list[int]
     return lines
 
 
-def _rules(page: object) -> list[Rule]:
-    """The page's thin paths: the rules a ruled table is drawn with (013)."""
+def _rules(page: object) -> tuple[list[Rule], list[Bar]]:
+    """The page's thin paths: the rules a ruled table is drawn with (013), and the short level
+    ones an equation draws (its fractions' bars, 015)."""
     found: list[Rule] = []
+    bars: list[Bar] = []
     left, bottom, right, top = (ctypes.c_float() for _ in range(4))
     for index in range(min(max(raw.FPDFPage_CountObjects(page), 0), MAX_PAGE_OBJECTS)):
         obj = raw.FPDFPage_GetObject(page, index)
         if not obj or raw.FPDFPageObj_GetType(obj) != raw.FPDF_PAGEOBJ_PATH:
             continue
         raw.FPDFPageObj_GetBounds(obj, *(ctypes.byref(v) for v in (left, bottom, right, top)))
-        found_rule = rule(*(_finite(v.value) for v in (left, bottom, right, top)))
+        box = [_finite(v.value) for v in (left, bottom, right, top)]
+        found_rule = rule(*box)
         if found_rule is not None:
             found.append(found_rule)
-    return found
+        if box[3] - box[1] <= BAR_THICKNESS and MIN_BAR <= box[2] - box[0] <= MAX_BAR:
+            bars.append(Bar(box[0], box[2], (box[1] + box[3]) / 2))
+    return found, bars[:MAX_BARS]
 
 
 def _image_objects(page: object) -> Iterator[tuple[object, list[float]]]:
@@ -439,7 +451,7 @@ def _picture_png(obj: object, budget: list[int]) -> bytes | None:
 def _pictured(page: object, line: Line, images: ImageSink, budget: list[int]) -> Line:
     """An equation, as it looks on the page, when the images folder is on (013): within the
     document's pixels and crops (each renders the page; review of 013), else its text."""
-    if not line.equation or budget[1] <= 0:
+    if not line.equation or line.latex or budget[1] <= 0:
         return line
     budget[1] -= 1
     data = _cropped(page, line, budget)
@@ -476,8 +488,12 @@ def read(document: object, images: ImageSink | None = None) -> Document:
         while len(shifts) < len(fonts.codes):  # a font first met in the second pass: as read
             shifts.append(0)
             unmapped.append(False)
-        rules = _rules(handle) if handle is not None and chars is not None else []
-        page = Page() if chars is None else _page(chars, shifts, unmapped, result, rules)
+        rules, bars = _rules(handle) if handle is not None and chars is not None else ([], [])
+        page = (
+            Page()
+            if chars is None
+            else _page(chars, shifts, unmapped, result, rules, bars, _tight_boxes(textpage))
+        )
         if images is not None and handle is not None:
             page.lines = [_pictured(handle, line, images, budget) for line in page.lines]
             page.lines = _placed(page.lines, _pictures(document, handle, images, budget))
@@ -492,6 +508,8 @@ def _page(
     unmapped: list[bool],
     document: Document,
     rules: list[Rule] | None = None,
+    bars: list[Bar] | None = None,
+    tight: "_Boxes | None" = None,
 ) -> Page:
     page = Page()
     words: dict[int, list[Word]] = {UPRIGHT: [], CLOCKWISE: [], COUNTERCLOCKWISE: []}
@@ -522,18 +540,50 @@ def _page(
             last = index
             extent[0] = min(extent[0], chars.bottoms[index])
             extent[1] = max(extent[1], chars.tops[index])
-    page.lines = _equations(_tabled(page.lines, words, rules or []), words[UPRIGHT])
+    lines = _tabled(page.lines, words, rules or [])
+    found = _Found(chars, shifts, unmapped, bars or [], tight)
+    page.lines = _equations(lines, words[UPRIGHT], found)
     return page
 
 
-def _equations(lines: list[Line], words: list[Word]) -> list[Line]:
-    """Each display equation's scattered lines, one block that keeps their layout."""
+_Boxes = Callable[[int], tuple[float, float, float, float] | None]
+
+
+@dataclass(frozen=True)
+class _Found:
+    """What an equation is rebuilt from: the page's characters, its bars, and PDFium's tight box
+    of a character (its loose one reaches past the letter: too coarse to place a script)."""
+
+    chars: _Chars
+    shifts: list[int]
+    unmapped: list[bool]
+    bars: list[Bar]
+    tight: _Boxes | None = None
+
+
+def _tight_boxes(textpage: object) -> _Boxes:
+    rect = [ctypes.c_double() for _ in range(4)]
+    pointers = [ctypes.byref(value) for value in rect]
+
+    def box(index: int) -> tuple[float, float, float, float] | None:
+        if not raw.FPDFText_GetCharBox(textpage, index, *pointers):
+            return None
+        left, right, bottom, top = (_finite(value.value) for value in rect)
+        return (left, right, bottom, top) if right > left and top > bottom else None
+
+    return box
+
+
+def _equations(lines: list[Line], words: list[Word], found_on: _Found | None = None) -> list[Line]:
+    """Each display equation's scattered lines, one block that keeps their layout, rebuilt as
+    LaTeX when every piece of it is understood (015)."""
     placed = [
         Placed(line.text, line.top, line.bottom, line.size, line.right,
-               bool(line.table or line.image or line.turn != UPRIGHT))
+               bool(line.table or line.image or line.turn != UPRIGHT), line.left)
         for line in lines
     ]  # fmt: skip
-    for found in reversed(find_equations(placed, words)):
+    bars = [(bar.left, bar.right, bar.at) for bar in found_on.bars] if found_on else []
+    for found in reversed(find_equations(placed, words, bars)):
         group = lines[found.start : found.stop]
         top, bottom = max(line.top for line in group), min(line.bottom for line in group)
         left, right = min(line.left for line in group), max(line.right for line in group)
@@ -558,9 +608,64 @@ def _equations(lines: list[Line], words: list[Word]) -> list[Line]:
             left=min(line.left for line in group),
             right=max(line.right for line in group),
             equation=_laid_out(group),
+            latex=_latex(group, found_on, (bottom, top, left, right)) if found_on else "",
         )
         lines = [*lines[: found.start], block, *lines[found.stop :]]
     return lines
+
+
+def _latex(group: list[Line], found: _Found, box: tuple[float, float, float, float]) -> str:
+    """The equation's characters and the bars within its box, as LaTeX ("" when unsure)."""
+    chars = found.chars
+    glyphs: list[Glyph] = []
+    for line in group:
+        start, stop = line.span
+        high = 0  # a character past U+FFFF comes as two halves (as ``_line`` reads them)
+        for index in range(start, min(stop, len(chars.codes))):
+            raw_code = chars.codes[index]
+            if raw_code in _SKIPPED or raw_code == _LINE_END:
+                continue
+            font = chars.fonts[index]
+            if found.unmapped[font] and not found.shifts[font]:
+                return ""  # a font without a map: its letters are wrong (review of 015)
+            code = _decoded(raw_code, found.shifts[font])
+            if high and not 0xDC00 <= code < 0xE000:
+                return ""  # a first half with no second: unreadable
+            if 0xD800 <= code < 0xDC00:
+                high = code
+                continue
+            if 0xDC00 <= code < 0xE000:
+                if not high:
+                    return ""
+                code, high = 0x10000 + ((high - 0xD800) << 10) + (code - 0xDC00), 0
+            if code in (0x09, 0x20):
+                continue
+            if code < 0x20 or code == 0x7F or code > 0x10FFFF or code == 0xFFFD:
+                return ""  # unreadable, or a soft hyphen: never dropped unseen
+            if code in _SOFT_HYPHENS:
+                return ""
+            if chars.rights[index] <= chars.lefts[index] or chars.turns[index] != UPRIGHT:
+                return ""  # a character drawn nowhere, or turned: no place to read it from
+            tight = found.tight(index) if found.tight is not None else None
+            left, right, bottom, top = tight or (
+                chars.lefts[index],
+                chars.rights[index],
+                chars.bottoms[index],
+                chars.tops[index],
+            )
+            glyphs.append(
+                Glyph(chr(code), left, right, bottom, top,
+                      chars.font_sizes[index], chars.baselines[index])
+            )  # fmt: skip
+        if high:
+            return ""  # a line that ends on a first half
+    low, high_edge, left_edge, right_edge = box
+    bars = [
+        bar for bar in found.bars
+        if low - 1 <= bar.at <= high_edge + 1
+        and left_edge <= (bar.left + bar.right) / 2 <= right_edge
+    ]  # fmt: skip
+    return to_latex(glyphs, bars) or ""
 
 
 def _laid_out(group: list[Line]) -> tuple[str, ...]:
@@ -819,6 +924,7 @@ def _line(
         turn=Counter(chars.turns[index] for index in shown).most_common(1)[0][0],
         left=min(chars.lefts[index] for index in shown),
         right=max(chars.rights[index] for index in shown),
+        span=(span.start, span.stop),
     )
 
 

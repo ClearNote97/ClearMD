@@ -141,7 +141,8 @@ anteriores._
 | **012** Las imágenes de cada documento en una carpeta junto a su Markdown (opcional) | ✅ lista | v0.7.0 · revisada |
 | **013** Tablas de PDF (a la manera de Camelot), ecuaciones e índices | ✅ lista | v0.8.0 · revisada |
 | **014** Subíndices y superíndices en PDF, un solo margen, tarjetas atenuadas | ✅ lista | v0.9.0 · revisada |
-| **015–016** Apps en PySide6 y flet | ⏳ | |
+| **015** Las ecuaciones de un PDF como LaTeX | ✅ lista | v0.10.0 |
+| **016–017** Apps en PySide6 y flet | ⏳ | |
 
 El plan completo está en el [roadmap](./spec/roadmap.md). ClearMD tiene **línea de comandos** y su primera **app de
 escritorio** (`clearmd-ttk`), ambas también como ejecutables para Windows y Linux, construidos y verificados por la CI.

@@ -14,10 +14,12 @@ from dataclasses import dataclass, field
 
 from clearmd.backend.services.conversion.markdown_out import (
     MARK,
+    escape_math,
     escape_text,
     fence_for,
     heading_text,
     link_target,
+    math_line,
     neutralize,
     tidy,
 )
@@ -536,6 +538,8 @@ def _is_block(line: Line) -> bool:
 
 
 def _block_markdown(line: Line) -> str | None:
+    if line.latex:  # rebuilt as LaTeX (015): display math, as the TeX converter writes it
+        return f"{MARK}$$\n{math_line(escape_math(line.latex))}\n{MARK}$$"
     if line.equation:  # its rows kept, fenced longer than any run of backticks in it
         code = "\n".join(line.equation)
         fence = fence_for(code)

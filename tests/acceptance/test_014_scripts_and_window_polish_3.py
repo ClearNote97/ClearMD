@@ -38,8 +38,8 @@ def test_ac_01_an_equation_keeps_its_tall_brace(tmp_path: Path) -> None:
             *paragraph(["where the variables are the ones defined in the text above it."], top=600),
         ],
     )
-    block = markdown.split("```")[1]
-    assert "{" in block and "y: y <= 1" in block and "(3)" in block
+    # As LaTeX since 015: the brace holds the rest of its row.
+    assert "$$\nP(x) = \\left\\{ y: y <= 1 \\right. \\tag{3}\n$$" in markdown
 
 
 def test_ac_02_scripts_are_written_as_such(tmp_path: Path) -> None:

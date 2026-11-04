@@ -73,6 +73,10 @@ already tested (ADR-0001).
       ([spec](./features/014_scripts-and-window-polish-3/spec.md)): a PDF's scripts as such and its
       equations whole; one gutter; each page's cards faded before there is anything in them. Reviewed.
 
+- [x] **015 — A PDF's equations as LaTeX**
+      ([spec](./features/015_equations-as-latex/spec.md)): fractions, sums, brackets, scripts and
+      rows rebuilt from the places of their pieces; equations with no number found by their bar.
+
 ## Next
 
 - [ ] **006b — Hardening of the executables:** **code signing** of the Windows executables
@@ -82,8 +86,8 @@ already tested (ADR-0001).
 
 ## Later
 
-- [ ] **015 — PySide6-Essentials GUI** (*onedir* distribution because of LGPL, ADR-0003).
-- [ ] **016 — flet GUI.**
+- [ ] **016 — PySide6-Essentials GUI** (*onedir* distribution because of LGPL, ADR-0003).
+- [ ] **017 — flet GUI.**
 - [ ] A small Windows installer (a Start menu shortcut), optional.
 - [ ] Incremental mode: skip files unchanged since the last run.
 - [ ] Minor formats: `.eml`, `.rtf`, subtitles.

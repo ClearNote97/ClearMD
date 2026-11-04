@@ -1,5 +1,12 @@
 **ClearMD — documents to Markdown, 100 % local.** / **Documentos a Markdown, 100 % local.**
 
+**New in 0.10.0 / Novedades de la 0.10.0**
+- A PDF's equations as LaTeX: fractions, sums with their limits, brackets and scripts rebuilt
+  from the drawing, shown as formulas in VS Code, GitHub or Obsidian, and copyable; equations
+  with no number found too. / Las ecuaciones de un PDF como LaTeX: fracciones, sumatorias con sus
+  límites, corchetes y subíndices rehechos desde el dibujo; se ven como fórmulas en VS Code,
+  GitHub u Obsidian y se pueden copiar; también se encuentran las ecuaciones sin número.
+
 **New in 0.9.0 / Novedades de la 0.9.0**
 - A PDF's sub- and superscripts read as such (EFᵗₒ, Rᴺ₊, a footnote's ²) and its equations stay
   whole; one margin around and inside the page; each step's cards shown faded before there is
