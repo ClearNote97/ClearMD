@@ -33,9 +33,18 @@ class FileList(ttk.Frame):
     """``#`` and icon, the name, then the extra columns; a message in place of an empty list."""
 
     def __init__(
-        self, parent: tk.Misc, *, name_heading: str, columns: Sequence[Column], height: int = 6
+        self,
+        parent: tk.Misc,
+        *,
+        name_heading: str,
+        columns: Sequence[Column],
+        height: int = 6,
+        checks: bool = True,
     ) -> None:
+        """``checks``: a checkbox on each row, for a list whose selection does something (Choose's
+        Remove selected); a list to read has none: a box promises a choice (feature 014)."""
         super().__init__(parent, style=CARD, padding=8)
+        self.checks = checks
         self._columns = tuple(columns)
         self._name_heading = name_heading
         self._palette: Palette | None = None
@@ -68,7 +77,8 @@ class FileList(ttk.Frame):
     # --- Texts and colours ------------------------------------------------------------------
 
     def apply_headings(self, name: str, others: Sequence[str], empty: str) -> None:
-        self.tree.heading("#0", text=f"  {name}", anchor="w")  # after the header's box
+        name = f"  {name}" if self.checks else name  # after the header's box, if it has one
+        self.tree.heading("#0", text=name, anchor="w")
         for index, text in enumerate(others):
             self.tree.heading(f"c{index}", text=text, anchor="w")
         self.empty.configure(text=empty)
@@ -81,6 +91,7 @@ class FileList(ttk.Frame):
         self._header_boxes = {
             state: ImageTk.PhotoImage(self._box(state, palette), master=self)
             for state in ("off", "on", "some")
+            if self.checks
         }
         children = self.tree.get_children()
         selected = [children.index(item) for item in self.tree.selection()]
@@ -108,7 +119,13 @@ class FileList(ttk.Frame):
             icon = art.icon(row.icon)
             off, on = (
                 ImageTk.PhotoImage(
-                    art.numbered(number, icon, colour, digits=digits, check=self._box(state)),
+                    art.numbered(
+                        number,
+                        icon,
+                        colour,
+                        digits=digits,
+                        check=self._box(state) if self.checks else None,
+                    ),
                     master=self,
                 )
                 for state in ("off", "on")
@@ -191,7 +208,7 @@ class FileList(ttk.Frame):
         """A box toggles its row (or, in the header, every row); empty space clears."""
         region = self.tree.identify_region(event.x, event.y)
         column = self.tree.identify_column(event.x)
-        on_box = column == "#0" and event.x <= art.CHECK_ZONE + 16
+        on_box = self.checks and column == "#0" and event.x <= art.CHECK_ZONE + 16
         if region == "heading" and on_box:
             self.toggle_all()
             return "break"

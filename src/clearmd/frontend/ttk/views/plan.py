@@ -40,6 +40,7 @@ class ReviewView(ttk.Frame):
             name_heading="gui.main.column_name",
             columns=(Column("location", 220), Column("what", 320, stretch=True)),
             height=4,
+            checks=False,  # a list to read: nothing on Review acts on a selection (014)
         )
         self.files.pack(fill="both", expand=True, pady=(GAP, 0))
 
