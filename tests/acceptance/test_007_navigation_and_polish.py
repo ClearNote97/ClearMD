@@ -133,7 +133,8 @@ def test_ac_06_checkboxes_follow_the_selection_header_clear_and_empty_click(
     pump(app, seconds=0.05)
     assert inputs.checked() == [False, False]
     inputs.toggle_all()
-    pump(app, seconds=0.1)
+    app.root.geometry("1080x900")  # room below the rows, whatever the system's font (Windows)
+    pump(app, seconds=0.3)
     inputs.tree.event_generate("<Button-1>", x=200, y=inputs.tree.winfo_height() - 8)
     pump(app, seconds=0.05)
     assert inputs.checked() == [False, False]

@@ -700,7 +700,8 @@ def test_deselect_all_and_a_click_on_empty_space_clear_the_selection(
     app.main.deselect.invoke()
     assert tree.selection() == ()
     tree.selection_set(tree.get_children())
-    pump(app, seconds=0.1)
+    app.root.geometry("1080x900")  # room below the rows, whatever the system's font (Windows)
+    pump(app, seconds=0.3)
     tree.event_generate("<Button-1>", x=200, y=tree.winfo_height() - 8)  # below the rows
     pump(app, seconds=0.05)
     assert tree.selection() == ()

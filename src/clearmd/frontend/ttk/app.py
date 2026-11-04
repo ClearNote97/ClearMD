@@ -4,6 +4,7 @@
 window only lays it out and forwards the user's intents (buttons, keys, dropped files).
 """
 
+import contextlib
 import sys
 import time
 import tkinter as tk
@@ -82,6 +83,10 @@ class TtkApp:
         # is it, so its styles and messages (Tcl's msgcat) are made in this interpreter, never in
         # one left by an earlier window (CI on Windows, Python 3.12).
         tk._default_root = self.root  # type: ignore[attr-defined]
+        # ttkbootstrap calls Tcl's msgcat without loading it: it works only when Tk happened to
+        # load it first, which a new interpreter on Windows does not always do (CI, 014).
+        with contextlib.suppress(tk.TclError):
+            self.root.tk.call("package", "require", "msgcat")
         self.style = tb.Style()
         register_themes(self.style)
         self.fonts = self._fonts()
