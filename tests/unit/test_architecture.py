@@ -34,6 +34,12 @@ class Rule:
     forbidden_stdlib: tuple[str, ...] = ()  # standard modules a layer must not use (a toolkit)
 
 
+_ARTICLE = (  # what the article renderer and its writer may import besides the standard library
+    "clearmd.backend.schemas",
+    "clearmd.backend.services.conversion.markdown_out",
+    "clearmd.backend.services.conversion.inline",
+    "clearmd.backend.services.conversion.xmltree",
+)
 RULES: dict[str, Rule] = {
     "clearmd.backend.schemas": Rule(False, ("clearmd.backend.schemas",)),
     "clearmd.backend.use_cases": Rule(
@@ -63,15 +69,12 @@ RULES: dict[str, Rule] = {
             "clearmd.backend.services.conversion.images",
         ),
     ),
-    # The article renderer: trafilatura's XML in, ClearMD's Markdown out; the standard library.
+    # The article renderer and its writer: trafilatura's XML in, ClearMD's Markdown out; stdlib.
     "clearmd.backend.services.conversion.html.render": Rule(
-        False,
-        (
-            "clearmd.backend.schemas",
-            "clearmd.backend.services.conversion.markdown_out",
-            "clearmd.backend.services.conversion.inline",
-            "clearmd.backend.services.conversion.xmltree",
-        ),
+        False, (*_ARTICLE, "clearmd.backend.services.conversion.html.writer")
+    ),
+    "clearmd.backend.services.conversion.html.writer": Rule(
+        False, (*_ARTICLE, "clearmd.backend.services.conversion.html.writer")
     ),
     # Inline text as ClearMD's own converters write it: the standard library and markdown_out.
     "clearmd.backend.services.conversion.inline": Rule(
@@ -194,6 +197,7 @@ def test_module_respects_the_dependency_rule(module: str, path: Path) -> None:
             "from clearmd.backend.services.worker import child",
         ),
         ("clearmd.backend.services.conversion.markdown_out", "import markdown_it"),
+        ("clearmd.backend.services.conversion.html.writer.runs", "import trafilatura"),
         ("clearmd.frontend.presenter.presenter", "import tkinter"),
         ("clearmd.frontend.presenter.presenter", "import ttkbootstrap"),
         ("clearmd.frontend.presenter.presenter", "from clearmd.backend.services import folders"),
