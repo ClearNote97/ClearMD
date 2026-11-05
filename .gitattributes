@@ -27,3 +27,4 @@ Dockerfile    text eol=lf
 *.epub binary
 *.odt binary
 *.zip binary
+tests/golden/** -text
