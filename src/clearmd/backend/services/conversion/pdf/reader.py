@@ -4,7 +4,7 @@ PDFium keeps the spaces that pdfminer loses in many papers ("interactionsbasedon
 reads rotated text the right way round. A font without a usable character map gives its glyph
 codes instead of letters ("(6&8(/$" for "ESCUELA"): when PDFium says a font has no map, and its
 codes are letters moved by one distance, with the space moved to a control character, the font is
-read back (``_shift``). What still cannot be read is shown as "�" and counted.
+read back (``shift``). What still cannot be read is shown as "�" and counted.
 
 PDFium's own C API is called (pypdfium2's raw bindings): ClearMD opens the document itself, so a
 load error is read when it happens, and a PDF without pages is an empty document.
@@ -13,11 +13,10 @@ load error is read when it happens, and a PDF without pages is an empty document
 import ctypes
 import io
 import math
-from array import array
 from collections import Counter
-from collections.abc import Callable, Iterator
+from collections.abc import Iterator
 from contextlib import contextmanager
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import pypdfium2 as pdfium
 import pypdfium2.raw as raw
@@ -25,12 +24,32 @@ from PIL import Image
 
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.services.conversion.images import ImageSink
+from clearmd.backend.services.conversion.pdf.decode import (
+    LINE_END,
+    SKIPPED,
+    SOFT_HYPHENS,
+    decoded,
+    shift,
+)
 from clearmd.backend.services.conversion.pdf.equations import Placed, find_equations
 from clearmd.backend.services.conversion.pdf.latex import Bar, Glyph, to_latex
 from clearmd.backend.services.conversion.pdf.lattice import Rule, find_lattices, rule
+from clearmd.backend.services.conversion.pdf.model import (
+    ASLANT,
+    CLOCKWISE,
+    COUNTERCLOCKWISE,
+    LETTER_HEIGHT,
+    SOFT_HYPHEN,
+    UNREADABLE,
+    UPRIGHT,
+    Boxes,
+    Chars,
+    Document,
+    Line,
+    Page,
+)
 from clearmd.backend.services.conversion.pdf.tables import Table, Word, find_tables
 
-_LINE_END = 0x0A
 # The letters Unicode has as scripts: a script made only of them is written with them (014).
 _SUPERSCRIPTS = dict(
     zip(
@@ -42,14 +61,9 @@ _SUPERSCRIPTS = dict(
 _SUBSCRIPTS = dict(
     zip("0123456789+-−=()aehijklmnoprstuvx", "₀₁₂₃₄₅₆₇₈₉₊₋₋₌₍₎ₐₑₕᵢⱼₖₗₘₙₒₚᵣₛₜᵤᵥₓ", strict=True)
 )
-_SKIPPED = {0x0D, 0xFEFF}
-_SOFT_HYPHENS = {0x02, 0xAD, 0xFFFE}  # what PDFium gives for a hyphen that breaks a word
-SOFT_HYPHEN = "­"
-UNREADABLE = "�"
 _BOLD_NAMES = ("bold", "black", "heavy", "semibold", "demi")
 _FORCE_BOLD = 1 << 18  # the font descriptor's ForceBold flag
 TURN_RADIANS = 0.01  # a character turned less than this from a quarter turn is on it
-UPRIGHT, CLOCKWISE, COUNTERCLOCKWISE, ASLANT = range(4)  # how a character is turned
 LOOK_AHEAD = 4  # characters looked at past a line's end (its carriage return, a space)
 ROW_OVERLAP = 0.5  # of the shorter box: two characters this much level are on one row
 SCRIPT_GAP_EMS = 0.5  # a script starts at most this far from what it is set on
@@ -73,75 +87,11 @@ INK_LEVEL = 160  # a grey this dark is ink
 APART_PIXELS = 6  # a blank this tall (at 144 dpi) parts the equation from a neighbour's sliver
 TRIM_MARGIN = 6  # pixels of white kept around the ink
 MAX_PAGE_CHARS = 200_000  # a dense page of a book holds ~5,000; past this, the rest is left out
-MIN_SHIFT_SHARE = 0.03  # a font whose text holds this share of control characters is suspect
-MIN_LETTER_SHARE = 0.75  # and is read back only if its moved codes are then mostly letters
-VOWELS = frozenset("aeiouáéíóúAEIOUÁÉÍÓÚ")
-# A TrueType font embedded without a character map often numbers its glyphs in the Macintosh
-# standard order (Apple's "post" table): glyph 3 is the space, 36 is "A", so code + 29 is the
-# letter, and glyphs 98-198 are these. Past 198 a font's own order differs: unreadable.
-MAC_ORDER_SHIFT = 29
-_MAC_ORDER = (
-    "ÄÅÇÉÑÖÜáàâäãåçéèêëíìîïñóòôöõúùûü†°¢£§•¶ß®©™´¨≠ÆØ∞±≤≥¥µ∂∑∏π∫ªºΩæø¿¡¬√ƒ≈∆«»… "
-    "ÀÃÕŒœ–—“”‘’÷◊ÿŸ⁄¤‹›ﬁﬂ‡·‚„‰"
-)
-_MAC_FIRST = 98
 
 # PDFium's load errors (fpdfview.h), by name.
 # A security handler PDFium does not have (5) is encryption it cannot open: locked, not broken.
 _PASSWORD = {raw.FPDF_ERR_PASSWORD, raw.FPDF_ERR_SECURITY}
 _BROKEN = {raw.FPDF_ERR_FILE, raw.FPDF_ERR_FORMAT}
-
-
-@dataclass
-class Line:
-    text: str
-    size: float  # the height of the text, in points: headings are taller
-    bold: bool
-    top: float  # page coordinates (origin at the bottom): a larger gap starts a paragraph
-    bottom: float
-    image: str = ""  # a picture's link in the images folder: the line is the picture (012)
-    turn: int = UPRIGHT  # a line of a table set sideways is turned (013)
-    equation: tuple[str, ...] = ()  # the line is a display equation, its rows as laid out (013)
-    left: float = 0.0
-    right: float = 0.0
-    table: tuple[tuple[str, ...], ...] = ()  # the line is a table found on the page (013)
-    span: tuple[int, int] = (0, 0)  # its characters on the page (start, stop)
-    latex: str = ""  # an equation rebuilt as LaTeX from its pieces (015)
-
-
-LETTER_HEIGHT = 792.0  # points: a page whose height PDFium cannot give
-
-
-@dataclass
-class Page:
-    lines: list[Line] = field(default_factory=list)
-    height: float = LETTER_HEIGHT
-
-
-@dataclass
-class Document:
-    pages: list[Page]
-    decoded_fonts: int = 0  # fonts read back from moved codes (the summary tells it)
-    unreadable: int = 0  # characters that could not be read (shown as "�")
-    cut_pages: int = 0  # pages with more characters than any page holds: their first part kept
-
-
-class _Chars:
-    """One page's characters, compact: a few bytes each, not a Python object each (a book of
-    millions of characters must fit in the worker's memory, code review of 008)."""
-
-    def __init__(self) -> None:
-        self.codes = array("I")
-        self.fonts = array("I")  # the font's number in the document (``_Fonts``)
-        self.sizes = array("f")
-        self.bottoms = array("f")
-        self.tops = array("f")
-        self.lefts = array("f")
-        self.rights = array("f")
-        self.turns = array("B")  # upright, a quarter turn either way, or aslant
-        self.font_sizes = array("f")  # the font's size, as set: a script's is smaller (014)
-        self.baselines = array("f")  # where it stands: a script's is raised or lowered
-        self.bold = array("B")
 
 
 class _Fonts:
@@ -205,9 +155,9 @@ def _count(textpage: object, fonts: _Fonts) -> None:
             fonts.errors[font] += 1
 
 
-def _page_chars(textpage: object, fonts: _Fonts) -> _Chars:
+def _page_chars(textpage: object, fonts: _Fonts) -> Chars:
     """The second pass, one page at a time: its characters, compact."""
-    chars = _Chars()
+    chars = Chars()
     rect = raw.FS_RECTF()
     box, unicode, angle = (
         raw.FPDFText_GetLooseCharBox,
@@ -269,34 +219,6 @@ def _turn(angle: float) -> int:
         if abs(angle - target) < TURN_RADIANS:
             return turn
     return COUNTERCLOCKWISE if abs(angle - 1.5 * math.pi) < TURN_RADIANS else ASLANT
-
-
-def _shift(codes: Counter[int]) -> int:
-    """How far one font's codes are moved from the letters they draw (0: not moved). The space is
-    the commonest character of any text: moved to a control character, it gives the distance;
-    the rest must then be mostly letters, with vowels among them, as words are."""
-    total = sum(codes.values())
-    controls = {code: n for code, n in codes.items() if code < 0x20 and code not in (9, 10, 13)}
-    if not controls or sum(controls.values()) < MIN_SHIFT_SHARE * total:
-        return 0
-    space = max(controls, key=controls.__getitem__)
-    distance = 0x20 - space
-    rest = {code: n for code, n in codes.items() if code != space and code not in _SKIPPED}
-    moved = {chr(_decoded(code, distance)): n for code, n in rest.items() if code < 0x110000}
-    letters = sum(n for char, n in moved.items() if char.isalpha())
-    vowels = sum(n for char, n in moved.items() if char in VOWELS)
-    others = sum(rest.values()) or 1
-    return distance if letters >= MIN_LETTER_SHARE * others and vowels >= 0.2 * letters else 0
-
-
-def _decoded(code: int, distance: int) -> int:
-    if not distance:
-        return code
-    if distance == MAC_ORDER_SHIFT and code >= _MAC_FIRST:
-        index = code - _MAC_FIRST
-        return ord(_MAC_ORDER[index]) if index < len(_MAC_ORDER) else 0xFFFD
-    moved = code + distance
-    return moved if moved < 0x80 else 0xFFFD
 
 
 @contextmanager
@@ -476,7 +398,7 @@ def read(document: object, images: ImageSink | None = None) -> Document:
     for textpage, _height, _page_handle in _text_pages(document):
         if textpage is not None:
             _count(textpage, fonts)
-    shifts = [_shift(codes) if fonts.unmapped(n) else 0 for n, codes in enumerate(fonts.codes)]
+    shifts = [shift(codes) if fonts.unmapped(n) else 0 for n, codes in enumerate(fonts.codes)]
     unmapped = [fonts.unmapped(n) for n in range(len(fonts.codes))]
     result = Document([], decoded_fonts=sum(1 for distance in shifts if distance))
     # The pixels pictures and equations may take in the whole document, and the equations cropped.
@@ -503,13 +425,13 @@ def read(document: object, images: ImageSink | None = None) -> Document:
 
 
 def _page(
-    chars: _Chars,
+    chars: Chars,
     shifts: list[int],
     unmapped: list[bool],
     document: Document,
     rules: list[Rule] | None = None,
     bars: list[Bar] | None = None,
-    tight: "_Boxes | None" = None,
+    tight: "Boxes | None" = None,
 ) -> Page:
     page = Page()
     words: dict[int, list[Word]] = {UPRIGHT: [], CLOCKWISE: [], COUNTERCLOCKWISE: []}
@@ -518,7 +440,7 @@ def _page(
     extent = [math.inf, -math.inf]  # the line's bottom and top so far
     for index in range(len(chars.codes) + 1):
         ended = index == len(chars.codes) or (
-            chars.codes[index] == _LINE_END and not _goes_on(chars, last, index, extent)
+            chars.codes[index] == LINE_END and not _goes_on(chars, last, index, extent)
         )
         if not ended and last >= start and _new_row(chars, last, index):
             ended = True  # PDFium runs a sideways table's rows into one line: one per row
@@ -546,22 +468,19 @@ def _page(
     return page
 
 
-_Boxes = Callable[[int], tuple[float, float, float, float] | None]
-
-
 @dataclass(frozen=True)
 class _Found:
     """What an equation is rebuilt from: the page's characters, its bars, and PDFium's tight box
     of a character (its loose one reaches past the letter: too coarse to place a script)."""
 
-    chars: _Chars
+    chars: Chars
     shifts: list[int]
     unmapped: list[bool]
     bars: list[Bar]
-    tight: _Boxes | None = None
+    tight: Boxes | None = None
 
 
-def _tight_boxes(textpage: object) -> _Boxes:
+def _tight_boxes(textpage: object) -> Boxes:
     rect = [ctypes.c_double() for _ in range(4)]
     pointers = [ctypes.byref(value) for value in rect]
 
@@ -623,12 +542,12 @@ def _latex(group: list[Line], found: _Found, box: tuple[float, float, float, flo
         high = 0  # a character past U+FFFF comes as two halves (as ``_line`` reads them)
         for index in range(start, min(stop, len(chars.codes))):
             raw_code = chars.codes[index]
-            if raw_code in _SKIPPED or raw_code == _LINE_END:
+            if raw_code in SKIPPED or raw_code == LINE_END:
                 continue
             font = chars.fonts[index]
             if found.unmapped[font] and not found.shifts[font]:
                 return ""  # a font without a map: its letters are wrong (review of 015)
-            code = _decoded(raw_code, found.shifts[font])
+            code = decoded(raw_code, found.shifts[font])
             if high and not 0xDC00 <= code < 0xE000:
                 return ""  # a first half with no second: unreadable
             if 0xD800 <= code < 0xDC00:
@@ -642,7 +561,7 @@ def _latex(group: list[Line], found: _Found, box: tuple[float, float, float, flo
                 continue
             if code < 0x20 or code == 0x7F or code > 0x10FFFF or code == 0xFFFD:
                 return ""  # unreadable, or a soft hyphen: never dropped unseen
-            if code in _SOFT_HYPHENS:
+            if code in SOFT_HYPHENS:
                 return ""
             if chars.rights[index] <= chars.lefts[index] or chars.turns[index] != UPRIGHT:
                 return ""  # a character drawn nowhere, or turned: no place to read it from
@@ -761,7 +680,7 @@ def _trimmed(image: Image.Image) -> Image.Image | None:
     return image.crop((left, top, right, bottom))
 
 
-def _goes_on(chars: _Chars, last: int, index: int, extent: list[float]) -> bool:
+def _goes_on(chars: Chars, last: int, index: int, extent: list[float]) -> bool:
     """Whether a line PDFium ends goes on in the next one: the next character stands on the same
     row, right after the last (a subscript PDFium put on a line of its own: "Rᴺ" then "₊")."""
     following = next(
@@ -785,7 +704,7 @@ def _goes_on(chars: _Chars, last: int, index: int, extent: list[float]) -> bool:
     )
 
 
-def _new_row(chars: _Chars, last: int, index: int) -> bool:
+def _new_row(chars: Chars, last: int, index: int) -> bool:
     """A character turned otherwise than the last one (a page's header, then its sideways table's
     title), or a sideways one on another row: its row is across the page."""
     turn = chars.turns[index]
@@ -840,7 +759,7 @@ def _replaced(
 
 
 def _line(
-    chars: _Chars,
+    chars: Chars,
     span: range,
     shifts: list[int],
     unmapped: list[bool],
@@ -866,13 +785,13 @@ def _line(
     for index in span:
         font = chars.fonts[index]
         raw_code = chars.codes[index]
-        if raw_code in _SKIPPED:
+        if raw_code in SKIPPED:
             continue
-        if raw_code == _LINE_END:  # one PDFium ended where the row goes on: a space between
+        if raw_code == LINE_END:  # one PDFium ended where the row goes on: a space between
             put(" ")  # (gone if it touches a script: "Rᴺ" and "₊")
             end_word()
             continue
-        code = _decoded(raw_code, shifts[font])
+        code = decoded(raw_code, shifts[font])
         if high and not 0xDC00 <= code < 0xE000:  # a first half with no second: unreadable
             document.unreadable += 1
             put(UNREADABLE)
@@ -891,7 +810,7 @@ def _line(
             word.append(index)
             word_text.append(pieces[-1][0])
             continue
-        if code in _SOFT_HYPHENS:
+        if code in SOFT_HYPHENS:
             put(SOFT_HYPHEN, index)
         elif code == 0x09 or code == 0x20:
             put(" ")
@@ -928,7 +847,7 @@ def _line(
     )
 
 
-def _scripted(pieces: list[tuple[str, int]], chars: _Chars, visible: list[int]) -> str:
+def _scripted(pieces: list[tuple[str, int]], chars: Chars, visible: list[int]) -> str:
     """The line's text, its sub- and superscripts written as such (014): a character smaller than
     the line's text, its baseline raised or lowered, as "EFᵗₒ", "Rᴺ₊", "zⱼ", a footnote's "²";
     a script with no such letter in Unicode as "^{…}" or "_{…}". The space PDFium puts around a
@@ -969,7 +888,7 @@ def _scripted(pieces: list[tuple[str, int]], chars: _Chars, visible: list[int]) 
     return "".join(out)
 
 
-def _scripts(chars: _Chars, visible: list[int]) -> dict[int, str]:
+def _scripts(chars: Chars, visible: list[int]) -> dict[int, str]:
     """Each script's character and its kind: "^" raised, "_" lowered."""
     upright = [i for i in visible if chars.turns[i] == UPRIGHT and chars.font_sizes[i] > 0]
     if len(upright) < 2:
@@ -1030,7 +949,7 @@ def _scripts(chars: _Chars, visible: list[int]) -> dict[int, str]:
     return marks
 
 
-def _hugs(before: int, after: int, marks: dict[int, str], chars: _Chars) -> bool:
+def _hugs(before: int, after: int, marks: dict[int, str], chars: Chars) -> bool:
     """A space between a script and what it is set on, narrower than a real one."""
     if before < 0 or after < 0 or not (before in marks or after in marks):
         return False
@@ -1046,7 +965,7 @@ def _script_text(run: list[str], mode: str) -> str:
     return f"{mode}{{{text}}}"
 
 
-def _word(text: str, chars: _Chars, indices: list[int], turn: int) -> Word:
+def _word(text: str, chars: Chars, indices: list[int], turn: int) -> Word:
     """A word's box in its frame: the page turned so its text reads upright (a clockwise turn
     takes the page's top to the frame's left)."""
     first, last = indices[0], indices[-1] + 1
@@ -1067,5 +986,5 @@ def _word(text: str, chars: _Chars, indices: list[int], turn: int) -> Word:
     return Word(text, left, right, bottom, top, max(chars.sizes[i] for i in indices))
 
 
-def _width(chars: _Chars, index: int) -> float:
+def _width(chars: Chars, index: int) -> float:
     return max(chars.rights[index] - chars.lefts[index], 0.0)

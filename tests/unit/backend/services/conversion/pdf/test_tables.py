@@ -482,7 +482,7 @@ def test_footnotes_with_raised_marks_stay_apart(tmp_path: Path) -> None:
 
 
 def test_an_equation_is_not_clipped_by_a_note_beside_it() -> None:
-    from clearmd.backend.services.conversion.pdf.reader import Line, _equations
+    from clearmd.backend.services.conversion.pdf.model import Line
 
     lines = [
         Line("Some prose before the equation, a full line of text here.", 9, False, 730, 721,
@@ -494,5 +494,5 @@ def test_an_equation_is_not_clipped_by_a_note_beside_it() -> None:
              left=72, right=520),
     ]  # fmt: skip
     words = [label("(3)", 508, 689)]
-    blocks = [line for line in _equations(lines, words) if line.equation]
+    blocks = [line for line in reader._equations(lines, words) if line.equation]
     assert blocks and blocks[0].top == 714  # its first row whole

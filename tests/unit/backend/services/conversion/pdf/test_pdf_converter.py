@@ -304,7 +304,7 @@ def test_s8_3_a_paragraph_of_many_broken_words_is_joined_in_linear_time() -> Non
     import time
 
     from clearmd.backend.services.conversion.pdf.cleaner import clean
-    from clearmd.backend.services.conversion.pdf.reader import Document, Line, Page
+    from clearmd.backend.services.conversion.pdf.model import Document, Line, Page
 
     def seconds(count: int) -> float:
         lines = [Line("ab­", 11.0, False, 711 - i, 700 - i) for i in range(count)]
@@ -414,16 +414,16 @@ def test_c8_10_a_held_footnote_never_lands_between_a_heading_and_its_text(tmp_pa
 def test_c8_14_a_symbol_font_is_never_read_back_into_letters() -> None:
     from collections import Counter
 
-    from clearmd.backend.services.conversion.pdf.reader import _shift
+    from clearmd.backend.services.conversion.pdf.decode import shift
 
     symbols = Counter({0x00: 40, 0x01: 30, 0x14: 25, 0x30: 10, 0x32: 8})
-    assert _shift(symbols) == 0
+    assert shift(symbols) == 0
 
 
 def test_surrogate_pairs_are_one_character() -> None:
-    from clearmd.backend.services.conversion.pdf.reader import Document, _Chars, _line
+    from clearmd.backend.services.conversion.pdf import model, reader
 
-    chars = _Chars()
+    chars = model.Chars()
     for code in (0xD835, 0xDC9C, 0x42, 0xD835, 0x43):
         chars.codes.append(code)
         chars.fonts.append(0)
@@ -436,8 +436,8 @@ def test_surrogate_pairs_are_one_character() -> None:
             (chars.lefts, 72.0), (chars.rights, 78.0),
         ):  # fmt: skip
             column.append(value)
-    document = Document([])
-    assert _line(chars, range(5), [0], [False], document).text == "𝒜B�C"  # a half alone: "�"
+    document = model.Document([])
+    assert reader._line(chars, range(5), [0], [False], document).text == "𝒜B�C"  # a half alone: "�"
     assert document.unreadable == 1
 
 

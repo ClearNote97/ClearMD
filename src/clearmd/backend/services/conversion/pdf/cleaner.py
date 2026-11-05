@@ -23,7 +23,7 @@ from clearmd.backend.services.conversion.markdown_out import (
     neutralize,
     tidy,
 )
-from clearmd.backend.services.conversion.pdf.reader import SOFT_HYPHEN, UPRIGHT, Document, Line
+from clearmd.backend.services.conversion.pdf.model import SOFT_HYPHEN, UPRIGHT, Document, Line
 
 EDGE_LINES = 3  # a running header or footer is among the first or last lines of a page
 MIN_PAGES_FOR_RUNNING = 4  # fewer pages: nothing is taken for a running line

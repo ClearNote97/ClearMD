@@ -1,6 +1,6 @@
 """An equation's pieces rebuilt as LaTeX (feature 015, ADR-0036): pure geometry in, LaTeX out."""
 
-from clearmd.backend.services.conversion.pdf import reader
+from clearmd.backend.services.conversion.pdf import model, reader
 from clearmd.backend.services.conversion.pdf.equations import Placed, find_equations
 from clearmd.backend.services.conversion.pdf.latex import (
     MAX_GLYPHS,
@@ -209,8 +209,8 @@ def test_a_footnote_rule_is_no_fraction_bar() -> None:
     assert find_equations(lines, words, [(72, 130, 100.0)]) == []
 
 
-def _chars(codes: list[int]) -> reader._Chars:
-    chars = reader._Chars()
+def _chars(codes: list[int]) -> model.Chars:
+    chars = model.Chars()
     for n, code in enumerate(codes):
         chars.codes.append(code)
         chars.fonts.append(0)
@@ -219,7 +219,7 @@ def _chars(codes: list[int]) -> reader._Chars:
         chars.tops.append(107.0)
         chars.lefts.append(n * 5.0)
         chars.rights.append(n * 5.0 + 5)
-        chars.turns.append(reader.UPRIGHT)
+        chars.turns.append(model.UPRIGHT)
         chars.font_sizes.append(SIZE)
         chars.baselines.append(100.0)
         chars.bold.append(0)
@@ -228,7 +228,7 @@ def _chars(codes: list[int]) -> reader._Chars:
 
 def _latex_of(codes: list[int], *, unmapped: bool = False) -> str:
     chars = _chars(codes)
-    line = reader.Line("", SIZE, False, 107, 99, span=(0, len(codes)), right=5.0 * len(codes))
+    line = model.Line("", SIZE, False, 107, 99, span=(0, len(codes)), right=5.0 * len(codes))
     found = reader._Found(chars, [0], [unmapped], [])
     return reader._latex([line], found, (99, 107, 0, 5.0 * len(codes)))
 
