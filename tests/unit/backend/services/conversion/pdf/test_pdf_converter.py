@@ -10,7 +10,7 @@ from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.schemas.formats import FormatId
 from clearmd.backend.schemas.models import ConversionResult, Detection, DetectionMethod
 from clearmd.backend.schemas.notes import NoteKind
-from clearmd.backend.services.conversion.pdf import PdfConverter
+from clearmd.backend.services.conversion.pdf import PdfConverter, model
 
 DETECTION = Detection(FormatId.PDF, DetectionMethod.EXTENSION)
 BODY = [
@@ -421,7 +421,7 @@ def test_c8_14_a_symbol_font_is_never_read_back_into_letters() -> None:
 
 
 def test_surrogate_pairs_are_one_character() -> None:
-    from clearmd.backend.services.conversion.pdf import model, reader
+    from clearmd.backend.services.conversion.pdf.lines.assemble import build_line
 
     chars = model.Chars()
     for code in (0xD835, 0xDC9C, 0x42, 0xD835, 0x43):
@@ -437,7 +437,7 @@ def test_surrogate_pairs_are_one_character() -> None:
         ):  # fmt: skip
             column.append(value)
     document = model.Document([])
-    assert reader._line(chars, range(5), [0], [False], document).text == "𝒜B�C"  # a half alone: "�"
+    assert build_line(chars, range(5), [0], [False], document).text == "𝒜B�C"  # a half alone: "�"
     assert document.unreadable == 1
 
 
