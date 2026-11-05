@@ -12,8 +12,6 @@ from pathlib import Path
 from tkinter import filedialog, ttk
 from typing import Any
 
-from tkinterdnd2 import DND_FILES
-
 import clearmd.frontend.launch as launch
 from clearmd.backend.schemas.formats import EXTENSIONS
 from clearmd.frontend.design.metrics import COMPACT_BELOW, SHORT_BELOW, SPACE
@@ -44,7 +42,7 @@ from clearmd.frontend.ttk.visuals.look import Look
 from clearmd.frontend.ttk.visuals.style_names import WARNING
 from clearmd.frontend.ttk.window import toolkit
 from clearmd.frontend.ttk.window.dialog_host import DialogHost
-from clearmd.frontend.ttk.window.presses import Presses
+from clearmd.frontend.ttk.window.inputs import Inputs
 from clearmd.frontend.ttk.window.primary_button import PrimaryButton
 from clearmd.frontend.ttk.window.scheduler import Scheduler
 from clearmd.frontend.ttk.window.shown import Shown
@@ -68,7 +66,6 @@ class TtkApp:
         self.presenter = Presenter(self, backend)
         self.dialogs = DialogHost(self.root, self.fonts, self.presenter, self.shown)
         self._closing_since: float | None = None  # closed while converting: waiting for the end
-        self.presses = Presses()
         self._build()
         self.rail.show_version(self.presenter.version)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
@@ -100,7 +97,7 @@ class TtkApp:
     # --- Building ------------------------------------------------------------------------------
 
     def _build(self) -> None:
-        self._icons = toolkit.set_icons(self.root)
+        self.icons = toolkit.set_icons(self.root)
 
         self.rail = Rail(
             self.root,
@@ -142,19 +139,15 @@ class TtkApp:
         self.pages: tuple[ttk.Frame, ...] = (self.main, self.review, self.converting, self.results)
         self._show_page(self.main)
 
-        # Files and folders dropped anywhere on the window (tkinterdnd2, ADR-0026).
-        if self.drops:
-            self.root.drop_target_register(DND_FILES)
-            self.root.dnd_bind("<<Drop>>", self._dropped)
-        self.root.bind("<KeyPress-Return>", self._enter)
-        self.root.bind("<KeyRelease-Return>", self.presses.released)
-        # Space on the focused primary button: held, it is one press too (F-1).
-        self.actions.primary.bind("<KeyPress-space>", self._space)
-        self.actions.primary.bind("<KeyRelease-space>", self.presses.released)
-        for number in range(1, 5):  # the rail by keyboard (AC-01)
-            self.root.bind(
-                f"<Control-Key-{number}>", lambda _event, n=number: self.presenter.go_to(n)
-            )
+        self.inputs = Inputs(
+            self.root,
+            self.presenter,
+            self.shown,
+            self.primary_button.press,
+            self.actions.primary,
+            drops=self.drops,
+        )
+        self.inputs.bind()
         self.root.bind("<Configure>", self._window_resized, add="+")
 
     # --- Intents ---------------------------------------------------------------------------------
@@ -195,18 +188,6 @@ class TtkApp:
         else:  # cancelled: the radio buttons show the choice as it was
             current = self.presenter.output_folder
             self.main.output_mode.set("folder" if current is not None else "next_to")
-
-    def _dropped(self, event: Any) -> None:  # tkinterdnd2's event: ``data`` holds the paths
-        paths = [Path(item) for item in self.root.tk.splitlist(event.data)]
-        if self.shown.state is not None and Action.ADD in self.shown.state.enabled:
-            self.presenter.add_paths(paths)
-
-    def _enter(self, event: Any) -> None:
-        if self.presses.pressed(event):  # held down: one press, whatever the page (F-1)
-            self.primary_button.press()
-
-    def _space(self, event: Any) -> str | None:
-        return None if self.presses.pressed(event) else "break"  # "break": the button stays
 
     def _window_resized(self, event: Any) -> None:
         if event.widget is self.root:

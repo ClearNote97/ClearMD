@@ -229,7 +229,7 @@ def test_ac_05_add_files_add_folder_drop_remove_and_no_duplicates(
     app.main.add_folder.invoke()
     app.main.add_files.invoke()  # the same files again: never listed twice
     data = app.root.tk.call("list", str(tmp_path / "c d.odt"), str(first))
-    app._dropped(SimpleNamespace(data=data))
+    app.inputs.dropped(SimpleNamespace(data=data))
     assert app.main.inputs.names() == ["a.pdf", "b.docx", f"{tmp_path.name}/", "c d.odt"]
     tree = app.main.inputs.tree
     tree.selection_set(tree.get_children()[0])
@@ -587,7 +587,7 @@ def test_ac_22_the_window_wears_clearmds_identity(window: Callable[..., TtkApp])
     assert app.style.theme_use() == "clearmd-dark"
     assert app.rail.step_texts() == ["> Choose", "Review", "Convert", "Results"]
     assert {"Primary.ClearMD.TButton.face", "Card.ClearMD.face"} <= set(app.style.element_names())
-    assert [icon.width() for icon in app._icons] == [16, 32, 48, 64, 128, 256]
+    assert [icon.width() for icon in app.icons] == [16, 32, 48, 64, 128, 256]
 
 
 def test_ac_23_every_list_shows_number_icon_and_name(

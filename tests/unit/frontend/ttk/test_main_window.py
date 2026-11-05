@@ -108,7 +108,7 @@ def test_removing_the_selection_and_clearing(app: TtkApp, tmp_path: Path) -> Non
 
 def test_dropped_files_and_folders_are_added(app: TtkApp, tmp_path: Path) -> None:
     data = app.root.tk.call("list", str(tmp_path / "a b.pdf"), str(tmp_path))  # a space in a name
-    app._dropped(SimpleNamespace(data=data))
+    app.inputs.dropped(SimpleNamespace(data=data))
     shown = app.main.inputs.names()
     assert shown[0] == "a b.pdf" and len(shown) == 2
 
@@ -142,7 +142,7 @@ def test_the_language_changes_every_label(app: TtkApp) -> None:
 
 
 def test_the_window_icon_is_the_app_icon_at_every_size(app: TtkApp) -> None:
-    assert [icon.width() for icon in app._icons] == [16, 32, 48, 64, 128, 256]
+    assert [icon.width() for icon in app.icons] == [16, 32, 48, 64, 128, 256]
 
 
 def test_every_gap_is_on_the_8_px_grid_and_text_is_at_least_14_px(app: TtkApp) -> None:
@@ -830,7 +830,7 @@ def test_a_held_key_is_one_press_on_windows_and_on_x11() -> None:
 def test_f1_a_held_enter_runs_one_action_whatever_the_pages(app: TtkApp, tmp_path: Path) -> None:
     app.presenter.add_paths([tmp_path])
     for time_ms in range(0, 3000, 30):  # three seconds of a held Enter
-        app._enter(key("Return", time_ms + 1))  # Windows: presses only, no release
+        app.inputs.enter(key("Return", time_ms + 1))  # Windows: presses only, no release
         pump(app, seconds=0.01)
     pump(app, until=lambda: app.presenter.page == 2)
     assert app.presenter.page == 2 and app.presenter.state is AppState.WAITING_DECISION
