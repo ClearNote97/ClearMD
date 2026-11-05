@@ -8,9 +8,9 @@ from pathlib import Path
 import pytest
 from support.imports import imported_modules, source_modules
 
-GUIS = ("clearmd.frontend.ttk", "clearmd.frontend.qt", "clearmd.frontend.pyside")
+GUIS = ("clearmd.frontend.ttk", "clearmd.frontend.pyside", "clearmd.frontend.flet")
 RANK = {"app": 0, "window": 1, "views": 2, "components": 3, "layout": 4, "visuals": 4}
-WINDOW_CLASSES = ("TtkApp", "QtApp", "PySideApp", "FletApp")
+WINDOW_CLASSES = ("TtkApp", "PySideApp", "FletApp")
 
 
 def layer(module: str) -> tuple[str, int] | None:

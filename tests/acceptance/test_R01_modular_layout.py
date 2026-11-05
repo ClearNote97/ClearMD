@@ -51,7 +51,6 @@ def test_ac_05_the_ttk_and_cli_executables_carry_no_other_toolkit() -> None:
     assert "*OTHER_TOOLKITS" in spec and "not module.startswith(OTHER_GUIS)" in spec
 
 
-@pytest.mark.xfail(strict=True, reason="clearmd-qt becomes clearmd-pyside in P2")
 def test_ac_06_every_command_resolves() -> None:
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
     commands = {**project["scripts"], **project["gui-scripts"]}

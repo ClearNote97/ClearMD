@@ -107,7 +107,7 @@ RULES: dict[str, Rule] = {
             "clearmd.frontend.ttk",
         ),
     ),
-    # The Qt GUI (feature 016; frontend/qt until R01 renames it pyside) and flet: as ttk.
+    # The PySide6 GUI (feature 016) and flet: as ttk.
     **{
         gui: Rule(
             True,
@@ -119,7 +119,7 @@ RULES: dict[str, Rule] = {
                 gui,
             ),
         )
-        for gui in ("clearmd.frontend.qt", "clearmd.frontend.pyside", "clearmd.frontend.flet")
+        for gui in ("clearmd.frontend.pyside", "clearmd.frontend.flet")
     },
     # The package root and `clearmd.backend` itself only hold docstrings.
     "clearmd.backend": Rule(False, ()),
@@ -188,7 +188,7 @@ def test_module_respects_the_dependency_rule(module: str, path: Path) -> None:
         ("clearmd.frontend.presenter.presenter", "from clearmd.backend.services import folders"),
         ("clearmd.frontend.ttk.app", "from clearmd.backend.api import plan_batch"),
         ("clearmd.frontend.ttk.app", "from clearmd.frontend.cli import main"),
-        ("clearmd.frontend.qt.app", "from clearmd.frontend.ttk import TtkApp"),
+        ("clearmd.frontend.pyside.app", "from clearmd.frontend.ttk import TtkApp"),
         ("clearmd.frontend.pyside.app", "from clearmd.backend.api import plan_batch"),
         ("clearmd.frontend.ttk.app", "from clearmd.frontend.pyside import PySideApp"),
     ],

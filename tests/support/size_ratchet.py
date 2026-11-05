@@ -17,10 +17,10 @@ FILES: dict[str, int] = {  # path -> lines (over 250)
     "src/clearmd/backend/services/summary/pdf_report.py": 400,
     "src/clearmd/frontend/cli/app.py": 405,
     "src/clearmd/frontend/presenter/presenter.py": 724,
-    "src/clearmd/frontend/qt/app.py": 520,
-    "src/clearmd/frontend/qt/dialogs.py": 270,
-    "src/clearmd/frontend/qt/pages.py": 488,
-    "src/clearmd/frontend/qt/widgets.py": 546,
+    "src/clearmd/frontend/pyside/app.py": 520,
+    "src/clearmd/frontend/pyside/dialogs.py": 270,
+    "src/clearmd/frontend/pyside/pages.py": 488,
+    "src/clearmd/frontend/pyside/widgets.py": 546,
     "src/clearmd/frontend/ttk/app.py": 585,
     "src/clearmd/frontend/ttk/views/dialogs.py": 263,
     "tests/acceptance/test_001_batch_conversion.py": 763,
@@ -50,8 +50,8 @@ CLASSES: dict[str, int] = {  # "path::Class" -> lines (over 150)
     "src/clearmd/backend/services/summary/pdf_report.py::PdfReport": 155,
     "src/clearmd/backend/services/worker/supervisor.py::WorkerRunner": 159,
     "src/clearmd/frontend/presenter/presenter.py::Presenter": 645,
-    "src/clearmd/frontend/qt/app.py::QtApp": 397,
-    "src/clearmd/frontend/qt/pages.py::ChoosePage": 159,
+    "src/clearmd/frontend/pyside/app.py::PySideApp": 397,
+    "src/clearmd/frontend/pyside/pages.py::ChoosePage": 159,
     "src/clearmd/frontend/ttk/app.py::TtkApp": 447,
     "src/clearmd/frontend/ttk/brand.py::Look": 162,
     "src/clearmd/frontend/ttk/components/file_list.py::FileList": 211,
@@ -61,6 +61,6 @@ CLASSES: dict[str, int] = {  # "path::Class" -> lines (over 150)
 # The GUIs' entry files (≤ 40 lines) that are still whole windows.
 ENTRY_FILES: dict[str, int] = {
     "src/clearmd/frontend/cli/app.py": 405,
-    "src/clearmd/frontend/qt/app.py": 520,
+    "src/clearmd/frontend/pyside/app.py": 520,
     "src/clearmd/frontend/ttk/app.py": 585,
 }

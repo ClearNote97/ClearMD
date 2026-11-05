@@ -1,7 +1,7 @@
 """The PySide6 GUI (feature 016, ADR-0038): the same window as the ttk one, drawn by Qt.
 
-``QtApp`` implements the presenter's ``View``, as ``TtkApp`` does: every text and state comes from
-the presenter (the same one, unchanged); the window only lays it out and forwards the user's
+``PySideApp`` implements the presenter's ``View``, as ``TtkApp`` does: every text and state comes
+from the presenter (the same one, unchanged); the window only lays it out and forwards the user's
 intents (buttons, keys, dropped files). Work comes back from the worker thread through a signal:
 Qt queues it to the UI thread.
 """
@@ -44,14 +44,14 @@ from clearmd.frontend.presenter.models import (
 )
 from clearmd.frontend.presenter.ports import Backend
 from clearmd.frontend.presenter.state import STEPS
-from clearmd.frontend.qt.dialogs import (
+from clearmd.frontend.pyside.dialogs import (
     Dialog,
     HelpDialog,
     KeepInputsDialog,
     SettingsDialog,
     WelcomeDialog,
 )
-from clearmd.frontend.qt.layout import (
+from clearmd.frontend.pyside.layout import (
     BODY,
     COMPACT_BELOW,
     GAP,
@@ -62,9 +62,9 @@ from clearmd.frontend.qt.layout import (
     START_HEIGHT,
     START_WIDTH,
 )
-from clearmd.frontend.qt.pages import ChoosePage, ConvertPage, ResultsPage, ReviewPage
-from clearmd.frontend.qt.style import stylesheet
-from clearmd.frontend.qt.widgets import ActionBar, Ground, Rail, app_icon, label
+from clearmd.frontend.pyside.pages import ChoosePage, ConvertPage, ResultsPage, ReviewPage
+from clearmd.frontend.pyside.style import stylesheet
+from clearmd.frontend.pyside.widgets import ActionBar, Ground, Rail, app_icon, label
 from clearmd.i18n import Catalog
 
 PRIMARY_PAUSE_SECONDS = 0.5  # after a page change, before its primary action counts (F-1)
@@ -106,7 +106,7 @@ class _Bridge(QObject):
             callback()
 
 
-class QtApp(QWidget):
+class PySideApp(QWidget):
     """The window, and the presenter's view."""
 
     def __init__(self, backend: Backend | None = None) -> None:
@@ -513,7 +513,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     multiprocessing.freeze_support()  # a no-op unless running as a packaged executable
     arguments = sys.argv[1:] if argv is None else list(argv)
     app = application()
-    window = QtApp()
+    window = PySideApp()
     window.start()
     if "--smoke" in arguments:
         QTimer.singleShot(SMOKE_SECONDS * 1000, window.close_window)

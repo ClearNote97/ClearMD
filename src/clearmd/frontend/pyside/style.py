@@ -7,7 +7,7 @@ colours, radius and padding. Nothing here depends on a widget: changing the them
 from importlib.resources import files
 
 from clearmd.frontend.palette import Palette
-from clearmd.frontend.qt.layout import (
+from clearmd.frontend.pyside.layout import (
     BODY,
     BUTTON_HEIGHT,
     FIGURE,
@@ -18,7 +18,7 @@ from clearmd.frontend.qt.layout import (
     WORDMARK,
 )
 
-PICTURES = files("clearmd.frontend") / "assets" / "qt"
+PICTURES = files("clearmd.frontend") / "assets" / "pyside"
 
 
 def _picture(name: str, p: Palette) -> str:

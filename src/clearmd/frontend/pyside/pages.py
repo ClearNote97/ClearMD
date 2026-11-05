@@ -25,8 +25,8 @@ from clearmd.frontend.presenter.models import (
     ResultView,
     RowKind,
 )
-from clearmd.frontend.qt.layout import GAP, ICON, SPACE
-from clearmd.frontend.qt.widgets import (
+from clearmd.frontend.pyside.layout import GAP, ICON, SPACE
+from clearmd.frontend.pyside.widgets import (
     DropZone,
     FileList,
     ListRow,

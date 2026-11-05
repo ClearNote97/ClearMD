@@ -242,7 +242,7 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-qt = [
+pyside = [
     { name = "pyside6-essentials" },
 ]
 
@@ -270,12 +270,12 @@ requires-dist = [
     { name = "psutil", specifier = ">=7.0" },
     { name = "pylatexenc", specifier = ">=2.11,<3" },
     { name = "pypdfium2", specifier = ">=5.14,<6" },
-    { name = "pyside6-essentials", marker = "extra == 'qt'", specifier = "==6.12.0" },
+    { name = "pyside6-essentials", marker = "extra == 'pyside'", specifier = "==6.12.0" },
     { name = "tkinterdnd2", specifier = "==0.6.4" },
     { name = "trafilatura", specifier = "==2.3.1" },
     { name = "ttkbootstrap", specifier = "==2.2.3" },
 ]
-provides-extras = ["qt"]
+provides-extras = ["pyside"]
 
 [package.metadata.requires-dev]
 build = [

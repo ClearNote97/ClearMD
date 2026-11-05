@@ -28,7 +28,7 @@ from PySide6.QtWidgets import (
 from clearmd.frontend.palette import Palette
 from clearmd.frontend.presenter.models import Primary, Stat
 from clearmd.frontend.presenter.state import STEPS
-from clearmd.frontend.qt.layout import (
+from clearmd.frontend.pyside.layout import (
     BADGE,
     COMPACT_RAIL_WIDTH,
     GAP,
@@ -38,7 +38,7 @@ from clearmd.frontend.qt.layout import (
     SPACE,
     STEP_HEIGHT,
 )
-from clearmd.frontend.qt.style import blend
+from clearmd.frontend.pyside.style import blend
 from clearmd.i18n import Catalog
 
 ASSETS = files("clearmd.frontend") / "assets"
