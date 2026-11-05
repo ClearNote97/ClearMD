@@ -13,7 +13,7 @@ from clearmd.frontend.presenter import Presenter
 from clearmd.frontend.ttk.components.action_bar import ActionBar
 from clearmd.frontend.ttk.components.rail import Rail
 from clearmd.frontend.ttk.components.surface import Surface
-from clearmd.frontend.ttk.views.choose import MainView
+from clearmd.frontend.ttk.views.choose import ChooseView
 from clearmd.frontend.ttk.views.convert import ConvertView
 from clearmd.frontend.ttk.views.results import ResultsView
 from clearmd.frontend.ttk.views.review import ReviewView
@@ -27,7 +27,7 @@ class Frame:
     surface: Surface
     actions: ActionBar
     message: ttk.Label
-    main: MainView
+    main: ChooseView
     review: ReviewView
     converting: ConvertView
     results: ResultsView
@@ -62,7 +62,7 @@ def build_frame(
     message = ttk.Label(page, style=WARNING, anchor="w", justify="left")
     page.bind("<Configure>", lambda event: message.configure(wraplength=event.width))
     message.pack(side="bottom", fill="x", pady=(SPACE, 0))
-    main = MainView(
+    main = ChooseView(
         page,
         fonts=fonts,
         on_add_files=on_add_files,

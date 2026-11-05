@@ -8,10 +8,10 @@ from typing import Any
 from clearmd.frontend.design.metrics import COMPACT_BELOW, SHORT_BELOW
 from clearmd.frontend.presenter import Action
 from clearmd.frontend.ttk.components.rail import Rail
-from clearmd.frontend.ttk.views.choose import MainView
+from clearmd.frontend.ttk.views.choose import ChooseView
 
 
-def apply_enabled(enabled: Collection[Action], main: MainView, rail: Rail) -> None:
+def apply_enabled(enabled: Collection[Action], main: ChooseView, rail: Rail) -> None:
     for button, action in (
         (main.add_files, Action.ADD),
         (main.add_folder, Action.ADD),
@@ -27,7 +27,7 @@ def apply_enabled(enabled: Collection[Action], main: MainView, rail: Rail) -> No
         button.state(["!disabled"] if action in enabled else ["disabled"])
 
 
-def fit_to_size(root: Any, main: MainView, rail: Rail, event: Any) -> None:
+def fit_to_size(root: Any, main: ChooseView, rail: Rail, event: Any) -> None:
     if event.widget is root:
         rail.set_compact(root.winfo_width() < COMPACT_BELOW)
         main.set_short(root.winfo_height() < SHORT_BELOW)

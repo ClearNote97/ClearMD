@@ -16,7 +16,7 @@ from clearmd.frontend.ttk.visuals.style_names import PAGE
 from clearmd.i18n import Catalog
 
 
-class MainView(ttk.Frame):
+class ChooseView(ttk.Frame):
     """Add files / Add folder and the drop zone, the numbered list, the output choice, Convert."""
 
     def __init__(
