@@ -154,6 +154,17 @@ def test_ac_02_by_default_no_picture_is_written(workdir: Path) -> None:
     assert "*Image: Mapa de la región*" in (out / "report.md").read_text(encoding="utf-8")
 
 
+def test_ac_02_formats_that_keep_no_pictures_convert_with_the_folder_on(workdir: Path) -> None:
+    """TeX and Excel keep no pictures: the folder must never make them fail (found in R01)."""
+    docs = workdir / "docs"
+    docs.mkdir()
+    shutil.copyfile(DOCUMENTS_DIR / "sample.xlsx", docs / "sample.xlsx")
+    (docs / "notes.tex").write_text("\\section{Notes}\nPlain text.\n", encoding="utf-8")
+    assert main([str(docs), "--images", "--quiet", "--overwrite"]) == 0
+    written = workdir / "ClearMD_Output" / "OutputMD" / "docs"
+    assert (written / "sample.md").exists() and (written / "notes.md").exists()
+
+
 def test_ac_03_a_picture_used_again_is_kept_once(workdir: Path) -> None:
     docs = batch(workdir)
     main([str(docs), "--quiet", "--images"])

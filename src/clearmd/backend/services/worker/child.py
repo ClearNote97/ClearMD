@@ -1,6 +1,7 @@
 """The worker process: builds its converters once and serves one request at a time."""
 
 import importlib
+import inspect
 import signal
 from multiprocessing.connection import Connection
 from pathlib import Path
@@ -72,8 +73,10 @@ def handle(
     detection = Detection(format_id, DetectionMethod(request.method))
     try:
         converter = registry.for_format(format_id, Strategy(request.strategy))
-        # The images, only when asked: a converter that keeps none takes no sink (012).
-        sink = ImageSink.for_folder(request.images) if request.images else None
+        # The images, only when asked and only to a converter that keeps them (012): TeX and
+        # Excel take no sink, and handing them one failed every such file (found in R01).
+        keeps = "images" in inspect.signature(converter.convert).parameters
+        sink = ImageSink.for_folder(request.images) if request.images and keeps else None
         options: dict[str, Any] = {"images": sink} if sink is not None else {}
         result = converter.convert(Path(request.source), detection, Path(request.target), **options)
     except ConversionError as error:
