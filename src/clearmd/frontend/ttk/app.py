@@ -8,12 +8,10 @@ import sys
 import time
 import tkinter as tk
 from collections.abc import Callable, Sequence
-from pathlib import Path
-from tkinter import filedialog, ttk
+from tkinter import ttk
 from typing import Any
 
 import clearmd.frontend.launch as launch
-from clearmd.backend.schemas.formats import EXTENSIONS
 from clearmd.frontend.design.metrics import COMPACT_BELOW, SHORT_BELOW, SPACE
 from clearmd.frontend.design.palette import LIGHT, PALETTES, Palette
 from clearmd.frontend.presenter import Action, AppState, Presenter
@@ -43,6 +41,7 @@ from clearmd.frontend.ttk.visuals.style_names import WARNING
 from clearmd.frontend.ttk.window import toolkit
 from clearmd.frontend.ttk.window.dialog_host import DialogHost
 from clearmd.frontend.ttk.window.inputs import Inputs
+from clearmd.frontend.ttk.window.pickers import Pickers
 from clearmd.frontend.ttk.window.primary_button import PrimaryButton
 from clearmd.frontend.ttk.window.scheduler import Scheduler
 from clearmd.frontend.ttk.window.shown import Shown
@@ -120,12 +119,12 @@ class TtkApp:
         self.main = MainView(
             page,
             fonts=self.fonts,
-            on_add_files=self.add_files,
-            on_add_folder=self.add_folder,
+            on_add_files=lambda: self.pickers.add_files(),
+            on_add_folder=lambda: self.pickers.add_folder(),
             on_remove=lambda paths: self.presenter.remove_inputs(paths),
             on_clear=lambda: self.presenter.clear_inputs(),
             on_next_to=lambda: self.presenter.choose_output_next_to(),
-            on_pick_folder=self.pick_output_folder,
+            on_pick_folder=lambda: self.pickers.pick_output_folder(),
             on_summary=lambda value: self.presenter.choose_summary_format(value),
             on_images=lambda value: self.presenter.choose_images(value),
         )
@@ -133,6 +132,7 @@ class TtkApp:
         self.converting = ConvertView(page, fonts=self.fonts)
         self.results = ResultsView(page, fonts=self.fonts)
         # One page per step (ADR-0027): Choose (also while analyzing), Review, Convert, Results.
+        self.pickers = Pickers(self.root, self.presenter, self.shown, self.main.output_mode)
         self.primary_button = PrimaryButton(
             self.root, self.actions, self.review, self.presenter, self.dialogs, self.shown
         )
@@ -151,43 +151,6 @@ class TtkApp:
         self.root.bind("<Configure>", self._window_resized, add="+")
 
     # --- Intents ---------------------------------------------------------------------------------
-
-    def add_files(self) -> None:
-        if self.shown.state is not None and Action.ADD not in self.shown.state.enabled:
-            return
-        catalog = self.shown.need_catalog()
-        patterns = " ".join(f"*{extension}" for extension in sorted(EXTENSIONS))
-        chosen = filedialog.askopenfilenames(
-            parent=self.root,
-            title=catalog.text("gui.main.pick_files_title"),
-            filetypes=[(catalog.text("gui.main.documents"), patterns), ("*", "*")],
-        )
-        if chosen:
-            self.presenter.add_paths([Path(path) for path in chosen])
-
-    def add_folder(self) -> None:
-        if self.shown.state is not None and Action.ADD not in self.shown.state.enabled:
-            return
-        chosen = filedialog.askdirectory(
-            parent=self.root, title=self.shown.need_catalog().text("gui.main.pick_folder_title")
-        )
-        if chosen:
-            self.presenter.add_paths([Path(chosen)])
-
-    def pick_output_folder(self) -> None:
-        if self.shown.state is not None and Action.CHOOSE_OUTPUT not in self.shown.state.enabled:
-            return
-        suggestion = self.presenter.settings.last_output_folder or None
-        chosen = filedialog.askdirectory(
-            parent=self.root,
-            title=self.shown.need_catalog().text("gui.main.pick_output_title"),
-            initialdir=suggestion,
-        )
-        if chosen:
-            self.presenter.choose_output_folder(Path(chosen))
-        else:  # cancelled: the radio buttons show the choice as it was
-            current = self.presenter.output_folder
-            self.main.output_mode.set("folder" if current is not None else "next_to")
 
     def _window_resized(self, event: Any) -> None:
         if event.widget is self.root:
