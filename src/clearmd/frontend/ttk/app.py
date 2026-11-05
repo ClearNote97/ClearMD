@@ -38,17 +38,15 @@ from clearmd.frontend.ttk.components.surface import Surface
 from clearmd.frontend.ttk.layout.fonts import make_fonts
 from clearmd.frontend.ttk.views.choose import MainView
 from clearmd.frontend.ttk.views.convert import ConvertView
-from clearmd.frontend.ttk.views.dialogs.help import help_dialog
-from clearmd.frontend.ttk.views.dialogs.keep_inputs import KeepInputsDialog
-from clearmd.frontend.ttk.views.dialogs.settings import SettingsDialog
-from clearmd.frontend.ttk.views.dialogs.welcome import WelcomeDialog
 from clearmd.frontend.ttk.views.results import ResultsView
 from clearmd.frontend.ttk.views.review import ReviewView
 from clearmd.frontend.ttk.visuals.look import Look
 from clearmd.frontend.ttk.visuals.style_names import WARNING
 from clearmd.frontend.ttk.window import toolkit
+from clearmd.frontend.ttk.window.dialog_host import DialogHost
 from clearmd.frontend.ttk.window.presses import Presses
 from clearmd.frontend.ttk.window.scheduler import Scheduler
+from clearmd.frontend.ttk.window.shown import Shown
 from clearmd.i18n import Catalog
 
 
@@ -63,24 +61,42 @@ class TtkApp:
         self.style = toolkit.prepare(self.root)
         self.fonts = make_fonts(self.root)
         self.look = Look(self.style, self.root, self.fonts)
-        self.palette: Palette = LIGHT
-        self.look.use(self.palette)  # the styles exist before the widgets that use them
+        self.shown = Shown()
+        self.look.use(self.shown.palette)  # the styles exist before the widgets that use them
         self.scheduler = Scheduler(self.root)
-        self.catalog: Catalog | None = None
-        self.state: StateView | None = None
-        self.last_plan: PlanView | None = None
-        self.last_progress: ProgressView | None = None
-        self.last_result: ResultView | None = None
-        self._scan: str | None = None
-        self.dialog: Dialog | None = None  # the open dialog: one at a time
+        self.presenter = Presenter(self, backend)
+        self.dialogs = DialogHost(self.root, self.fonts, self.presenter, self.shown)
         self._closing_since: float | None = None  # closed while converting: waiting for the end
         self._page_shown_at = 0.0  # when the page on screen changed (F-1)
         self._unpause: str | None = None  # the end of that pause
         self.presses = Presses()
         self._build()
-        self.presenter = Presenter(self, backend)
         self.rail.show_version(self.presenter.version)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
+
+    @property
+    def dialog(self) -> Dialog | None:
+        return self.dialogs.current
+
+    @property
+    def state(self) -> StateView | None:
+        return self.shown.state
+
+    @property
+    def palette(self) -> Palette:
+        return self.shown.palette
+
+    @property
+    def last_plan(self) -> PlanView | None:
+        return self.shown.last_plan
+
+    @property
+    def last_result(self) -> ResultView | None:
+        return self.shown.last_result
+
+    @property
+    def page(self) -> ttk.Frame | None:
+        return self.shown.page
 
     # --- Building ------------------------------------------------------------------------------
 
@@ -90,8 +106,8 @@ class TtkApp:
         self.rail = Rail(
             self.root,
             fonts=self.fonts,
-            on_settings=self.show_settings,
-            on_help=self.show_help,
+            on_settings=self.dialogs.show_settings,
+            on_help=self.dialogs.show_help,
             on_step=lambda page: self.presenter.go_to(page),
         )
         self.rail.pack(side="left", fill="y")
@@ -122,7 +138,6 @@ class TtkApp:
         self.results = ResultsView(page, fonts=self.fonts)
         # One page per step (ADR-0027): Choose (also while analyzing), Review, Convert, Results.
         self.pages: tuple[ttk.Frame, ...] = (self.main, self.review, self.converting, self.results)
-        self.page: ttk.Frame | None = None
         self._show_page(self.main)
 
         # Files and folders dropped anywhere on the window (tkinterdnd2, ADR-0026).
@@ -143,9 +158,9 @@ class TtkApp:
     # --- Intents ---------------------------------------------------------------------------------
 
     def add_files(self) -> None:
-        if self.state is not None and Action.ADD not in self.state.enabled:
+        if self.shown.state is not None and Action.ADD not in self.shown.state.enabled:
             return
-        catalog = self._catalog()
+        catalog = self.shown.need_catalog()
         patterns = " ".join(f"*{extension}" for extension in sorted(EXTENSIONS))
         chosen = filedialog.askopenfilenames(
             parent=self.root,
@@ -156,21 +171,21 @@ class TtkApp:
             self.presenter.add_paths([Path(path) for path in chosen])
 
     def add_folder(self) -> None:
-        if self.state is not None and Action.ADD not in self.state.enabled:
+        if self.shown.state is not None and Action.ADD not in self.shown.state.enabled:
             return
         chosen = filedialog.askdirectory(
-            parent=self.root, title=self._catalog().text("gui.main.pick_folder_title")
+            parent=self.root, title=self.shown.need_catalog().text("gui.main.pick_folder_title")
         )
         if chosen:
             self.presenter.add_paths([Path(chosen)])
 
     def pick_output_folder(self) -> None:
-        if self.state is not None and Action.CHOOSE_OUTPUT not in self.state.enabled:
+        if self.shown.state is not None and Action.CHOOSE_OUTPUT not in self.shown.state.enabled:
             return
         suggestion = self.presenter.settings.last_output_folder or None
         chosen = filedialog.askdirectory(
             parent=self.root,
-            title=self._catalog().text("gui.main.pick_output_title"),
+            title=self.shown.need_catalog().text("gui.main.pick_output_title"),
             initialdir=suggestion,
         )
         if chosen:
@@ -181,7 +196,7 @@ class TtkApp:
 
     def _dropped(self, event: Any) -> None:  # tkinterdnd2's event: ``data`` holds the paths
         paths = [Path(item) for item in self.root.tk.splitlist(event.data)]
-        if self.state is not None and Action.ADD in self.state.enabled:
+        if self.shown.state is not None and Action.ADD in self.shown.state.enabled:
             self.presenter.add_paths(paths)
 
     def _enter(self, event: Any) -> None:
@@ -195,7 +210,7 @@ class TtkApp:
         """The page's primary action, from its button or Enter (UX §6, ADR-0029). Right after the
         page changes it waits a moment, shown disabled: a double click must not run Next and
         Convert past a page the user did not see (security audit of 007, F-1)."""
-        if self.dialog is not None:
+        if self.dialogs.current is not None:
             return
         if not primary_gate.gate_open(self._page_shown_at, time.monotonic()):
             return
@@ -214,85 +229,25 @@ class TtkApp:
 
     def _end_pause(self) -> None:
         self._unpause = None
-        if self.state is not None:
-            self.actions.show(self.state.primary)
-
-    def convert_more(self) -> None:
-        """Asked every time: keep the chosen files, or start empty (feature 007)."""
-        if self.dialog is not None:
-            return
-        dialog = KeepInputsDialog(
-            self.root,
-            self._catalog(),
-            self.palette,
-            self.fonts,
-            on_answer=lambda keep: self.presenter.convert_more(keep=keep),
-            on_close=self._closed,
-        )
-        self._open(dialog)
+        if self.shown.state is not None:
+            self.actions.show(self.shown.state.primary)
 
     def _window_resized(self, event: Any) -> None:
         if event.widget is self.root:
             self.rail.set_compact(self.root.winfo_width() < COMPACT_BELOW)
             self.main.set_short(self.root.winfo_height() < SHORT_BELOW)
 
-    def show_help(self) -> None:
-        """The "?" window: always available (UX §4)."""
-        if self.dialog is None:
-            self._open(
-                help_dialog(
-                    self.root,
-                    self._catalog(),
-                    self.palette,
-                    self.fonts,
-                    self._closed,
-                    version=self.presenter.version,
-                )  # fmt: skip
-            )
-
-    def show_settings(self) -> None:
-        if self.dialog is not None or self.state is None:
-            return
-        if Action.SETTINGS not in self.state.enabled:
-            return
-        dialog = SettingsDialog(
-            self.root,
-            self._catalog(),
-            self.palette,
-            self.fonts,
-            self.presenter.settings,
-            on_save=self.presenter.save_settings,
-            on_close=self._closed,
-        )
-        self._open(dialog)
-
-    def _welcome(self, steps: tuple[str, ...]) -> None:
-        if self.dialog is not None:
-            return
-
-        def done(show_again: bool) -> None:
-            self._closed()
-            self.presenter.dismiss_welcome(show_again=show_again)
-
-        dialog = WelcomeDialog(self.root, self._catalog(), self.palette, self.fonts, steps, done)
-        self._open(dialog)
-
-    def _open(self, dialog: Dialog) -> None:
-        self.dialog = dialog
-        dialog.open()
-
-    def _closed(self) -> None:
-        self.dialog = None
-
     def close(self) -> None:
         """Closing while converting cancels, hides the window and waits for the batch to end, so
         the summary of what was done is still written (AC-10); then the window closes."""
         if self._closing_since is not None:
             return
-        if self.dialog is not None:
-            self.dialog.close()  # its answer counts ("Don't show again")
+        if self.dialogs.current is not None:
+            self.dialogs.current.close()  # its answer counts ("Don't show again")
         self.presenter.shutdown()
-        step = close_policy.on_close(self.state.state if self.state is not None else None)
+        step = close_policy.on_close(
+            self.shown.state.state if self.shown.state is not None else None
+        )
         if step is close_policy.CloseStep.CANCEL_AND_WAIT:
             self._closing_since = time.monotonic()
             self.presenter.cancel()
@@ -305,7 +260,9 @@ class TtkApp:
 
     def _close_when_done(self) -> None:
         waited = time.monotonic() - (self._closing_since or 0.0)
-        if close_policy.keep_waiting(self.state.state if self.state is not None else None, waited):
+        if close_policy.keep_waiting(
+            self.shown.state.state if self.shown.state is not None else None, waited
+        ):
             self.root.after(close_policy.CLOSE_POLL_MS, self._close_when_done)
             return
         self._destroy()
@@ -324,10 +281,10 @@ class TtkApp:
         self.scheduler.after(milliseconds, callback)
 
     def show_state(self, state: StateView) -> None:
-        previous = self.state
-        self.state = state
+        previous = self.shown.state
+        self.shown.state = state
         if state.state is not AppState.ANALYZING:
-            self._scan = None
+            self.shown.scan = None
         if previous is not None and previous.page != state.page:
             self.message.configure(text="")  # a message belongs to the page it was given on
             self._page_shown_at = time.monotonic()
@@ -360,18 +317,20 @@ class TtkApp:
 
     def _show_secondary(self, state: StateView) -> None:
         """Back on Review and Convert, Cancel while working, Convert more on Results."""
-        second = secondary_of(self._catalog(), state, has_result=self.last_result is not None)
+        second = secondary_of(
+            self.shown.need_catalog(), state, has_result=self.shown.last_result is not None
+        )
         commands = {
             SecondaryKind.CANCEL: self.presenter.cancel,
             SecondaryKind.BACK: lambda: self.presenter.go_to(second.back_to),
-            SecondaryKind.AGAIN: self.convert_more,
+            SecondaryKind.AGAIN: self.dialogs.convert_more,
         }
         command = commands.get(second.kind)
         self.actions.show_secondary(second.text or None, command, strong=second.strong)
 
     def _show_ready(self) -> None:
         """Convert's card before the batch: how many are ready, and where they go."""
-        count = ready_line(self.catalog, self.last_plan)
+        count = ready_line(self.shown.catalog, self.shown.last_plan)
         if count is not None:
             self.converting.show_ready(count, str(self.main.output_label.cget("text")))
 
@@ -384,32 +343,32 @@ class TtkApp:
             self.converting.ready_where.configure(text=str(self.main.output_label.cget("text")))
 
     def show_scan(self, text: str) -> None:
-        self._scan = text
+        self.shown.scan = text
         self._header()
 
     def show_plan(self, plan: PlanView) -> None:
-        self.last_plan = plan
+        self.shown.last_plan = plan
         self.review.show(plan)
 
     def show_progress(self, progress: ProgressView) -> None:
-        self.last_progress = progress
+        self.shown.last_progress = progress
         self.converting.show(progress)
 
     def show_result(self, result: ResultView) -> None:
-        self.last_result = result
+        self.shown.last_result = result
         self.results.show(result)
 
     def _show_page(self, page: ttk.Frame) -> None:
-        if page is self.page:
+        if page is self.shown.page:
             return
-        if self.page is not None:
-            self.page.pack_forget()
+        if self.shown.page is not None:
+            self.shown.page.pack_forget()
         page.pack(fill="both", expand=True)
-        self.page = page
+        self.shown.page = page
 
     def forget_work(self) -> None:
-        self.last_plan = None
-        self.last_result = None
+        self.shown.last_plan = None
+        self.shown.last_result = None
         self.review.forget()
         self.converting.forget(str(self.main.output_label.cget("text")))
         self.results.forget()
@@ -419,19 +378,19 @@ class TtkApp:
 
     def show_welcome(self, steps: tuple[str, ...]) -> None:
         # Once the window is on screen: the presenter asks for it while starting.
-        self.scheduler.after(0, lambda: self._welcome(steps))
+        self.scheduler.after(0, lambda: self.dialogs.welcome(steps))
 
     def apply_theme(self, theme: str) -> None:
-        self.palette = PALETTES.get(theme, LIGHT)
-        self.look.use(self.palette)
-        self.root.configure(background=self.palette.ground)
-        self.rail.apply_palette(self.palette)
-        self.surface.apply_palette(self.palette)
+        self.shown.palette = PALETTES.get(theme, LIGHT)
+        self.look.use(self.shown.palette)
+        self.root.configure(background=self.shown.palette.ground)
+        self.rail.apply_palette(self.shown.palette)
+        self.surface.apply_palette(self.shown.palette)
         for view in (self.main, self.review, self.results):
-            view.apply_palette(self.palette)
+            view.apply_palette(self.shown.palette)
 
     def apply_language(self, catalog: Catalog) -> None:
-        self.catalog = catalog
+        self.shown.catalog = catalog
         self.root.title(catalog.text("gui.app.title"))
         self.rail.apply_language(catalog)
         for view in (self.main, self.review, self.converting, self.results):
@@ -439,17 +398,12 @@ class TtkApp:
         self._header()
 
     def _header(self) -> None:
-        if self.catalog is None or self.state is None:
+        if self.shown.catalog is None or self.shown.state is None:
             return
-        header = header_of(self.catalog, self.state, self._scan)
+        header = header_of(self.shown.catalog, self.shown.state, self.shown.scan)
         self.surface.show_header(
             eyebrow=header.eyebrow, title=header.title, subtitle=header.subtitle
         )
-
-    def _catalog(self) -> Catalog:
-        if self.catalog is None:
-            raise RuntimeError("the presenter has not started")
-        return self.catalog
 
     # --- Running ---------------------------------------------------------------------------------
 

@@ -118,11 +118,11 @@ def to_results(app: TtkApp) -> None:
 
 def help_window(app: TtkApp) -> None:
     app.presenter.add_paths(INPUTS)
-    app.show_help()
+    app.dialogs.show_help()
 
 
 def settings_window(app: TtkApp) -> None:
-    app.show_settings()
+    app.dialogs.show_settings()
 
 
 def convert_ready(app: TtkApp) -> None:
@@ -132,7 +132,7 @@ def convert_ready(app: TtkApp) -> None:
 
 def convert_more(app: TtkApp) -> None:
     to_results(app)
-    app.convert_more()
+    app.dialogs.convert_more()
 
 
 def compact(app: TtkApp) -> None:

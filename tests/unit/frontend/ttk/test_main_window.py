@@ -765,7 +765,7 @@ def test_c7_2_the_smallest_window_shows_every_control(app: TtkApp, tmp_path: Pat
 
 def test_c7_5_enter_in_the_keep_dialog_runs_the_focused_button(app: TtkApp) -> None:
     app.presenter.add_paths([Path("/docs")])
-    app.convert_more()
+    app.dialogs.convert_more()
     from clearmd.frontend.ttk.views.dialogs.keep_inputs import KeepInputsDialog
 
     dialog = app.dialog

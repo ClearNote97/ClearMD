@@ -176,7 +176,7 @@ def test_ac_10_the_format_on_step_1_remembered_in_settings_and_the_cli(app: TtkA
     assert app.presenter.settings.summary_format == "markdown_pdf"
     fake = app.presenter._backend
     assert isinstance(fake, FakeBackend) and fake.settings.summary_format == "markdown_pdf"
-    app.show_settings()
+    app.dialogs.show_settings()
     pump(app, lambda: app.dialog is not None)
     assert app.dialog is not None and "summary_format" in getattr(app.dialog, "values", {})
     app.dialog.close()

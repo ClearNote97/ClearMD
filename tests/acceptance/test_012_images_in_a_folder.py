@@ -199,7 +199,7 @@ def test_ac_05_the_choice_on_step_1_in_settings_and_the_cli(app: TtkApp) -> None
     folder_choice = next(b for b in app.main.summary_buttons if str(b.cget("value")) == "folder")
     folder_choice.invoke()
     assert app.presenter.settings.images == "folder"
-    app.show_settings()
+    app.dialogs.show_settings()
     deadline = time.monotonic() + 2
     while app.dialog is None and time.monotonic() < deadline:
         app.root.update()
