@@ -182,8 +182,8 @@ def test_ac_11_the_splash_shows_the_subtitle_and_the_start_up_progress() -> None
     assert 'text_default="Loading · Cargando… 0 %"' in spec and "text_pos=(40, 214)" in spec
     launcher = (ROOT / "packaging" / "launch_gui.py").read_text(encoding="utf-8")
     assert "Cargando… 30 %" in launcher and "Cargando… 70 %" in launcher
-    app_source = (ROOT / "src/clearmd/frontend/ttk/app.py").read_text(encoding="utf-8")
-    assert "Cargando… 100 %" in app_source
+    launch = (ROOT / "src/clearmd/frontend/launch.py").read_text(encoding="utf-8")
+    assert "Cargando… 100 %" in launch
 
 
 def test_ac_12_screenshots_of_the_new_screens_in_both_themes_and_languages() -> None:

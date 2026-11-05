@@ -18,6 +18,7 @@ import ttkbootstrap as tb
 from PIL import ImageTk
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
+import clearmd.frontend.launch as launch
 from clearmd.backend.schemas.formats import EXTENSIONS
 from clearmd.frontend.design.metrics import COMPACT_BELOW, MIN_HEIGHT, MIN_WIDTH, SHORT_BELOW, SPACE
 from clearmd.frontend.presenter import Action, AppState, Presenter
@@ -537,7 +538,6 @@ def _forget_dead_style() -> None:
 PRIMARY_PAUSE_SECONDS = 0.5  # after a page change, before its primary action counts (F-1)
 CLOSE_POLL_MS = 50
 CLOSE_WAIT_SECONDS = 60  # closing while converting: at most this long for the batch to stop
-SMOKE_SECONDS = 3  # ``--smoke``: the executable's own check in CI (ADR-0028)
 
 
 def main(argv: Sequence[str] | None = None) -> None:
@@ -547,28 +547,11 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     multiprocessing.freeze_support()  # a no-op unless running as a packaged executable
     arguments = sys.argv[1:] if argv is None else list(argv)
-    _splash_text("Loading · Cargando… 85 %")
+    launch.splash_text(launch.BUILDING_TEXT)
     app = TtkApp()
-    _splash_text("Loading · Cargando… 100 %")
+    launch.splash_text(launch.LOADED_TEXT)
     app.start()
-    _close_splash()
-    if "--smoke" in arguments:
-        app.root.after(SMOKE_SECONDS * 1000, app.close)
+    launch.close_splash()
+    if launch.is_smoke(arguments):
+        app.root.after(launch.SMOKE_SECONDS * 1000, app.close)
     app.root.mainloop()
-
-
-def _splash_text(text: str) -> None:
-    try:
-        import pyi_splash  # type: ignore[import-not-found,import-untyped,unused-ignore]  # frozen
-    except ImportError:
-        return
-    pyi_splash.update_text(text)
-
-
-def _close_splash() -> None:
-    """The executable shows a splash while it unpacks (PyInstaller); the window replaces it."""
-    try:
-        import pyi_splash  # type: ignore[import-not-found,import-untyped,unused-ignore]  # frozen only
-    except ImportError:
-        return
-    pyi_splash.close()

@@ -31,6 +31,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+import clearmd.frontend.launch as launch
 from clearmd.backend.schemas.formats import EXTENSIONS
 from clearmd.frontend.design.metrics import (
     COMPACT_BELOW,
@@ -70,7 +71,6 @@ from clearmd.i18n import Catalog
 PRIMARY_PAUSE_SECONDS = 0.5  # after a page change, before its primary action counts (F-1)
 CLOSE_POLL_MS = 50
 CLOSE_WAIT_SECONDS = 60  # closing while converting: at most this long for the batch to stop
-SMOKE_SECONDS = 3  # ``--smoke``: the executable's own check in CI (ADR-0028)
 
 
 def application() -> QApplication:
@@ -506,8 +506,8 @@ class PySideApp(QWidget):
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """``clearmd-qt``: the window, until it is closed. ``--smoke`` opens it and closes it after a
-    few seconds: CI checks that the executable starts (its data, its toolkit)."""
+    """``clearmd-pyside``: the window, until it is closed. ``--smoke`` opens it and closes it
+    after a few seconds: CI checks that the executable starts (its data, its toolkit)."""
     import multiprocessing
 
     multiprocessing.freeze_support()  # a no-op unless running as a packaged executable
@@ -515,6 +515,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     app = application()
     window = PySideApp()
     window.start()
-    if "--smoke" in arguments:
-        QTimer.singleShot(SMOKE_SECONDS * 1000, window.close_window)
+    if launch.is_smoke(arguments):
+        QTimer.singleShot(launch.SMOKE_SECONDS * 1000, window.close_window)
     return app.exec()
