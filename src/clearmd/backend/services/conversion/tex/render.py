@@ -43,15 +43,6 @@ from clearmd.backend.services.conversion.markdown_out import (
     outside_code,
     tidy,
 )
-from clearmd.backend.services.conversion.tex.context import (
-    CITATION_MACROS,
-    CODE_ENVIRONMENTS,
-    REFERENCE_MACROS,
-    Unparseable,
-    make_context,
-    mask,
-    parse,
-)
 from clearmd.backend.services.conversion.tex.includes import is_outside_by_name
 from clearmd.backend.services.conversion.tex.macros import (
     BudgetExceeded,
@@ -69,6 +60,15 @@ from clearmd.backend.services.conversion.tex.nodes import (
     is_macro,
     raw,
     walk,
+)
+from clearmd.backend.services.conversion.tex.parsing import (
+    CITATION_MACROS,
+    CODE_ENVIRONMENTS,
+    REFERENCE_MACROS,
+    Unparseable,
+    make_context,
+    mask,
+    parse,
 )
 from clearmd.backend.services.conversion.tex.tables import tabular_to_markdown
 

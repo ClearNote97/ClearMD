@@ -14,7 +14,6 @@ from pathlib import Path
 from clearmd.backend.schemas.models import ConversionResult
 from clearmd.backend.schemas.notes import ConversionNote, NoteItem, NoteKind, NoteReason
 from clearmd.backend.services.conversion.safe_files import read_regular_file
-from clearmd.backend.services.conversion.tex.context import forget_brace_pairs, mask
 from clearmd.backend.services.conversion.tex.images import ImageFinder, graphics_paths
 from clearmd.backend.services.conversion.tex.includes import (
     MAX_BYTES,
@@ -22,6 +21,7 @@ from clearmd.backend.services.conversion.tex.includes import (
     enter,
     identity,
 )
+from clearmd.backend.services.conversion.tex.parsing import forget_brace_pairs, mask
 from clearmd.backend.services.conversion.tex.render import render_source
 from clearmd.backend.services.conversion.tex.source import decode_source
 

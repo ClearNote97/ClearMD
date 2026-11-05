@@ -17,7 +17,7 @@ from pylatexenc.latexwalker import LatexGroupNode, LatexMacroNode
 from pylatexenc.macrospec import MacroSpec
 
 from clearmd.backend.schemas.notes import NoteReason
-from clearmd.backend.services.conversion.tex.context import make_context, parse
+from clearmd.backend.services.conversion.tex.parsing import make_context, parse
 
 MAX_EXPANSIONS = 10_000  # at least; 10 per KiB of source for larger documents
 EXPANSIONS_PER_KIB = 10
