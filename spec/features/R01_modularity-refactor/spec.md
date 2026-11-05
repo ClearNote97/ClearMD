@@ -22,19 +22,19 @@ lines per file, a tolerance up to 250, not to be abused**.
 
 Each criterion has an acceptance test (`tests/acceptance/test_R01_modular_layout.py`) or a gate.
 
-- [ ] **AC-01** No `.py` file under `src/`, `tests/` or `packaging/` is over 250 lines; at most
+- [x] **AC-01** No `.py` file under `src/`, `tests/` or `packaging/` is over 250 lines; at most
   10 % of them are over 200; no class is over 150 lines; no class mixes in another of ClearMD's.
-- [ ] **AC-02** Each GUI (`ttk`, `pyside`, later `flet`) has the same folders: `app.py` (≤ 40 lines:
+- [x] **AC-02** Each GUI (`ttk`, `pyside`, later `flet`) has the same folders: `app.py` (≤ 40 lines:
   build the window and run it), `window/`, `layout/`, `views/` (`dialogs/` inside), `components/`,
   `visuals/`; each layer imports only the ones below it; no GUI imports another or `backend.api`.
-- [ ] **AC-03** A module under ~40 lines states in its docstring why it stands alone.
-- [ ] **AC-04** Behaviour unchanged, proved at every step: the Markdown of every fixture (and,
+- [x] **AC-03** A module under ~40 lines states in its docstring why it stands alone.
+- [x] **AC-04** Behaviour unchanged, proved at every step: the Markdown of every fixture (and,
   locally, of the private examples) byte-identical to the baseline; the ttk screenshots identical;
   the whole suite green; ruff, ruff format and mypy --strict clean.
-- [ ] **AC-05** The executables still build and pass `check_executables.sh`; the ttk and CLI
+- [x] **AC-05** The executables still build and pass `check_executables.sh`; the ttk and CLI
   executables carry no other GUI toolkit.
-- [ ] **AC-06** The entry points (`clearmd`, `clearmd-ttk`, `clearmd-pyside`) resolve.
-- [ ] **AC-07** ADR-0039 accepted (it supersedes ADR-0014's layout section); a `README.md` in every
+- [x] **AC-06** The entry points (`clearmd`, `clearmd-ttk`, `clearmd-pyside`) resolve.
+- [x] **AC-07** ADR-0039 accepted (it supersedes ADR-0014's layout section); a `README.md` in every
   folder.
 
 ## Plan

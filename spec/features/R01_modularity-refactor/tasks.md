@@ -18,4 +18,4 @@ refactor without stops: doubts go back to the board, and to the owner only if it
 - [x] **P9 — The PDF converter.**
 - [x] **P10 — The rest of the backend.**
 - [x] **P11 — Close the source:** ratchets empty; ADR-0039 accepted; READMEs. **Review.**
-- [ ] **P12 — The tests.** **Review.**
+- [x] **P12 — The tests.** **Review.**
