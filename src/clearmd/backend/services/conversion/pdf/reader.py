@@ -12,11 +12,13 @@ load error is read when it happens, and a PDF without pages is an empty document
 
 import math
 from collections import Counter
-from dataclasses import dataclass
 
 import pypdfium2.raw as raw
 
 from clearmd.backend.services.conversion.images import ImageSink
+from clearmd.backend.services.conversion.pdf.blocks.equation_blocks import place_equations
+from clearmd.backend.services.conversion.pdf.blocks.equation_latex import Found
+from clearmd.backend.services.conversion.pdf.blocks.tables_on_page import tabled
 from clearmd.backend.services.conversion.pdf.decode import (
     LINE_END,
     SKIPPED,
@@ -24,9 +26,8 @@ from clearmd.backend.services.conversion.pdf.decode import (
     decoded,
     shift,
 )
-from clearmd.backend.services.conversion.pdf.equations import Placed, find_equations
-from clearmd.backend.services.conversion.pdf.latex import Bar, Glyph, to_latex
-from clearmd.backend.services.conversion.pdf.lattice import Rule, find_lattices
+from clearmd.backend.services.conversion.pdf.latex import Bar
+from clearmd.backend.services.conversion.pdf.lattice import Rule
 from clearmd.backend.services.conversion.pdf.model import (
     ASLANT,
     CLOCKWISE,
@@ -46,7 +47,7 @@ from clearmd.backend.services.conversion.pdf.pdfium.fonts import MAX_PAGE_CHARS,
 from clearmd.backend.services.conversion.pdf.pdfium.page_chars import page_chars, tight_boxes
 from clearmd.backend.services.conversion.pdf.pdfium.page_objects import page_rules
 from clearmd.backend.services.conversion.pdf.pdfium.pictures import pictures, placed
-from clearmd.backend.services.conversion.pdf.tables import Table, Word, find_tables
+from clearmd.backend.services.conversion.pdf.tables import Word
 
 # The letters Unicode has as scripts: a script made only of them is written with them (014).
 _SUPERSCRIPTS = dict(
@@ -70,10 +71,6 @@ BASE_SHARE = 0.15  # a character within this share of the text's size is text
 TEXT_SHARE = 0.2  # of a line's characters: a size this many share may be the text's
 DELIMITER_RATIO = 1.6  # larger than the commonest size: a tall brace or bracket
 NEW_ROW_SHARE = 0.5  # of a sideways letter's height: a character this far across is on another row
-ROW_SLACK = 1.0  # points: a line within a table's top and bottom is one of its rows
-ROW_SHARE = 0.35  # of a letter's height: pieces this close vertically are on one row
-COLUMN_SHARE = 0.5  # of a letter's height: an equation's columns, about a letter wide
-MAX_COLUMN = 200  # an equation's piece starts at most this far right
 MAX_CROPS = 500  # equations cropped in a document: past it, the others are written as text
 
 
@@ -151,138 +148,10 @@ def _page(
             last = index
             extent[0] = min(extent[0], chars.bottoms[index])
             extent[1] = max(extent[1], chars.tops[index])
-    lines = _tabled(page.lines, words, rules or [])
-    found = _Found(chars, shifts, unmapped, bars or [], tight)
-    page.lines = _equations(lines, words[UPRIGHT], found)
+    lines = tabled(page.lines, words, rules or [])
+    found = Found(chars, shifts, unmapped, bars or [], tight)
+    page.lines = place_equations(lines, words[UPRIGHT], found)
     return page
-
-
-@dataclass(frozen=True)
-class _Found:
-    """What an equation is rebuilt from: the page's characters, its bars, and PDFium's tight box
-    of a character (its loose one reaches past the letter: too coarse to place a script)."""
-
-    chars: Chars
-    shifts: list[int]
-    unmapped: list[bool]
-    bars: list[Bar]
-    tight: Boxes | None = None
-
-
-def _equations(lines: list[Line], words: list[Word], found_on: _Found | None = None) -> list[Line]:
-    """Each display equation's scattered lines, one block that keeps their layout, rebuilt as
-    LaTeX when every piece of it is understood (015)."""
-    placed = [
-        Placed(line.text, line.top, line.bottom, line.size, line.right,
-               bool(line.table or line.image or line.turn != UPRIGHT), line.left)
-        for line in lines
-    ]  # fmt: skip
-    bars = [(bar.left, bar.right, bar.at) for bar in found_on.bars] if found_on else []
-    for found in reversed(find_equations(placed, words, bars)):
-        group = lines[found.start : found.stop]
-        top, bottom = max(line.top for line in group), min(line.bottom for line in group)
-        left, right = min(line.left for line in group), max(line.right for line in group)
-        highest = max(group, key=lambda line: line.top)
-        lowest = min(group, key=lambda line: line.bottom)
-        # A font's boxes reach past its letters: never into the lines just above and below it
-        # (across the equation, not a note beside it), never into its own first or last row.
-        if found.start > 0:
-            above = lines[found.start - 1]
-            if above.left < right and above.right > left and bottom < above.bottom < top:
-                top = max(above.bottom, highest.bottom)
-        if found.stop < len(lines):
-            below = lines[found.stop]
-            if below.left < right and below.right > left and bottom < below.top < top:
-                bottom = min(below.top, lowest.top)
-        block = Line(
-            "",
-            0.0,  # a block, not text: never a footnote, a heading, a running line (review of 013)
-            False,
-            top,
-            bottom,
-            left=min(line.left for line in group),
-            right=max(line.right for line in group),
-            equation=_laid_out(group),
-            latex=_latex(group, found_on, (bottom, top, left, right)) if found_on else "",
-        )
-        lines = [*lines[: found.start], block, *lines[found.stop :]]
-    return lines
-
-
-def _latex(group: list[Line], found: _Found, box: tuple[float, float, float, float]) -> str:
-    """The equation's characters and the bars within its box, as LaTeX ("" when unsure)."""
-    chars = found.chars
-    glyphs: list[Glyph] = []
-    for line in group:
-        start, stop = line.span
-        high = 0  # a character past U+FFFF comes as two halves (as ``_line`` reads them)
-        for index in range(start, min(stop, len(chars.codes))):
-            raw_code = chars.codes[index]
-            if raw_code in SKIPPED or raw_code == LINE_END:
-                continue
-            font = chars.fonts[index]
-            if found.unmapped[font] and not found.shifts[font]:
-                return ""  # a font without a map: its letters are wrong (review of 015)
-            code = decoded(raw_code, found.shifts[font])
-            if high and not 0xDC00 <= code < 0xE000:
-                return ""  # a first half with no second: unreadable
-            if 0xD800 <= code < 0xDC00:
-                high = code
-                continue
-            if 0xDC00 <= code < 0xE000:
-                if not high:
-                    return ""
-                code, high = 0x10000 + ((high - 0xD800) << 10) + (code - 0xDC00), 0
-            if code in (0x09, 0x20):
-                continue
-            if code < 0x20 or code == 0x7F or code > 0x10FFFF or code == 0xFFFD:
-                return ""  # unreadable, or a soft hyphen: never dropped unseen
-            if code in SOFT_HYPHENS:
-                return ""
-            if chars.rights[index] <= chars.lefts[index] or chars.turns[index] != UPRIGHT:
-                return ""  # a character drawn nowhere, or turned: no place to read it from
-            tight = found.tight(index) if found.tight is not None else None
-            left, right, bottom, top = tight or (
-                chars.lefts[index],
-                chars.rights[index],
-                chars.bottoms[index],
-                chars.tops[index],
-            )
-            glyphs.append(
-                Glyph(chr(code), left, right, bottom, top,
-                      chars.font_sizes[index], chars.baselines[index])
-            )  # fmt: skip
-        if high:
-            return ""  # a line that ends on a first half
-    low, high_edge, left_edge, right_edge = box
-    bars = [
-        bar for bar in found.bars
-        if low - 1 <= bar.at <= high_edge + 1
-        and left_edge <= (bar.left + bar.right) / 2 <= right_edge
-    ]  # fmt: skip
-    return to_latex(glyphs, bars) or ""
-
-
-def _laid_out(group: list[Line]) -> tuple[str, ...]:
-    """The equation's rows, top first, each piece at its place (in half-letter columns)."""
-    left = min(line.left for line in group)
-    rows: list[list[Line]] = []
-    for line in sorted(group, key=lambda line: (-line.bottom, line.left)):
-        if rows and abs(rows[-1][0].bottom - line.bottom) <= ROW_SHARE * max(line.size, 1.0):
-            rows[-1].append(line)
-        else:
-            rows.append([line])
-    out = []
-    for row in rows:
-        text = ""
-        for line in sorted(row, key=lambda line: line.left):
-            column = round((line.left - left) / max(COLUMN_SHARE * line.size, 1.0))
-            text = text.ljust(min(column, MAX_COLUMN)) + (
-                " " if text and column <= len(text) else ""
-            )
-            text += line.text
-        out.append(text.rstrip())
-    return tuple(out)
 
 
 def _goes_on(chars: Chars, last: int, index: int, extent: list[float]) -> bool:
@@ -323,44 +192,6 @@ def _new_row(chars: Chars, last: int, index: int) -> bool:
         return False
     height = max(_width(chars, index), _width(chars, last), 1.0)
     return abs(chars.lefts[index] - chars.lefts[last]) > NEW_ROW_SHARE * height
-
-
-def _tabled(lines: list[Line], words: dict[int, list[Word]], rules: list[Rule]) -> list[Line]:
-    """The lines a table found on the page covers give way to it, where its first one stood:
-    ruled tables first (their words then taken), then the others by their aligned words. A table
-    set sideways is found in its own frame (the page turned upright), then placed back."""
-    for table, taken in find_lattices(rules, words[UPRIGHT]):
-        box = (table.bottom, table.top, table.left, table.right)
-        lines = _replaced(lines, table, UPRIGHT, box)
-        gone = {id(word) for word in taken}
-        words = {**words, UPRIGHT: [word for word in words[UPRIGHT] if id(word) not in gone]}
-    for turn, turned in words.items():
-        for table in find_tables(turned):
-            # The table's box on the page: (bottom, top, left, right).
-            box = {
-                UPRIGHT: (table.bottom, table.top, table.left, table.right),
-                CLOCKWISE: (-table.right, -table.left, table.bottom, table.top),
-                COUNTERCLOCKWISE: (table.left, table.right, -table.top, -table.bottom),
-            }[turn]
-            lines = _replaced(lines, table, turn, box)
-    return lines
-
-
-def _replaced(
-    lines: list[Line], table: Table, turn: int, box: tuple[float, float, float, float]
-) -> list[Line]:
-    low, high, left, right = box
-    inside = [
-        i for i, line in enumerate(lines)
-        if line.turn == turn and not (line.table or line.image or line.equation)
-        and line.bottom >= low - ROW_SLACK and line.top <= high + ROW_SLACK
-        and line.left >= left - ROW_SLACK and line.right <= right + ROW_SLACK
-    ]  # fmt: skip
-    if inside:
-        block = Line("", 0.0, False, high, low, table=table.rows, left=left, right=right)
-        lines = [line for i, line in enumerate(lines) if i not in set(inside)]
-        lines.insert(inside[0], block)
-    return lines
 
 
 def _line(

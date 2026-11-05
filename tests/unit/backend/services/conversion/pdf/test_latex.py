@@ -1,6 +1,6 @@
 """An equation's pieces rebuilt as LaTeX (feature 015, ADR-0036): pure geometry in, LaTeX out."""
 
-from clearmd.backend.services.conversion.pdf import model, reader
+from clearmd.backend.services.conversion.pdf import blocks, model
 from clearmd.backend.services.conversion.pdf.equations import Placed, find_equations
 from clearmd.backend.services.conversion.pdf.latex import (
     MAX_GLYPHS,
@@ -229,8 +229,8 @@ def _chars(codes: list[int]) -> model.Chars:
 def _latex_of(codes: list[int], *, unmapped: bool = False) -> str:
     chars = _chars(codes)
     line = model.Line("", SIZE, False, 107, 99, span=(0, len(codes)), right=5.0 * len(codes))
-    found = reader._Found(chars, [0], [unmapped], [])
-    return reader._latex([line], found, (99, 107, 0, 5.0 * len(codes)))
+    found = blocks.equation_latex.Found(chars, [0], [unmapped], [])
+    return blocks.equation_latex.latex_of([line], found, (99, 107, 0, 5.0 * len(codes)))
 
 
 def test_an_unreadable_or_unmapped_glyph_makes_it_unsure() -> None:

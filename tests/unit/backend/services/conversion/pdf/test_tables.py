@@ -8,7 +8,8 @@ from support.pdf_builder import Box, Text, build_pdf, paragraph
 
 from clearmd.backend.schemas.formats import FormatId
 from clearmd.backend.schemas.models import Detection, DetectionMethod
-from clearmd.backend.services.conversion.pdf import PdfConverter, reader
+from clearmd.backend.services.conversion.pdf import PdfConverter
+from clearmd.backend.services.conversion.pdf import blocks as blk
 from clearmd.backend.services.conversion.pdf.equations import Placed, find_equations
 from clearmd.backend.services.conversion.pdf.lattice import Rule, find_lattices, rule
 from clearmd.backend.services.conversion.pdf.tables import Word, find_tables
@@ -242,7 +243,7 @@ def test_an_equation_through_the_converter_keeps_its_layout(tmp_path: Path) -> N
 def test_an_equation_not_understood_keeps_its_rows(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr(reader, "to_latex", lambda glyphs, bars: None)
+    monkeypatch.setattr(blk.equation_latex, "to_latex", lambda glyphs, bars: None)
     page: list[Text | Box] = [
         *paragraph(["The program is stated as follows, for every court:"], top=700),
         Text("EF = max t", 670, 11, x=200),
@@ -260,8 +261,7 @@ def test_an_equation_not_understood_is_cropped_as_a_picture_with_the_images_fold
 ) -> None:
     from clearmd.backend.services.conversion.images import ImageSink
 
-    monkeypatch.setattr(reader, "to_latex", lambda glyphs, bars: None)
-
+    monkeypatch.setattr(blk.equation_latex, "to_latex", lambda glyphs, bars: None)
     page: list[Text | Box] = [
         *paragraph(["The program is stated as follows, for every court:"], top=700),
         Text("EF = max t", 670, 11, x=200),
@@ -494,5 +494,5 @@ def test_an_equation_is_not_clipped_by_a_note_beside_it() -> None:
              left=72, right=520),
     ]  # fmt: skip
     words = [label("(3)", 508, 689)]
-    blocks = [line for line in reader._equations(lines, words) if line.equation]
+    blocks = [line for line in blk.equation_blocks.place_equations(lines, words) if line.equation]
     assert blocks and blocks[0].top == 714  # its first row whole
