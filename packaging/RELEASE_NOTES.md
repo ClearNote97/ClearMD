@@ -1,5 +1,11 @@
 **ClearMD — documents to Markdown, 100 % local.** / **Documentos a Markdown, 100 % local.**
 
+**New in 0.11.0 / Novedades de la 0.11.0**
+- The same app drawn with Qt (PySide6): `ClearMD-Qt-0.11.0-windows.zip` — unzip it and open
+  `ClearMD-Qt.exe` in the folder. Same steps, texts and look as the other app; try both. / La
+  misma app dibujada con Qt (PySide6): `ClearMD-Qt-0.11.0-windows.zip` — descomprímela y abre
+  `ClearMD-Qt.exe` en la carpeta. Los mismos pasos, textos y aspecto que la otra app; prueba las dos.
+
 **New in 0.10.1 / Novedades de la 0.10.1**
 - Fixed: with "Images: in a folder", every LaTeX (.tex) and Excel file failed to convert. They
   convert again. / Corregido: con "Imágenes: en una carpeta", todos los archivos LaTeX (.tex) y

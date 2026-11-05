@@ -41,9 +41,10 @@ def _covered(test_file: Path) -> set[int]:
 
 
 def _closed(feature: Path) -> bool:
-    """Every task of the feature ticked: it cannot be closed without its acceptance file."""
+    """Every task of the feature ticked (T01… or a refactor's P0…): it cannot be closed without
+    its acceptance file."""
     tasks = (feature / "tasks.md").read_text("utf-8")
-    return "- [x] **T" in tasks and "- [ ] **T" not in tasks
+    return "- [x] **" in tasks and "- [ ] **" not in tasks
 
 
 def _acceptance_files(feature: Path) -> list[Path]:

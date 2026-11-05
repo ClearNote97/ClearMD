@@ -138,10 +138,12 @@ _Plus the failed and skipped files with a plain-words reason, and the history of
 | **013** PDF tables (after Camelot), equations and tables of contents | ✅ done | v0.8.0 · reviewed |
 | **014** Sub- and superscripts in PDFs, one gutter, faded waiting cards | ✅ done | v0.9.0 · reviewed |
 | **015** A PDF's equations as LaTeX | ✅ done | v0.10.0 |
-| **016–017** PySide6 and flet apps | ⏳ | |
+| **016** The same app in PySide6 (Qt) | ✅ done | v0.11.0 |
+| **017** The flet app | ⏳ | |
 
-Full plan in the [roadmap](./spec/roadmap.md). ClearMD has a **command line** and its first **desktop app**
-(`clearmd-ttk`), both also as Windows and Linux executables built and checked by CI.
+Full plan in the [roadmap](./spec/roadmap.md). ClearMD has a **command line** and the same **desktop app** in two toolkits,
+ttkbootstrap (`clearmd-ttk`) and PySide6 (`clearmd-pyside`, [screenshots](./docs/screenshots/016/)), all also as
+Windows and Linux executables built and checked by CI.
 
 ---
 
@@ -151,6 +153,8 @@ Full plan in the [roadmap](./spec/roadmap.md). ClearMD has a **command line** an
 `ClearMD-…-windows.exe` for Windows or `ClearMD-…-linux.tar.gz` for Linux, then open it with a double click.
 Windows may warn that the app is not recognized, because it is not code-signed yet: *More info → Run anyway*.
 Signing is on its way: [Code signing policy](./CODE_SIGNING.md).
+The same app drawn with Qt is `ClearMD-Qt-…-windows.zip`: unzip it and open `ClearMD-Qt.exe` inside the folder
+(a folder, not one file: Qt's libraries stay replaceable, as their LGPL license asks; on Linux it is in the archive).
 The first start takes a few seconds while the app unpacks itself.
 
 **From the repository**, for the command line (the package is not on PyPI yet):

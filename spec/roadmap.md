@@ -87,7 +87,7 @@ already tested (ADR-0001).
 
 ## Later
 
-- [ ] **016 — PySide6-Essentials GUI** (*onedir* distribution because of LGPL, ADR-0003).
+- [x] **016 — PySide6-Essentials GUI** (*onedir* distribution because of LGPL, ADR-0003, ADR-0038): v0.11.0.
 - [ ] **017 — flet GUI.**
 - [ ] A small Windows installer (a Start menu shortcut), optional.
 - [ ] Incremental mode: skip files unchanged since the last run.

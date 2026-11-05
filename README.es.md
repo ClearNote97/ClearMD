@@ -142,10 +142,12 @@ anteriores._
 | **013** Tablas de PDF (a la manera de Camelot), ecuaciones e índices | ✅ lista | v0.8.0 · revisada |
 | **014** Subíndices y superíndices en PDF, un solo margen, tarjetas atenuadas | ✅ lista | v0.9.0 · revisada |
 | **015** Las ecuaciones de un PDF como LaTeX | ✅ lista | v0.10.0 |
-| **016–017** Apps en PySide6 y flet | ⏳ | |
+| **016** La misma app en PySide6 (Qt) | ✅ lista | v0.11.0 |
+| **017** La app en flet | ⏳ | |
 
-El plan completo está en el [roadmap](./spec/roadmap.md). ClearMD tiene **línea de comandos** y su primera **app de
-escritorio** (`clearmd-ttk`), ambas también como ejecutables para Windows y Linux, construidos y verificados por la CI.
+El plan completo está en el [roadmap](./spec/roadmap.md). ClearMD tiene **línea de comandos** y la misma **app de
+escritorio** en dos toolkits, ttkbootstrap (`clearmd-ttk`) y PySide6 (`clearmd-pyside`, [capturas](./docs/screenshots/016/)),
+todas también como ejecutables para Windows y Linux, construidos y verificados por la CI.
 
 ---
 
@@ -155,6 +157,9 @@ escritorio** (`clearmd-ttk`), ambas también como ejecutables para Windows y Lin
 `ClearMD-…-windows.exe` para Windows o `ClearMD-…-linux.tar.gz` para Linux, y ábrela con doble clic.
 Windows puede advertir que la app no es reconocida, porque aún no está firmada: *Más información → Ejecutar de todas
 formas*. La firma está en camino: [Code signing policy](./CODE_SIGNING.md) (política de firma). El primer inicio tarda unos segundos mientras la app se descomprime.
+La misma app dibujada con Qt es `ClearMD-Qt-…-windows.zip`: descomprímela y abre `ClearMD-Qt.exe` dentro de la carpeta
+(una carpeta y no un solo archivo: las librerías de Qt quedan reemplazables, como pide su licencia LGPL; en Linux viene
+en el archivo).
 
 **Desde el repositorio** (aún no está en PyPI):
 

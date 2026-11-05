@@ -38,6 +38,6 @@ Each criterion has an acceptance test (`tests/acceptance/test_016_*.py`); the wi
 - [x] **AC-09** The executable: a folder `ClearMD-Qt/` (PySide6 replaceable, LGPL) built and checked by
   CI (a real start with `--smoke`) on Windows and Linux, released as `ClearMD-Qt-<version>-windows.zip`
   and inside the Linux archive; the ttk app and the CLI still carry no Qt; the notices list PySide6.
-- [ ] **AC-10** Screenshots of every screen, light and dark, English and Spanish, in
+- [x] **AC-10** Screenshots of every screen, light and dark, English and Spanish, in
   `docs/screenshots/016/`, made by a script.
-- [ ] **AC-11** ADR-0038; version 0.11.0; the READMEs say how to get it.
+- [x] **AC-11** ADR-0038; version 0.11.0; the READMEs say how to get it.
