@@ -49,7 +49,7 @@ def display() -> Iterator[str]:
 def _no_pause_between_pages(monkeypatch: pytest.MonkeyPatch) -> None:
     """Tests press buttons faster than a person: the window's pause after a page change (against a
     held Enter, security audit of 007) is off, except where a test turns it on."""
-    monkeypatch.setattr("clearmd.frontend.ttk.app.PRIMARY_PAUSE_SECONDS", 0.0)
+    monkeypatch.setattr("clearmd.frontend.presenter.chrome.primary_gate.PRIMARY_PAUSE_SECONDS", 0.0)
 
 
 @pytest.fixture(autouse=True)

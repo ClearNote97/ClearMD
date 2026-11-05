@@ -725,7 +725,7 @@ def test_review_says_ready_to_convert_for_a_file_without_problems(
 def test_f1_a_held_or_doubled_enter_never_skips_a_page(
     app: TtkApp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr("clearmd.frontend.ttk.app.PRIMARY_PAUSE_SECONDS", 0.5)
+    monkeypatch.setattr("clearmd.frontend.presenter.chrome.primary_gate.PRIMARY_PAUSE_SECONDS", 0.5)
     app.presenter.add_paths([tmp_path])
     app._primary()
     pump(app, until=lambda: app.presenter.page == 2)
@@ -839,7 +839,7 @@ def test_f1_a_held_enter_runs_one_action_whatever_the_pages(app: TtkApp, tmp_pat
 def test_f1_the_pause_after_a_page_change_is_shown_on_the_button(
     app: TtkApp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr("clearmd.frontend.ttk.app.PRIMARY_PAUSE_SECONDS", 0.3)
+    monkeypatch.setattr("clearmd.frontend.presenter.chrome.primary_gate.PRIMARY_PAUSE_SECONDS", 0.3)
     app.presenter.add_paths([tmp_path])
     app._primary()
     pump(app, until=lambda: app.presenter.page == 2)

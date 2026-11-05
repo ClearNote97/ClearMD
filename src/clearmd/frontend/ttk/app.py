@@ -22,6 +22,9 @@ import clearmd.frontend.launch as launch
 from clearmd.backend.schemas.formats import EXTENSIONS
 from clearmd.frontend.design.metrics import COMPACT_BELOW, MIN_HEIGHT, MIN_WIDTH, SHORT_BELOW, SPACE
 from clearmd.frontend.presenter import Action, AppState, Presenter
+from clearmd.frontend.presenter.chrome import close_policy, primary_gate
+from clearmd.frontend.presenter.chrome.header import header_of
+from clearmd.frontend.presenter.chrome.secondary import SecondaryKind, ready_line, secondary_of
 from clearmd.frontend.presenter.models import (
     InputRow,
     OutputChoice,
@@ -31,7 +34,6 @@ from clearmd.frontend.presenter.models import (
     StateView,
 )
 from clearmd.frontend.presenter.ports import Backend
-from clearmd.frontend.presenter.state import STEPS
 from clearmd.frontend.ttk import art
 from clearmd.frontend.ttk.brand import LIGHT, PALETTES, WARNING, Look, Palette, register_themes
 from clearmd.frontend.ttk.components.action_bar import ActionBar
@@ -236,7 +238,7 @@ class TtkApp:
         Convert past a page the user did not see (security audit of 007, F-1)."""
         if self.dialog is not None:
             return
-        if time.monotonic() - self._page_shown_at < PRIMARY_PAUSE_SECONDS:
+        if not primary_gate.gate_open(self._page_shown_at, time.monotonic()):
             return
         self.presenter.press_primary(self.review.overwrite_answer())
 
@@ -245,10 +247,11 @@ class TtkApp:
         if self._unpause is not None:
             self.root.after_cancel(self._unpause)
             self._unpause = None
-        if PRIMARY_PAUSE_SECONDS <= 0 or self.actions.primary.instate(["disabled"]):
+        pause = primary_gate.pause_milliseconds()
+        if pause == 0 or self.actions.primary.instate(["disabled"]):
             return
         self.actions.primary.state(["disabled"])
-        self._unpause = self.root.after(int(PRIMARY_PAUSE_SECONDS * 1000), self._end_pause)
+        self._unpause = self.root.after(pause, self._end_pause)
 
     def _end_pause(self) -> None:
         self._unpause = None
@@ -330,21 +333,21 @@ class TtkApp:
         if self.dialog is not None:
             self.dialog.close()  # its answer counts ("Don't show again")
         self.presenter.shutdown()
-        if self.state is not None and self.state.state is AppState.CONVERTING:
+        step = close_policy.on_close(self.state.state if self.state is not None else None)
+        if step is close_policy.CloseStep.CANCEL_AND_WAIT:
             self._closing_since = time.monotonic()
             self.presenter.cancel()
             self.root.withdraw()
-            self.root.after(CLOSE_POLL_MS, self._close_when_done)
+            self.root.after(close_policy.CLOSE_POLL_MS, self._close_when_done)
             return
-        if self.state is not None and self.state.state is AppState.ANALYZING:
+        if step is close_policy.CloseStep.CANCEL_THEN_NOW:
             self.presenter.cancel()
         self._destroy()
 
     def _close_when_done(self) -> None:
-        converting = self.state is not None and self.state.state is AppState.CONVERTING
         waited = time.monotonic() - (self._closing_since or 0.0)
-        if converting and waited < CLOSE_WAIT_SECONDS:
-            self.root.after(CLOSE_POLL_MS, self._close_when_done)
+        if close_policy.keep_waiting(self.state.state if self.state is not None else None, waited):
+            self.root.after(close_policy.CLOSE_POLL_MS, self._close_when_done)
             return
         self._destroy()
 
@@ -398,24 +401,20 @@ class TtkApp:
 
     def _show_secondary(self, state: StateView) -> None:
         """Back on Review and Convert, Cancel while working, Convert more on Results."""
-        catalog, bar = self._catalog(), self.actions
-        if state.state in {AppState.ANALYZING, AppState.CONVERTING}:
-            bar.show_secondary(catalog.text("gui.progress.cancel"), self.presenter.cancel)
-        elif state.page in {2, 3}:
-            back = state.page - 1
-            bar.show_secondary(catalog.text("gui.plan.back"), lambda: self.presenter.go_to(back))
-        elif state.page == 4 and Action.BACK in state.enabled and self.last_result is not None:
-            bar.show_secondary(catalog.text("gui.result.again"), self.convert_more, strong=True)
-        else:
-            bar.show_secondary(None)
+        second = secondary_of(self._catalog(), state, has_result=self.last_result is not None)
+        commands = {
+            SecondaryKind.CANCEL: self.presenter.cancel,
+            SecondaryKind.BACK: lambda: self.presenter.go_to(second.back_to),
+            SecondaryKind.AGAIN: self.convert_more,
+        }
+        command = commands.get(second.kind)
+        self.actions.show_secondary(second.text or None, command, strong=second.strong)
 
     def _show_ready(self) -> None:
         """Convert's card before the batch: how many are ready, and where they go."""
-        plan = self.last_plan
-        if plan is None or self.catalog is None or not plan.stats:
-            return
-        count = self.catalog.text("gui.convert.ready", count=plan.stats[0].value)
-        self.converting.show_ready(count, str(self.main.output_label.cget("text")))
+        count = ready_line(self.catalog, self.last_plan)
+        if count is not None:
+            self.converting.show_ready(count, str(self.main.output_label.cget("text")))
 
     def show_inputs(self, rows: tuple[InputRow, ...]) -> None:
         self.main.show_inputs(rows)
@@ -483,15 +482,9 @@ class TtkApp:
     def _header(self) -> None:
         if self.catalog is None or self.state is None:
             return
-        catalog, state = self.catalog, self.state
-        step = STEPS[state.page - 1]
-        eyebrow = catalog.text("gui.steps.counter", step=state.page, total=len(STEPS))
-        if state.state is not AppState.READY:
-            eyebrow = f"{eyebrow} · {state.label}"
+        header = header_of(self.catalog, self.state, self._scan)
         self.surface.show_header(
-            eyebrow=eyebrow,
-            title=catalog.text(f"gui.page.{step}_title"),
-            subtitle=self._scan or catalog.text(f"gui.page.{step}_subtitle"),
+            eyebrow=header.eyebrow, title=header.title, subtitle=header.subtitle
         )
 
     def _catalog(self) -> Catalog:
@@ -533,11 +526,6 @@ def _forget_dead_style() -> None:
         alive = False
     if not alive:
         tb.Style.instance = None
-
-
-PRIMARY_PAUSE_SECONDS = 0.5  # after a page change, before its primary action counts (F-1)
-CLOSE_POLL_MS = 50
-CLOSE_WAIT_SECONDS = 60  # closing while converting: at most this long for the batch to stop
 
 
 def main(argv: Sequence[str] | None = None) -> None:

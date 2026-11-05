@@ -46,6 +46,9 @@ from clearmd.frontend.design.metrics import (
 from clearmd.frontend.design.palette import LIGHT, PALETTES, Palette
 from clearmd.frontend.design.typography import BODY
 from clearmd.frontend.presenter import Action, AppState, Presenter
+from clearmd.frontend.presenter.chrome import close_policy, primary_gate
+from clearmd.frontend.presenter.chrome.header import header_of
+from clearmd.frontend.presenter.chrome.secondary import SecondaryKind, ready_line, secondary_of
 from clearmd.frontend.presenter.models import (
     InputRow,
     OutputChoice,
@@ -67,10 +70,6 @@ from clearmd.frontend.pyside.pages import ChoosePage, ConvertPage, ResultsPage, 
 from clearmd.frontend.pyside.style import stylesheet
 from clearmd.frontend.pyside.widgets import ActionBar, Ground, Rail, app_icon, label
 from clearmd.i18n import Catalog
-
-PRIMARY_PAUSE_SECONDS = 0.5  # after a page change, before its primary action counts (F-1)
-CLOSE_POLL_MS = 50
-CLOSE_WAIT_SECONDS = 60  # closing while converting: at most this long for the batch to stop
 
 
 def application() -> QApplication:
@@ -250,15 +249,16 @@ class PySideApp(QWidget):
         Convert past a page the user did not see (security audit of 007, F-1)."""
         if self.dialog is not None:
             return
-        if time.monotonic() - self._page_shown_at < PRIMARY_PAUSE_SECONDS:
+        if not primary_gate.gate_open(self._page_shown_at, time.monotonic()):
             return
         self.presenter.press_primary(self.review.overwrite_answer())
 
     def _pause_primary(self) -> None:
-        if PRIMARY_PAUSE_SECONDS <= 0 or not self.bar.primary.isEnabled():
+        pause = primary_gate.pause_milliseconds()
+        if pause == 0 or not self.bar.primary.isEnabled():
             return
         self.bar.primary.setEnabled(False)
-        self._unpause.start(int(PRIMARY_PAUSE_SECONDS * 1000))
+        self._unpause.start(pause)
 
     def _end_pause(self) -> None:
         if self.state is not None:
@@ -337,21 +337,21 @@ class PySideApp(QWidget):
         if self.dialog is not None:
             self.dialog.close_dialog()  # its answer counts ("Don't show again")
         self.presenter.shutdown()
-        if self.state is not None and self.state.state is AppState.CONVERTING:
+        step = close_policy.on_close(self.state.state if self.state is not None else None)
+        if step is close_policy.CloseStep.CANCEL_AND_WAIT:
             self._closing_since = time.monotonic()
             self.presenter.cancel()
             self.hide()
-            QTimer.singleShot(CLOSE_POLL_MS, self._close_when_done)
+            QTimer.singleShot(close_policy.CLOSE_POLL_MS, self._close_when_done)
             return
-        if self.state is not None and self.state.state is AppState.ANALYZING:
+        if step is close_policy.CloseStep.CANCEL_THEN_NOW:
             self.presenter.cancel()
         self._destroy()
 
     def _close_when_done(self) -> None:
-        converting = self.state is not None and self.state.state is AppState.CONVERTING
         waited = time.monotonic() - (self._closing_since or 0.0)
-        if converting and waited < CLOSE_WAIT_SECONDS:
-            QTimer.singleShot(CLOSE_POLL_MS, self._close_when_done)
+        if close_policy.keep_waiting(self.state.state if self.state is not None else None, waited):
+            QTimer.singleShot(close_policy.CLOSE_POLL_MS, self._close_when_done)
             return
         self._destroy()
 
@@ -406,23 +406,19 @@ class PySideApp(QWidget):
 
     def _show_secondary(self, state: StateView) -> None:
         """Back on Review and Convert, Cancel while working, Convert more on Results."""
-        catalog, bar = self._catalog(), self.bar
-        if state.state in {AppState.ANALYZING, AppState.CONVERTING}:
-            bar.show_secondary(catalog.text("gui.progress.cancel"), self.presenter.cancel)
-        elif state.page in {2, 3}:
-            back = state.page - 1
-            bar.show_secondary(catalog.text("gui.plan.back"), lambda: self.presenter.go_to(back))
-        elif state.page == 4 and Action.BACK in state.enabled and self.last_result is not None:
-            bar.show_secondary(catalog.text("gui.result.again"), self.convert_more, strong=True)
-        else:
-            bar.show_secondary(None)
+        second = secondary_of(self._catalog(), state, has_result=self.last_result is not None)
+        commands = {
+            SecondaryKind.CANCEL: self.presenter.cancel,
+            SecondaryKind.BACK: lambda: self.presenter.go_to(second.back_to),
+            SecondaryKind.AGAIN: self.convert_more,
+        }
+        command = commands.get(second.kind)
+        self.bar.show_secondary(second.text or None, command, strong=second.strong)
 
     def _show_ready(self) -> None:
-        plan = self.last_plan
-        if plan is None or self.catalog is None or not plan.stats:
-            return
-        count = self.catalog.text("gui.convert.ready", count=plan.stats[0].value)
-        self.converting.show_ready(count, self.main.output_label.text())
+        count = ready_line(self.catalog, self.last_plan)
+        if count is not None:
+            self.converting.show_ready(count, self.main.output_label.text())
 
     def show_inputs(self, rows: tuple[InputRow, ...]) -> None:
         self.main.show_inputs(rows)
@@ -481,15 +477,9 @@ class PySideApp(QWidget):
     def _header(self) -> None:
         if self.catalog is None or self.state is None:
             return
-        catalog, state = self.catalog, self.state
-        step = STEPS[state.page - 1]
-        eyebrow = catalog.text("gui.steps.counter", step=state.page, total=len(STEPS))
-        if state.state is not AppState.READY:
-            eyebrow = f"{eyebrow} · {state.label}"
-        self.ground.show_header(
-            eyebrow=eyebrow.upper(),
-            title=catalog.text(f"gui.page.{step}_title"),
-            subtitle=self._scan or catalog.text(f"gui.page.{step}_subtitle"),
+        header = header_of(self.catalog, self.state, self._scan)
+        self.ground.show_header(  # Qt's eyebrow in capitals: the draft's own look (P0 list)
+            eyebrow=header.eyebrow.upper(), title=header.title, subtitle=header.subtitle
         )
 
     def _catalog(self) -> Catalog:
