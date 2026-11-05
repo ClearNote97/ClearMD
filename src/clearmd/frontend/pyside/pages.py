@@ -26,7 +26,8 @@ from clearmd.frontend.presenter.models import (
     ResultView,
     RowKind,
 )
-from clearmd.frontend.pyside.layout import ICON
+from clearmd.frontend.pyside.layout.units import ICON
+from clearmd.frontend.pyside.visuals.images import icon
 from clearmd.frontend.pyside.widgets import (
     DropZone,
     FileList,
@@ -34,7 +35,6 @@ from clearmd.frontend.pyside.widgets import (
     Stats,
     button,
     card,
-    icon,
     label,
     restyle,
 )

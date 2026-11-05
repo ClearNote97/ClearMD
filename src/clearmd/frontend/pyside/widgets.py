@@ -4,8 +4,7 @@ them knows the presenter."""
 
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from functools import cache, partial
-from importlib.resources import files
+from functools import partial
 from typing import Any
 
 from PySide6.QtCore import QRectF, QSize, Qt, Signal
@@ -30,31 +29,9 @@ from clearmd.frontend.design.metrics import COMPACT_RAIL_WIDTH, GAP, HALF, RAIL_
 from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.presenter.models import Primary, Stat
 from clearmd.frontend.presenter.state import STEPS
-from clearmd.frontend.pyside.layout import BADGE, ICON, STEP_HEIGHT
+from clearmd.frontend.pyside.layout.units import BADGE, ICON, STEP_HEIGHT
+from clearmd.frontend.pyside.visuals.images import icon, logo
 from clearmd.i18n import Catalog
-
-ASSETS = files("clearmd.frontend") / "assets"
-
-
-@cache
-def icon(name: str) -> QIcon:
-    """A file icon by its asset name (presenter.icons), sharp on high-density screens."""
-    result = QIcon()
-    folder = ASSETS / "icons"
-    result.addFile(str(folder / f"{name}.png"), QSize(ICON, ICON))
-    result.addFile(str(folder / f"{name}@2x.png"), QSize(2 * ICON, 2 * ICON))
-    return result
-
-
-def logo(name: str) -> QPixmap:
-    return QPixmap(str(ASSETS / "logo" / f"{name}.png"))
-
-
-def app_icon() -> QIcon:
-    result = QIcon()
-    for size in (16, 32, 48, 64, 128, 256):
-        result.addFile(str(ASSETS / "logo" / f"clearmd-app-{size}.png"), QSize(size, size))
-    return result
 
 
 def label(name: str, text: str = "", *, wrap: bool = False) -> QLabel:

@@ -61,8 +61,9 @@ from clearmd.frontend.pyside.dialogs import (
     WelcomeDialog,
 )
 from clearmd.frontend.pyside.pages import ChoosePage, ConvertPage, ResultsPage, ReviewPage
-from clearmd.frontend.pyside.style import stylesheet
-from clearmd.frontend.pyside.widgets import ActionBar, Ground, Rail, app_icon, label
+from clearmd.frontend.pyside.visuals.images import app_icon
+from clearmd.frontend.pyside.visuals.stylesheet import stylesheet
+from clearmd.frontend.pyside.widgets import ActionBar, Ground, Rail, label
 from clearmd.frontend.pyside.window.qt_window import MainWindow
 from clearmd.i18n import Catalog
 

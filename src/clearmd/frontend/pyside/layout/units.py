@@ -1,6 +1,5 @@
 """The PySide6 window's own sizes: a step's height and its numbered badge, a list's file icon.
-The rhythm itself is shared (``frontend.design``); these few are Qt's until its layout folder
-(refactor R01, P8)."""
+A module of its own: the rhythm itself is shared (``frontend.design``); these few are Qt's."""
 
 STEP_HEIGHT = 44  # a step on the rail: a comfortable target (UX §5)
 BADGE = 24  # a step's number, in its circle

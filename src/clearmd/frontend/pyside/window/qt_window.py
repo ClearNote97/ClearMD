@@ -12,7 +12,7 @@ from PySide6.QtGui import QCloseEvent, QDragEnterEvent, QDropEvent, QResizeEvent
 from PySide6.QtWidgets import QWidget
 
 from clearmd.frontend.design.metrics import MIN_HEIGHT, MIN_WIDTH, START_HEIGHT, START_WIDTH
-from clearmd.frontend.pyside.widgets import app_icon
+from clearmd.frontend.pyside.visuals.images import app_icon
 
 
 class MainWindow(QWidget):
