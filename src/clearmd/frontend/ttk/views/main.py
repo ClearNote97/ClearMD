@@ -8,18 +8,11 @@ from tkinter import ttk
 from typing import Any
 
 from clearmd.frontend.design.metrics import GAP, HALF, SPACE
+from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.presenter.models import InputRow, OutputChoice, OutputMode
-from clearmd.frontend.ttk.brand import (
-    CARD,
-    LINK,
-    MUTED,
-    PAGE,
-    SOFT,
-    SOFT_ON_CARD,
-    Palette,
-)
 from clearmd.frontend.ttk.components.drop_zone import DropZone
 from clearmd.frontend.ttk.components.file_list import Column, FileList, ListRow
+from clearmd.frontend.ttk.visuals.style_names import CARD, LINK, MUTED, PAGE, SOFT, SOFT_ON_CARD
 from clearmd.i18n import Catalog
 
 TALL_DROP = 11 * SPACE  # the drop zone beside the two buttons, one over the other

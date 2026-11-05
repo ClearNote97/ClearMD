@@ -6,8 +6,9 @@ from collections.abc import Sequence
 from tkinter import ttk
 
 from clearmd.frontend.design.metrics import GAP, HALF
+from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.presenter.models import Stat, Tone
-from clearmd.frontend.ttk.brand import CARD, DIM, DIM_CARD, MUTED, PAGE, Palette
+from clearmd.frontend.ttk.visuals.style_names import CARD, DIM, DIM_CARD, MUTED, PAGE
 
 
 class Stats(ttk.Frame):

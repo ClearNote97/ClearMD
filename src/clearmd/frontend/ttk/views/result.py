@@ -6,10 +6,11 @@ from tkinter import ttk
 from typing import Any
 
 from clearmd.frontend.design.metrics import GAP, SPACE
+from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.presenter.models import ResultView
-from clearmd.frontend.ttk.brand import CARD, ON_PAGE, PAGE, Palette
 from clearmd.frontend.ttk.components.file_list import Column, FileList, ListRow
 from clearmd.frontend.ttk.components.stats import Stats
+from clearmd.frontend.ttk.visuals.style_names import CARD, ON_PAGE, PAGE
 from clearmd.i18n import Catalog
 
 

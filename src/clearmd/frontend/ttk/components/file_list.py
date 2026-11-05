@@ -9,8 +9,9 @@ from typing import Any
 
 from PIL import ImageTk
 
-from clearmd.frontend.ttk import art
-from clearmd.frontend.ttk.brand import CARD, MUTED, Palette
+from clearmd.frontend.design.palette import Palette
+from clearmd.frontend.ttk.visuals import marks
+from clearmd.frontend.ttk.visuals.style_names import CARD, MUTED
 
 
 @dataclass(frozen=True)
@@ -116,10 +117,10 @@ class FileList(ttk.Frame):
         colour = palette.muted if palette else "#5B6672"
         digits = len(str(len(self._rows)))
         for number, row in enumerate(self._rows, start=1):
-            icon = art.icon(row.icon)
+            icon = marks.icon(row.icon)
             off, on = (
                 ImageTk.PhotoImage(
-                    art.numbered(
+                    marks.numbered(
                         number,
                         icon,
                         colour,
@@ -147,8 +148,8 @@ class FileList(ttk.Frame):
     def _box(self, state: str, palette: Palette | None = None) -> Any:
         p = palette or self._palette
         if p is None:
-            return art.checkbox(state, box="#0F766E", border="#5B6672", mark="#FFFFFF")
-        return art.checkbox(state, box=p.accent, border=p.muted, mark=p.on_accent)
+            return marks.checkbox(state, box="#0F766E", border="#5B6672", mark="#FFFFFF")
+        return marks.checkbox(state, box=p.accent, border=p.muted, mark=p.on_accent)
 
     def _sync_boxes(self) -> None:
         """Each row's box shows whether it is selected; the header's, all, none or some."""
@@ -208,7 +209,7 @@ class FileList(ttk.Frame):
         """A box toggles its row (or, in the header, every row); empty space clears."""
         region = self.tree.identify_region(event.x, event.y)
         column = self.tree.identify_column(event.x)
-        on_box = self.checks and column == "#0" and event.x <= art.CHECK_ZONE + 16
+        on_box = self.checks and column == "#0" and event.x <= marks.CHECK_ZONE + 16
         if region == "heading" and on_box:
             self.toggle_all()
             return "break"

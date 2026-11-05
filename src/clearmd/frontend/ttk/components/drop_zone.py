@@ -7,9 +7,9 @@ from collections.abc import Callable
 from PIL import ImageTk
 
 from clearmd.frontend.design.metrics import RADIUS, SPACE
-from clearmd.frontend.ttk import art
-from clearmd.frontend.ttk.brand import Palette
+from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.ttk.layout import REDRAW_MS
+from clearmd.frontend.ttk.visuals import shapes
 
 
 class DropZone(tk.Canvas):
@@ -62,7 +62,7 @@ class DropZone(tk.Canvas):
         if p is None or width < 4 * RADIUS:
             return
         self.delete("all")
-        shape = art.rounded(width, height, RADIUS, p.card, border=p.muted, dashed=True)
+        shape = shapes.rounded(width, height, RADIUS, p.card, border=p.muted, dashed=True)
         self._picture = ImageTk.PhotoImage(shape, master=self)
         self.create_image(0, 0, image=self._picture, anchor="nw")
         middle = height / 2

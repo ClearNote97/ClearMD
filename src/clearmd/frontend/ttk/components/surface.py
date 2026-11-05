@@ -7,9 +7,10 @@ from tkinter import ttk
 from PIL import ImageTk
 
 from clearmd.frontend.design.metrics import GAP, GUTTER, HALF, INSET, MARGIN, RADIUS
-from clearmd.frontend.ttk import art
-from clearmd.frontend.ttk.brand import PAGE, Palette
+from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.ttk.layout import REDRAW_MS
+from clearmd.frontend.ttk.visuals import shapes
+from clearmd.frontend.ttk.visuals.style_names import PAGE
 
 
 class Surface(tk.Canvas):
@@ -90,7 +91,7 @@ class Surface(tk.Canvas):
         key = (width, height, p.mode, top)
         new_theme = self._ground_key is None or self._ground_key[2] != p.mode
         if self._ground is None or (key != self._ground_key and (paint or new_theme)):
-            picture = art.surface(width, height, p.ground, p.shape, band=top)
+            picture = shapes.surface(width, height, p.ground, p.shape, band=top)
             self._ground = ImageTk.PhotoImage(picture, master=self)
             self._ground_key = key
         ground = self.create_image(0, 0, image=self._ground, anchor="nw")

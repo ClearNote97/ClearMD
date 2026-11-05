@@ -33,8 +33,8 @@ from clearmd.frontend.presenter.icons import ICONS
 from clearmd.frontend.presenter.models import ProgressView, StateView
 from clearmd.frontend.presenter.ports import ApiBackend
 from clearmd.frontend.ttk import TtkApp, layout
-from clearmd.frontend.ttk.brand import PRIMARY
 from clearmd.frontend.ttk.views.dialogs import SettingsDialog, WelcomeDialog
+from clearmd.frontend.ttk.visuals.style_names import PRIMARY
 from clearmd.i18n import load_catalog
 
 ROOT = Path(__file__).resolve().parents[2]

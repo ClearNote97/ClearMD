@@ -9,7 +9,8 @@ from collections.abc import Callable
 from tkinter import ttk
 
 from clearmd.frontend.design.metrics import GAP, MARGIN
-from clearmd.frontend.ttk.brand import CARD, ON_PAGE, PAGE, Palette
+from clearmd.frontend.design.palette import Palette
+from clearmd.frontend.ttk.visuals.style_names import CARD, ON_PAGE, PAGE
 
 
 class Dialog(tk.Toplevel):

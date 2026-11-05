@@ -15,10 +15,11 @@ from PIL import ImageTk
 
 from clearmd.frontend.design.colors import blend
 from clearmd.frontend.design.metrics import COMPACT_RAIL_WIDTH, GAP, HALF, RADIUS, RAIL_WIDTH, SPACE
+from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.presenter.state import STEPS
-from clearmd.frontend.ttk import art
-from clearmd.frontend.ttk.brand import RAIL, RAIL_COMPACT, Palette
 from clearmd.frontend.ttk.layout import REDRAW_MS
+from clearmd.frontend.ttk.visuals import marks, shapes
+from clearmd.frontend.ttk.visuals.style_names import RAIL, RAIL_COMPACT
 from clearmd.i18n import Catalog
 
 _STEP_HEIGHT = 44
@@ -150,11 +151,11 @@ class Rail(tk.Canvas):
         left, top = GAP, GAP
         width = COMPACT_RAIL_WIDTH if self._compact else RAIL_WIDTH
         bottom = height - GAP
-        ground = art.rounded(width, bottom - top, 2 * RADIUS, p.rail)
+        ground = shapes.rounded(width, bottom - top, 2 * RADIUS, p.rail)
         self.create_image(left, top, image=self._picture(ground), anchor="nw")
 
         x = left + (width - 40) // 2 if self._compact else left + GAP
-        logo = self._picture(art.logo("clearmd-mark-dark-40"))
+        logo = self._picture(marks.logo("clearmd-mark-dark-40"))
         self.create_image(x, top + _TOP, image=logo, anchor="nw")
         if not self._compact:
             mark_middle = top + _TOP + 20
@@ -177,7 +178,7 @@ class Rail(tk.Canvas):
         on_screen = index == self._page
         tag = f"step{index}"
         if on_screen:
-            highlight = art.rounded(width - GAP, _STEP_HEIGHT, RADIUS - 2, p.accent)
+            highlight = shapes.rounded(width - GAP, _STEP_HEIGHT, RADIUS - 2, p.accent)
             self.create_image(
                 left + SPACE, y, image=self._picture(highlight), anchor="nw", tags=tag
             )
@@ -189,7 +190,7 @@ class Rail(tk.Canvas):
         colour = p.on_accent if on_screen else blend(p.rail_text, p.rail, _DIM)
         middle = y + _STEP_HEIGHT // 2
         badge_x = left + width // 2 if self._compact else left + GAP + SPACE + _BADGE // 2
-        circle = art.circle(_BADGE, outline=colour, fill=p.accent if on_screen else p.rail)
+        circle = shapes.circle(_BADGE, outline=colour, fill=p.accent if on_screen else p.rail)
         self.create_image(badge_x, middle, image=self._picture(circle), tags=tag)
         self.create_text(
             badge_x, middle, text=str(index), fill=colour, font=self._fonts["strong"], tags=tag

@@ -10,8 +10,9 @@ from support.gui_close import shut
 from support.gui_fakes import FakeBackend
 
 from clearmd.backend.schemas.settings import Settings
-from clearmd.frontend.ttk import TtkApp, art
-from clearmd.frontend.ttk.brand import LIGHT
+from clearmd.frontend.design.palette import LIGHT
+from clearmd.frontend.ttk import TtkApp
+from clearmd.frontend.ttk.visuals import shapes
 from clearmd.i18n import load_catalog
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -51,7 +52,7 @@ def test_ac_01_settings_and_help_are_sections_of_the_rail(app: TtkApp) -> None:
 
 def test_ac_02_the_shape_is_whole_in_the_header_and_the_page_is_outlined(app: TtkApp) -> None:
     band = 110
-    picture = art.surface(600, 400, LIGHT.ground, LIGHT.shape, band=band).convert("RGB")
+    picture = shapes.surface(600, 400, LIGHT.ground, LIGHT.shape, band=band).convert("RGB")
     ground = Image.new("RGB", (1, 1), LIGHT.ground).getpixel((0, 0))
     assert all(picture.getpixel((x, band)) == ground for x in range(300, 600))
 

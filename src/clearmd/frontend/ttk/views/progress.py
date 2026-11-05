@@ -9,8 +9,8 @@ from PIL import ImageTk
 
 from clearmd.frontend.design.metrics import GAP, HALF, SPACE
 from clearmd.frontend.presenter.models import ProgressView
-from clearmd.frontend.ttk import art
-from clearmd.frontend.ttk.brand import CARD, DIM, DIM_CARD, MUTED, PAGE
+from clearmd.frontend.ttk.visuals import marks
+from clearmd.frontend.ttk.visuals.style_names import CARD, DIM, DIM_CARD, MUTED, PAGE
 from clearmd.i18n import Catalog
 
 
@@ -84,7 +84,7 @@ class ConvertView(ttk.Frame):
 
     def show(self, progress: ProgressView) -> None:
         self.counter.configure(text=progress.counter)
-        self._icon = ImageTk.PhotoImage(art.icon(progress.icon), master=self)
+        self._icon = ImageTk.PhotoImage(marks.icon(progress.icon), master=self)
         self.file.configure(text=f"  {progress.name}", image=self._icon)
         self.bar.configure(value=progress.fraction)
         self.time_left.configure(text=progress.time_left or "")

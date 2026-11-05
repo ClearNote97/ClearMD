@@ -7,7 +7,7 @@ from tkinter import ttk
 
 from clearmd.frontend.design.metrics import GAP, SPACE
 from clearmd.frontend.presenter.models import Primary
-from clearmd.frontend.ttk.brand import HINT, PAGE, PRIMARY, SOFT, STRONG
+from clearmd.frontend.ttk.visuals.style_names import HINT, PAGE, PRIMARY, SOFT, STRONG
 
 
 class ActionBar(ttk.Frame):

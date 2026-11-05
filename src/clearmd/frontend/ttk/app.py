@@ -21,6 +21,7 @@ from tkinterdnd2 import DND_FILES, TkinterDnD
 import clearmd.frontend.launch as launch
 from clearmd.backend.schemas.formats import EXTENSIONS
 from clearmd.frontend.design.metrics import COMPACT_BELOW, MIN_HEIGHT, MIN_WIDTH, SHORT_BELOW, SPACE
+from clearmd.frontend.design.palette import LIGHT, PALETTES, Palette
 from clearmd.frontend.presenter import Action, AppState, Presenter
 from clearmd.frontend.presenter.chrome import close_policy, primary_gate
 from clearmd.frontend.presenter.chrome.header import header_of
@@ -34,8 +35,6 @@ from clearmd.frontend.presenter.models import (
     StateView,
 )
 from clearmd.frontend.presenter.ports import Backend
-from clearmd.frontend.ttk import art
-from clearmd.frontend.ttk.brand import LIGHT, PALETTES, WARNING, Look, Palette, register_themes
 from clearmd.frontend.ttk.components.action_bar import ActionBar
 from clearmd.frontend.ttk.components.dialog import Dialog
 from clearmd.frontend.ttk.components.rail import Rail
@@ -53,6 +52,10 @@ from clearmd.frontend.ttk.views.main import MainView
 from clearmd.frontend.ttk.views.plan import ReviewView
 from clearmd.frontend.ttk.views.progress import ConvertView
 from clearmd.frontend.ttk.views.result import ResultsView
+from clearmd.frontend.ttk.visuals import marks
+from clearmd.frontend.ttk.visuals.look import Look
+from clearmd.frontend.ttk.visuals.style_names import WARNING
+from clearmd.frontend.ttk.visuals.themes import register_themes
 from clearmd.i18n import Catalog
 
 _NAMED_FONTS = ("TkDefaultFont", "TkTextFont", "TkMenuFont", "TkHeadingFont", "TkCaptionFont")
@@ -122,7 +125,7 @@ class TtkApp:
 
     def _build(self) -> None:
         icons = [
-            ImageTk.PhotoImage(art.logo(f"clearmd-app-{size}"), master=self.root)
+            ImageTk.PhotoImage(marks.logo(f"clearmd-app-{size}"), master=self.root)
             for size in _APP_ICON_SIZES
         ]
         self._icons = icons  # Tk forgets an image Python does not hold

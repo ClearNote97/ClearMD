@@ -2,7 +2,7 @@
 
 import pytest
 
-from clearmd.frontend.ttk.brand import PALETTES, Palette
+from clearmd.frontend.design.palette import PALETTES, Palette
 
 
 def luminance(colour: str) -> float:
