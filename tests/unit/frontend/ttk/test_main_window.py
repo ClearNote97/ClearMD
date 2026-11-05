@@ -813,7 +813,7 @@ def key(name: str, time_ms: int) -> SimpleNamespace:
 
 
 def test_a_held_key_is_one_press_on_windows_and_on_x11() -> None:
-    from clearmd.frontend.ttk.presses import Presses
+    from clearmd.frontend.ttk.window.presses import Presses
 
     windows = Presses()  # Windows repeats the press
     assert [windows.pressed(key("Return", t)) for t in (0, 500, 530)] == [True, False, False]

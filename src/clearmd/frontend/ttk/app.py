@@ -4,7 +4,6 @@
 window only lays it out and forwards the user's intents (buttons, keys, dropped files).
 """
 
-import contextlib
 import sys
 import time
 import tkinter as tk
@@ -13,13 +12,11 @@ from pathlib import Path
 from tkinter import filedialog, ttk
 from typing import Any
 
-import ttkbootstrap as tb
-from PIL import ImageTk
-from tkinterdnd2 import DND_FILES, TkinterDnD
+from tkinterdnd2 import DND_FILES
 
 import clearmd.frontend.launch as launch
 from clearmd.backend.schemas.formats import EXTENSIONS
-from clearmd.frontend.design.metrics import COMPACT_BELOW, MIN_HEIGHT, MIN_WIDTH, SHORT_BELOW, SPACE
+from clearmd.frontend.design.metrics import COMPACT_BELOW, SHORT_BELOW, SPACE
 from clearmd.frontend.design.palette import LIGHT, PALETTES, Palette
 from clearmd.frontend.presenter import Action, AppState, Presenter
 from clearmd.frontend.presenter.chrome import close_policy, primary_gate
@@ -39,9 +36,6 @@ from clearmd.frontend.ttk.components.dialog import Dialog
 from clearmd.frontend.ttk.components.rail import Rail
 from clearmd.frontend.ttk.components.surface import Surface
 from clearmd.frontend.ttk.layout.fonts import make_fonts
-from clearmd.frontend.ttk.layout.units import START_SIZE
-from clearmd.frontend.ttk.presses import Presses
-from clearmd.frontend.ttk.scheduler import Scheduler
 from clearmd.frontend.ttk.views.choose import MainView
 from clearmd.frontend.ttk.views.convert import ConvertView
 from clearmd.frontend.ttk.views.dialogs.help import help_dialog
@@ -50,13 +44,12 @@ from clearmd.frontend.ttk.views.dialogs.settings import SettingsDialog
 from clearmd.frontend.ttk.views.dialogs.welcome import WelcomeDialog
 from clearmd.frontend.ttk.views.results import ResultsView
 from clearmd.frontend.ttk.views.review import ReviewView
-from clearmd.frontend.ttk.visuals import marks
 from clearmd.frontend.ttk.visuals.look import Look
 from clearmd.frontend.ttk.visuals.style_names import WARNING
-from clearmd.frontend.ttk.visuals.themes import register_themes
+from clearmd.frontend.ttk.window import toolkit
+from clearmd.frontend.ttk.window.presses import Presses
+from clearmd.frontend.ttk.window.scheduler import Scheduler
 from clearmd.i18n import Catalog
-
-_APP_ICON_SIZES = (16, 32, 48, 64, 128, 256)
 
 
 class TtkApp:
@@ -65,22 +58,9 @@ class TtkApp:
     def __init__(self, backend: Backend | None = None, *, root: tk.Tk | None = None) -> None:
         # TkinterDnD.Tk: a Tk root with drag and drop (tkinterdnd2 has no types). Without its
         # library (a Tk it was not built for), the window works with Add files / Add folder only.
-        self.root: Any = root or _root_with_drop()
+        self.root: Any = root or toolkit.root_with_drop()
         self.drops = bool(getattr(self.root, "TkdndVersion", None))
-        self.root.withdraw()  # shown once laid out, in its theme (no flash of the wrong one)
-        self.root.minsize(MIN_WIDTH, MIN_HEIGHT)
-        self.root.geometry(START_SIZE)
-        _forget_dead_style()
-        # ttkbootstrap speaks to tkinter's default root, not to the one it is given: this window
-        # is it, so its styles and messages (Tcl's msgcat) are made in this interpreter, never in
-        # one left by an earlier window (CI on Windows, Python 3.12).
-        tk._default_root = self.root  # type: ignore[attr-defined]
-        # ttkbootstrap calls Tcl's msgcat without loading it: it works only when Tk happened to
-        # load it first, which a new interpreter on Windows does not always do (CI, 014).
-        with contextlib.suppress(tk.TclError):
-            self.root.tk.call("package", "require", "msgcat")
-        self.style = tb.Style()
-        register_themes(self.style)
+        self.style = toolkit.prepare(self.root)
         self.fonts = make_fonts(self.root)
         self.look = Look(self.style, self.root, self.fonts)
         self.palette: Palette = LIGHT
@@ -105,12 +85,7 @@ class TtkApp:
     # --- Building ------------------------------------------------------------------------------
 
     def _build(self) -> None:
-        icons = [
-            ImageTk.PhotoImage(marks.logo(f"clearmd-app-{size}"), master=self.root)
-            for size in _APP_ICON_SIZES
-        ]
-        self._icons = icons  # Tk forgets an image Python does not hold
-        self.root.iconphoto(True, *icons)
+        self._icons = toolkit.set_icons(self.root)
 
         self.rail = Rail(
             self.root,
@@ -481,35 +456,6 @@ class TtkApp:
     def start(self) -> None:
         self.presenter.start()
         self.root.deiconify()
-
-
-def _root_with_drop() -> Any:
-    """A Tk root that accepts dropped files, or a plain one if tkdnd cannot be loaded."""
-    try:
-        return TkinterDnD.Tk()
-    except (RuntimeError, tk.TclError):
-        # Its Tk interpreter was created before tkdnd failed, and it is now tkinter's default
-        # root: images made without a master would go there. It is closed first.
-        stale = getattr(tk, "_default_root", None)
-        if stale is not None:
-            stale.destroy()
-        root: Any = tk.Tk()
-        root.TkdndVersion = None
-        return root
-
-
-def _forget_dead_style() -> None:
-    """ttkbootstrap keeps one Style per process, tied to the first root: a new root (a reopened
-    window, a test) needs a new one once that root is gone."""
-    existing = tb.Style.instance
-    if existing is None:
-        return
-    try:
-        alive = bool(existing.master.winfo_exists())
-    except tk.TclError:
-        alive = False
-    if not alive:
-        tb.Style.instance = None
 
 
 def main(argv: Sequence[str] | None = None) -> None:
