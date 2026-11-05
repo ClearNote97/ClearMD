@@ -80,9 +80,10 @@ already tested (ADR-0001).
 ## Next
 
 - [ ] **006b — Hardening of the executables:** **code signing** of the Windows executables
-      (SignPath, free for open source — once the repository is public) so SmartScreen does not
-      scare non-technical users; a Windows Job Object as the worker's hard memory cap; an advisory
-      check of `uv.lock` and hash-pinned builds; executable size as a metric.
+      (SignPath, free for open source) so SmartScreen does not scare non-technical users — *the
+      workflow and the policy are ready (ADR-0037); waiting for SignPath Foundation's approval*;
+      a Windows Job Object as the worker's hard memory cap; an advisory check of `uv.lock` and
+      hash-pinned builds; executable size as a metric.
 
 ## Later
 

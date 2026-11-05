@@ -149,7 +149,8 @@ Full plan in the [roadmap](./spec/roadmap.md). ClearMD has a **command line** an
 
 **Download the app** (nothing to install): from the [latest release](https://github.com/ClearNote97/ClearMD/releases/latest),
 `ClearMD-…-windows.exe` for Windows or `ClearMD-…-linux.tar.gz` for Linux, then open it with a double click.
-Windows may warn that the app is not recognized, because it is not code-signed yet: *More info → Run anyway*.
+Windows may warn that the app is not recognized, because it is not code-signed yet: *More info → Run anyway*
+(signing is on its way: [code signing policy](./CODE_SIGNING.md)).
 The first start takes a few seconds while the app unpacks itself.
 
 **From the repository**, for the command line (the package is not on PyPI yet):

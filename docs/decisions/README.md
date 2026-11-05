@@ -45,7 +45,7 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 | [0025](./0025-html-article-mode.md) | HTML article mode: trafilatura finds the article, ClearMD writes it | accepted; refined after review |
 | [0026](./0026-presenter-and-ttk-gui.md) | The presenter and the first GUI (ttkbootstrap) | accepted; refined by 0027 |
 | [0027](./0027-visual-identity.md) | Visual identity: the rail and cards, teal, the C·M↓ logo, own file icons | accepted |
-| [0028](./0028-ci-and-executables.md) | CI on Linux and Windows; one-file executables built and checked on GitHub Actions | accepted |
+| [0028](./0028-ci-and-executables.md) | CI on Linux and Windows; one-file executables built and checked on GitHub Actions | accepted; refined by 0037 |
 | [0029](./0029-step-navigation.md) | Free navigation between the steps; one primary action per step, with its reason when disabled | accepted |
 | [0030](./0030-pdf-reader.md) | PDF read by PDFium and cleaned by ClearMD: spaces, glyph codes, running lines, paragraphs, headings | accepted |
 | [0031](./0031-human-summary.md) | A summary in human language, and its PDF in the app's look | accepted |
@@ -54,3 +54,4 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 | [0034](./0034-pdf-tables-and-equations.md) | A PDF's tables, equations and table of contents | accepted; refined by 0035, 0036 |
 | [0035](./0035-pdf-sub-and-superscripts.md) | A PDF's sub- and superscripts | accepted |
 | [0036](./0036-equations-as-latex.md) | A PDF's equations rebuilt as LaTeX | accepted |
+| [0037](./0037-code-signing.md) | The Windows executables signed by SignPath | accepted |

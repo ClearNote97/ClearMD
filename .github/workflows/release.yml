@@ -18,6 +18,9 @@ jobs:
     name: Executables (${{ matrix.name }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
+    permissions:
+      contents: read
+      actions: read # SignPath downloads the unsigned artifact with the job's token
     strategy:
       fail-fast: false
       matrix:
@@ -37,6 +40,38 @@ jobs:
       - run: uv sync --locked --no-default-groups --group build
       - name: Build
         run: uv run --no-default-groups --group build pyinstaller packaging/clearmd.spec --noconfirm
+      # Code signing (feature 006b, ADR-0037): on SignPath, only once it is set up (the
+      # SIGNPATH_* repository variables and secret); without it the build is as before.
+      - name: Unsigned Windows executables, for SignPath
+        id: unsigned
+        if: runner.os == 'Windows' && vars.SIGNPATH_ORGANIZATION_ID != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: clearmd-windows-unsigned
+          path: |
+            dist/ClearMD.exe
+            dist/clearmd-cli.exe
+          if-no-files-found: error
+      - uses: signpath/github-action-submit-signing-request@c92b958760219087e01f8d67a1669ed57afe2627 # v2
+        name: Sign them (SignPath)
+        if: runner.os == 'Windows' && vars.SIGNPATH_ORGANIZATION_ID != ''
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
+          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: dist
+      - name: Authenticode signatures are valid
+        if: runner.os == 'Windows' && vars.SIGNPATH_ORGANIZATION_ID != ''
+        shell: pwsh
+        run: |
+          foreach ($exe in "dist/ClearMD.exe", "dist/clearmd-cli.exe") {
+            $signature = Get-AuthenticodeSignature $exe
+            if ($signature.Status -ne "Valid") { throw "$exe is not signed: $($signature.Status)" }
+            "$exe signed by $($signature.SignerCertificate.Subject)"
+          }
       - name: Check the executables (a real batch with the command line; the window opens)
         shell: bash
         run: bash packaging/check_executables.sh dist

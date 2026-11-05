@@ -154,7 +154,7 @@ escritorio** (`clearmd-ttk`), ambas también como ejecutables para Windows y Lin
 **Descarga la app** (nada que instalar): desde la [última versión](https://github.com/ClearNote97/ClearMD/releases/latest),
 `ClearMD-…-windows.exe` para Windows o `ClearMD-…-linux.tar.gz` para Linux, y ábrela con doble clic.
 Windows puede advertir que la app no es reconocida, porque aún no está firmada: *Más información → Ejecutar de todas
-formas*. El primer inicio tarda unos segundos mientras la app se descomprime.
+formas*. La firma está en camino: [política de firma](./CODE_SIGNING.md). El primer inicio tarda unos segundos mientras la app se descomprime.
 
 **Desde el repositorio** (aún no está en PyPI):
 
