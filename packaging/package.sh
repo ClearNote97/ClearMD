@@ -11,6 +11,8 @@ version="${3#refs/tags/}"
 version="${version//\//-}"
 mkdir -p release
 uv run --no-default-groups --group build python packaging/notices.py > release/THIRD-PARTY-NOTICES.txt
+# The Qt folder carries its licenses with it (LGPL: the license travels with the libraries).
+cp LICENSE release/THIRD-PARTY-NOTICES.txt "$dist/ClearMD-Qt/"
 if [[ "$system" == "windows" ]]; then
   cp "$dist/ClearMD.exe" "release/ClearMD-$version-windows.exe"
   cp "$dist/clearmd-cli.exe" "release/clearmd-cli-$version-windows.exe"

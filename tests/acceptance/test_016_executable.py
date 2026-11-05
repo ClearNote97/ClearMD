@@ -160,3 +160,8 @@ def test_ac_09_the_version_resource_names_the_qt_exe() -> None:
     assert "StringStruct('ProductName', 'ClearMD')" in text
     assert "StringStruct('OriginalFilename', 'ClearMD-Qt.exe')" in text
     assert "StringStruct('InternalName', 'ClearMD-Qt')" in text
+
+
+def test_ac_09_the_qt_folder_carries_its_licenses() -> None:
+    package = (PACKAGING / "package.sh").read_text(encoding="utf-8")
+    assert 'cp LICENSE release/THIRD-PARTY-NOTICES.txt "$dist/ClearMD-Qt/"' in package
