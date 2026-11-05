@@ -55,3 +55,4 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 | [0035](./0035-pdf-sub-and-superscripts.md) | A PDF's sub- and superscripts | accepted |
 | [0036](./0036-equations-as-latex.md) | A PDF's equations rebuilt as LaTeX | accepted |
 | [0037](./0037-code-signing.md) | The Windows executables signed by SignPath | accepted |
+| [0039](./0039-modular-layout-and-file-size.md) | Modular layout and file size: ≤ 200 lines (250 at most), one layout for every GUI | proposed |
