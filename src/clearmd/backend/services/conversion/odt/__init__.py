@@ -7,8 +7,9 @@ from clearmd.backend.schemas.models import ConversionResult, Detection
 from clearmd.backend.services.conversion.images import MAX_IMAGE_BYTES, ImageSink
 from clearmd.backend.services.conversion.odt.mathml import Unsupported, starmath, to_latex
 from clearmd.backend.services.conversion.odt.package import OdtPackage, object_part, picture_part
-from clearmd.backend.services.conversion.odt.render import FormulaResult, OdtRenderer
+from clearmd.backend.services.conversion.odt.render import OdtRenderer
 from clearmd.backend.services.conversion.odt.styles import Styles
+from clearmd.backend.services.conversion.odt.writer import FormulaResult
 from clearmd.backend.services.conversion.xmltree import Element
 
 # Distinct formula objects read per document (as many as a ZIP may hold, ADR-0015); each one is

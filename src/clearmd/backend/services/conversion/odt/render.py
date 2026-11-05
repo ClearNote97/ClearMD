@@ -8,7 +8,6 @@ subset keeps its text and is listed in a note. Images become placeholders; formu
 
 import re
 from collections.abc import Callable
-from dataclasses import dataclass, field
 from typing import Any
 
 from clearmd.backend.schemas.notes import ConversionNote, NoteItem, NoteKind, NoteReason
@@ -32,7 +31,6 @@ from clearmd.backend.services.conversion.markdown_out import (
     indent_all,
     inline_code,
     link_target,
-    math_line,
     neutralize,
     own_line,
     starts_tight,
@@ -41,83 +39,30 @@ from clearmd.backend.services.conversion.markdown_out import (
 )
 from clearmd.backend.services.conversion.odt.styles import Role, Styles
 from clearmd.backend.services.conversion.odt.tables import table_to_markdown
+from clearmd.backend.services.conversion.odt.writer.formulas import display_math
+from clearmd.backend.services.conversion.odt.writer.lists import continues_numbering
+from clearmd.backend.services.conversion.odt.writer.paragraphs import sole_formula
+from clearmd.backend.services.conversion.odt.writer.state import (
+    Counts,
+    FormulaHandler,
+    FormulaResult,
+)
+from clearmd.backend.services.conversion.odt.writer.vocab import (
+    DROPPED_BLOCKS,
+    DROPPED_INLINE,
+    FIELDS,
+    FORMULA_WORD,
+    GROWTH_EXTRA,
+    GROWTH_FACTOR,
+    MAX_LIST_LEVEL,
+    MAX_NOTES,
+    MAX_SPACES,
+    MAX_UNKNOWN,
+    SPAN_LIKE,
+)
 from clearmd.backend.services.conversion.xmltree import Element, int_attribute
 
-MAX_NOTES = 10_000
-# What a document may make ClearMD write beyond its own size (repeated formulas, repeated table
-# cells): the same rule as the author's macros in .tex (ADR-0022), 4x the text plus 1 MiB.
-GROWTH_FACTOR = 4
-GROWTH_EXTRA = 1024**2
-FORMULA_WORD = {"es": "Fórmula", "pt": "Fórmula", "fr": "Formule", "it": "Formula", "de": "Formel"}
-MAX_SPACES = 256
-MAX_UNKNOWN = 1000
-MAX_LIST_LEVEL = 10  # LibreOffice's deepest; deeper lists are flattened into the tenth level
 _WHITESPACE = re.compile(r"[ \t\r\n]+")  # code paragraphs (plain)
-
-# Field elements: what matters is the text they show.
-FIELDS = frozenset(
-    {
-        "text:page-number", "text:page-count", "text:page-continuation", "text:date", "text:time",
-        "text:author-name", "text:author-initials", "text:creator", "text:title", "text:subject",
-        "text:description", "text:keywords", "text:initial-creator", "text:creation-date",
-        "text:creation-time", "text:modification-date", "text:modification-time",
-        "text:print-date", "text:print-time", "text:printed-by", "text:editing-cycles",
-        "text:editing-duration", "text:chapter", "text:file-name", "text:template-name",
-        "text:sequence", "text:sequence-ref", "text:reference-ref", "text:bookmark-ref",
-        "text:note-ref", "text:variable-get", "text:variable-set", "text:variable-input",
-        "text:user-field-get", "text:user-field-input", "text:user-defined", "text:expression",
-        "text:text-input", "text:placeholder", "text:conditional-text", "text:database-display",
-        "text:sheet-name", "text:meta", "text:meta-field", "text:measure", "text:table-formula",
-    }
-)  # fmt: skip
-# Inline elements with nothing to show (layout, anchors, marks, revisions handled apart).
-DROPPED_INLINE = frozenset(
-    {
-        "text:soft-page-break", "text:bookmark", "text:bookmark-start", "text:bookmark-end",
-        "text:reference-mark", "text:reference-mark-start", "text:reference-mark-end",
-        "text:toc-mark", "text:toc-mark-start", "text:toc-mark-end", "text:alphabetical-index-mark",
-        "text:alphabetical-index-mark-start", "text:alphabetical-index-mark-end",
-        "text:user-index-mark", "text:user-index-mark-start", "text:user-index-mark-end",
-        "text:bibliography-mark", "text:change", "text:change-start", "text:change-end",
-        "office:annotation-end", "text:number", "text:hidden-paragraph",
-    }
-)  # fmt: skip
-# Block elements with nothing to show: declarations, forms, generated indexes.
-DROPPED_BLOCKS = frozenset(
-    {
-        "text:sequence-decls", "text:variable-decls", "text:user-field-decls",
-        "text:dde-connection-decls", "office:forms", "text:soft-page-break",
-        "text:table-of-content", "text:illustration-index", "text:table-index",
-        "text:object-index", "text:user-index", "text:alphabetical-index", "text:bibliography",
-        "table:table-columns", "table:table-column", "text:bookmark", "text:bookmark-start",
-        "text:bookmark-end", "text:change", "text:change-start", "text:change-end",
-        "text:hidden-paragraph",
-    }
-)  # fmt: skip
-SPAN_LIKE = frozenset({"text:span"})
-
-
-# A formula object → its LaTeX (without $), or ``None`` with the source to show instead
-# (StarMath, or nothing) when it is not converted; ``formula`` is false for a chart or another
-# embedded object, which is shown as an image placeholder.
-FormulaHandler = Callable[[Element], "FormulaResult"]
-
-
-@dataclass(frozen=True)
-class FormulaResult:
-    latex: str | None
-    source: str | None = None
-    formula: bool = True
-
-
-@dataclass
-class _Counts:
-    images: int = 0
-    formulas_kept: int = 0
-    comments: int = 0
-    changes: int = 0
-    tables_simplified: int = 0
-    unknown: dict[str, None] = field(default_factory=dict)
 
 
 class OdtRenderer:
@@ -135,7 +80,7 @@ class OdtRenderer:
         self._pictures = pictures
         self._room = GROWTH_FACTOR * source_size + GROWTH_EXTRA
         self._writer = InlineWriter(self._spend)
-        self.counts = _Counts()
+        self.counts = Counts()
         self.footnotes: list[str] = []
         self._formula = formula
         primary = (language or styles.language).split("-")[0]
@@ -250,7 +195,7 @@ class OdtRenderer:
             if not text:
                 return ""
             return block(f"{MARK}# {text}" if role is Role.TITLE else f"{MARK}*{text}*")
-        alone = _sole_formula(paragraph)
+        alone = sole_formula(paragraph)
         if alone is not None:  # a formula alone in its paragraph is display math
             shown = self._formula_markdown(alone, display=True)
             if shown is not None:
@@ -302,7 +247,7 @@ class OdtRenderer:
                 self.styles.list_style_of_paragraph(first.get("text:style-name")) if first else ""
             )
         kind = self.styles.list_level(style, level)
-        continues = _continues(element)
+        continues = continues_numbering(element)
         number = self._numbers.get((style, level), kind.start - 1) + 1 if continues else kind.start
         # Two lists of the same kind one after the other would be one list to Markdown (a restart
         # lost): the second uses the other markers ("1)" for "1.", "*" for "-").
@@ -611,32 +556,3 @@ class OdtRenderer:
         if dropped:
             found.append(ConversionNote(NoteKind.REVISIONS_DROPPED, tuple(dropped)))
         return tuple(found)
-
-
-def _continues(element: Element) -> bool:
-    return element.get("text:continue-numbering") == "true" or bool(
-        element.get("text:continue-list")
-    )
-
-
-def _sole_formula(paragraph: Element) -> Element | None:
-    """The formula object of a paragraph that holds nothing else (spaces aside)."""
-    found: Element | None = None
-    for child in paragraph.children:
-        if isinstance(child, str):
-            if child.strip():
-                return None
-            continue
-        if child.tag in {"text:soft-page-break", "text:bookmark", "text:bookmark-start"}:
-            continue
-        formula = child.find("draw:object") if child.tag == "draw:frame" else None
-        if formula is None or found is not None:
-            return None
-        found = formula
-    return found
-
-
-def display_math(latex: str) -> str:
-    """``$$`` lines are ClearMD's; the math between them is never read as Markdown blocks."""
-    lines = "\n".join(math_line(line) for line in latex.split("\n"))
-    return f"{MARK}$$\n{lines}\n{MARK}$$"
