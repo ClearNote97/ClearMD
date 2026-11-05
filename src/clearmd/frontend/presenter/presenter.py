@@ -17,9 +17,6 @@ from pathlib import Path
 from clearmd.backend.api import (
     CancelToken,
     Strategy,
-    skip_action,
-    skip_reason,
-    stopped_message,
 )
 from clearmd.backend.schemas.events import (
     BatchEvent,
@@ -31,24 +28,15 @@ from clearmd.backend.schemas.models import (
     BatchPlan,
     BatchReport,
     OutcomeStatus,
-    PlannedConversion,
 )
 from clearmd.backend.schemas.settings import CHOICES, Settings, valid_path_setting
 from clearmd.frontend.presenter.background import Background
 from clearmd.frontend.presenter.display import Display
-from clearmd.frontend.presenter.icons import FOLDER, icon_for, icon_of_format
-from clearmd.frontend.presenter.models import (
-    PlanRow,
-    PlanView,
-    ResultRow,
-    ResultView,
-    RowKind,
-    Stat,
-    Tone,
-)
+from clearmd.frontend.presenter.icons import icon_of_format
 from clearmd.frontend.presenter.ports import ApiBackend, Backend, View
-from clearmd.frontend.presenter.screens.choose import key, shown
-from clearmd.frontend.presenter.screens.results import result_folders
+from clearmd.frontend.presenter.screens.choose import key
+from clearmd.frontend.presenter.screens.results import result_folders, result_view
+from clearmd.frontend.presenter.screens.review import plan_view
 from clearmd.frontend.presenter.session import Session
 from clearmd.frontend.presenter.state import WORKING, AppState
 from clearmd.frontend.presenter.system_theme import detect_system_theme
@@ -372,9 +360,18 @@ class Presenter:
         self._display.show_inputs()
         self._display.show_output()
         if self._session.plan is not None and self._session.state is AppState.WAITING_DECISION:
-            self._view.show_plan(self._plan_view(self._session.plan))
+            self._view.show_plan(
+                plan_view(
+                    self._session.catalog,
+                    self._session.plan,
+                    self._session.settings.on_existing_output,
+                    self._session.plan_id,
+                )
+            )
         if self._session.report is not None:  # the results, in the new language
-            self._view.show_result(self._result_view(self._session.report, self._session.state))
+            self._view.show_result(
+                result_view(self._session.catalog, self._session.report, self._session.state)
+            )
         self._display.set_state(self._session.state)
 
     def choose_summary_format(self, summary_format: str) -> None:
@@ -432,7 +429,14 @@ class Presenter:
     def _planned(self, plan: BatchPlan) -> None:
         self._session.plan = plan
         self._session.plan_id += 1
-        self._view.show_plan(self._plan_view(plan))
+        self._view.show_plan(
+            plan_view(
+                self._session.catalog,
+                plan,
+                self._session.settings.on_existing_output,
+                self._session.plan_id,
+            )
+        )
         self._session.page = 2
         self._display.set_state(AppState.WAITING_DECISION)
 
@@ -464,7 +468,7 @@ class Presenter:
             if problems or report.unwritten_summaries
             else AppState.FINISHED
         )
-        self._view.show_result(self._result_view(report, state))
+        self._view.show_result(result_view(self._session.catalog, report, state))
         self._session.page = 4  # the results open by themselves (ADR-0029)
         self._display.set_state(state)
         opens = self._session.settings.open_output_when_done and not self._session.shutting_down
@@ -482,99 +486,3 @@ class Presenter:
         self._view.show_message(message)  # after the state: a view may clear it on a step change
 
     # --- What the view draws ---------------------------------------------------------------------
-
-    def _plan_view(self, plan: BatchPlan) -> PlanView:
-        rows: list[PlanRow] = []
-        for item in plan.conversions:
-            kind = RowKind.EXISTS if item.exists else RowKind.CONVERT
-            icon = icon_of_format(item.detection.format)
-            name, location = shown(item.source)
-            key = "gui.plan.exists" if item.exists else "gui.plan.ready"
-            detail = self._session.catalog.text(key, format=self._format(item))
-            rows.append(PlanRow(kind, name, location, detail, icon))
-        for skipped in plan.skipped:
-            reason = skip_reason(self._session.catalog, skipped)
-            detail = f"{reason}. {skip_action(self._session.catalog, skipped)}"
-            name, location = shown(skipped.path, is_dir=skipped.is_dir)
-            icon = icon_for(skipped.path, is_folder=skipped.is_dir)
-            rows.append(PlanRow(RowKind.SKIPPED, name, location, detail, icon))
-        for missing in plan.input_errors:
-            detail = self._session.catalog.text("gui.plan.not_found")
-            name, location = shown(missing.path)
-            icon = icon_for(missing.path, is_folder=False)  # it is not there: only its name
-            rows.append(PlanRow(RowKind.MISSING, name, location, detail, icon))
-        existing = len(plan.existing)
-        summary = self._session.catalog.text(
-            "gui.plan.summary",
-            convert=len(plan.conversions),
-            skipped=len(plan.skipped) + len(plan.input_errors),
-            existing=existing,
-        )
-        asks = existing > 0 and self._session.settings.on_existing_output == "ask"
-        stats = (
-            self._stat("gui.plan.stat_convert", len(plan.conversions), Tone.ACCENT),
-            self._stat("gui.plan.stat_skipped", len(plan.skipped) + len(plan.input_errors)),
-            self._stat("gui.plan.stat_existing", existing, Tone.NEUTRAL),
-        )
-        return PlanView(summary, tuple(rows), asks, stats, self._session.plan_id)
-
-    def _stat(self, key: str, value: int, tone: Tone = Tone.WARNING) -> Stat:
-        """A figure; a warning or a problem only when it is not zero."""
-        return Stat(
-            self._session.catalog.text(key),
-            value,
-            tone if value or tone is Tone.ACCENT else Tone.NEUTRAL,
-        )
-
-    def _format(self, item: PlannedConversion) -> str:
-        shown = item.detection.format.value.upper()
-        if item.strategy is not Strategy.FULL:
-            shown = self._session.catalog.text(
-                f"summary.strategy.{item.strategy.value}", format=shown
-            )
-        return shown
-
-    def _result_view(self, report: BatchReport, state: AppState) -> ResultView:
-        count = {status: 0 for status in OutcomeStatus}
-        rows: list[ResultRow] = []
-        for outcome in report.outcomes:
-            count[outcome.status] += 1
-            source = outcome.item.source
-            if outcome.status is OutcomeStatus.FAILED and outcome.error is not None:
-                detail = self._session.catalog.error(outcome.error)
-            elif outcome.status is OutcomeStatus.STOPPED and outcome.error is not None:
-                action = self._session.catalog.text(outcome.error.action_key)
-                detail = f"{stopped_message(self._session.catalog, outcome)} {action}"
-            elif outcome.status is OutcomeStatus.KEPT:
-                detail = self._session.catalog.text("gui.result.kept")
-            else:
-                continue
-            icon = icon_of_format(outcome.item.detection.format)
-            rows.append(ResultRow(*shown(source), detail, icon))
-        for skipped in report.skipped:
-            reason = skip_reason(self._session.catalog, skipped)
-            detail = f"{reason}. {skip_action(self._session.catalog, skipped)}"
-            icon = icon_for(skipped.path, is_folder=skipped.is_dir)
-            rows.append(ResultRow(*shown(skipped.path), detail, icon))
-        for root in report.unwritten_summaries:
-            detail = self._session.catalog.text("gui.result.no_summary")
-            rows.append(ResultRow(*shown(root), detail, FOLDER))
-        for root in report.unwritten_pdfs:
-            detail = self._session.catalog.text("gui.result.no_pdf_summary")
-            rows.append(ResultRow(*shown(root), detail, FOLDER))
-        counts = self._session.catalog.totals(
-            count[OutcomeStatus.CONVERTED],
-            len(report.skipped) + count[OutcomeStatus.KEPT],
-            count[OutcomeStatus.FAILED],
-            count[OutcomeStatus.STOPPED],
-        )
-        headline = self._session.catalog.text(f"gui.state.{state.value}")
-        stats = [
-            self._stat("gui.result.stat_converted", count[OutcomeStatus.CONVERTED], Tone.ACCENT),
-            self._stat("gui.result.stat_skipped", len(report.skipped) + count[OutcomeStatus.KEPT]),
-            self._stat("gui.result.stat_failed", count[OutcomeStatus.FAILED], Tone.DANGER),
-        ]
-        if count[OutcomeStatus.STOPPED]:
-            stats.append(self._stat("gui.result.stat_stopped", count[OutcomeStatus.STOPPED]))
-        folders = result_folders(report)
-        return ResultView(headline, counts, tuple(rows), folders, tuple(stats))
