@@ -19,4 +19,4 @@ def shut(app: Any) -> None:
         except Exception:  # noqa: BLE001 -- destroyed while updating: closed
             return
         time.sleep(0.01)
-    app._destroy()  # still converting after the wait: the test is over, the window goes
+    app.closing.destroy()  # still converting after the wait: the test is over, the window goes

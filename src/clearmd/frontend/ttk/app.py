@@ -5,7 +5,6 @@ window only lays it out and forwards the user's intents (buttons, keys, dropped 
 """
 
 import sys
-import time
 import tkinter as tk
 from collections.abc import Callable, Sequence
 from tkinter import ttk
@@ -15,7 +14,6 @@ import clearmd.frontend.launch as launch
 from clearmd.frontend.design.metrics import COMPACT_BELOW, SHORT_BELOW, SPACE
 from clearmd.frontend.design.palette import LIGHT, PALETTES, Palette
 from clearmd.frontend.presenter import Action, AppState, Presenter
-from clearmd.frontend.presenter.chrome import close_policy
 from clearmd.frontend.presenter.chrome.header import header_of
 from clearmd.frontend.presenter.chrome.secondary import SecondaryKind, ready_line, secondary_of
 from clearmd.frontend.presenter.models import (
@@ -39,6 +37,7 @@ from clearmd.frontend.ttk.views.review import ReviewView
 from clearmd.frontend.ttk.visuals.look import Look
 from clearmd.frontend.ttk.visuals.style_names import WARNING
 from clearmd.frontend.ttk.window import toolkit
+from clearmd.frontend.ttk.window.closing import Closing
 from clearmd.frontend.ttk.window.dialog_host import DialogHost
 from clearmd.frontend.ttk.window.inputs import Inputs
 from clearmd.frontend.ttk.window.pickers import Pickers
@@ -64,8 +63,10 @@ class TtkApp:
         self.scheduler = Scheduler(self.root)
         self.presenter = Presenter(self, backend)
         self.dialogs = DialogHost(self.root, self.fonts, self.presenter, self.shown)
-        self._closing_since: float | None = None  # closed while converting: waiting for the end
         self._build()
+        self.closing = Closing(
+            self.root, self.presenter, self.shown, self.scheduler, self.dialogs, self.primary_button
+        )
         self.rail.show_version(self.presenter.version)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
 
@@ -158,40 +159,7 @@ class TtkApp:
             self.main.set_short(self.root.winfo_height() < SHORT_BELOW)
 
     def close(self) -> None:
-        """Closing while converting cancels, hides the window and waits for the batch to end, so
-        the summary of what was done is still written (AC-10); then the window closes."""
-        if self._closing_since is not None:
-            return
-        if self.dialogs.current is not None:
-            self.dialogs.current.close()  # its answer counts ("Don't show again")
-        self.presenter.shutdown()
-        step = close_policy.on_close(
-            self.shown.state.state if self.shown.state is not None else None
-        )
-        if step is close_policy.CloseStep.CANCEL_AND_WAIT:
-            self._closing_since = time.monotonic()
-            self.presenter.cancel()
-            self.root.withdraw()
-            self.root.after(close_policy.CLOSE_POLL_MS, self._close_when_done)
-            return
-        if step is close_policy.CloseStep.CANCEL_THEN_NOW:
-            self.presenter.cancel()
-        self._destroy()
-
-    def _close_when_done(self) -> None:
-        waited = time.monotonic() - (self._closing_since or 0.0)
-        if close_policy.keep_waiting(
-            self.shown.state.state if self.shown.state is not None else None, waited
-        ):
-            self.root.after(close_policy.CLOSE_POLL_MS, self._close_when_done)
-            return
-        self._destroy()
-
-    def _destroy(self) -> None:
-        self.primary_button.cancel_pause()
-        self.scheduler.close()
-        self.root.update_idletasks()  # Tk's own idle work (a theme change) runs before the end
-        self.root.destroy()
+        self.closing.close()
 
     # --- The View the presenter draws on ---------------------------------------------------------
 
