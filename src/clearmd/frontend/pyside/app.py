@@ -53,17 +53,21 @@ from clearmd.frontend.presenter.models import (
 )
 from clearmd.frontend.presenter.ports import Backend
 from clearmd.frontend.presenter.state import STEPS
-from clearmd.frontend.pyside.dialogs import (
-    Dialog,
-    HelpDialog,
-    KeepInputsDialog,
-    SettingsDialog,
-    WelcomeDialog,
-)
-from clearmd.frontend.pyside.pages import ChoosePage, ConvertPage, ResultsPage, ReviewPage
+from clearmd.frontend.pyside.components.action_bar import ActionBar
+from clearmd.frontend.pyside.components.dialog import Dialog
+from clearmd.frontend.pyside.components.primitives import label
+from clearmd.frontend.pyside.components.rail import Rail
+from clearmd.frontend.pyside.components.surface import Surface
+from clearmd.frontend.pyside.views.choose import ChooseView
+from clearmd.frontend.pyside.views.convert import ConvertView
+from clearmd.frontend.pyside.views.dialogs.help import HelpDialog
+from clearmd.frontend.pyside.views.dialogs.keep_inputs import KeepInputsDialog
+from clearmd.frontend.pyside.views.dialogs.settings import SettingsDialog
+from clearmd.frontend.pyside.views.dialogs.welcome import WelcomeDialog
+from clearmd.frontend.pyside.views.results import ResultsView
+from clearmd.frontend.pyside.views.review import ReviewView
 from clearmd.frontend.pyside.visuals.images import app_icon
 from clearmd.frontend.pyside.visuals.stylesheet import stylesheet
-from clearmd.frontend.pyside.widgets import ActionBar, Ground, Rail, label
 from clearmd.frontend.pyside.window.qt_window import MainWindow
 from clearmd.i18n import Catalog
 
@@ -142,12 +146,12 @@ class PySideApp:
             on_help=self.show_help,
         )
         outer.addWidget(self.rail)
-        self.ground = Ground()
-        outer.addWidget(self.ground, 1)
+        self.surface = Surface()
+        outer.addWidget(self.surface, 1)
 
         panel = QFrame()
         panel.setObjectName("panel")
-        self.ground.body.addWidget(panel, 1)
+        self.surface.body.addWidget(panel, 1)
         inside = QVBoxLayout(panel)
         inside.setContentsMargins(GAP, GAP, GAP, GAP)
         inside.setSpacing(SPACE)
@@ -158,7 +162,7 @@ class PySideApp:
         self.bar = ActionBar(on_primary=self._primary)
         inside.addWidget(self.bar)
 
-        self.main = ChoosePage(
+        self.main = ChooseView(
             on_add_files=self.add_files,
             on_add_folder=self.add_folder,
             on_remove=lambda paths: self.presenter.remove_inputs(paths),
@@ -168,9 +172,9 @@ class PySideApp:
             on_summary=lambda value: self.presenter.choose_summary_format(value),
             on_images=lambda value: self.presenter.choose_images(value),
         )
-        self.review = ReviewPage()
-        self.converting = ConvertPage()
-        self.results = ResultsPage()
+        self.review = ReviewView()
+        self.converting = ConvertView()
+        self.results = ResultsView()
         self.pages = (self.main, self.review, self.converting, self.results)
         for page in self.pages:
             self.stack.addWidget(page)
@@ -458,8 +462,8 @@ class PySideApp:
         self.palette_ = PALETTES.get(theme, LIGHT)
         self.window.setStyleSheet(stylesheet(self.palette_))
         self.rail.apply_palette(self.palette_)
-        self.ground.apply_palette(self.palette_)
-        for page in self.pages:
+        self.surface.apply_palette(self.palette_)
+        for page in (self.main, self.review, self.results):
             page.apply_palette(self.palette_)
 
     def apply_language(self, catalog: Catalog) -> None:
@@ -474,7 +478,7 @@ class PySideApp:
         if self.catalog is None or self.state is None:
             return
         header = header_of(self.catalog, self.state, self._scan)
-        self.ground.show_header(  # Qt's eyebrow in capitals: the draft's own look (P0 list)
+        self.surface.show_header(  # Qt's eyebrow in capitals: the draft's own look (P0 list)
             eyebrow=header.eyebrow.upper(), title=header.title, subtitle=header.subtitle
         )
 
