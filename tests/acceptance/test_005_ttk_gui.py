@@ -33,7 +33,7 @@ from clearmd.frontend.presenter.icons import ICONS
 from clearmd.frontend.presenter.models import ProgressView, StateView
 from clearmd.frontend.presenter.ports import ApiBackend
 from clearmd.frontend.ttk import TtkApp, layout
-from clearmd.frontend.ttk.views.dialogs import SettingsDialog, WelcomeDialog
+from clearmd.frontend.ttk.views import dialogs
 from clearmd.frontend.ttk.visuals.style_names import PRIMARY
 from clearmd.i18n import load_catalog
 
@@ -78,7 +78,7 @@ def confirm(app: TtkApp) -> None:
 
 
 def convert_more(app: TtkApp, *, keep: bool = True) -> None:
-    from clearmd.frontend.ttk.views.dialogs import KeepInputsDialog
+    from clearmd.frontend.ttk.views.dialogs.keep_inputs import KeepInputsDialog
 
     app.actions.secondary.invoke()
     assert isinstance(app.dialog, KeepInputsDialog)
@@ -420,7 +420,7 @@ def test_ac_14_the_welcome_appears_until_dont_show_again(
     app = window(backend)
     pump(app, until=lambda: app.dialog is not None)
     dialog = app.dialog
-    assert isinstance(dialog, WelcomeDialog)
+    assert isinstance(dialog, dialogs.welcome.WelcomeDialog)
     texts = [str(child.cget("text")) for child in dialog.body.winfo_children()]
     assert [text for text in texts if text[:2] in {"1.", "2.", "3."}] == [
         "1. Choose files or a folder",
@@ -443,7 +443,7 @@ def test_ac_15_the_settings_window_saves_settings_toml_and_applies_it(
         app.dialog.close()
     app.rail.settings.invoke()
     dialog = app.dialog
-    assert isinstance(dialog, SettingsDialog)
+    assert isinstance(dialog, dialogs.settings.SettingsDialog)
     assert set(dialog.values) == {
         "language", "theme", "open_output_when_done", "on_existing_output", "recursive",
         "html_strategy", "show_welcome", "summary_format", "images",  # the last one: feature 009
@@ -457,7 +457,7 @@ def test_ac_15_the_settings_window_saves_settings_toml_and_applies_it(
     assert app.actions.primary.cget("text") == "Siguiente"  # applied at once
     app.rail.settings.invoke()
     restored = app.dialog
-    assert isinstance(restored, SettingsDialog)
+    assert isinstance(restored, dialogs.settings.SettingsDialog)
     restored.restore()
     assert restored.chosen().language == "en"
 

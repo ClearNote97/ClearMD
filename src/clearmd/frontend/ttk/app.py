@@ -42,16 +42,14 @@ from clearmd.frontend.ttk.layout.fonts import make_fonts
 from clearmd.frontend.ttk.layout.units import START_SIZE
 from clearmd.frontend.ttk.presses import Presses
 from clearmd.frontend.ttk.scheduler import Scheduler
-from clearmd.frontend.ttk.views.dialogs import (
-    KeepInputsDialog,
-    SettingsDialog,
-    WelcomeDialog,
-    help_dialog,
-)
-from clearmd.frontend.ttk.views.main import MainView
-from clearmd.frontend.ttk.views.plan import ReviewView
-from clearmd.frontend.ttk.views.progress import ConvertView
-from clearmd.frontend.ttk.views.result import ResultsView
+from clearmd.frontend.ttk.views.choose import MainView
+from clearmd.frontend.ttk.views.convert import ConvertView
+from clearmd.frontend.ttk.views.dialogs.help import help_dialog
+from clearmd.frontend.ttk.views.dialogs.keep_inputs import KeepInputsDialog
+from clearmd.frontend.ttk.views.dialogs.settings import SettingsDialog
+from clearmd.frontend.ttk.views.dialogs.welcome import WelcomeDialog
+from clearmd.frontend.ttk.views.results import ResultsView
+from clearmd.frontend.ttk.views.review import ReviewView
 from clearmd.frontend.ttk.visuals import marks
 from clearmd.frontend.ttk.visuals.look import Look
 from clearmd.frontend.ttk.visuals.style_names import WARNING

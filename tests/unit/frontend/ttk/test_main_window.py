@@ -21,7 +21,7 @@ from clearmd.frontend.design.metrics import on_grid
 from clearmd.frontend.presenter import Action, AppState
 from clearmd.frontend.presenter.state import enabled_actions
 from clearmd.frontend.ttk import TtkApp, layout
-from clearmd.frontend.ttk.views.dialogs import SettingsDialog, WelcomeDialog
+from clearmd.frontend.ttk.views import dialogs
 
 
 @pytest.fixture
@@ -51,7 +51,7 @@ def confirm(app: TtkApp) -> None:
 
 
 def convert_more(app: TtkApp, *, keep: bool = True) -> None:
-    from clearmd.frontend.ttk.views.dialogs import KeepInputsDialog
+    from clearmd.frontend.ttk.views.dialogs.keep_inputs import KeepInputsDialog
 
     app.actions.secondary.invoke()
     assert isinstance(app.dialog, KeepInputsDialog)
@@ -305,7 +305,7 @@ def test_the_welcome_appears_once_and_can_be_dismissed_for_good(display: str) ->
     try:
         app.start()
         pump(app, until=lambda: app.dialog is not None)
-        assert isinstance(app.dialog, WelcomeDialog)
+        assert isinstance(app.dialog, dialogs.welcome.WelcomeDialog)
         app.dialog.dont_show.set(True)
         app.dialog.close()
         assert app.dialog is None
@@ -318,7 +318,7 @@ def test_settings_save_applies_the_language_and_theme(app: TtkApp) -> None:
     app.rail.settings.invoke()
     pump(app, seconds=0.2)
     dialog = app.dialog
-    assert isinstance(dialog, SettingsDialog)
+    assert isinstance(dialog, dialogs.settings.SettingsDialog)
     assert set(dialog.values) == {
         "language", "theme", "open_output_when_done", "on_existing_output", "recursive",
         "html_strategy", "show_welcome", "summary_format", "images",
@@ -339,7 +339,7 @@ def test_restore_defaults_resets_the_controls_until_saved(app: TtkApp) -> None:
     app.rail.settings.invoke()
     pump(app, seconds=0.2)
     dialog = app.dialog
-    assert isinstance(dialog, SettingsDialog)
+    assert isinstance(dialog, dialogs.settings.SettingsDialog)
     dialog.restore()
     assert dialog.chosen() == Settings()
     dialog.close()
@@ -410,7 +410,7 @@ def test_enter_saves_the_settings_and_esc_cancels_them(app: TtkApp) -> None:
     app.rail.settings.invoke()
     pump(app, seconds=0.1)
     dialog = app.dialog
-    assert isinstance(dialog, SettingsDialog)
+    assert isinstance(dialog, dialogs.settings.SettingsDialog)
     dialog.values["recursive"].set(False)
     dialog.focus_force()
     pump(app, seconds=0.1)
@@ -420,7 +420,7 @@ def test_enter_saves_the_settings_and_esc_cancels_them(app: TtkApp) -> None:
     app.rail.settings.invoke()
     pump(app, seconds=0.1)
     dialog = app.dialog
-    assert isinstance(dialog, SettingsDialog)
+    assert isinstance(dialog, dialogs.settings.SettingsDialog)
     dialog.values["recursive"].set(False)
     dialog.focus_force()
     pump(app, seconds=0.1)
@@ -511,7 +511,7 @@ def test_c9_closing_with_the_welcome_open_keeps_its_answer(display: str) -> None
     app = TtkApp(fake)
     app.start()
     pump(app, until=lambda: app.dialog is not None)
-    assert isinstance(app.dialog, WelcomeDialog)
+    assert isinstance(app.dialog, dialogs.welcome.WelcomeDialog)
     app.dialog.dont_show.set(True)
     shut(app)
     assert fake.saved[-1].show_welcome is False
@@ -766,7 +766,7 @@ def test_c7_2_the_smallest_window_shows_every_control(app: TtkApp, tmp_path: Pat
 def test_c7_5_enter_in_the_keep_dialog_runs_the_focused_button(app: TtkApp) -> None:
     app.presenter.add_paths([Path("/docs")])
     app.convert_more()
-    from clearmd.frontend.ttk.views.dialogs import KeepInputsDialog
+    from clearmd.frontend.ttk.views.dialogs.keep_inputs import KeepInputsDialog
 
     dialog = app.dialog
     assert isinstance(dialog, KeepInputsDialog)

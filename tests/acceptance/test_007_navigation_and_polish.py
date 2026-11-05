@@ -13,7 +13,7 @@ from support.gui_fakes import FakeBackend
 from clearmd.backend.schemas.settings import Settings
 from clearmd.frontend.presenter import AppState
 from clearmd.frontend.ttk import TtkApp
-from clearmd.frontend.ttk.views.dialogs import KeepInputsDialog
+from clearmd.frontend.ttk.views.dialogs.keep_inputs import KeepInputsDialog
 
 ROOT = Path(__file__).resolve().parents[2]
 QUIET = Settings(show_welcome=False, open_output_when_done=False)

@@ -1,4 +1,4 @@
-"""Help, welcome and settings (UX §4, §7; AC-13 – AC-15), as dialogs in ClearMD's look."""
+"""The settings dialog: exactly the settings of ADR-0012 (UX §7; AC-15)."""
 
 import tkinter as tk
 import tkinter.font as tkfont
@@ -7,97 +7,13 @@ from dataclasses import replace
 from tkinter import ttk
 
 from clearmd.backend.schemas.settings import Settings
-from clearmd.frontend.design.metrics import GAP, HALF, SPACE
+from clearmd.frontend.design.metrics import GAP, SPACE
 from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.ttk.components.dialog import Dialog
-from clearmd.frontend.ttk.visuals.style_names import CHECK_ON_PAGE, HINT, MUTED, PRIMARY, SOFT
+from clearmd.frontend.ttk.visuals.style_names import MUTED, PRIMARY, SOFT
 from clearmd.i18n import Catalog
 
-_HELP_SECTIONS = ("how", "formats", "where", "keyboard", "privacy", "language")
 _LANGUAGES = {"en": "English", "es": "Español"}  # each in its own language
-
-
-HELP_WIDTH = 720  # wide and short: it fits a 1366 × 768 screen with its taskbar
-
-
-def help_dialog(
-    parent: tk.Misc,
-    catalog: Catalog,
-    palette: Palette,
-    fonts: dict[str, tkfont.Font],
-    on_close: Callable[[], None],
-    version: str = "",
-) -> Dialog:
-    """How to use it, what it converts, where results go, privacy, the language (UX §4); the
-    version at the foot (feature 007)."""
-    dialog = Dialog(
-        parent,
-        title=catalog.text("gui.help.title"),
-        palette=palette,
-        fonts=fonts,
-        on_close=on_close,
-    )
-    for index, section in enumerate(_HELP_SECTIONS):
-        title = ttk.Label(dialog.body, text=catalog.text(f"gui.help.{section}_title"))
-        title.configure(font=fonts["strong"])
-        title.pack(anchor="w", pady=(0 if index == 0 else GAP, 0))
-        text = ttk.Label(
-            dialog.body,
-            text=catalog.text(f"gui.help.{section}"),
-            wraplength=HELP_WIDTH,
-            justify="left",
-        )
-        text.pack(anchor="w", pady=(HALF, 0))
-    if version:
-        shown = catalog.text("gui.help.version", version=version)
-        ttk.Label(dialog.actions, text=shown, style=HINT).pack(side="left")
-    close = ttk.Button(
-        dialog.actions, text=catalog.text("gui.help.close"), style=PRIMARY, command=dialog.close
-    )
-    close.pack(side="right")
-    dialog.bind("<Return>", lambda _event: dialog.close())
-    return dialog
-
-
-class WelcomeDialog(Dialog):
-    """The three steps and "Don't show again" (UX §4; AC-14)."""
-
-    def __init__(
-        self,
-        parent: tk.Misc,
-        catalog: Catalog,
-        palette: Palette,
-        fonts: dict[str, tkfont.Font],
-        steps: tuple[str, ...],
-        on_done: Callable[[bool], None],
-    ) -> None:
-        self.dont_show = tk.BooleanVar(value=False)
-        super().__init__(
-            parent,
-            title=catalog.text("gui.welcome.title"),
-            palette=palette,
-            fonts=fonts,
-            on_close=lambda: on_done(not self.dont_show.get()),
-            width=560,
-        )
-        ttk.Label(self.body, text=catalog.text("gui.welcome.intro")).pack(anchor="w")
-        for step in steps:
-            line = ttk.Label(self.body, text=step, font=fonts["strong"])
-            line.pack(anchor="w", pady=(SPACE, 0))
-        language = ttk.Label(
-            self.body, text=catalog.text("gui.help.language"), style=MUTED, wraplength=480
-        )
-        language.pack(anchor="w", pady=(GAP, 0))
-        check = ttk.Checkbutton(
-            self.actions, text=catalog.text("gui.welcome.dont_show"), variable=self.dont_show
-        )
-        check.configure(style=CHECK_ON_PAGE)
-        check.pack(side="left")
-        start = ttk.Button(
-            self.actions, text=catalog.text("gui.welcome.start"), style=PRIMARY, command=self.close
-        )
-        start.pack(side="right")
-        self.bind("<Return>", lambda _event: self.close())
 
 
 class SettingsDialog(Dialog):
@@ -212,53 +128,3 @@ class SettingsDialog(Dialog):
         chosen = self.chosen()
         self.close()
         self._on_save(chosen)
-
-
-class KeepInputsDialog(Dialog):
-    """ "Convert more": keep the chosen files, or start empty (asked every time, feature 007)."""
-
-    def __init__(
-        self,
-        parent: tk.Misc,
-        catalog: Catalog,
-        palette: Palette,
-        fonts: dict[str, tkfont.Font],
-        on_answer: Callable[[bool], None],
-        on_close: Callable[[], None],
-    ) -> None:
-        super().__init__(
-            parent,
-            title=catalog.text("gui.more.title"),
-            palette=palette,
-            fonts=fonts,
-            on_close=on_close,
-            width=480,
-        )
-        self._on_answer = on_answer
-        ttk.Label(self.body, text=catalog.text("gui.more.question"), font=fonts["strong"]).pack(
-            anchor="w"
-        )
-        explanation = ttk.Label(
-            self.body, text=catalog.text("gui.more.explain"), style=MUTED, wraplength=400
-        )
-        explanation.pack(anchor="w", pady=(SPACE, 0))
-        self.keep = ttk.Button(
-            self.actions, text=catalog.text("gui.more.keep"), style=PRIMARY,
-            command=lambda: self.answer(True),
-        )  # fmt: skip
-        self.keep.pack(side="right")
-        self.clear = ttk.Button(
-            self.actions, text=catalog.text("gui.more.clear"), style=SOFT,
-            command=lambda: self.answer(False),
-        )  # fmt: skip
-        self.clear.pack(side="right", padx=(0, SPACE))
-        self.bind("<Return>", lambda _event: self._enter())
-
-    def _enter(self) -> None:
-        """Enter runs the button with the focus; elsewhere, the default (keep them)."""
-        focused = self.focus_get()
-        self.answer(focused is not self.clear)
-
-    def answer(self, keep: bool) -> None:
-        self.close()
-        self._on_answer(keep)
