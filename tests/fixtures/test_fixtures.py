@@ -6,22 +6,19 @@ import zipfile
 from pathlib import Path
 
 import pytest
-from build_fixtures import (
+from builders.common import (
     BOMB_UNCOMPRESSED_BYTES,
     DOCUMENTS_DIR,
     FIXED_ZIP_TIME,
-    HTML_DIR,
     MARKERS,
     NON_DETERMINISTIC,
-    ODT_DIR,
-    ODT_MIME,
     PDF_PASSWORD,
-    TEX_DIR,
-    build,
-    build_html,
-    build_odt,
-    build_tex,
 )
+from builders.documents import build
+from builders.html import HTML_DIR, build_html
+from builders.odt import ODT_DIR, build_odt
+from builders.odt_styles import ODT_MIME
+from builders.tex import TEX_DIR, build_tex
 from pypdf import PdfReader
 
 ZIP_BASED = ["sample.docx", "sample.pptx", "sample.xlsx", "sample.epub", "zip_bomb.docx"]

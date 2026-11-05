@@ -3,7 +3,7 @@
 import time
 from pathlib import Path
 
-from build_fixtures import ODT_AUTOMATIC_STYLES
+from builders.odt_styles import ODT_AUTOMATIC_STYLES
 from markdown_it import MarkdownIt
 from support import ODT_DIR
 from support.odt_render import body, convert

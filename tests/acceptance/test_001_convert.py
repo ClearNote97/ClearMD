@@ -8,8 +8,9 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
-from build_fixtures import MARKERS
-from run_benchmark import SEED, make_pdf
+from benchlib.common import SEED
+from benchlib.pdf import make_pdf
+from builders.common import MARKERS
 from support import WINDOWS, put
 
 from clearmd.backend.api import composition

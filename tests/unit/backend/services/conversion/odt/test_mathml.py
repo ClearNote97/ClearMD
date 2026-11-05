@@ -3,7 +3,8 @@
 from pathlib import Path
 
 import pytest
-from build_fixtures import MATHML_SUBSET, _odt_xml, odt_package
+from builders.odt_bodies import MATHML_SUBSET
+from builders.odt_package import _odt_xml, odt_package
 from support import ODT_DIR
 
 from clearmd.backend.schemas.notes import NoteItem, NoteKind

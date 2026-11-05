@@ -17,7 +17,6 @@ GUIS = ("ttk", "pyside")
 FOLDERS = ("window", "layout", "views", "components", "visuals")
 
 
-@pytest.mark.xfail(strict=True, reason="R01 runs: the ratchet still lists files (empty at P12)")
 def test_ac_01_every_file_and_class_within_the_rule() -> None:
     assert (FILES, CLASSES) == ({}, {})
 

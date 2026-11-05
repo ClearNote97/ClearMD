@@ -2,9 +2,6 @@
 then. Each may only shrink; once under the limit its entry must go. Empty at the end of R01."""
 
 FILES: dict[str, int] = {  # path -> lines (over 250)
-    "tests/benchmark/run_benchmark.py": 789,
-    "tests/fixtures/build_fixtures.py": 1018,
-    "tests/gui/make_assets.py": 318,
 }
 
 CLASSES: dict[str, int] = {  # "path::Class" -> lines (over 150)

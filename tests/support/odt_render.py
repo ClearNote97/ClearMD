@@ -2,7 +2,8 @@
 
 from pathlib import Path
 
-from build_fixtures import ODT_AUTOMATIC_STYLES, _odt_xml, odt_package
+from builders.odt_package import _odt_xml, odt_package
+from builders.odt_styles import ODT_AUTOMATIC_STYLES
 
 from clearmd.backend.schemas.notes import NoteItem, NoteKind
 from clearmd.backend.services.conversion.odt import OdtConverter

@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 
 import pytest
-from build_fixtures import MARKERS
+from builders.common import MARKERS
 from support import DOCUMENTS_DIR
 from support.supervisor_cases import TIGHT, _item
 from support.worker_factories import REAL, SLOW_START, SLOW_START_SECONDS

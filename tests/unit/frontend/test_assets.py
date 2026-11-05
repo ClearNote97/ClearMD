@@ -5,6 +5,7 @@ from importlib.resources import files
 
 import pytest
 from gui import make_assets
+from gui.drawing.canvas import FONT, FONT_SHA256
 
 from clearmd.frontend.presenter.icons import ICONS
 
@@ -12,9 +13,9 @@ ASSETS = files("clearmd.frontend") / "assets"
 
 
 def _same_font() -> bool:
-    if not make_assets.FONT.exists():
+    if not FONT.exists():
         return False
-    return hashlib.sha256(make_assets.FONT.read_bytes()).hexdigest() == make_assets.FONT_SHA256
+    return hashlib.sha256(FONT.read_bytes()).hexdigest() == FONT_SHA256
 
 
 @pytest.mark.skipif(

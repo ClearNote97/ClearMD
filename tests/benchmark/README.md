@@ -1,6 +1,6 @@
 # tests/benchmark — Conversion limits benchmark (T07)
 
-`run_benchmark.py` measures, per format and size, the conversion time and the peak memory of markitdown in a
+`run_benchmark.py` (the entry; its parts are in `benchlib/`: generators per format, `cases`, `child`, `measure`) measures, per format and size, the conversion time and the peak memory of markitdown in a
 fresh *spawn* process (like the worker, ADR-0015), plus the worker start-up and the memory of a second magika
 model. It is a script, not part of the default test run, because it takes minutes:
 

@@ -6,7 +6,8 @@ import time
 from pathlib import Path
 
 import pytest
-from build_fixtures import ODT_AUTOMATIC_STYLES, _odt_xml, odt_package
+from builders.odt_package import _odt_xml, odt_package
+from builders.odt_styles import ODT_AUTOMATIC_STYLES
 from support import ODT_DIR
 from support.markdown_guarantee import broken_promises
 

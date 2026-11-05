@@ -1,6 +1,6 @@
 # tests/fixtures/tex — LaTeX fixtures (feature 002)
 
-Written by `../build_fixtures.py` (`build_tex`); do not edit by hand.
+Written by `../builders/tex.py` (`build_tex`, run by `../build_fixtures.py`); do not edit by hand.
 
 - `paper.tex` — every row of the supported subset; `img/plot.png` for its figure.
 - `thesis/` — a main file with `\input`/`\include`, chapters, an include two levels down, the author's macros in

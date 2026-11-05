@@ -2,7 +2,9 @@
 
 from pathlib import Path
 
-from build_fixtures import ODT_IMAGES_BODY, _odt_styles, _odt_xml, odt_package, tiny_png
+from builders.odt_bodies import ODT_IMAGES_BODY
+from builders.odt_package import _odt_styles, _odt_xml, odt_package
+from builders.png import tiny_png
 from support import ODT_DIR
 
 from clearmd.backend.schemas.notes import NoteItem, NoteKind

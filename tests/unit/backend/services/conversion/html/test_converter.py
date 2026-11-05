@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from build_fixtures import HTML_DIR
+from builders.html import HTML_DIR
 
 from clearmd.backend.schemas.formats import FormatId
 from clearmd.backend.schemas.models import ConversionResult, Detection, DetectionMethod

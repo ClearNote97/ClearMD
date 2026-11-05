@@ -5,16 +5,18 @@ import zipfile
 from pathlib import Path
 
 import pytest
-import run_benchmark as bench
+from benchlib.cases import CASES, Case
+from benchlib.common import MIB, SEED
+from benchlib.measure import run
 
 
-@pytest.mark.parametrize("case", bench.CASES, ids=lambda case: case.kind)
+@pytest.mark.parametrize("case", CASES, ids=lambda case: case.kind)
 def test_every_generator_builds_a_document_of_about_the_requested_size(
-    case: bench.Case, tmp_path: Path
+    case: Case, tmp_path: Path
 ) -> None:
-    size = 64 * 1024 if case.kind != "docx_images" else 2 * bench.MIB
+    size = 64 * 1024 if case.kind != "docx_images" else 2 * MIB
     path = tmp_path / f"{case.kind}{case.extension}"
-    case.build(path, size, random.Random(bench.SEED))
+    case.build(path, size, random.Random(SEED))
     built = path.stat().st_size
     if case.extension == ".odt":  # what costs is the text inside, not the compressed file
         with zipfile.ZipFile(path) as archive:
@@ -23,12 +25,12 @@ def test_every_generator_builds_a_document_of_about_the_requested_size(
 
 
 def test_one_measurement_end_to_end(tmp_path: Path) -> None:
-    case = next(case for case in bench.CASES if case.kind == "docx_text")
-    tiny = bench.Case(case.kind, case.extension, case.build, (0.05,))
-    (row,) = bench.run(
+    case = next(case for case in CASES if case.kind == "docx_text")
+    tiny = Case(case.kind, case.extension, case.build, (0.05,))
+    (row,) = run(
         [tiny],
         tmp_path,
-        memory_cap=2048 * bench.MIB,
+        memory_cap=2048 * MIB,
         timeout=120,
         slow_after=60,
         log=lambda _: None,
@@ -42,13 +44,13 @@ def test_one_measurement_end_to_end(tmp_path: Path) -> None:
 def test_own_converter_cases_measure_real_work_on_the_supported_subset(
     kind: str, tmp_path: Path
 ) -> None:
-    case = next(case for case in bench.CASES if case.kind == kind)
+    case = next(case for case in CASES if case.kind == kind)
     assert case.engine in {"tex", "odt"}
-    tiny = bench.Case(case.kind, case.extension, case.build, (0.05,), case.engine)
-    (row,) = bench.run(
+    tiny = Case(case.kind, case.extension, case.build, (0.05,), case.engine)
+    (row,) = run(
         [tiny],
         tmp_path,
-        memory_cap=2048 * bench.MIB,
+        memory_cap=2048 * MIB,
         timeout=120,
         slow_after=60,
         log=lambda _: None,

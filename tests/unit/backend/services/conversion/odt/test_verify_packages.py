@@ -5,7 +5,7 @@ Regressions, each from its reported input."""
 from pathlib import Path
 
 import pytest
-from build_fixtures import _odt_styles
+from builders.odt_package import _odt_styles
 from support.odt_verify import MATH, MIME, content, convert_bytes, manifest, manual_zip, md
 
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode

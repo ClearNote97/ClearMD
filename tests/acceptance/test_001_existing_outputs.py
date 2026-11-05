@@ -8,7 +8,8 @@ import time
 from pathlib import Path
 
 import pytest
-from run_benchmark import SEED, make_pdf
+from benchlib.common import SEED
+from benchlib.pdf import make_pdf
 from support import WINDOWS, put
 
 from clearmd.frontend.cli import main

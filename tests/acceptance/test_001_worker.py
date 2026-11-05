@@ -5,8 +5,9 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
-from build_fixtures import MARKERS
-from run_benchmark import SEED, make_csv
+from benchlib.common import SEED
+from benchlib.text import make_csv
+from builders.common import MARKERS
 from support import put
 from support.batch_cli import _summary
 from support.worker_factories import FAKE
