@@ -1,6 +1,6 @@
 # Tasks — Feature 016: The PySide6 GUI
 
 - [ ] **T01 — Parity and acceptance** (AC-01 – AC-08).
-- [ ] **T02 — The executable** (AC-09).
+- [x] **T02 — The executable** (AC-09).
 - [ ] **T03 — Screenshots** (AC-10).
 - [ ] **T04 — Close.** ADR-0038, docs, review, v0.11.0 (AC-11).

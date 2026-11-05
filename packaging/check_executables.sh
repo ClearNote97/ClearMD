@@ -59,3 +59,37 @@ for program in "$dist/ClearMD$suffix" "$dist/clearmd-cli$suffix"; do
   fi
   echo "$(basename "$program"): $size MB"
 done
+
+# The PySide6 window (feature 016, ADR-0038): a folder, not one file. It starts the same way, holds
+# no heavy library and no toolkit of the other windows, and its whole folder has a size cap of its
+# own: measured 180 MB (Linux, 2026-11-05: the Qt libraries and ICU's data are most of it), capped at
+# 225 MB (+25%). A bigger folder is a new library or a missed exclusion (packaging/clearmd_pyside.spec).
+QT_MAX_MB=225
+qt_dir="$dist/ClearMD-Qt"
+if [[ -d "$qt_dir" ]]; then
+  qt="$qt_dir/ClearMD-Qt$suffix"
+  if [[ "$(uname -s)" == "Linux" ]]; then
+    HOME="$work" timeout 120 xvfb-run -a "$qt" --smoke
+  else
+    HOME="$work" timeout 120 "$qt" --smoke
+  fi
+  echo "window (PySide6): opened and closed"
+  listing=$(cd "$here" && uv run --no-default-groups --group build pyi-archive_viewer -r "$qt")
+  if [[ -z "$listing" ]]; then
+    echo "$qt could not be listed" >&2
+    exit 1
+  fi
+  heavy=$(echo "$listing" | grep -E "'(numpy|pandas|onnxruntime|magika|tkinter|_tkinter|ttkbootstrap|tkinterdnd2|flet)[./']" || true)
+  if [[ -n "$heavy" ]]; then
+    echo "$qt holds a library it should leave out:" >&2
+    echo "$heavy" | head -5 >&2
+    exit 1
+  fi
+  size=$(find "$qt_dir" -type f -exec cat {} + | wc -c)
+  size=$(( size / 1000 / 1000 ))
+  if (( size >= QT_MAX_MB )); then
+    echo "ClearMD-Qt folder is $size MB, over $QT_MAX_MB MB" >&2
+    exit 1
+  fi
+  echo "ClearMD-Qt: $size MB (folder)"
+fi
