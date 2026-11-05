@@ -146,9 +146,9 @@ def test_n5_a_blockquote_on_the_whole_page_is_a_quote(tmp_path: Path) -> None:
 def test_n7_a_table_past_the_cell_limit_keeps_its_text(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from clearmd.backend.services.conversion.html import render
+    from clearmd.backend.services.conversion.html.writer import tables
 
-    monkeypatch.setattr(render, "MAX_CELLS", 4)
+    monkeypatch.setattr(tables, "MAX_CELLS", 4)
     rows = "".join(f"<tr><td>r{n}</td><td>x</td></tr>" for n in range(5))
     result = whole(tmp_path, f"<table>{rows}</table>")
     assert "r4" in result.markdown

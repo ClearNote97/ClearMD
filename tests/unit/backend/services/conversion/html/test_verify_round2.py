@@ -58,7 +58,7 @@ def test_r3_a_table_nested_in_a_table_keeps_its_text() -> None:
 
 
 def test_r4_rows_past_the_limit_keep_their_cells_apart(monkeypatch) -> None:  # type: ignore[no-untyped-def]
-    from clearmd.backend.services.conversion.html import render as render_module
+    from clearmd.backend.services.conversion.html.writer import tables as render_module
 
     monkeypatch.setattr(render_module, "MAX_CELLS", 4)
     rows = "".join(f"<row><cell>r{n}a</cell><cell>r{n}b</cell></row>" for n in range(4))

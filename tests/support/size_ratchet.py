@@ -2,7 +2,6 @@
 then. Each may only shrink; once under the limit its entry must go. Empty at the end of R01."""
 
 FILES: dict[str, int] = {  # path -> lines (over 250)
-    "src/clearmd/backend/services/conversion/html/render.py": 485,
     "src/clearmd/backend/services/summary/pdf_report.py": 400,
     "tests/acceptance/test_001_batch_conversion.py": 763,
     "tests/acceptance/test_005_ttk_gui.py": 620,
@@ -24,7 +23,6 @@ FILES: dict[str, int] = {  # path -> lines (over 250)
 }
 
 CLASSES: dict[str, int] = {  # "path::Class" -> lines (over 150)
-    "src/clearmd/backend/services/conversion/html/render.py::ArticleRenderer": 303,
     "src/clearmd/backend/services/summary/pdf_report.py::PdfReport": 155,
     "src/clearmd/backend/services/worker/supervisor.py::WorkerRunner": 159,
 }
