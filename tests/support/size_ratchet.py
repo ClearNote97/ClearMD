@@ -11,7 +11,6 @@ FILES: dict[str, int] = {  # path -> lines (over 250)
     "tests/unit/backend/services/conversion/odt/test_review_code.py": 295,
     "tests/unit/backend/services/conversion/odt/test_verify_findings.py": 310,
     "tests/unit/backend/services/worker/test_supervisor.py": 261,
-    "tests/unit/backend/use_cases/test_execution.py": 312,
 }
 
 CLASSES: dict[str, int] = {  # "path::Class" -> lines (over 150)
