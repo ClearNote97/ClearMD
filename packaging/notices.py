@@ -10,6 +10,14 @@ from importlib.metadata import Distribution, distributions
 
 # setuptools and packaging ship (PyInstaller bundles what its hooks import): they are listed.
 BUILD_ONLY = {"pyinstaller", "pyinstaller-hooks-contrib", "altgraph"}
+# The Qt window's folder (ClearMD-Qt/, ADR-0038): PySide6 and Qt are LGPL, so their libraries are
+# plain files there, replaceable by other builds of the same libraries (the LGPL asks for it).
+QT_NOTE = (
+    "The Qt window (the folder ClearMD-Qt/) bundles PySide6 and Qt under the GNU Lesser General "
+    "Public License, version 3 (LGPL-3.0, https://www.gnu.org/licenses/lgpl-3.0.html); ClearMD "
+    "takes the LGPL option the packages offer. Its Qt libraries are plain files in that folder: "
+    "you can replace them with other builds of the same libraries."
+)
 # Installed with markitdown, left out of the executables (packaging/clearmd.spec, ADR-0032).
 NOT_SHIPPED = {"magika", "onnxruntime", "numpy", "pandas", "flatbuffers", "coloredlogs",
                "humanfriendly", "sympy", "mpmath", "protobuf", "click"}  # fmt: skip
@@ -46,6 +54,7 @@ def main() -> int:
     left_out = BUILD_ONLY | NOT_SHIPPED
     bundled = [d for d in found if d.metadata["Name"].lower() not in left_out]
     print("ClearMD bundles the following open-source software. Thank you to their authors.\n")
+    print(QT_NOTE + "\n")
     separator = "\n\n" + "=" * 78 + "\n\n"
     print(separator.join(describe(d) for d in bundled))
     return 0
