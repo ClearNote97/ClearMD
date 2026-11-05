@@ -651,10 +651,10 @@ def test_a2_a_cancelled_analysis_never_swallows_the_next_ones_count() -> None:
     presenter, view, _, _ = held()
     presenter.add_paths([Path("/docs")])
     presenter.analyze()
-    presenter._scanned(presenter._generation, 7)  # a count arrives: its timer is pending
+    presenter._scanned(presenter._session.generation, 7)  # a count arrives: its timer is pending
     presenter.cancel()
     presenter.analyze()
-    presenter._scanned(presenter._generation, 1234)  # the new analysis's count
+    presenter._scanned(presenter._session.generation, 1234)  # the new analysis's count
     for _ in range(3):
         view.drain(timers=True)  # the old timer fires first
     scans = [value for call, value in view.calls if call == "scan"]
