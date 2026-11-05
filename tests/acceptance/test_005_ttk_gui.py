@@ -200,7 +200,7 @@ def test_ac_04_the_presenter_imports_only_the_api_schemas_i18n_and_the_standard_
         "clearmd.i18n",
         "clearmd.frontend.presenter",
     )
-    for path in (ROOT / "src" / "clearmd" / "frontend" / "presenter").glob("*.py"):
+    for path in (ROOT / "src" / "clearmd" / "frontend" / "presenter").rglob("*.py"):  # R01
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
             names = (
                 [alias.name for alias in node.names]

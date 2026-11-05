@@ -18,16 +18,12 @@
 |                                         | itself                                               |
 """
 
-import ast
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
-
-import clearmd
-
-PACKAGE_ROOT = Path(clearmd.__file__).parent
+from support.imports import imported_modules, source_modules
 
 
 @dataclass(frozen=True)
@@ -111,6 +107,20 @@ RULES: dict[str, Rule] = {
             "clearmd.frontend.ttk",
         ),
     ),
+    # The Qt GUI (feature 016; frontend/qt until R01 renames it pyside) and flet: as ttk.
+    **{
+        gui: Rule(
+            True,
+            (
+                "clearmd.frontend.presenter",
+                "clearmd.frontend.palette",
+                "clearmd.backend.schemas",
+                "clearmd.i18n",
+                gui,
+            ),
+        )
+        for gui in ("clearmd.frontend.qt", "clearmd.frontend.pyside", "clearmd.frontend.flet")
+    },
     # The package root and `clearmd.backend` itself only hold docstrings.
     "clearmd.backend": Rule(False, ()),
     "clearmd": Rule(False, ()),
@@ -125,23 +135,6 @@ def rule_for(module: str) -> Rule:
     """The most specific rule whose package contains ``module``."""
     owner = max((pkg for pkg in RULES if _is_within(module, pkg)), key=len)
     return RULES[owner]
-
-
-def imported_modules(source: str, module: str, *, is_package: bool) -> set[str]:
-    """Absolute names of every module imported by ``source`` (relative imports resolved)."""
-    package_parts = module.split(".") if is_package else module.split(".")[:-1]
-    found: set[str] = set()
-    for node in ast.walk(ast.parse(source)):
-        if isinstance(node, ast.Import):
-            found.update(alias.name for alias in node.names)
-        elif isinstance(node, ast.ImportFrom):
-            if node.level:
-                base = package_parts[: len(package_parts) - node.level + 1]
-                name = ".".join([*base, node.module] if node.module else base)
-            else:
-                name = node.module or ""
-            found.add(name)
-    return found
 
 
 def violations(module: str, imports: set[str]) -> list[str]:
@@ -160,15 +153,6 @@ def violations(module: str, imports: set[str]) -> list[str]:
         elif not rule.allows_third_party:
             problems.append(f"{module} imports third-party {name}")
     return problems
-
-
-def source_modules() -> list[tuple[str, Path]]:
-    modules = []
-    for path in sorted(PACKAGE_ROOT.rglob("*.py")):
-        parts = path.relative_to(PACKAGE_ROOT.parent).with_suffix("").parts
-        name = ".".join(parts[:-1] if parts[-1] == "__init__" else parts)
-        modules.append((name, path))
-    return modules
 
 
 @pytest.mark.parametrize(("module", "path"), source_modules(), ids=lambda value: str(value))
@@ -204,6 +188,9 @@ def test_module_respects_the_dependency_rule(module: str, path: Path) -> None:
         ("clearmd.frontend.presenter.presenter", "from clearmd.backend.services import folders"),
         ("clearmd.frontend.ttk.app", "from clearmd.backend.api import plan_batch"),
         ("clearmd.frontend.ttk.app", "from clearmd.frontend.cli import main"),
+        ("clearmd.frontend.qt.app", "from clearmd.frontend.ttk import TtkApp"),
+        ("clearmd.frontend.pyside.app", "from clearmd.backend.api import plan_batch"),
+        ("clearmd.frontend.ttk.app", "from clearmd.frontend.pyside import PySideApp"),
     ],
 )
 def test_checker_reports_forbidden_imports(module: str, source: str) -> None:
