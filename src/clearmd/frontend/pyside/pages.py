@@ -15,7 +15,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from clearmd.frontend.palette import Palette
+from clearmd.frontend.design.metrics import GAP, SPACE
+from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.presenter.models import (
     InputRow,
     OutputChoice,
@@ -25,7 +26,7 @@ from clearmd.frontend.presenter.models import (
     ResultView,
     RowKind,
 )
-from clearmd.frontend.pyside.layout import GAP, ICON, SPACE
+from clearmd.frontend.pyside.layout import ICON
 from clearmd.frontend.pyside.widgets import (
     DropZone,
     FileList,

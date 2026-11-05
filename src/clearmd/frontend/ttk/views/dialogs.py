@@ -7,9 +7,9 @@ from dataclasses import replace
 from tkinter import ttk
 
 from clearmd.backend.schemas.settings import Settings
+from clearmd.frontend.design.metrics import GAP, HALF, SPACE
 from clearmd.frontend.ttk.brand import CHECK_ON_PAGE, HINT, MUTED, PRIMARY, SOFT, Palette
 from clearmd.frontend.ttk.components.dialog import Dialog
-from clearmd.frontend.ttk.layout import GAP, HALF, SPACE
 from clearmd.i18n import Catalog
 
 _HELP_SECTIONS = ("how", "formats", "where", "keyboard", "privacy", "language")

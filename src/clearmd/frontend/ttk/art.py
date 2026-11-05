@@ -9,7 +9,7 @@ from importlib.resources import files
 
 from PIL import Image, ImageDraw, ImageFont
 
-from clearmd.frontend.ttk.layout import SPACE
+from clearmd.frontend.design.metrics import SPACE
 
 SUPERSAMPLE = 4
 ASSETS = files("clearmd.frontend") / "assets"
@@ -197,15 +197,6 @@ def heading_cell(height: int, ground: str, line: str) -> Image.Image:
     draw = ImageDraw.Draw(cell)
     draw.line((23, height // 4, 23, height - height // 4), fill=rgba(line), width=1)
     return cell
-
-
-def blend(colour: str, ground: str, strength: float) -> str:
-    """``colour`` drawn at ``strength`` (0..1) over ``ground``: a dimmed text, as a plain colour."""
-    top, bottom = rgba(colour), rgba(ground)
-    mixed = (
-        round(t * strength + b * (1 - strength)) for t, b in zip(top[:3], bottom[:3], strict=True)
-    )
-    return "#" + "".join(f"{value:02X}" for value in mixed)
 
 
 def circle(diameter: int, *, outline: str, fill: str, width: float = 1.5) -> Image.Image:

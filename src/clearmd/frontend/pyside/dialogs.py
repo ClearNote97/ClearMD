@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
 )
 
 from clearmd.backend.schemas.settings import Settings
-from clearmd.frontend.pyside.layout import GAP, HALF, SPACE
+from clearmd.frontend.design.metrics import GAP, HALF, SPACE
 from clearmd.frontend.pyside.widgets import button, label
 from clearmd.i18n import Catalog
 

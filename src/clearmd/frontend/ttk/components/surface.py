@@ -6,17 +6,10 @@ from tkinter import ttk
 
 from PIL import ImageTk
 
+from clearmd.frontend.design.metrics import GAP, GUTTER, HALF, INSET, MARGIN, RADIUS
 from clearmd.frontend.ttk import art
 from clearmd.frontend.ttk.brand import PAGE, Palette
-from clearmd.frontend.ttk.layout import (
-    GAP,
-    GUTTER,
-    HALF,
-    INSET,
-    MARGIN,
-    RADIUS,
-    REDRAW_MS,
-)
+from clearmd.frontend.ttk.layout import REDRAW_MS
 
 
 class Surface(tk.Canvas):

@@ -17,10 +17,10 @@ from support.gui_fakes import FakeBackend, MemoryBackend, planned
 from clearmd.backend.schemas.errors import SkipReason
 from clearmd.backend.schemas.models import BatchPlan, OutcomeStatus, SkippedItem
 from clearmd.backend.schemas.settings import Settings, SettingsProblem, SettingsWarning
+from clearmd.frontend.design.metrics import on_grid
 from clearmd.frontend.presenter import Action, AppState
 from clearmd.frontend.presenter.state import enabled_actions
-from clearmd.frontend.ttk import TtkApp
-from clearmd.frontend.ttk.layout import BODY, on_grid
+from clearmd.frontend.ttk import TtkApp, layout
 from clearmd.frontend.ttk.views.dialogs import SettingsDialog, WelcomeDialog
 
 
@@ -159,8 +159,8 @@ def test_every_gap_is_on_the_8_px_grid_and_text_is_at_least_14_px(app: TtkApp) -
                     off_grid.append((str(widget), option, part))
     assert off_grid == []
     for name in ("TkDefaultFont", "TkTextFont", "TkHeadingFont"):
-        assert tkfont.nametofont(name, root=app.root).cget("size") <= BODY  # pixels: negative
-    assert all(font.cget("size") <= BODY for font in app.fonts.values())
+        assert tkfont.nametofont(name, root=app.root).cget("size") <= layout.BODY  # px: negative
+    assert all(font.cget("size") <= layout.BODY for font in app.fonts.values())
 
 
 # --- Review, convert, results (T05) --------------------------------------------------------------

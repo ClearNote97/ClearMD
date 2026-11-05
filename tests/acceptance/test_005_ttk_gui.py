@@ -27,13 +27,13 @@ from clearmd.backend.schemas.errors import SkipReason
 from clearmd.backend.schemas.models import BatchPlan, OutcomeStatus, SkippedItem
 from clearmd.backend.schemas.settings import Settings
 from clearmd.frontend.cli import main as cli_main
+from clearmd.frontend.design.metrics import on_grid
 from clearmd.frontend.presenter import Action, AppState
 from clearmd.frontend.presenter.icons import ICONS
 from clearmd.frontend.presenter.models import ProgressView, StateView
 from clearmd.frontend.presenter.ports import ApiBackend
-from clearmd.frontend.ttk import TtkApp
+from clearmd.frontend.ttk import TtkApp, layout
 from clearmd.frontend.ttk.brand import PRIMARY
-from clearmd.frontend.ttk.layout import BODY, on_grid
 from clearmd.frontend.ttk.views.dialogs import SettingsDialog, WelcomeDialog
 from clearmd.i18n import load_catalog
 
@@ -489,7 +489,7 @@ def test_ac_17_the_8_px_grid_14_px_text_and_one_primary_action_per_screen(
             value = info.get(option, 0)
             for part in value if isinstance(value, tuple) else str(value).split():
                 assert on_grid(int(float(part))), (str(widget), option, part)
-    assert all(font.cget("size") <= BODY for font in app.fonts.values())  # pixels: negative
+    assert all(font.cget("size") <= layout.BODY for font in app.fonts.values())  # pixels: negative
     # One primary action per screen: the page's bar holds the only one (ADR-0029).
     primaries = [w for w in widgets(app.surface.page) if styled(w) == PRIMARY]
     assert primaries == [app.actions.primary]

@@ -8,8 +8,8 @@ import tkinter.font as tkfont
 from collections.abc import Callable
 from tkinter import ttk
 
+from clearmd.frontend.design.metrics import GAP, MARGIN
 from clearmd.frontend.ttk.brand import CARD, ON_PAGE, PAGE, Palette
-from clearmd.frontend.ttk.layout import GAP, MARGIN
 
 
 class Dialog(tk.Toplevel):

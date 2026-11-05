@@ -6,9 +6,10 @@ from collections.abc import Callable
 
 from PIL import ImageTk
 
+from clearmd.frontend.design.metrics import RADIUS, SPACE
 from clearmd.frontend.ttk import art
 from clearmd.frontend.ttk.brand import Palette
-from clearmd.frontend.ttk.layout import RADIUS, REDRAW_MS, SPACE
+from clearmd.frontend.ttk.layout import REDRAW_MS
 
 
 class DropZone(tk.Canvas):

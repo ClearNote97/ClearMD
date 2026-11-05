@@ -13,18 +13,12 @@ from typing import Literal
 
 from PIL import ImageTk
 
+from clearmd.frontend.design.colors import blend
+from clearmd.frontend.design.metrics import COMPACT_RAIL_WIDTH, GAP, HALF, RADIUS, RAIL_WIDTH, SPACE
 from clearmd.frontend.presenter.state import STEPS
 from clearmd.frontend.ttk import art
 from clearmd.frontend.ttk.brand import RAIL, RAIL_COMPACT, Palette
-from clearmd.frontend.ttk.layout import (
-    COMPACT_RAIL_WIDTH,
-    GAP,
-    HALF,
-    RADIUS,
-    RAIL_WIDTH,
-    REDRAW_MS,
-    SPACE,
-)
+from clearmd.frontend.ttk.layout import REDRAW_MS
 from clearmd.i18n import Catalog
 
 _STEP_HEIGHT = 44
@@ -192,7 +186,7 @@ class Rail(tk.Canvas):
                 left + SPACE, y, left + width - SPACE, y + _STEP_HEIGHT,
                 fill=p.rail, outline="", tags=tag,
             )  # fmt: skip
-        colour = p.on_accent if on_screen else art.blend(p.rail_text, p.rail, _DIM)
+        colour = p.on_accent if on_screen else blend(p.rail_text, p.rail, _DIM)
         middle = y + _STEP_HEIGHT // 2
         badge_x = left + width // 2 if self._compact else left + GAP + SPACE + _BADGE // 2
         circle = art.circle(_BADGE, outline=colour, fill=p.accent if on_screen else p.rail)

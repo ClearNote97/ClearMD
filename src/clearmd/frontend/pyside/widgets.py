@@ -25,19 +25,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from clearmd.frontend.palette import Palette
+from clearmd.frontend.design.metrics import COMPACT_RAIL_WIDTH, GAP, HALF, RAIL_WIDTH, SPACE
+from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.presenter.models import Primary, Stat
 from clearmd.frontend.presenter.state import STEPS
-from clearmd.frontend.pyside.layout import (
-    BADGE,
-    COMPACT_RAIL_WIDTH,
-    GAP,
-    HALF,
-    ICON,
-    RAIL_WIDTH,
-    SPACE,
-    STEP_HEIGHT,
-)
+from clearmd.frontend.pyside.layout import BADGE, ICON, STEP_HEIGHT
 from clearmd.frontend.pyside.style import blend
 from clearmd.i18n import Catalog
 

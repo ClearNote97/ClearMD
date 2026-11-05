@@ -12,13 +12,15 @@ import ttkbootstrap as tb
 from PIL import ImageTk
 from ttkbootstrap.style.theme import ThemeDefinition
 
+from clearmd.frontend.design.colors import blend
+from clearmd.frontend.design.metrics import RADIUS
+
 # The palettes are shared with the Qt GUI (feature 016); re-exported for ttk's own modules.
-from clearmd.frontend.palette import DARK as DARK
-from clearmd.frontend.palette import LIGHT as LIGHT
-from clearmd.frontend.palette import PALETTES as PALETTES
-from clearmd.frontend.palette import Palette as Palette
+from clearmd.frontend.design.palette import DARK as DARK
+from clearmd.frontend.design.palette import LIGHT as LIGHT
+from clearmd.frontend.design.palette import PALETTES as PALETTES
+from clearmd.frontend.design.palette import Palette as Palette
 from clearmd.frontend.ttk import art
-from clearmd.frontend.ttk.layout import RADIUS
 
 # The ttk styles ClearMD adds (on top of ttkbootstrap's).
 PRIMARY = "Primary.ClearMD.TButton"  # the one primary action of a screen
@@ -179,7 +181,7 @@ class Look:
         style.element_create("Card.ClearMD.face", "image", card_face, border=RADIUS, sticky="nsew")
         style.layout(CARD, [("Card.ClearMD.face", {"sticky": "nsew"})])
         style.configure(CARD, background=p.ground)
-        dim_fill = art.blend(p.card, p.ground, DIM_STRENGTH)
+        dim_fill = blend(p.card, p.ground, DIM_STRENGTH)
         dim = art.rounded(
             3 * RADIUS, 3 * RADIUS, RADIUS, dim_fill, border=p.border, ground=p.ground
         )
@@ -188,7 +190,7 @@ class Look:
         )
         style.layout(DIM_CARD, [("Dim.Card.ClearMD.face", {"sticky": "nsew"})])
         style.configure(DIM_CARD, background=p.ground)
-        style.configure(DIM, background=dim_fill, foreground=art.blend(p.muted, dim_fill, DIM_TEXT))
+        style.configure(DIM, background=dim_fill, foreground=blend(p.muted, dim_fill, DIM_TEXT))
         style.configure(PAGE, background=p.ground)
         style.configure(MUTED, background=p.card, foreground=p.muted)
         style.configure(ON_PAGE, background=p.ground, foreground=p.text)

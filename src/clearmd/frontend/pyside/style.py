@@ -6,17 +6,9 @@ colours, radius and padding. Nothing here depends on a widget: changing the them
 
 from importlib.resources import files
 
-from clearmd.frontend.palette import Palette
-from clearmd.frontend.pyside.layout import (
-    BODY,
-    BUTTON_HEIGHT,
-    FIGURE,
-    GAP,
-    RADIUS,
-    SPACE,
-    TITLE,
-    WORDMARK,
-)
+from clearmd.frontend.design.metrics import BUTTON_HEIGHT, GAP, RADIUS, SPACE
+from clearmd.frontend.design.palette import Palette
+from clearmd.frontend.design.typography import BODY, FIGURE, TITLE, WORDMARK
 
 PICTURES = files("clearmd.frontend") / "assets" / "pyside"
 

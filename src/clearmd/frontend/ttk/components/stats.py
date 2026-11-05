@@ -5,9 +5,9 @@ import tkinter.font as tkfont
 from collections.abc import Sequence
 from tkinter import ttk
 
+from clearmd.frontend.design.metrics import GAP, HALF
 from clearmd.frontend.presenter.models import Stat, Tone
 from clearmd.frontend.ttk.brand import CARD, DIM, DIM_CARD, MUTED, PAGE, Palette
-from clearmd.frontend.ttk.layout import GAP, HALF
 
 
 class Stats(ttk.Frame):

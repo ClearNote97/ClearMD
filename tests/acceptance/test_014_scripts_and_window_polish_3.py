@@ -13,8 +13,8 @@ from clearmd.backend.schemas.formats import FormatId
 from clearmd.backend.schemas.models import Detection, DetectionMethod
 from clearmd.backend.schemas.settings import Settings
 from clearmd.backend.services.conversion.pdf import PdfConverter
+from clearmd.frontend.design.metrics import GUTTER, INSET
 from clearmd.frontend.ttk import TtkApp
-from clearmd.frontend.ttk.layout import GUTTER, INSET
 
 ROOT = Path(__file__).resolve().parents[2]
 

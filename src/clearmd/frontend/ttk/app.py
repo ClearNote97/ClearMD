@@ -19,6 +19,7 @@ from PIL import ImageTk
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
 from clearmd.backend.schemas.formats import EXTENSIONS
+from clearmd.frontend.design.metrics import COMPACT_BELOW, MIN_HEIGHT, MIN_WIDTH, SHORT_BELOW, SPACE
 from clearmd.frontend.presenter import Action, AppState, Presenter
 from clearmd.frontend.presenter.models import (
     InputRow,
@@ -36,19 +37,7 @@ from clearmd.frontend.ttk.components.action_bar import ActionBar
 from clearmd.frontend.ttk.components.dialog import Dialog
 from clearmd.frontend.ttk.components.rail import Rail
 from clearmd.frontend.ttk.components.surface import Surface
-from clearmd.frontend.ttk.layout import (
-    BODY,
-    COMPACT_BELOW,
-    EYEBROW,
-    MIN_HEIGHT,
-    MIN_WIDTH,
-    SHORT_BELOW,
-    SPACE,
-    START_SIZE,
-    STRONG,
-    TITLE,
-    WORDMARK,
-)
+from clearmd.frontend.ttk.layout import BODY, EYEBROW, START_SIZE, STRONG, TITLE, WORDMARK
 from clearmd.frontend.ttk.presses import Presses
 from clearmd.frontend.ttk.scheduler import Scheduler
 from clearmd.frontend.ttk.views.dialogs import (

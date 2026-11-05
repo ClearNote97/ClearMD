@@ -1,5 +1,5 @@
-"""ClearMD's colours (ADR-0027), shared by every GUI: the ttk and Qt windows draw from the same
-two palettes (feature 016). Plain data: no toolkit is imported here."""
+"""ClearMD's colours (ADR-0027), shared by every GUI: the ttk and PySide6 windows draw from the
+same two palettes. Plain data: no toolkit is imported here."""
 
 from dataclasses import dataclass
 

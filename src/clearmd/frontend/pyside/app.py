@@ -32,7 +32,18 @@ from PySide6.QtWidgets import (
 )
 
 from clearmd.backend.schemas.formats import EXTENSIONS
-from clearmd.frontend.palette import LIGHT, PALETTES, Palette
+from clearmd.frontend.design.metrics import (
+    COMPACT_BELOW,
+    GAP,
+    MIN_HEIGHT,
+    MIN_WIDTH,
+    SHORT_BELOW,
+    SPACE,
+    START_HEIGHT,
+    START_WIDTH,
+)
+from clearmd.frontend.design.palette import LIGHT, PALETTES, Palette
+from clearmd.frontend.design.typography import BODY
 from clearmd.frontend.presenter import Action, AppState, Presenter
 from clearmd.frontend.presenter.models import (
     InputRow,
@@ -50,17 +61,6 @@ from clearmd.frontend.pyside.dialogs import (
     KeepInputsDialog,
     SettingsDialog,
     WelcomeDialog,
-)
-from clearmd.frontend.pyside.layout import (
-    BODY,
-    COMPACT_BELOW,
-    GAP,
-    MIN_HEIGHT,
-    MIN_WIDTH,
-    SHORT_BELOW,
-    SPACE,
-    START_HEIGHT,
-    START_WIDTH,
 )
 from clearmd.frontend.pyside.pages import ChoosePage, ConvertPage, ResultsPage, ReviewPage
 from clearmd.frontend.pyside.style import stylesheet

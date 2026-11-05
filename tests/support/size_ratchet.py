@@ -19,9 +19,9 @@ FILES: dict[str, int] = {  # path -> lines (over 250)
     "src/clearmd/frontend/presenter/presenter.py": 724,
     "src/clearmd/frontend/pyside/app.py": 520,
     "src/clearmd/frontend/pyside/dialogs.py": 270,
-    "src/clearmd/frontend/pyside/pages.py": 488,
-    "src/clearmd/frontend/pyside/widgets.py": 546,
-    "src/clearmd/frontend/ttk/app.py": 585,
+    "src/clearmd/frontend/pyside/pages.py": 489,  # +1: design imports (P3); dissolved in P8
+    "src/clearmd/frontend/pyside/widgets.py": 538,
+    "src/clearmd/frontend/ttk/app.py": 574,
     "src/clearmd/frontend/ttk/views/dialogs.py": 263,
     "tests/acceptance/test_001_batch_conversion.py": 763,
     "tests/acceptance/test_005_ttk_gui.py": 620,
@@ -62,5 +62,5 @@ CLASSES: dict[str, int] = {  # "path::Class" -> lines (over 150)
 ENTRY_FILES: dict[str, int] = {
     "src/clearmd/frontend/cli/app.py": 405,
     "src/clearmd/frontend/pyside/app.py": 520,
-    "src/clearmd/frontend/ttk/app.py": 585,
+    "src/clearmd/frontend/ttk/app.py": 574,
 }

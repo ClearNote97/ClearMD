@@ -7,10 +7,10 @@ from typing import Any
 
 from PIL import ImageTk
 
+from clearmd.frontend.design.metrics import GAP, HALF, SPACE
 from clearmd.frontend.presenter.models import ProgressView
 from clearmd.frontend.ttk import art
 from clearmd.frontend.ttk.brand import CARD, DIM, DIM_CARD, MUTED, PAGE
-from clearmd.frontend.ttk.layout import GAP, HALF, SPACE
 from clearmd.i18n import Catalog
 
 

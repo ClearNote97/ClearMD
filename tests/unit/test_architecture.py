@@ -13,9 +13,10 @@
 | clearmd.frontend                        | third-party; clearmd.backend.api, .schemas, i18n,    |
 |                                         | clearmd.frontend                                     |
 | clearmd.frontend.presenter              | standard library; backend.api, .schemas, i18n, itself|
-| clearmd.frontend.palette                | standard library only (shared by every GUI)          |
-| clearmd.frontend.ttk                    | third-party; the presenter, palette, .schemas, i18n, |
-|                                         | itself                                               |
+| clearmd.frontend.design                 | standard library only (shared by every GUI)          |
+| clearmd.frontend.launch                 | the frozen executable's splash only                  |
+| clearmd.frontend.ttk, .pyside, .flet    | third-party; the presenter, design, launch, .schemas,|
+|                                         | i18n, itself                                         |
 """
 
 import sys
@@ -94,14 +95,17 @@ RULES: dict[str, Rule] = {
         ),
         forbidden_stdlib=("tkinter", "turtle"),
     ),
-    # The colours every GUI draws with (feature 016): plain data, the standard library only.
-    "clearmd.frontend.palette": Rule(False, ()),
+    # The tokens every GUI draws with (ADR-0039): plain data, the standard library only.
+    "clearmd.frontend.design": Rule(False, ("clearmd.frontend.design",)),
+    # The executables' start (splash, smoke run): PyInstaller's own module only.
+    "clearmd.frontend.launch": Rule(True, ()),
     # A GUI talks to the presenter only: never to the api or another interface (ADR-0001/0026).
     "clearmd.frontend.ttk": Rule(
         True,
         (
             "clearmd.frontend.presenter",
-            "clearmd.frontend.palette",
+            "clearmd.frontend.design",
+            "clearmd.frontend.launch",
             "clearmd.backend.schemas",
             "clearmd.i18n",
             "clearmd.frontend.ttk",
@@ -113,7 +117,8 @@ RULES: dict[str, Rule] = {
             True,
             (
                 "clearmd.frontend.presenter",
-                "clearmd.frontend.palette",
+                "clearmd.frontend.design",
+                "clearmd.frontend.launch",
                 "clearmd.backend.schemas",
                 "clearmd.i18n",
                 gui,
