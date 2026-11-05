@@ -1,5 +1,9 @@
 """Every feature folder under spec/features has its acceptance file, with a test per criterion.
 
+A feature may spread its criteria over several ``test_<number>_*.py`` files (a long file is split by
+group of criteria): the criteria are covered by the union of them, and each file must hold at least
+one ``test_ac_`` function.
+
 A planned feature (no acceptance file yet, tasks still open) is skipped; a closed one (every task
 ticked) must have it.
 
@@ -57,7 +61,9 @@ def test_every_acceptance_criterion_has_a_test(feature: Path) -> None:
     files = _acceptance_files(feature)
     if not files and not _closed(feature):
         pytest.skip(f"{feature.name} is planned: its acceptance file comes with its tasks")
-    (test_file,) = files
+    assert files, f"{feature.name}: closed feature without an acceptance file"
+    empty = [file.name for file in files if not _covered(file)]
+    assert empty == [], f"{feature.name}: files without a test_ac_ function"
     criteria = _criteria(feature)
     assert criteria, f"{feature.name}: no **AC-NN** in spec.md"
-    assert sorted(criteria - _covered(test_file)) == []
+    assert sorted(criteria - set().union(*(_covered(file) for file in files))) == []
