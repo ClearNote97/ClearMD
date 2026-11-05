@@ -6,9 +6,9 @@ from clearmd.backend.services.conversion.pdf.latex import (
     MAX_GLYPHS,
     Bar,
     Glyph,
-    _balanced,
     to_latex,
 )
+from clearmd.backend.services.conversion.pdf.latex.envelope import balanced
 from clearmd.backend.services.conversion.pdf.tables import Word
 
 SIZE = 10.0
@@ -108,10 +108,10 @@ def test_unsure_gives_none() -> None:
 
 
 def test_balanced_braces_brackets_and_environments() -> None:
-    assert _balanced(r"\left[ \frac{a}{b} \right] \{ x \}")
-    assert not _balanced(r"\frac{a}{b")
-    assert not _balanced(r"\left[ a")
-    assert not _balanced(r"\begin{array}{l} a")
+    assert balanced(r"\left[ \frac{a}{b} \right] \{ x \}")
+    assert not balanced(r"\frac{a}{b")
+    assert not balanced(r"\left[ a")
+    assert not balanced(r"\begin{array}{l} a")
 
 
 def _line(text: str, bottom: float, left: float, right: float) -> Placed:

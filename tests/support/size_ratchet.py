@@ -8,7 +8,6 @@ FILES: dict[str, int] = {  # path -> lines (over 250)
     "src/clearmd/backend/services/conversion/odt/mathml.py": 291,
     "src/clearmd/backend/services/conversion/odt/render.py": 642,
     "src/clearmd/backend/services/conversion/pdf/cleaner.py": 597,
-    "src/clearmd/backend/services/conversion/pdf/latex.py": 715,
     "src/clearmd/backend/services/conversion/pdf/reader.py": 1071,
     "src/clearmd/backend/services/conversion/tex/context.py": 423,
     "src/clearmd/backend/services/conversion/tex/macros.py": 272,
