@@ -10,7 +10,6 @@ FILES: dict[str, int] = {  # path -> lines (over 250)
     "tests/unit/backend/services/conversion/odt/test_render.py": 267,
     "tests/unit/backend/services/conversion/odt/test_review_code.py": 295,
     "tests/unit/backend/services/conversion/odt/test_verify_findings.py": 310,
-    "tests/unit/backend/services/conversion/pdf/test_pdf_converter.py": 499,
     "tests/unit/backend/services/conversion/pdf/test_tables.py": 498,
     "tests/unit/backend/services/summary/test_writer.py": 484,
     "tests/unit/backend/services/worker/test_supervisor.py": 261,
