@@ -9,7 +9,7 @@ from support.gui_fakes import FakeBackend  # noqa: E402
 
 from clearmd.backend.schemas.settings import Settings  # noqa: E402
 from clearmd.frontend.pyside import PySideApp  # noqa: E402
-from clearmd.frontend.pyside.app import application  # noqa: E402
+from clearmd.frontend.pyside.window.toolkit import application  # noqa: E402
 
 
 def test_the_window_builds_draws_and_closes() -> None:
@@ -19,6 +19,6 @@ def test_the_window_builds_draws_and_closes() -> None:
     app.processEvents()
     assert not gui.window.grab().isNull()
     assert gui.rail.step_texts()[0].startswith("> ")
-    gui.close_window()
+    gui.close()
     app.processEvents()
-    assert gui.closed
+    assert gui.closing.closed

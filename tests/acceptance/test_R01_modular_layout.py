@@ -22,7 +22,6 @@ def test_ac_01_every_file_and_class_within_the_rule() -> None:
     assert (FILES, CLASSES) == ({}, {})
 
 
-@pytest.mark.xfail(strict=True, reason="the GUIs get their layout in P7 (ttk) and P8 (pyside)")
 def test_ac_02_every_gui_has_the_same_small_layout() -> None:
     for gui in GUIS:
         assert all((FRONTEND / gui / folder).is_dir() for folder in FOLDERS), gui

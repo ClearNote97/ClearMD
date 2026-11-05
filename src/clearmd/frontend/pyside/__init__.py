@@ -2,6 +2,7 @@
 
 Needs the ``pyside`` extra (``pip install clearmd[pyside]``)."""
 
-from clearmd.frontend.pyside.app import PySideApp, main
+from clearmd.frontend.pyside.app import main
+from clearmd.frontend.pyside.window.window import PySideApp
 
 __all__ = ["PySideApp", "main"]
