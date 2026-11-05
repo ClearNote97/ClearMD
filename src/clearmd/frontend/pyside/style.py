@@ -6,6 +6,7 @@ colours, radius and padding. Nothing here depends on a widget: changing the them
 
 from importlib.resources import files
 
+from clearmd.frontend.design.colors import blend
 from clearmd.frontend.design.metrics import BUTTON_HEIGHT, GAP, RADIUS, SPACE
 from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.design.typography import BODY, FIGURE, TITLE, WORDMARK
@@ -20,14 +21,6 @@ def _picture(name: str, p: Palette) -> str:
 
 DIM_STRENGTH = 0.45  # a faded card: this much of the card's colour on the ground's (as ttk, 014)
 DIM_TEXT = 0.8  # its text: this much of the muted colour on the faded card
-
-
-def blend(colour: str, ground: str, strength: float) -> str:
-    """``colour`` laid over ``ground`` with ``strength`` (0: the ground, 1: the colour)."""
-    front = [int(colour[i : i + 2], 16) for i in (1, 3, 5)]
-    back = [int(ground[i : i + 2], 16) for i in (1, 3, 5)]
-    mixed = (round(b + (f - b) * strength) for f, b in zip(front, back, strict=True))
-    return "#" + "".join(f"{value:02X}" for value in mixed)
 
 
 def stylesheet(p: Palette) -> str:
