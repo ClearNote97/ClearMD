@@ -10,19 +10,12 @@ PDFium's own C API is called (pypdfium2's raw bindings): ClearMD opens the docum
 load error is read when it happens, and a PDF without pages is an empty document.
 """
 
-import ctypes
-import io
 import math
 from collections import Counter
-from collections.abc import Iterator
-from contextlib import contextmanager
 from dataclasses import dataclass
 
-import pypdfium2 as pdfium
 import pypdfium2.raw as raw
-from PIL import Image
 
-from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.services.conversion.images import ImageSink
 from clearmd.backend.services.conversion.pdf.decode import (
     LINE_END,
@@ -33,12 +26,11 @@ from clearmd.backend.services.conversion.pdf.decode import (
 )
 from clearmd.backend.services.conversion.pdf.equations import Placed, find_equations
 from clearmd.backend.services.conversion.pdf.latex import Bar, Glyph, to_latex
-from clearmd.backend.services.conversion.pdf.lattice import Rule, find_lattices, rule
+from clearmd.backend.services.conversion.pdf.lattice import Rule, find_lattices
 from clearmd.backend.services.conversion.pdf.model import (
     ASLANT,
     CLOCKWISE,
     COUNTERCLOCKWISE,
-    LETTER_HEIGHT,
     SOFT_HYPHEN,
     UNREADABLE,
     UPRIGHT,
@@ -48,6 +40,12 @@ from clearmd.backend.services.conversion.pdf.model import (
     Line,
     Page,
 )
+from clearmd.backend.services.conversion.pdf.pdfium.crop import pictured
+from clearmd.backend.services.conversion.pdf.pdfium.document import text_pages
+from clearmd.backend.services.conversion.pdf.pdfium.fonts import MAX_PAGE_CHARS, Fonts, count
+from clearmd.backend.services.conversion.pdf.pdfium.page_chars import page_chars, tight_boxes
+from clearmd.backend.services.conversion.pdf.pdfium.page_objects import page_rules
+from clearmd.backend.services.conversion.pdf.pdfium.pictures import pictures, placed
 from clearmd.backend.services.conversion.pdf.tables import Table, Word, find_tables
 
 # The letters Unicode has as scripts: a script made only of them is written with them (014).
@@ -61,9 +59,6 @@ _SUPERSCRIPTS = dict(
 _SUBSCRIPTS = dict(
     zip("0123456789+-−=()aehijklmnoprstuvx", "₀₁₂₃₄₅₆₇₈₉₊₋₋₌₍₎ₐₑₕᵢⱼₖₗₘₙₒₚᵣₛₜᵤᵥₓ", strict=True)
 )
-_BOLD_NAMES = ("bold", "black", "heavy", "semibold", "demi")
-_FORCE_BOLD = 1 << 18  # the font descriptor's ForceBold flag
-TURN_RADIANS = 0.01  # a character turned less than this from a quarter turn is on it
 LOOK_AHEAD = 4  # characters looked at past a line's end (its carriage return, a space)
 ROW_OVERLAP = 0.5  # of the shorter box: two characters this much level are on one row
 SCRIPT_GAP_EMS = 0.5  # a script starts at most this far from what it is set on
@@ -79,346 +74,40 @@ ROW_SLACK = 1.0  # points: a line within a table's top and bottom is one of its 
 ROW_SHARE = 0.35  # of a letter's height: pieces this close vertically are on one row
 COLUMN_SHARE = 0.5  # of a letter's height: an equation's columns, about a letter wide
 MAX_COLUMN = 200  # an equation's piece starts at most this far right
-CROP_SCALE = 2.0  # an equation's picture: 144 dots per inch
-CROP_PAD = 3.0  # points around it
 MAX_CROPS = 500  # equations cropped in a document: past it, the others are written as text
-MAX_PAGE_POINTS = 14_400.0  # PDF's largest page side (200 inches)
-INK_LEVEL = 160  # a grey this dark is ink
-APART_PIXELS = 6  # a blank this tall (at 144 dpi) parts the equation from a neighbour's sliver
-TRIM_MARGIN = 6  # pixels of white kept around the ink
-MAX_PAGE_CHARS = 200_000  # a dense page of a book holds ~5,000; past this, the rest is left out
-
-# PDFium's load errors (fpdfview.h), by name.
-# A security handler PDFium does not have (5) is encryption it cannot open: locked, not broken.
-_PASSWORD = {raw.FPDF_ERR_PASSWORD, raw.FPDF_ERR_SECURITY}
-_BROKEN = {raw.FPDF_ERR_FILE, raw.FPDF_ERR_FORMAT}
 
 
-class _Fonts:
-    """A number per font of the document: PDFium keeps each font once per open document, so its
-    address (with its name and flags) names it in both passes, and two fonts that share a name
-    stay two (adversarial check of 008). Its codes; how many PDFium could not map; its weight."""
-
-    def __init__(self) -> None:
-        self.number: dict[tuple[int, bytes, int], int] = {}
-        self.codes: list[Counter[int]] = []
-        self.errors: list[int] = []  # characters PDFium found no map for
-        self.bold: list[bool] = []
-
-    def at(self, textpage: object, index: int, address: int) -> int:
-        name = ctypes.create_string_buffer(128)
-        flags = ctypes.c_int()
-        raw.FPDFText_GetFontInfo(textpage, index, name, len(name), ctypes.byref(flags))
-        key = (address, name.value, flags.value)
-        if key not in self.number:
-            self.number[key] = len(self.codes)
-            self.codes.append(Counter())
-            self.errors.append(0)
-            # By its name ("Helvetica-Bold", "Arial,Bold") or the ForceBold flag only: a font
-            # that declares no weight gets one from its stems, and plain Arial reads 695.
-            lowered = name.value.decode("latin-1").lower()
-            self.bold.append(
-                bool(flags.value & _FORCE_BOLD) or any(word in lowered for word in _BOLD_NAMES)
-            )
-        return self.number[key]
-
-    def unmapped(self, font: int) -> bool:
-        """Most of its characters had no map (one mapped space first proves nothing)."""
-        return self.errors[font] * 2 >= max(sum(self.codes[font].values()), 1)
-
-
-def _finite(value: float) -> float:
-    return value if math.isfinite(value) else 0.0
-
-
-def _each_font(textpage: object, fonts: _Fonts) -> Iterator[tuple[int, int]]:
-    """(index, font) of every character of the page; the font is looked up once per text
-    object, not per character."""
-    last_object: int | None = None
-    font = 0
-    for index in range(min(max(raw.FPDFText_CountChars(textpage), 0), MAX_PAGE_CHARS)):
-        handle = raw.FPDFText_GetTextObject(textpage, index)
-        address = ctypes.cast(handle, ctypes.c_void_p).value or 0
-        if address != last_object:
-            last_object = address
-            pointer = raw.FPDFTextObj_GetFont(handle) if handle else None
-            font_address = (ctypes.cast(pointer, ctypes.c_void_p).value or 0) if pointer else 0
-            font = fonts.at(textpage, index, font_address)
-        yield index, font
-
-
-def _count(textpage: object, fonts: _Fonts) -> None:
-    """The first pass: each font's codes."""
-    for index, font in _each_font(textpage, fonts):
-        fonts.codes[font][raw.FPDFText_GetUnicode(textpage, index)] += 1
-        if raw.FPDFText_HasUnicodeMapError(textpage, index) == 1:
-            fonts.errors[font] += 1
-
-
-def _page_chars(textpage: object, fonts: _Fonts) -> Chars:
-    """The second pass, one page at a time: its characters, compact."""
-    chars = Chars()
-    rect = raw.FS_RECTF()
-    box, unicode, angle = (
-        raw.FPDFText_GetLooseCharBox,
-        raw.FPDFText_GetUnicode,
-        raw.FPDFText_GetCharAngle,
-    )
-    pointer = ctypes.byref(rect)
-    font_size, origin, placed = (
-        raw.FPDFText_GetFontSize,
-        raw.FPDFText_GetCharOrigin,
-        raw.FPDFText_GetMatrix,
-    )
-    matrix = raw.FS_MATRIX()
-    matrix_pointer = ctypes.byref(matrix)
-    x, y = ctypes.c_double(), ctypes.c_double()
-    origin_x, origin_y = ctypes.byref(x), ctypes.byref(y)
-    # The same font with the same box height is the same size, its baseline the same height above
-    # its box: PDFium is asked again only when either changes (review of 014: the two calls per
-    # character cost a quarter of the reading).
-    measured: tuple[int, float, float, float] | None = None  # font, height, size, baseline lift
-    for index, font in _each_font(textpage, fonts):
-        box(textpage, index, pointer)
-        bottom, top = _finite(rect.bottom), _finite(rect.top)
-        code = unicode(textpage, index)
-        chars.codes.append(min(code, 0x10FFFF + 1))  # past Unicode: unreadable
-        chars.fonts.append(font)
-        chars.sizes.append(max(top - bottom, 0.0))
-        chars.bottoms.append(bottom)
-        chars.tops.append(top)
-        chars.lefts.append(_finite(rect.left))
-        chars.rights.append(_finite(rect.right))
-        turned = angle(textpage, index)
-        upright = turned == 0.0
-        chars.turns.append(UPRIGHT if upright else _turn(turned))  # nearly all: upright
-        height = top - bottom
-        if upright and measured is not None and measured[:2] == (font, height):
-            chars.font_sizes.append(measured[2])
-            chars.baselines.append(bottom + measured[3])
-        else:
-            # The size as drawn: the font's size scaled by its matrix ("1 Tf" and a 9.46 matrix);
-            # its height, the matrix's y column ("50 Tz" or "3 0 0 1 cm" scale the width alone).
-            scale = (
-                math.hypot(matrix.c, matrix.d) if placed(textpage, index, matrix_pointer) else 1.0
-            )
-            size = _finite(font_size(textpage, index) * scale)
-            baseline = _finite(y.value) if origin(textpage, index, origin_x, origin_y) else bottom
-            chars.font_sizes.append(size)
-            chars.baselines.append(baseline)
-            if upright and code > 0x20:
-                measured = (font, height, size, baseline - bottom)
-        chars.bold.append(fonts.bold[font])
-    return chars
-
-
-def _turn(angle: float) -> int:
-    """How a character is turned, from PDFium's angle (radians, 0 to 2π, measured clockwise: a
-    table set sideways to read upwards is at 3π/2)."""
-    for target, turn in ((0, UPRIGHT), (2 * math.pi, UPRIGHT), (0.5 * math.pi, CLOCKWISE)):
-        if abs(angle - target) < TURN_RADIANS:
-            return turn
-    return COUNTERCLOCKWISE if abs(angle - 1.5 * math.pi) < TURN_RADIANS else ASLANT
-
-
-@contextmanager
-def opened(data: bytes) -> Iterator[object]:
-    """PDFium's document for ``data``, closed afterwards. The buffer lives as long as it."""
-    buffer = ctypes.create_string_buffer(data, len(data))
-    handle = raw.FPDF_LoadMemDocument64(buffer, len(data), None)
-    if not handle:
-        error = raw.FPDF_GetLastError()
-        detail = f"PDFium could not open it (error {error})"
-        if error in _PASSWORD:
-            raise ConversionError(ErrorCode.PASSWORD_PROTECTED, detail)
-        if error in _BROKEN:
-            raise ConversionError(ErrorCode.CORRUPT_FILE, detail)
-        raise ConversionError(ErrorCode.CONVERSION_FAILED, detail)
-    try:
-        yield handle
-    finally:
-        raw.FPDF_CloseDocument(handle)
-        del buffer
-
-
-def _text_pages(document: object) -> Iterator[tuple[object | None, float, object | None]]:
-    """Each page's text page (None: a page PDFium could not load), height and page, closed
-    after."""
-    for index in range(max(raw.FPDF_GetPageCount(document), 0)):
-        page = raw.FPDF_LoadPage(document, index)
-        if not page:
-            yield None, LETTER_HEIGHT, None
-            continue
-        try:
-            height = _finite(raw.FPDF_GetPageHeightF(page))
-            textpage = raw.FPDFText_LoadPage(page)
-            try:
-                yield (textpage or None), (height if height > 0 else LETTER_HEIGHT), page
-            finally:
-                if textpage:
-                    raw.FPDFText_ClosePage(textpage)
-        finally:
-            raw.FPDF_ClosePage(page)
-
-
-MIN_PICTURE_POINTS = 24.0  # smaller: a bullet, a rule, a logo's speck
-MAX_PICTURE_PIXELS = 40_000_000  # a picture's own pixels, read before it is decoded
 MAX_DOCUMENT_PIXELS = 400_000_000  # all of a document's pictures (a logo on every page counts)
-BAR_THICKNESS = 1.5  # points: a fraction's bar is a thin line
-MIN_BAR = 2.0  # points: shorter is a dot
-MAX_BAR = 400.0  # points: longer is a rule across the page
-MAX_BARS = 2000  # a page's bars looked at
-MAX_PAGE_OBJECTS = 100_000  # a page's objects looked at for pictures, forms' included
-MAX_FORM_DEPTH = 4  # forms inside forms
-
-
-def _pictures(document: object, page: object, sink: ImageSink, budget: list[int]) -> list[Line]:
-    """The page's pictures as lines at their place, each kept by the sink (012). Each is decoded
-    at its own size, checked before (never rendered at the size it is drawn: a 2 x 2 picture
-    drawn 12,000 points wide, review of 012), within the document's budget of pixels; those
-    inside a form object are found too, placed where the form stands."""
-    lines: list[Line] = []
-    for obj, box in _image_objects(page):
-        data = _picture_png(obj, budget)
-        link = sink.add(data) if data is not None else None
-        if data is None:
-            sink.left_out += 1
-        if link is not None:
-            lines.append(Line("", 0.0, False, box[3], box[1], image=link))
-    return lines
-
-
-def _rules(page: object) -> tuple[list[Rule], list[Bar]]:
-    """The page's thin paths: the rules a ruled table is drawn with (013), and the short level
-    ones an equation draws (its fractions' bars, 015)."""
-    found: list[Rule] = []
-    bars: list[Bar] = []
-    left, bottom, right, top = (ctypes.c_float() for _ in range(4))
-    for index in range(min(max(raw.FPDFPage_CountObjects(page), 0), MAX_PAGE_OBJECTS)):
-        obj = raw.FPDFPage_GetObject(page, index)
-        if not obj or raw.FPDFPageObj_GetType(obj) != raw.FPDF_PAGEOBJ_PATH:
-            continue
-        raw.FPDFPageObj_GetBounds(obj, *(ctypes.byref(v) for v in (left, bottom, right, top)))
-        box = [_finite(v.value) for v in (left, bottom, right, top)]
-        found_rule = rule(*box)
-        if found_rule is not None:
-            found.append(found_rule)
-        if box[3] - box[1] <= BAR_THICKNESS and MIN_BAR <= box[2] - box[0] <= MAX_BAR:
-            bars.append(Bar(box[0], box[2], (box[1] + box[3]) / 2))
-    return found, bars[:MAX_BARS]
-
-
-def _image_objects(page: object) -> Iterator[tuple[object, list[float]]]:
-    """The page's image objects with their place: (left, bottom, right, top)."""
-    left, bottom, right, top = (ctypes.c_float() for _ in range(4))
-    visited = 0
-    pending: list[tuple[object, int, list[float] | None]] = [(page, 0, None)]
-    while pending:
-        holder, depth, place = pending.pop(0)
-        in_form = holder is not page
-        count = (
-            raw.FPDFFormObj_CountObjects(holder) if in_form else raw.FPDFPage_CountObjects(holder)
-        )
-        for index in range(max(count, 0)):
-            visited += 1
-            if visited > MAX_PAGE_OBJECTS:
-                return
-            obj = (
-                raw.FPDFFormObj_GetObject(holder, index)
-                if in_form
-                else raw.FPDFPage_GetObject(holder, index)
-            )
-            if not obj:
-                continue
-            kind = raw.FPDFPageObj_GetType(obj)
-            if kind not in (raw.FPDF_PAGEOBJ_IMAGE, raw.FPDF_PAGEOBJ_FORM):
-                continue
-            box = place
-            if box is None:
-                raw.FPDFPageObj_GetBounds(
-                    obj, *(ctypes.byref(v) for v in (left, bottom, right, top))
-                )
-                box = [_finite(v.value) for v in (left, bottom, right, top)]
-            if kind == raw.FPDF_PAGEOBJ_FORM:
-                if depth < MAX_FORM_DEPTH:
-                    pending.append((obj, depth + 1, box))
-            elif box[2] - box[0] >= MIN_PICTURE_POINTS and box[3] - box[1] >= MIN_PICTURE_POINTS:
-                yield obj, box
-
-
-def _picture_png(obj: object, budget: list[int]) -> bytes | None:
-    """The picture at its own size, as PNG; None when it is too large or cannot be decoded."""
-    width, height = ctypes.c_uint(), ctypes.c_uint()
-    if not raw.FPDFImageObj_GetImagePixelSize(obj, ctypes.byref(width), ctypes.byref(height)):
-        return None
-    pixels = width.value * height.value
-    if not 0 < pixels <= MAX_PICTURE_PIXELS or pixels > budget[0]:
-        return None
-    budget[0] -= pixels
-    bitmap = raw.FPDFImageObj_GetBitmap(obj)
-    if not bitmap:
-        return None
-    picture = pdfium.PdfBitmap.from_raw(bitmap)
-    picture.warn_on_close = False  # closed only once the PNG is written from a copy of it
-    try:
-        data = io.BytesIO()
-        picture.to_pil().convert("RGB").save(data, "PNG")
-        return data.getvalue()
-    except (ValueError, OSError, MemoryError):
-        return None
-    finally:
-        picture.close()
-
-
-def _pictured(page: object, line: Line, images: ImageSink, budget: list[int]) -> Line:
-    """An equation, as it looks on the page, when the images folder is on (013): within the
-    document's pixels and crops (each renders the page; review of 013), else its text."""
-    if not line.equation or line.latex or budget[1] <= 0:
-        return line
-    budget[1] -= 1
-    data = _cropped(page, line, budget)
-    link = images.add(data) if data is not None else None
-    if link is None:
-        return line
-    return Line("", line.size, False, line.top, line.bottom, image=link, left=line.left)
-
-
-def _placed(lines: list[Line], pictures: list[Line]) -> list[Line]:
-    """Each picture before the first line below its top: the reading order of the page."""
-    for picture in sorted(pictures, key=lambda line: -line.top):
-        at = next((i for i, line in enumerate(lines) if line.top < picture.top), len(lines))
-        lines.insert(at, picture)
-    return lines
 
 
 def read(document: object, images: ImageSink | None = None) -> Document:
     """Two passes: the fonts' codes first (a moved font is known only from all its text), then
     the lines, page by page: only one page's characters are ever held (code review of 008)."""
-    fonts = _Fonts()
-    for textpage, _height, _page_handle in _text_pages(document):
+    fonts = Fonts()
+    for textpage, _height, _page_handle in text_pages(document):
         if textpage is not None:
-            _count(textpage, fonts)
+            count(textpage, fonts)
     shifts = [shift(codes) if fonts.unmapped(n) else 0 for n, codes in enumerate(fonts.codes)]
     unmapped = [fonts.unmapped(n) for n in range(len(fonts.codes))]
     result = Document([], decoded_fonts=sum(1 for distance in shifts if distance))
     # The pixels pictures and equations may take in the whole document, and the equations cropped.
     budget = [MAX_DOCUMENT_PIXELS, MAX_CROPS]
-    for textpage, height, handle in _text_pages(document):
+    for textpage, height, handle in text_pages(document):
         if textpage is not None and raw.FPDFText_CountChars(textpage) > MAX_PAGE_CHARS:
             result.cut_pages += 1
-        chars = None if textpage is None else _page_chars(textpage, fonts)
+        chars = None if textpage is None else page_chars(textpage, fonts)
         while len(shifts) < len(fonts.codes):  # a font first met in the second pass: as read
             shifts.append(0)
             unmapped.append(False)
-        rules, bars = _rules(handle) if handle is not None and chars is not None else ([], [])
+        rules, bars = page_rules(handle) if handle is not None and chars is not None else ([], [])
         page = (
             Page()
             if chars is None
-            else _page(chars, shifts, unmapped, result, rules, bars, _tight_boxes(textpage))
+            else _page(chars, shifts, unmapped, result, rules, bars, tight_boxes(textpage))
         )
         if images is not None and handle is not None:
-            page.lines = [_pictured(handle, line, images, budget) for line in page.lines]
-            page.lines = _placed(page.lines, _pictures(document, handle, images, budget))
+            page.lines = [pictured(handle, line, images, budget) for line in page.lines]
+            page.lines = placed(page.lines, pictures(document, handle, images, budget))
         page.height = height
         result.pages.append(page)
     return result
@@ -478,19 +167,6 @@ class _Found:
     unmapped: list[bool]
     bars: list[Bar]
     tight: Boxes | None = None
-
-
-def _tight_boxes(textpage: object) -> Boxes:
-    rect = [ctypes.c_double() for _ in range(4)]
-    pointers = [ctypes.byref(value) for value in rect]
-
-    def box(index: int) -> tuple[float, float, float, float] | None:
-        if not raw.FPDFText_GetCharBox(textpage, index, *pointers):
-            return None
-        left, right, bottom, top = (_finite(value.value) for value in rect)
-        return (left, right, bottom, top) if right > left and top > bottom else None
-
-    return box
 
 
 def _equations(lines: list[Line], words: list[Word], found_on: _Found | None = None) -> list[Line]:
@@ -607,77 +283,6 @@ def _laid_out(group: list[Line]) -> tuple[str, ...]:
             text += line.text
         out.append(text.rstrip())
     return tuple(out)
-
-
-def _cropped(page: object, line: Line, budget: list[int]) -> bytes | None:
-    """The equation's place on the page, rendered: a PNG, or None (a turned or outsized page, a
-    crop past the budget, nothing drawn there, a failure: its text is written instead)."""
-    if raw.FPDFPage_GetRotation(page) != 0:
-        return None
-    height = _finite(raw.FPDF_GetPageHeightF(page))
-    width = _finite(raw.FPDF_GetPageWidthF(page))
-    if not (0 < width <= MAX_PAGE_POINTS and 0 < height <= MAX_PAGE_POINTS):
-        return None  # past PDF's own limit: an offset ctypes cannot hold (review of 013)
-    left, right = max(line.left - CROP_PAD, 0.0), min(line.right + CROP_PAD, width)
-    bottom, top = max(line.bottom - CROP_PAD, 0.0), min(line.top + CROP_PAD, height)
-    pixels_x, pixels_y = round((right - left) * CROP_SCALE), round((top - bottom) * CROP_SCALE)
-    pixels = pixels_x * pixels_y
-    if not 0 < pixels <= min(MAX_PICTURE_PIXELS, budget[0]):
-        return None
-    budget[0] -= pixels
-    bitmap = raw.FPDFBitmap_Create(pixels_x, pixels_y, 0)
-    if not bitmap:
-        return None
-    picture = pdfium.PdfBitmap.from_raw(bitmap)
-    picture.warn_on_close = False  # closed only once the PNG is written from a copy of it
-    try:
-        raw.FPDFBitmap_FillRect(bitmap, 0, 0, pixels_x, pixels_y, 0xFFFFFFFF)
-        raw.FPDF_RenderPageBitmap(
-            bitmap,
-            page,
-            round(-left * CROP_SCALE),
-            round(-(height - top) * CROP_SCALE),
-            round(width * CROP_SCALE),
-            round(height * CROP_SCALE),
-            0,
-            raw.FPDF_ANNOT,
-        )
-        trimmed = _trimmed(picture.to_pil().convert("RGB"))
-        if trimmed is None:
-            return None
-        data = io.BytesIO()
-        trimmed.save(data, "PNG")
-        return data.getvalue()
-    except (ValueError, OSError, MemoryError):
-        return None
-    finally:
-        picture.close()
-
-
-def _trimmed(image: Image.Image) -> Image.Image | None:
-    """The equation's ink, a margin around it: a sliver of the line above or below, at the edge
-    and apart from it, goes (a font's boxes reach far past its letters)."""
-    ink = image.convert("L").point(lambda value: 255 if value < INK_LEVEL else 0)
-    width, height = ink.size
-    rows = [ink.crop((0, y, width, y + 1)).getbbox() is not None for y in range(height)]
-    bands: list[list[int]] = []
-    for y, inked in enumerate(rows):
-        if inked and bands and y - bands[-1][1] <= APART_PIXELS:
-            bands[-1][1] = y
-        elif inked:
-            bands.append([y, y])
-    if len(bands) > 1 and bands[-1][1] == height - 1:
-        bands.pop()  # the line below's top
-    if len(bands) > 1 and bands[0][0] == 0:
-        bands.pop(0)  # the line above's foot
-    if not bands:
-        return None  # no ink: nothing drawn there, the text says more
-    box = ink.crop((0, bands[0][0], width, bands[-1][1] + 1)).getbbox()
-    if box is None:
-        return None
-    left, right = max(box[0] - TRIM_MARGIN, 0), min(box[2] + TRIM_MARGIN, width)
-    top, bottom = max(bands[0][0] - TRIM_MARGIN, 0), min(bands[-1][1] + 1 + TRIM_MARGIN, height)
-    return image.crop((left, top, right, bottom))
 
 
 def _goes_on(chars: Chars, last: int, index: int, extent: list[float]) -> bool:

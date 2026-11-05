@@ -334,10 +334,10 @@ def test_s8_6_a_pdf_without_pages_is_an_empty_document_not_an_old_error(tmp_path
 def test_s8_6_pdfiums_load_errors_are_mapped_by_name() -> None:
     import pypdfium2.raw as raw
 
-    from clearmd.backend.services.conversion.pdf import reader
+    from clearmd.backend.services.conversion.pdf.pdfium import document
 
-    assert reader._BROKEN == {raw.FPDF_ERR_FILE, raw.FPDF_ERR_FORMAT}
-    assert reader._PASSWORD == {raw.FPDF_ERR_PASSWORD, raw.FPDF_ERR_SECURITY}  # encrypted
+    assert document._BROKEN == {raw.FPDF_ERR_FILE, raw.FPDF_ERR_FORMAT}
+    assert document._PASSWORD == {raw.FPDF_ERR_PASSWORD, raw.FPDF_ERR_SECURITY}  # encrypted
 
 
 def test_c8_5_text_that_cannot_be_read_is_never_dropped_silently(tmp_path: Path) -> None:

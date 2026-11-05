@@ -12,7 +12,8 @@ from clearmd.backend.schemas.models import ConversionResult, Detection
 from clearmd.backend.schemas.notes import ConversionNote, NoteItem, NoteKind
 from clearmd.backend.services.conversion.images import ImageSink
 from clearmd.backend.services.conversion.pdf.cleaner import clean
-from clearmd.backend.services.conversion.pdf.reader import opened, read
+from clearmd.backend.services.conversion.pdf.pdfium.document import opened
+from clearmd.backend.services.conversion.pdf.reader import read
 from clearmd.backend.services.conversion.safe_files import read_regular_file
 
 MAX_LISTED_PAGES = 1000  # as many items as any note lists (ADR-0023); ranges count as one
