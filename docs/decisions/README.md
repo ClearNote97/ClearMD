@@ -31,7 +31,7 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 | [0011](./0011-repository-language.md) | Repository language: English, with a Spanish README | accepted; corrected by 0014 |
 | [0012](./0012-bilingual-app-and-shared-settings.md) | Bilingual app (TOML catalogs) and one shared settings file | accepted; language resolution superseded by 0017 |
 | [0013](./0013-non-technical-users-first.md) | Designed for non-technical users first, with a shared UX contract | accepted |
-| [0014](./0014-template-aligned-src-layout.md) | `src/` layout aligned with the ClearNote_Dev template | accepted |
+| [0014](./0014-template-aligned-src-layout.md) | `src/` layout aligned with the ClearNote_Dev template | accepted; layout section superseded by 0039 |
 | [0015](./0015-conversion-worker-process.md) | Worker process, resource limits and a cost-ordered queue | accepted |
 | [0016](./0016-output-layout-and-summary.md) | Output layout, chosen output folder and `Resumen_ClearMD.md` | accepted; folder renamed by 0019 |
 | [0017](./0017-english-default-language.md) | English by default, no OS language detection | accepted |
@@ -55,4 +55,4 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 | [0035](./0035-pdf-sub-and-superscripts.md) | A PDF's sub- and superscripts | accepted |
 | [0036](./0036-equations-as-latex.md) | A PDF's equations rebuilt as LaTeX | accepted |
 | [0037](./0037-code-signing.md) | The Windows executables signed by SignPath | accepted |
-| [0039](./0039-modular-layout-and-file-size.md) | Modular layout and file size: ≤ 200 lines (250 at most), one layout for every GUI | proposed |
+| [0039](./0039-modular-layout-and-file-size.md) | Modular layout and file size: ≤ 200 lines (250 at most), one layout for every GUI | accepted |

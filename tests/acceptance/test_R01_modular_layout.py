@@ -59,7 +59,6 @@ def test_ac_06_every_command_resolves() -> None:
         assert callable(getattr(importlib.import_module(module), name))
 
 
-@pytest.mark.xfail(strict=True, reason="ADR-0039 is accepted when the source is done (P11)")
 def test_ac_07_adr_0039_accepted_and_a_readme_in_every_folder() -> None:
     adr = (ROOT / "docs" / "decisions" / "0039-modular-layout-and-file-size.md").read_text("utf-8")
     assert "**Status:** accepted" in adr

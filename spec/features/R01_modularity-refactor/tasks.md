@@ -8,14 +8,14 @@ refactor without stops: doubts go back to the board, and to the owner only if it
 - [x] **P1 — Safety net:** the palette rule; PySide6 out of the executables; this spec and ADR-0039
   (proposed); the size test with its ratchets; the architecture rules; the entry points test; the
   golden tests and characterisation tests. **Review.**
-- [ ] **P2 — `qt` → `pyside`.**
-- [ ] **P3 — `design/` and `launch.py`.**
-- [ ] **P4 — `presenter/chrome/`.**
-- [ ] **P5 — The presenter split.**
-- [ ] **P6 — The CLI.**
-- [ ] **P7 — ttk in the layout.**
-- [ ] **P8 — pyside in the layout.** **Review.**
-- [ ] **P9 — The PDF converter.**
-- [ ] **P10 — The rest of the backend.**
-- [ ] **P11 — Close the source:** ratchets empty; ADR-0039 accepted; READMEs. **Review.**
+- [x] **P2 — `qt` → `pyside`.**
+- [x] **P3 — `design/` and `launch.py`.**
+- [x] **P4 — `presenter/chrome/`.**
+- [x] **P5 — The presenter split.**
+- [x] **P6 — The CLI.**
+- [x] **P7 — ttk in the layout.**
+- [x] **P8 — pyside in the layout.** **Review.**
+- [x] **P9 — The PDF converter.**
+- [x] **P10 — The rest of the backend.**
+- [x] **P11 — Close the source:** ratchets empty; ADR-0039 accepted; READMEs. **Review.**
 - [ ] **P12 — The tests.** **Review.**

@@ -1,6 +1,6 @@
 # ADR-0039: Modular layout and file size
 
-- **Status:** proposed (accepted when refactor R01 closes its source phases, P11)
+- **Status:** accepted (2026-11-05, when refactor R01 closed its source phases)
 - **Date:** 2026-11-05
 - **Supersedes:** the layout section of ADR-0014 (`<gui>/ … app/ views/ components/ layout/`), made
   exact here. ADR-0014's dependency rule stands.
@@ -42,6 +42,17 @@ The owner does not want to read "kilometric" files.
 - **Collaborators, not inheritance.** A collaborator receives only the widgets and ports it uses;
   none receives the whole window.
 - **Re-exports** only in a package's `__init__`, public names only, with `__all__`; no shims.
+
+## As built (refactor R01, P1–P11)
+
+- The GUIs: `ttk/app.py` and `pyside/app.py` are 25 lines each; their windows are a dozen collaborators in
+  `window/` (view, dialog host, primary button, inputs, pickers, closing…), none over 150 lines.
+- The presenter: a 169-line facade over `session`, `display`, `background`, `intents/`, `screens/`, `chrome/`.
+- The converters' writers share one shape: `writer/` with `state.py` and `dispatch.py`; the recursive entry
+  points stay on the renderer class (in `render.py` for ODT and HTML; in `writer/dispatch.py` for TeX, whose
+  `render.py` keeps `render_source`/`render_latex`/`top_level`).
+- One file stays in the tolerance band on purpose: `conversion/xmltree.py` (208 lines), security-critical.
+- Every step was proved byte-identical (fixture outputs, the owner's private PDFs, screenshots).
 
 ## Consequences
 
