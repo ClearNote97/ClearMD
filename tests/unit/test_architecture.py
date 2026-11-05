@@ -13,7 +13,9 @@
 | clearmd.frontend                        | third-party; clearmd.backend.api, .schemas, i18n,    |
 |                                         | clearmd.frontend                                     |
 | clearmd.frontend.presenter              | standard library; backend.api, .schemas, i18n, itself|
-| clearmd.frontend.ttk                    | third-party; the presenter, .schemas, i18n, itself   |
+| clearmd.frontend.palette                | standard library only (shared by every GUI)          |
+| clearmd.frontend.ttk                    | third-party; the presenter, palette, .schemas, i18n, |
+|                                         | itself                                               |
 """
 
 import ast
@@ -96,11 +98,14 @@ RULES: dict[str, Rule] = {
         ),
         forbidden_stdlib=("tkinter", "turtle"),
     ),
+    # The colours every GUI draws with (feature 016): plain data, the standard library only.
+    "clearmd.frontend.palette": Rule(False, ()),
     # A GUI talks to the presenter only: never to the api or another interface (ADR-0001/0026).
     "clearmd.frontend.ttk": Rule(
         True,
         (
             "clearmd.frontend.presenter",
+            "clearmd.frontend.palette",
             "clearmd.backend.schemas",
             "clearmd.i18n",
             "clearmd.frontend.ttk",
