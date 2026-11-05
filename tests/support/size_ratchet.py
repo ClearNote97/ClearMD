@@ -49,8 +49,6 @@ CLASSES: dict[str, int] = {  # "path::Class" -> lines (over 150)
     "src/clearmd/frontend/pyside/app.py::PySideApp": 397,
     "src/clearmd/frontend/pyside/pages.py::ChoosePage": 159,
     "src/clearmd/frontend/ttk/app.py::TtkApp": 422,
-    "src/clearmd/frontend/ttk/components/file_list.py::FileList": 211,
-    "src/clearmd/frontend/ttk/components/rail.py::Rail": 207,
 }
 # The GUIs' entry files (≤ 40 lines) that are still whole windows.
 ENTRY_FILES: dict[str, int] = {

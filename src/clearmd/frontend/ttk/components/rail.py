@@ -9,24 +9,16 @@ import tkinter.font as tkfont
 from collections.abc import Callable
 from functools import partial
 from tkinter import ttk
-from typing import Literal
 
 from PIL import ImageTk
 
-from clearmd.frontend.design.colors import blend
-from clearmd.frontend.design.metrics import COMPACT_RAIL_WIDTH, GAP, HALF, RADIUS, RAIL_WIDTH, SPACE
+from clearmd.frontend.design.metrics import COMPACT_RAIL_WIDTH, GAP, RAIL_WIDTH
 from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.presenter.state import STEPS
+from clearmd.frontend.ttk.components.rail_art import STEPS_TOP, Scene, draw_rail
 from clearmd.frontend.ttk.layout.units import REDRAW_MS
-from clearmd.frontend.ttk.visuals import marks, shapes
 from clearmd.frontend.ttk.visuals.style_names import RAIL, RAIL_COMPACT
 from clearmd.i18n import Catalog
-
-_STEP_HEIGHT = 44
-_TOP = 3 * SPACE  # the logo's distance from the rail's top edge
-_STEPS_TOP = 12 * SPACE  # where the first step starts
-_BADGE = 24  # a step's circle
-_DIM = 0.55  # how strong the steps not on screen are drawn (ADR-0029)
 
 
 class Rail(tk.Canvas):
@@ -144,95 +136,14 @@ class Rail(tk.Canvas):
         self._cancel_pending()  # a draw now makes a waiting one useless
         p = self._palette
         height = self.winfo_height()
-        if p is None or height < 2 * _STEPS_TOP:
+        if p is None or height < 2 * STEPS_TOP:
             return
         self.delete("all")
         self._pictures.clear()
-        left, top = GAP, GAP
-        width = COMPACT_RAIL_WIDTH if self._compact else RAIL_WIDTH
-        bottom = height - GAP
-        ground = shapes.rounded(width, bottom - top, 2 * RADIUS, p.rail)
-        self.create_image(left, top, image=self._picture(ground), anchor="nw")
-
-        x = left + (width - 40) // 2 if self._compact else left + GAP
-        logo = self._picture(marks.logo("clearmd-mark-dark-40"))
-        self.create_image(x, top + _TOP, image=logo, anchor="nw")
-        if not self._compact:
-            mark_middle = top + _TOP + 20
-            text_x = x + 40 + SPACE
-            wordmark = self._fonts["wordmark"]
-            for part, colour in (("Clear", p.rail_text), ("·", p.clear), ("MD", p.rail_text)):
-                self.create_text(
-                    text_x, mark_middle, text=part, fill=colour, font=wordmark, anchor="w"
-                )
-                text_x += wordmark.measure(part)
-
-        y = top + _STEPS_TOP
-        for index, label in enumerate(self._labels, start=1):
-            self._draw_step(p, index, label, left, y, width)
-            y += _STEP_HEIGHT + HALF
-
-        self._draw_foot(p, left, bottom, width)
-
-    def _draw_step(self, p: Palette, index: int, label: str, left: int, y: int, width: int) -> None:
-        on_screen = index == self._page
-        tag = f"step{index}"
-        if on_screen:
-            highlight = shapes.rounded(width - GAP, _STEP_HEIGHT, RADIUS - 2, p.accent)
-            self.create_image(
-                left + SPACE, y, image=self._picture(highlight), anchor="nw", tags=tag
-            )
-        else:  # a target for the click, the size of the step
-            self.create_rectangle(
-                left + SPACE, y, left + width - SPACE, y + _STEP_HEIGHT,
-                fill=p.rail, outline="", tags=tag,
-            )  # fmt: skip
-        colour = p.on_accent if on_screen else blend(p.rail_text, p.rail, _DIM)
-        middle = y + _STEP_HEIGHT // 2
-        badge_x = left + width // 2 if self._compact else left + GAP + SPACE + _BADGE // 2
-        circle = shapes.circle(_BADGE, outline=colour, fill=p.accent if on_screen else p.rail)
-        self.create_image(badge_x, middle, image=self._picture(circle), tags=tag)
-        self.create_text(
-            badge_x, middle, text=str(index), fill=colour, font=self._fonts["strong"], tags=tag
+        scene = Scene(
+            self._fonts, self._page, self._compact, self._labels, self._local, self._version
         )
-        if not self._compact:
-            self.create_text(
-                badge_x + _BADGE // 2 + SPACE + HALF, middle, text=label, fill=colour,
-                font=self._fonts["strong" if on_screen else "body"], anchor="w", tags=tag,
-            )  # fmt: skip
+        draw_rail(self, self._picture, p, scene, height, (self.settings, self.help))
 
     def _clicked(self, index: int, _event: object) -> None:
         self._on_step(index)
-
-    def _draw_foot(self, p: Palette, left: int, bottom: int, width: int) -> None:
-        x = left + GAP
-        foot = bottom - GAP
-        body = self._fonts["body"]
-        line = body.metrics("linespace")
-        if self._compact:
-            self.create_text(
-                left + width // 2, foot, text=self._version, fill=p.rail_muted, font=body,
-                anchor="s",
-            )  # fmt: skip
-            texts_height = line
-        else:
-            local = f"{self._local}\n{self._version}" if self._version else self._local
-            self.create_text(
-                x, foot, text=local, fill=p.rail_muted, font=body, anchor="sw",
-                width=width - 2 * GAP,
-            )  # fmt: skip
-            lines = max(1, body.measure(self._local) // (width - 2 * GAP) + 1)
-            texts_height = (lines + (1 if self._version else 0)) * line
-        buttons_bottom = foot - texts_height - SPACE
-        # As wide as the steps' band, their height (feature 011); centred marks when compact.
-        anchor_x = left + width // 2 if self._compact else left + SPACE
-        anchor: Literal["s", "sw"] = "s" if self._compact else "sw"
-        band = width - GAP
-        places = (
-            (self.help, buttons_bottom),
-            (self.settings, buttons_bottom - _STEP_HEIGHT - HALF),
-        )
-        for button, bottom_y in places:
-            self.create_window(
-                anchor_x, bottom_y, window=button, anchor=anchor, width=band, height=_STEP_HEIGHT
-            )

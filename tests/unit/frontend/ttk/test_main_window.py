@@ -881,12 +881,12 @@ def test_c7_7_arrows_move_the_focus_so_checks_add_up(app: TtkApp, tmp_path: Path
     inputs = app.main.inputs
     tree = inputs.tree
     tree.focus(tree.get_children()[0])
-    inputs._toggle_focused()
-    inputs._move(1, False)
-    inputs._move(1, False)
-    inputs._toggle_focused()
+    inputs.shortcuts.toggle_focused()
+    inputs.shortcuts.move(1, False)
+    inputs.shortcuts.move(1, False)
+    inputs.shortcuts.toggle_focused()
     pump(app, seconds=0.05)
     assert inputs.checked() == [True, False, True, False]
-    inputs._move(1, True)
+    inputs.shortcuts.move(1, True)
     pump(app, seconds=0.05)
     assert inputs.checked() == [True, False, True, True]
