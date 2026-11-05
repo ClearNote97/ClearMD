@@ -1,6 +1,6 @@
 """The converted files as a table: a header that repeats on every page, one row per file."""
 
-from clearmd.backend.services.summary.content import SummaryContent
+from clearmd.backend.services.summary.model import SummaryContent
 from clearmd.backend.services.summary.pdf_report.canvas import Canvas
 from clearmd.backend.services.summary.pdf_report.text import displayed, fit, latin
 from clearmd.backend.services.summary.pdf_report.theme import (

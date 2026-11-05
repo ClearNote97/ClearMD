@@ -1,7 +1,7 @@
 """The blocks of the summary page: the band, the headline, headings, paragraphs and entries."""
 
 from clearmd.backend.schemas.notes import ConversionNote
-from clearmd.backend.services.summary.content import Entry, SummaryContent
+from clearmd.backend.services.summary.model import Entry, SummaryContent
 from clearmd.backend.services.summary.pdf_report import metrics
 from clearmd.backend.services.summary.pdf_report.canvas import Canvas
 from clearmd.backend.services.summary.pdf_report.text import displayed, latin, wrap

@@ -2,8 +2,6 @@
 it. Every text here is the catalog's except the names, folders and technical details, which come
 from the user's files: each writer shows those safely (a code span, plain text)."""
 
-from dataclasses import dataclass
-from enum import StrEnum
 from pathlib import Path
 
 from clearmd.backend.schemas.formats import Strategy
@@ -13,59 +11,16 @@ from clearmd.backend.schemas.models import (
     OutputRootReport,
     SkippedItem,
 )
-from clearmd.backend.schemas.notes import ConversionNote
 from clearmd.backend.services.rejections import skip_action, skip_reason, stopped_message
+from clearmd.backend.services.summary.model import (
+    DATE_FORMAT,
+    MARKDOWN_FOLDER,
+    Entry,
+    Mark,
+    Row,
+    SummaryContent,
+)
 from clearmd.i18n import Catalog, printable
-
-DATE_FORMAT = "%Y-%m-%d %H:%M"
-MARKDOWN_FOLDER = "OutputMD"
-
-
-class Mark(StrEnum):
-    """How it went: the whole batch, or one file."""
-
-    DONE = "done"  # ✅ everything converted
-    ATTENTION = "attention"  # ⚠️ converted, with something to look at
-    FAILED = "failed"  # ❌ not converted
-    STOPPED = "stopped"  # ⏹️ stopped at its limit, or the batch cancelled
-
-
-@dataclass(frozen=True)
-class Entry:
-    """One file in a list: its name and folder (from the user's files), what happened and what
-    to do (the catalog's), its notes, and a technical detail."""
-
-    mark: Mark | None
-    name: str
-    folder: str  # relative to where the batch started; "" in the top folder
-    message: str = ""
-    notes: tuple[ConversionNote, ...] = ()
-    detail: str = ""
-    result: str = ""  # a kept result's name, in ``folder`` of the Markdown folder
-
-
-@dataclass(frozen=True)
-class Row:
-    """A converted file: the table's row."""
-
-    name: str
-    folder: str
-    result: str  # the Markdown file's name, in ``folder`` of the Markdown folder
-    format: str
-    time: str
-
-
-@dataclass(frozen=True)
-class SummaryContent:
-    mark: Mark
-    headline: str
-    attention_line: str  # "" when nothing needs attention
-    batch_line: str  # date · version · totals: the history is made of these
-    attention: tuple[Entry, ...]
-    converted: tuple[Row, ...]
-    left_out: tuple[Entry, ...]
-    kept: tuple[Entry, ...]
-    cancelled: tuple[Entry, ...]
 
 
 def _relative(path: Path, base: Path) -> Path:

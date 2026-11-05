@@ -12,13 +12,8 @@ from pathlib import Path
 from clearmd.backend.schemas.formats import SUMMARY_NAME
 from clearmd.backend.schemas.models import OutputRootReport
 from clearmd.backend.schemas.notes import ConversionNote
-from clearmd.backend.services.summary.content import (
-    MARKDOWN_FOLDER,
-    Entry,
-    Mark,
-    SummaryBuilder,
-    SummaryContent,
-)
+from clearmd.backend.services.summary.content import SummaryBuilder
+from clearmd.backend.services.summary.model import MARKDOWN_FOLDER, Entry, Mark, SummaryContent
 from clearmd.backend.use_cases.output_files import UnsafeOutput, atomic_write, read_regular_file
 from clearmd.i18n import Catalog, printable
 

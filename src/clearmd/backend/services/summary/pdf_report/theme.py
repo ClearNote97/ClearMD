@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from clearmd.backend.services.summary.content import Mark
+from clearmd.backend.services.summary.model import Mark
 
 REGULAR, BOLD = b"Helvetica", b"Helvetica-Bold"
 WIDTH, HEIGHT = 595.0, 842.0  # A4, in points

@@ -2,11 +2,8 @@
 
 from clearmd.backend.schemas.formats import PDF_SUMMARY_NAME
 from clearmd.backend.schemas.models import OutputRootReport
-from clearmd.backend.services.summary.content import (
-    MARKDOWN_FOLDER,
-    SummaryBuilder,
-    SummaryContent,
-)
+from clearmd.backend.services.summary.content import SummaryBuilder
+from clearmd.backend.services.summary.model import MARKDOWN_FOLDER, SummaryContent
 from clearmd.backend.services.summary.pdf_report.blocks import Blocks
 from clearmd.backend.services.summary.pdf_report.canvas import Canvas
 from clearmd.backend.services.summary.pdf_report.table import table
