@@ -6,7 +6,6 @@ FILES: dict[str, int] = {  # path -> lines (over 250)
     "tests/benchmark/run_benchmark.py": 789,
     "tests/fixtures/build_fixtures.py": 1018,
     "tests/gui/make_assets.py": 318,
-    "tests/unit/backend/services/worker/test_supervisor.py": 261,
 }
 
 CLASSES: dict[str, int] = {  # "path::Class" -> lines (over 150)
