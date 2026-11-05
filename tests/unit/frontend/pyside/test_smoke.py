@@ -14,11 +14,11 @@ from clearmd.frontend.pyside.app import application  # noqa: E402
 
 def test_the_window_builds_draws_and_closes() -> None:
     app = application()
-    window = PySideApp(FakeBackend(settings=Settings(show_welcome=False)))
-    window.start()
+    gui = PySideApp(FakeBackend(settings=Settings(show_welcome=False)))
+    gui.start()
     app.processEvents()
-    assert not window.grab().isNull()
-    assert window.rail.step_texts()[0].startswith("> ")
-    window.close_window()
+    assert not gui.window.grab().isNull()
+    assert gui.rail.step_texts()[0].startswith("> ")
+    gui.close_window()
     app.processEvents()
-    assert window.closed
+    assert gui.closed

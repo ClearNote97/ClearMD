@@ -18,7 +18,6 @@ from PySide6.QtGui import (
     QDropEvent,
     QFont,
     QKeySequence,
-    QResizeEvent,
     QShortcut,
 )
 from PySide6.QtWidgets import (
@@ -28,7 +27,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QStackedWidget,
     QVBoxLayout,
-    QWidget,
 )
 
 import clearmd.frontend.launch as launch
@@ -36,12 +34,8 @@ from clearmd.backend.schemas.formats import EXTENSIONS
 from clearmd.frontend.design.metrics import (
     COMPACT_BELOW,
     GAP,
-    MIN_HEIGHT,
-    MIN_WIDTH,
     SHORT_BELOW,
     SPACE,
-    START_HEIGHT,
-    START_WIDTH,
 )
 from clearmd.frontend.design.palette import LIGHT, PALETTES, Palette
 from clearmd.frontend.design.typography import BODY
@@ -69,6 +63,7 @@ from clearmd.frontend.pyside.dialogs import (
 from clearmd.frontend.pyside.pages import ChoosePage, ConvertPage, ResultsPage, ReviewPage
 from clearmd.frontend.pyside.style import stylesheet
 from clearmd.frontend.pyside.widgets import ActionBar, Ground, Rail, app_icon, label
+from clearmd.frontend.pyside.window.qt_window import MainWindow
 from clearmd.i18n import Catalog
 
 
@@ -105,18 +100,16 @@ class _Bridge(QObject):
             callback()
 
 
-class PySideApp(QWidget):
-    """The window, and the presenter's view."""
+class PySideApp:
+    """The window's owner, and the presenter's view: the Qt widget is ``self.window``."""
 
     def __init__(self, backend: Backend | None = None) -> None:
         application()
-        super().__init__()
-        self.setObjectName("window")
-        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        self.setWindowIcon(app_icon())
-        self.setMinimumSize(MIN_WIDTH, MIN_HEIGHT)
-        self.resize(START_WIDTH, START_HEIGHT)
-        self.setAcceptDrops(True)
+        self.window = MainWindow()
+        self.window.on_close = self._close_event
+        self.window.on_resize = self._resized
+        self.window.on_drag_enter = self._drag_enter
+        self.window.on_drop = self._dropped
         self._bridge = _Bridge()
         self.palette_: Palette = LIGHT
         self.catalog: Catalog | None = None
@@ -129,7 +122,7 @@ class PySideApp(QWidget):
         self._closing_since: float | None = None
         self._closed = False
         self._page_shown_at = 0.0
-        self._unpause = QTimer(self)
+        self._unpause = QTimer(self.window)
         self._unpause.setSingleShot(True)
         self._unpause.timeout.connect(self._end_pause)
         self._build()
@@ -139,7 +132,7 @@ class PySideApp(QWidget):
     # --- Building ------------------------------------------------------------------------------
 
     def _build(self) -> None:
-        outer = QHBoxLayout(self)
+        outer = QHBoxLayout(self.window)
         outer.setContentsMargins(GAP, GAP, 0, GAP)
         outer.setSpacing(0)
         self.rail = Rail(
@@ -182,10 +175,10 @@ class PySideApp(QWidget):
             self.stack.addWidget(page)
 
         for number in range(1, len(STEPS) + 1):  # the rail by keyboard
-            shortcut = QShortcut(QKeySequence(f"Ctrl+{number}"), self)
+            shortcut = QShortcut(QKeySequence(f"Ctrl+{number}"), self.window)
             shortcut.activated.connect(lambda n=number: self.presenter.go_to(n))
         for key in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
-            enter = QShortcut(QKeySequence(key), self)
+            enter = QShortcut(QKeySequence(key), self.window)
             enter.setAutoRepeat(False)  # held down: one press, whatever the page (F-1)
             enter.activated.connect(self._primary)
         delete = QShortcut(QKeySequence(Qt.Key.Key_Delete), self.main.inputs.tree)
@@ -203,7 +196,7 @@ class PySideApp(QWidget):
         catalog = self._catalog()
         patterns = " ".join(f"*{extension}" for extension in sorted(EXTENSIONS))
         chosen, _filter = QFileDialog.getOpenFileNames(
-            self,
+            self.window,
             catalog.text("gui.main.pick_files_title"),
             "",
             f"{catalog.text('gui.main.documents')} ({patterns});;* (*)",
@@ -215,7 +208,7 @@ class PySideApp(QWidget):
         if not self._allowed(Action.ADD):
             return
         chosen = QFileDialog.getExistingDirectory(
-            self, self._catalog().text("gui.main.pick_folder_title")
+            self.window, self._catalog().text("gui.main.pick_folder_title")
         )
         if chosen:
             self.presenter.add_paths([Path(chosen)])
@@ -225,7 +218,7 @@ class PySideApp(QWidget):
             return
         suggestion = self.presenter.settings.last_output_folder or ""
         chosen = QFileDialog.getExistingDirectory(
-            self, self._catalog().text("gui.main.pick_output_title"), suggestion
+            self.window, self._catalog().text("gui.main.pick_output_title"), suggestion
         )
         if chosen:
             self.presenter.choose_output_folder(Path(chosen))
@@ -233,11 +226,11 @@ class PySideApp(QWidget):
             current = self.presenter.output_folder
             (self.main.in_folder if current is not None else self.main.next_to).setChecked(True)
 
-    def dragEnterEvent(self, event: QDragEnterEvent) -> None:  # noqa: N802 -- Qt's name
+    def _drag_enter(self, event: QDragEnterEvent) -> None:
         if event.mimeData().hasUrls() and self._allowed(Action.ADD):
             event.acceptProposedAction()
 
-    def dropEvent(self, event: QDropEvent) -> None:  # noqa: N802 -- Qt's name
+    def _dropped(self, event: QDropEvent) -> None:
         paths = [Path(url.toLocalFile()) for url in event.mimeData().urls() if url.isLocalFile()]
         if paths and self._allowed(Action.ADD):
             event.acceptProposedAction()
@@ -269,7 +262,7 @@ class PySideApp(QWidget):
         if self.dialog is None:
             self._open(
                 KeepInputsDialog(
-                    self,
+                    self.window,
                     self._catalog(),
                     on_answer=lambda keep: self.presenter.convert_more(keep=keep),
                     on_close=self._dialog_closed,
@@ -281,7 +274,10 @@ class PySideApp(QWidget):
         if self.dialog is None:
             self._open(
                 HelpDialog(
-                    self, self._catalog(), self._dialog_closed, version=self.presenter.version
+                    self.window,
+                    self._catalog(),
+                    self._dialog_closed,
+                    version=self.presenter.version,
                 )
             )
 
@@ -290,7 +286,7 @@ class PySideApp(QWidget):
             return
         self._open(
             SettingsDialog(
-                self,
+                self.window,
                 self._catalog(),
                 self.presenter.settings,
                 on_save=self.presenter.save_settings,
@@ -306,7 +302,7 @@ class PySideApp(QWidget):
             self._dialog_closed()
             self.presenter.dismiss_welcome(show_again=show_again)
 
-        self._open(WelcomeDialog(self, self._catalog(), steps, done))
+        self._open(WelcomeDialog(self.window, self._catalog(), steps, done))
 
     def _open(self, dialog: Dialog) -> None:
         self.dialog = dialog
@@ -315,14 +311,13 @@ class PySideApp(QWidget):
     def _dialog_closed(self) -> None:
         self.dialog = None
 
-    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 -- Qt's name
-        super().resizeEvent(event)
-        self.rail.set_compact(self.width() < COMPACT_BELOW)
-        self.main.set_short(self.height() < SHORT_BELOW)
+    def _resized(self, width: int, height: int) -> None:
+        self.rail.set_compact(width < COMPACT_BELOW)
+        self.main.set_short(height < SHORT_BELOW)
 
     # --- Closing ---------------------------------------------------------------------------------
 
-    def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802 -- Qt's name
+    def _close_event(self, event: QCloseEvent) -> None:
         """Closing while converting cancels, hides the window and waits for the batch to end, so
         the summary of what was done is still written; then the window closes."""
         if self._closed:
@@ -341,7 +336,7 @@ class PySideApp(QWidget):
         if step is close_policy.CloseStep.CANCEL_AND_WAIT:
             self._closing_since = time.monotonic()
             self.presenter.cancel()
-            self.hide()
+            self.window.hide()
             QTimer.singleShot(close_policy.CLOSE_POLL_MS, self._close_when_done)
             return
         if step is close_policy.CloseStep.CANCEL_THEN_NOW:
@@ -359,7 +354,7 @@ class PySideApp(QWidget):
         self._bridge.closed = True
         self._unpause.stop()
         self._closed = True
-        self.close()
+        self.window.close()
 
     @property
     def closed(self) -> bool:
@@ -460,7 +455,7 @@ class PySideApp(QWidget):
 
     def apply_theme(self, theme: str) -> None:
         self.palette_ = PALETTES.get(theme, LIGHT)
-        self.setStyleSheet(stylesheet(self.palette_))
+        self.window.setStyleSheet(stylesheet(self.palette_))
         self.rail.apply_palette(self.palette_)
         self.ground.apply_palette(self.palette_)
         for page in self.pages:
@@ -468,7 +463,7 @@ class PySideApp(QWidget):
 
     def apply_language(self, catalog: Catalog) -> None:
         self.catalog = catalog
-        self.setWindowTitle(catalog.text("gui.app.title"))
+        self.window.setWindowTitle(catalog.text("gui.app.title"))
         self.rail.apply_language(catalog)
         for page in self.pages:
             page.apply_language(catalog)
@@ -491,7 +486,7 @@ class PySideApp(QWidget):
 
     def start(self) -> None:
         self.presenter.start()
-        self.show()
+        self.window.show()
         self.main.add_files.setFocus()  # the first thing to do; not a step of the rail
 
 
