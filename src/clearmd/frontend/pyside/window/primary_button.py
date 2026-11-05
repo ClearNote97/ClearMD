@@ -2,7 +2,7 @@
 
 import time
 
-from PySide6.QtCore import QObject, QTimer
+from PySide6.QtCore import QObject, Qt, QTimer
 
 from clearmd.frontend.presenter import Presenter
 from clearmd.frontend.presenter.chrome import primary_gate
@@ -10,6 +10,8 @@ from clearmd.frontend.pyside.components.action_bar import ActionBar
 from clearmd.frontend.pyside.views.review import ReviewView
 from clearmd.frontend.pyside.window.dialog_host import DialogHost
 from clearmd.frontend.pyside.window.shown import Shown
+
+UNPAUSE_MARGIN_MS = 10
 
 
 class PrimaryButton:
@@ -30,6 +32,7 @@ class PrimaryButton:
         self._page_shown_at = 0.0  # when the page on screen changed (F-1)
         self._unpause = QTimer(owner)
         self._unpause.setSingleShot(True)
+        self._unpause.setTimerType(Qt.TimerType.PreciseTimer)  # a coarse one may fire early
         self._unpause.timeout.connect(self._end_pause)
 
     def page_shown(self) -> None:
@@ -51,7 +54,10 @@ class PrimaryButton:
         if pause == 0 or not self._actions.primary.isEnabled():
             return
         self._actions.primary.setEnabled(False)
-        self._unpause.start(pause)
+        # Counted from the page change, and a little over: the button is never enabled while
+        # its press would still be ignored.
+        left = pause - round((time.monotonic() - self._page_shown_at) * 1000)
+        self._unpause.start(max(left, 0) + UNPAUSE_MARGIN_MS)
 
     def cancel_pause(self) -> None:
         self._unpause.stop()

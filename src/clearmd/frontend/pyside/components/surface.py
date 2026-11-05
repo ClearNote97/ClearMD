@@ -19,7 +19,8 @@ class Surface(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self._shape = QColor("#D7EEEA")
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(GAP, GAP, GAP, GAP)
+        # The window's own margin is the gutter above and below: the page ends where the rail ends.
+        layout.setContentsMargins(GAP, 0, GAP, 0)
         layout.setSpacing(HALF)
         self.eyebrow = label("eyebrow")
         self.title = label("title")

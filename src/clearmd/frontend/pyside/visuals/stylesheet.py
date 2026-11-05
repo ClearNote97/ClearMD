@@ -137,6 +137,7 @@ QScrollBar::add-page, QScrollBar::sub-page {{ background: transparent; }}
 QTreeWidget {{
     background: {p.card}; border: 1px solid {p.border}; border-radius: {RADIUS}px;
     padding: {SPACE}px; alternate-background-color: {p.card};
+    outline: 0;
     selection-background-color: {blend(p.accent, p.card, 0.18)}; selection-color: {p.text};
 }}
 QTreeWidget::item {{ min-height: {4 * SPACE + 4}px; }}
@@ -150,5 +151,5 @@ QProgressBar {{
     background: {p.border}; border: none; border-radius: {SPACE // 2}px; max-height: {SPACE}px;
 }}
 QProgressBar::chunk {{ background: {p.accent}; border-radius: {SPACE // 2}px; }}
-QScrollArea {{ background: transparent; border: none; }}
+QScrollArea, QScrollArea > QWidget > QWidget {{ background: transparent; border: none; }}
 """

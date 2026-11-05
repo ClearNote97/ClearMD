@@ -69,6 +69,9 @@ def build_frame(
     inside.setContentsMargins(GAP, GAP, GAP, GAP)
     inside.setSpacing(SPACE)
     stack = QStackedWidget()
+    stack_layout = stack.layout()
+    if stack_layout is not None:
+        stack_layout.setContentsMargins(0, 0, 0, 0)  # Qt's default is off the grid
     inside.addWidget(stack, 1)
     message = label("message", wrap=True)
     inside.addWidget(message)

@@ -7,11 +7,14 @@ from typing import Any
 
 import pytest
 from support.gui_close import shut
+from support.pyside_acceptance import open_window
+from support.pyside_acceptance import shut as shut_qt
 from support.ttk_acceptance import pump
 from support.worker_factories import REAL
 
 from clearmd.backend.api import composition
 from clearmd.backend.schemas.limits import Limits
+from clearmd.frontend.pyside import PySideApp
 from clearmd.frontend.ttk import TtkApp
 
 ACCEPTANCE_TIME_PER_FILE = 60.0
@@ -52,5 +55,23 @@ def window(display: str) -> Iterator[Callable[..., TtkApp]]:
     for app in opened:
         try:
             shut(app)
+        except Exception:  # noqa: BLE001 -- already closed by the test
+            pass
+
+
+@pytest.fixture
+def qt_window() -> Iterator[Callable[..., PySideApp]]:
+    """Opens a PySide6 window (offscreen) on a backend and closes every one at the end."""
+    opened: list[PySideApp] = []
+
+    def make(backend: Any) -> PySideApp:
+        app = open_window(backend)
+        opened.append(app)
+        return app
+
+    yield make
+    for app in opened:
+        try:
+            shut_qt(app)
         except Exception:  # noqa: BLE001 -- already closed by the test
             pass

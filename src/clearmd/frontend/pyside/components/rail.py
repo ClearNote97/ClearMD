@@ -4,7 +4,7 @@ version."""
 from collections.abc import Callable
 from functools import partial
 
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
 
@@ -16,6 +16,8 @@ from clearmd.frontend.pyside.components.rail_art import badge, rail_dim
 from clearmd.frontend.pyside.layout.units import BADGE, STEP_HEIGHT
 from clearmd.frontend.pyside.visuals.images import logo
 from clearmd.i18n import Catalog
+
+COMPACT_VERSION_CHARS = 6  # what fits the compact rail at 14 px
 
 
 class Rail(QFrame):
@@ -53,7 +55,7 @@ class Rail(QFrame):
         top.addWidget(self.wordmark)
         top.addStretch(1)
         layout.addLayout(top)
-        layout.addSpacing(5 * SPACE)
+        layout.addSpacing(4 * SPACE)
 
         self.steps: list[QPushButton] = []
         for index in range(1, len(STEPS) + 1):
@@ -103,6 +105,12 @@ class Rail(QFrame):
             self._compact = compact
             self.setFixedWidth(COMPACT_RAIL_WIDTH if compact else RAIL_WIDTH)
             self.wordmark.setVisible(not compact)
+            self.foot.setWordWrap(not compact)
+            self.foot.setAlignment(
+                Qt.AlignmentFlag.AlignCenter
+                if compact
+                else Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+            )
             restyle(self, "compact", "true" if compact else "false")
             self._draw()
 
@@ -136,7 +144,11 @@ class Rail(QFrame):
             widget.setToolTip(self._words[word])
             widget.setAccessibleName(self._words[word])
         self.foot.setText(
-            self._version
+            self._compact_version()
             if self._compact
             else "\n".join(filter(None, (self._local, self._version)))
         )
+
+    def _compact_version(self) -> str:
+        """The version in the narrow rail: without its "v" when it would not fit (0.10.1)."""
+        return self._version if len(self._version) <= COMPACT_VERSION_CHARS else self._version[1:]

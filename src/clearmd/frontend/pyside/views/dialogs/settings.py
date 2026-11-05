@@ -3,14 +3,16 @@
 from collections.abc import Callable
 from dataclasses import replace
 
-from PySide6.QtWidgets import QCheckBox, QComboBox, QGridLayout, QVBoxLayout, QWidget
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QCheckBox, QComboBox, QHBoxLayout, QVBoxLayout, QWidget
 
 from clearmd.backend.schemas.settings import Settings
-from clearmd.frontend.design.metrics import GAP
+from clearmd.frontend.design.metrics import GAP, SPACE
 from clearmd.frontend.pyside.components.dialog import Dialog
 from clearmd.frontend.pyside.components.primitives import button, label
 from clearmd.i18n import Catalog
 
+CONTROL_WIDTH = 28 * SPACE  # the combo boxes' column (their style sheet makes them 24 * 8 wide)
 _LANGUAGES = {"en": "English", "es": "Español"}  # each in its own language
 
 
@@ -58,19 +60,19 @@ class SettingsDialog(Dialog):
             "images": {v: text(f"gui.settings.images_{v}") for v in ("omit", "folder")},
         }
         self.controls: dict[str, QComboBox | QCheckBox] = {}
-        grid = QGridLayout()
-        grid.setHorizontalSpacing(GAP)
-        grid.setVerticalSpacing(GAP)
-        grid.setColumnStretch(0, 1)
-        for row, (setting, key) in enumerate(self.ROWS):
-            cell = QWidget()  # a widget, not a layout: its wrapped lines get their height
+        rows = QVBoxLayout()
+        rows.setSpacing(GAP)
+        for setting, key in self.ROWS:
+            row = QHBoxLayout()  # a box, not a grid: its wrapped lines get their height
+            row.setSpacing(GAP)
+            cell = QWidget()
             cell_layout = QVBoxLayout(cell)
             cell_layout.setContentsMargins(0, 0, 0, 0)
             cell_layout.setSpacing(0)
             name = label("strong", text(f"gui.settings.{key}"))
             cell_layout.addWidget(name)
             cell_layout.addWidget(label("muted", text(f"gui.settings.{key}_help"), wrap=True))
-            grid.addWidget(cell, row, 0)
+            row.addWidget(cell, 1)
             control: QComboBox | QCheckBox
             if setting in self._choices:
                 combo = QComboBox()
@@ -80,9 +82,16 @@ class SettingsDialog(Dialog):
                 control = QCheckBox()
             control.setAccessibleName(text(f"gui.settings.{key}"))
             name.setBuddy(control)
-            grid.addWidget(control, row, 1)
+            holder = QWidget()  # the controls share one column, flush left
+            holder.setFixedWidth(CONTROL_WIDTH)
+            holder_layout = QHBoxLayout(holder)
+            holder_layout.setContentsMargins(0, 0, 0, 0)
+            holder_layout.addWidget(control)
+            holder_layout.addStretch(1 if isinstance(control, QCheckBox) else 0)
+            row.addWidget(holder, 0, Qt.AlignmentFlag.AlignVCenter)
+            rows.addLayout(row)
             self.controls[setting] = control
-        self.body.addLayout(grid)
+        self.body.addLayout(rows)
         self._load(settings)
 
         restore = button("", self.restore)

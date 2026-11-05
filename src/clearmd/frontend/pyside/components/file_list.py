@@ -45,6 +45,7 @@ class FileList(QFrame):
         self._rows: tuple[ListRow, ...] = ()
         self._warning = QColor("#B45309")
         self._stack = QStackedLayout(self)
+        self._stack.setContentsMargins(0, 0, 0, 0)  # Qt's default is off the grid
         self.tree = QTreeWidget()
         self.tree.setColumnCount(2 + columns)
         self.tree.setRootIsDecorated(False)
@@ -77,7 +78,12 @@ class FileList(QFrame):
 
     def apply_palette(self, palette: Palette) -> None:
         self._warning = QColor(palette.warning)
-        self.show_rows(self._rows)
+        for index, row in enumerate(self._rows):  # recoloured in place: the selection stays
+            item = self.tree.topLevelItem(index)
+            if item is None or not row.warning:
+                continue
+            for column in range(1, 2 + len(row.values)):
+                item.setForeground(column, self._warning)
 
     def show_rows(self, rows: Sequence[ListRow]) -> None:
         self._rows = tuple(rows)
