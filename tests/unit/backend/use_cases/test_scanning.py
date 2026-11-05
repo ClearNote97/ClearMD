@@ -11,7 +11,8 @@ from clearmd.backend.schemas.errors import SkipReason
 from clearmd.backend.schemas.events import ScanProgress
 from clearmd.backend.schemas.limits import MIB, Limits
 from clearmd.backend.schemas.models import InputProblem
-from clearmd.backend.use_cases.scanning import Candidate, ScanResult, is_hidden, scan
+from clearmd.backend.use_cases.scan_rules import is_hidden
+from clearmd.backend.use_cases.scanning import Candidate, ScanResult, scan
 
 
 def _touch(path: Path, data: bytes = b"x") -> Path:
@@ -178,7 +179,7 @@ def test_windows_hidden_attribute_is_honored() -> None:
 
 
 def test_windows_junctions_count_as_links() -> None:
-    from clearmd.backend.use_cases.scanning import is_link_entry
+    from clearmd.backend.use_cases.scan_rules import is_link_entry
 
     junction = SimpleNamespace(is_symlink=lambda: False, is_junction=lambda: True)
     folder = SimpleNamespace(is_symlink=lambda: False, is_junction=lambda: False)
@@ -208,7 +209,7 @@ def test_any_error_reading_a_folder_skips_it(
 
 
 def test_absurdly_deep_folders_are_cut_without_crashing(tmp_path: Path) -> None:
-    from clearmd.backend.use_cases.scanning import MAX_DEPTH
+    from clearmd.backend.use_cases.scan_rules import MAX_DEPTH
 
     deep = tmp_path / "p"
     for _ in range(MAX_DEPTH + 5):

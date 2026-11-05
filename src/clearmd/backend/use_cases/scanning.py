@@ -4,24 +4,23 @@ Untrusted input: symbolic links are never followed, ClearMD_Output folders are n
 hidden items are left out. A skipped folder is reported once, never file by file.
 """
 
-import os
-import stat
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
 from clearmd.backend.schemas.errors import SkipReason
 from clearmd.backend.schemas.events import ScanProgress
-from clearmd.backend.schemas.formats import MARKDOWN_EXTENSIONS, OUTPUT_DIR_NAME, ZIP_EXTENSIONS
+from clearmd.backend.schemas.formats import OUTPUT_DIR_NAME
 from clearmd.backend.schemas.limits import Limits
 from clearmd.backend.schemas.models import InputError, InputProblem, SkippedItem
 from clearmd.backend.use_cases.cancel import CancelToken
-
-LOCK_FILE_PREFIX = "~$"
-# Folders below an input deeper than this are skipped (real trees are far shallower; an archive
-# can nest thousands to exhaust the walk).
-MAX_DEPTH = 100
-_HIDDEN_ATTRIBUTE = getattr(stat, "FILE_ATTRIBUTE_HIDDEN", 2)
+from clearmd.backend.use_cases.scan_rules import (
+    MAX_DEPTH,
+    file_rule,
+    is_hidden,
+    is_link_entry,
+    sorted_entries,
+)
 
 
 @dataclass(frozen=True)
@@ -40,36 +39,6 @@ class ScanResult:
     candidates: tuple[Candidate, ...]
     skipped: tuple[SkippedItem, ...]
     input_errors: tuple[InputError, ...]
-
-
-def is_hidden(name: str, status: os.stat_result) -> bool:
-    """A leading dot, or the Windows hidden attribute (absent elsewhere)."""
-    attributes = getattr(status, "st_file_attributes", 0)
-    return name.startswith(".") or bool(attributes & _HIDDEN_ATTRIBUTE)
-
-
-def is_link_entry(entry: os.DirEntry[str]) -> bool:
-    """A symbolic link, or a Windows junction (which ``is_symlink`` does not report)."""
-    is_junction = getattr(entry, "is_junction", None)
-    return entry.is_symlink() or bool(is_junction and is_junction())
-
-
-def _file_rule(path: Path, size: int, limits: Limits) -> SkipReason | None:
-    if path.name.startswith(LOCK_FILE_PREFIX):
-        return SkipReason.LOCK_FILE
-    suffix = path.suffix.lower()
-    if suffix in MARKDOWN_EXTENSIONS:
-        return SkipReason.ALREADY_MARKDOWN
-    if suffix in ZIP_EXTENSIONS:
-        return SkipReason.ZIP_ARCHIVE
-    if size > limits.max_file_size:
-        return SkipReason.TOO_LARGE
-    return None
-
-
-def _sorted_entries(folder: Path) -> list[os.DirEntry[str]]:
-    with os.scandir(folder) as entries:
-        return sorted(entries, key=lambda entry: (entry.name.casefold(), entry.name))
 
 
 class _Scanner:
@@ -135,7 +104,7 @@ class _Scanner:
     def _add_file(
         self, path: Path, origin: Path, relative: Path, size: int, *, input_is_dir: bool
     ) -> None:
-        reason = _file_rule(path, size, self.limits)
+        reason = file_rule(path, size, self.limits)
         if reason is SkipReason.TOO_LARGE:
             self._skip(path, reason, origin, measured=size, limit=self.limits.max_file_size)
         elif reason is not None:
@@ -166,7 +135,7 @@ class _Scanner:
         if self.on_progress is not None:
             self.on_progress(ScanProgress(found=len(self.candidates), current=folder))
         try:
-            entries = _sorted_entries(folder)
+            entries = sorted_entries(folder)
         except OSError:  # no permission, a vanished folder, a network or disk error
             self._skip(folder, SkipReason.UNREADABLE, origin, is_dir=True)
             return []
