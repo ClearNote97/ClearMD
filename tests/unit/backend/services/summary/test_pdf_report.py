@@ -134,11 +134,11 @@ def test_every_mark_and_section_draws(tmp_path: Path, language: str) -> None:
 
 
 def test_c9_3_widths_are_advances_so_words_never_touch() -> None:
-    from clearmd.backend.services.summary.pdf_report import _width
+    from clearmd.backend.services.summary.pdf_report.metrics import width
 
     # Helvetica's own metrics (Adobe's AFM): "1" is 556 units, a space 278.
-    assert abs(_width("11 11", 1000, False) - (4 * 556 + 278)) < 3
-    assert abs(_width("W", 1000, True) - 944) < 3
+    assert abs(width("11 11", 1000, False) - (4 * 556 + 278)) < 3
+    assert abs(width("W", 1000, True) - 944) < 3
 
 
 def test_s9_1_a_very_deep_folder_or_a_huge_detail_draws_at_once(tmp_path: Path) -> None:
