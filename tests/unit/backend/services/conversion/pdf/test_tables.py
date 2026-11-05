@@ -359,11 +359,11 @@ def test_an_equation_stops_at_a_heading_and_a_caption() -> None:
 def test_a_line_of_dots_is_read_at_once() -> None:
     import time
 
-    from clearmd.backend.services.conversion.pdf.cleaner import _toc_entry
+    from clearmd.backend.services.conversion.pdf.cleaner.headings import toc_entry
 
     started = time.monotonic()
-    assert not _toc_entry("." * 200_000 + " 1x")
-    assert _toc_entry("Encuesta " + "." * 200_000 + " 16")
+    assert not toc_entry("." * 200_000 + " 1x")
+    assert toc_entry("Encuesta " + "." * 200_000 + " 16")
     assert time.monotonic() - started < 1
 
 
