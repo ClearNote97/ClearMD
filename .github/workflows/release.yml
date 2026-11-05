@@ -72,6 +72,18 @@ jobs:
             if ($signature.Status -ne "Valid") { throw "$exe is not signed: $($signature.Status)" }
             "$exe signed by $($signature.SignerCertificate.Subject)"
           }
+      - name: Product name and version inside the Windows executables
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path pyproject.toml -Pattern '^version = "(.+)"').Matches[0].Groups[1].Value
+          foreach ($exe in "dist/ClearMD.exe", "dist/clearmd-cli.exe") {
+            $info = (Get-Item $exe).VersionInfo
+            if ($info.ProductName -ne "ClearMD" -or $info.ProductVersion -ne $version) {
+              throw "$exe says '$($info.ProductName)' '$($info.ProductVersion)', not 'ClearMD' '$version'"
+            }
+            "$exe is ClearMD $version"
+          }
       - name: Check the executables (a real batch with the command line; the window opens)
         shell: bash
         run: bash packaging/check_executables.sh dist

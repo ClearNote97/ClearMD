@@ -149,8 +149,8 @@ Full plan in the [roadmap](./spec/roadmap.md). ClearMD has a **command line** an
 
 **Download the app** (nothing to install): from the [latest release](https://github.com/ClearNote97/ClearMD/releases/latest),
 `ClearMD-…-windows.exe` for Windows or `ClearMD-…-linux.tar.gz` for Linux, then open it with a double click.
-Windows may warn that the app is not recognized, because it is not code-signed yet: *More info → Run anyway*
-(signing is on its way: [code signing policy](./CODE_SIGNING.md)).
+Windows may warn that the app is not recognized, because it is not code-signed yet: *More info → Run anyway*.
+Signing is on its way: [Code signing policy](./CODE_SIGNING.md).
 The first start takes a few seconds while the app unpacks itself.
 
 **From the repository**, for the command line (the package is not on PyPI yet):
@@ -183,6 +183,11 @@ clearmd saved_page.html --html article   # only the page's article
 `3` outputs exist and nobody can answer · `130` cancelled. **Settings** (optional): `settings.toml` in your
 user configuration folder (on Linux `~/.config/ClearMD/`) — `language = "es"`, `on_existing_output = "skip"`,
 `recursive = false`, `html_strategy = "article"`…
+
+**Uninstall:** the app installs nothing; delete the executable. `uv tool uninstall clearmd` (or
+`pip uninstall clearmd`) removes the command line. ClearMD's settings, if any, stay in a folder of their own:
+delete it too to leave no trace (`%LOCALAPPDATA%\ClearMD`, that is `C:\Users\<you>\AppData\Local\ClearMD`, on
+Windows; `~/.config/ClearMD` on Linux).
 
 > 🔒 ClearMD never uses the internet. If you save the results in a folder synced by OneDrive, Google Drive or
 > Dropbox, that app may upload them — that is the sync app, not ClearMD.

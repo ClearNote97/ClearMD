@@ -17,6 +17,12 @@ Each criterion has an acceptance test (`tests/acceptance/test_006b_code_signing.
 - [x] **AC-04** The code signing policy (`CODE_SIGNING.md`) says what SignPath Foundation asks
   for, and both READMEs link to it.
 - [x] **AC-05** ADR-0037.
+- [x] **AC-06** Both Windows executables carry the product name `ClearMD` and the project's
+  version (SignPath checks them); the release build verifies it on every Windows build.
+- [x] **AC-07** "Code signing policy" is named on the home page (both READMEs) and on each
+  release's page; the policy names the Authors, Reviewers and Approvers, and the third-party
+  components' privacy.
+- [x] **AC-08** How to uninstall is told: the executable, the command line and the settings folder.
 
 ## Does not include
 

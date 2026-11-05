@@ -8,6 +8,7 @@
 # ruff: noqa -- PyInstaller runs this file with its own globals (Analysis, EXE, Splash...).
 
 import sys
+import tomllib
 from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules, copy_metadata
@@ -37,6 +38,23 @@ def light(datas):
             return True
         return target.rsplit("/", 1)[-1] in BABEL_KEPT
     return [entry for entry in datas if kept(entry)]
+
+# The product name and version inside each Windows executable (feature 006b, ADR-0037): SignPath
+# checks them before it signs. Written next to the build's other work files.
+sys.path.insert(0, str(ROOT / "packaging"))
+from version_info import version_text  # noqa: E402
+
+VERSION = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+
+
+def version_file(filename: str) -> str | None:
+    if not WINDOWS:
+        return None
+    path = Path(workpath) / f"version-{filename}.txt"  # noqa: F821 -- given by PyInstaller
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(version_text(VERSION, filename), encoding="utf-8")
+    return str(path)
+
 
 # The worker builds its converters from a name (``module:function``): import everything of ClearMD.
 # Pillow finds Tk through a module it imports by name (the window's images, ADR-0027).
@@ -80,6 +98,7 @@ gui_exe = EXE(  # noqa: F821
     name="ClearMD",
     console=False,
     icon=str(ASSETS / "clearmd.ico"),
+    version=version_file("ClearMD.exe"),
     upx=False,
 )
 
@@ -94,5 +113,6 @@ cli_exe = EXE(  # noqa: F821
     name="clearmd-cli",
     console=True,
     icon=str(ASSETS / "clearmd.ico"),
+    version=version_file("clearmd-cli.exe"),
     upx=False,
 )

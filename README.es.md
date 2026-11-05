@@ -154,7 +154,7 @@ escritorio** (`clearmd-ttk`), ambas también como ejecutables para Windows y Lin
 **Descarga la app** (nada que instalar): desde la [última versión](https://github.com/ClearNote97/ClearMD/releases/latest),
 `ClearMD-…-windows.exe` para Windows o `ClearMD-…-linux.tar.gz` para Linux, y ábrela con doble clic.
 Windows puede advertir que la app no es reconocida, porque aún no está firmada: *Más información → Ejecutar de todas
-formas*. La firma está en camino: [política de firma](./CODE_SIGNING.md). El primer inicio tarda unos segundos mientras la app se descomprime.
+formas*. La firma está en camino: [Code signing policy](./CODE_SIGNING.md) (política de firma). El primer inicio tarda unos segundos mientras la app se descomprime.
 
 **Desde el repositorio** (aún no está en PyPI):
 
@@ -186,6 +186,11 @@ clearmd pagina_guardada.html --html article  # solo el artículo de la página
 entrada válida · `3` hay resultados existentes y nadie puede responder · `130` cancelado. **Configuración**
 (opcional): `settings.toml` en tu carpeta de configuración de usuario (en Linux `~/.config/ClearMD/`) —
 `language = "es"`, `on_existing_output = "skip"`, `recursive = false`, `html_strategy = "article"`…
+
+**Desinstalar:** la app no instala nada; borra el ejecutable. `uv tool uninstall clearmd` (o
+`pip uninstall clearmd`) quita la línea de comandos. Los ajustes de ClearMD, si los hay, quedan en su propia carpeta:
+bórrala también para no dejar rastro (`%LOCALAPPDATA%\ClearMD`, es decir `C:\Users\<tú>\AppData\Local\ClearMD`, en
+Windows; `~/.config/ClearMD` en Linux).
 
 > 🔒 ClearMD nunca usa internet. Si guardas los resultados en una carpeta de OneDrive, Google Drive o Dropbox,
 > esa aplicación sí puede subirlos a la nube — eso lo hace la app de sincronización, no ClearMD.

@@ -67,6 +67,9 @@
 - **Windows may warn that the app is not recognized** (it is not code-signed yet). Click
   *More info → Run anyway*. / **Windows puede advertir que la app no es reconocida** (aún no está
   firmada). Pulsa *Más información → Ejecutar de todas formas*.
+  [Code signing policy](https://github.com/ClearNote97/ClearMD/blob/main/CODE_SIGNING.md).
+- **Uninstall:** delete the file; nothing else is installed. / **Desinstalar:** borra el archivo;
+  no se instala nada más.
 - The first start takes a few seconds (the app unpacks itself). / El primer inicio tarda unos
   segundos (la app se descomprime).
 - Nothing leaves your computer: ClearMD never uses the internet. / Nada sale de tu computador:

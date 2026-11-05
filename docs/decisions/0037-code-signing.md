@@ -27,6 +27,11 @@ it a project in its organization; that takes days.
 - **The code signing policy SignPath Foundation asks for is [`CODE_SIGNING.md`](../../CODE_SIGNING.md)**,
   linked from both READMEs: what is signed, the team roles, the privacy policy.
 - **The Linux archive is not signed:** Linux has no such warning.
+- **Each Windows executable carries its product name and version** (`packaging/version_info.py`,
+  from `pyproject.toml`): SignPath's artifact configuration requires them; every Windows build
+  checks them.
+- **SignPath Foundation's terms** (signpath.org/terms) asked too: "Code signing policy" named on
+  the home and release pages; Authors, Reviewers and Approvers; uninstall instructions.
 
 ## Consequences
 
