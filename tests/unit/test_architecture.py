@@ -77,7 +77,9 @@ RULES: dict[str, Rule] = {
     "clearmd.backend.services.conversion.inline": Rule(
         False, ("clearmd.backend.services.conversion.markdown_out",)
     ),
-    "clearmd.backend.services.conversion.markdown_out": Rule(False, ()),
+    "clearmd.backend.services.conversion.markdown_out": Rule(
+        False, ("clearmd.backend.services.conversion.markdown_out",)
+    ),
     # The XML reader shared by .odt and the article mode (004): the standard library only.
     "clearmd.backend.services.conversion.xmltree": Rule(False, ()),
     "clearmd.backend.api": Rule(True, ("clearmd.backend", "clearmd.i18n")),
