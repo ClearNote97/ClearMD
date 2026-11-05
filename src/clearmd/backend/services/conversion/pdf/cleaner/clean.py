@@ -36,4 +36,4 @@ def clean(document: Document) -> Cleaned:
         if notes:
             writer.hold(notes)
     markdown = tidy(neutralize(writer.finish()))
-    return Cleaned(markdown, removed, writer.headings, empty)
+    return Cleaned(markdown, removed, writer.buffer.headings, empty)

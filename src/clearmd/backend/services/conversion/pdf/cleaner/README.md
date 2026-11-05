@@ -12,10 +12,14 @@ never `reader`.
 | `running.py` | Running headers, footers and page numbers found and dropped. |
 | `joining.py` | A block's lines as one text; broken words joined. |
 | `render.py` | Tables, equations and pictures as Markdown blocks. |
-| `headings.py` | Heading and caption patterns; a table of contents' entry. |
-| `items.py` | The markers a list item starts with. |
-| `footnotes.py` | A page's text and the small lines at its foot. |
-| `writer.py` | `Writer`: the blocks in order. |
+| `flow.py` | `Flow`: the block being built; what is measured on it (gap, short, ended). |
+| `footnotes.py` | A page's text and its footnotes; `FootnoteQueue` holds them. |
+| `buffer.py` | `ParagraphBuffer`: the blocks written; `flush` turns the block being built into one. |
+| `headings.py` | Heading level, start, continuation and cut; captions; contents entries. |
+| `items.py` | List item markers; the text after one. |
+| `writer.py` | `Writer`: each line placed in the flow, in the page's order. |
 | `clean.py` | `clean`, `Cleaned`: the entry. |
 
-`__init__.py` re-exports `clean` and `Cleaned`.
+`__init__.py` re-exports `clean` and `Cleaned`. The writer's state is one `Flow` shared by the
+functions of `headings`, `items` and `flow`; none of them owns it, none receives the writer.
+Imports: `params` ← `flow` ← `items`; `footnotes` ← `buffer` ← `headings` ← `writer` ← `clean`.
