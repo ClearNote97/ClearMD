@@ -1,5 +1,13 @@
 **ClearMD — documents to Markdown, 100 % local.** / **Documentos a Markdown, 100 % local.**
 
+**New in 0.10.1 / Novedades de la 0.10.1**
+- Fixed: with "Images: in a folder", every LaTeX (.tex) and Excel file failed to convert. They
+  convert again. / Corregido: con "Imágenes: en una carpeta", todos los archivos LaTeX (.tex) y
+  Excel fallaban al convertir. Ya convierten de nuevo.
+- Inside: the code reorganized into small files, one concern each, with nothing changed in what
+  ClearMD writes. / Por dentro: el código reorganizado en archivos pequeños, cada uno con una sola
+  tarea, sin cambiar nada de lo que ClearMD escribe.
+
 **New in 0.10.0 / Novedades de la 0.10.0**
 - A PDF's equations as LaTeX: fractions, sums with their limits, brackets and scripts rebuilt
   from the drawing, shown as formulas in VS Code, GitHub or Obsidian, and copyable; equations

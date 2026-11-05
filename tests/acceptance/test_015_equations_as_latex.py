@@ -97,4 +97,4 @@ def test_ac_07_documented() -> None:
     adr = ROOT / "docs" / "decisions" / "0036-equations-as-latex.md"
     assert adr.exists() and "Status:** accepted" in adr.read_text(encoding="utf-8")
     version = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    assert version["project"]["version"] == "0.10.0"
+    assert tuple(map(int, version["project"]["version"].split("."))) >= (0, 10, 0)
