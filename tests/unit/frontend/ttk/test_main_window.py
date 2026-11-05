@@ -727,15 +727,15 @@ def test_f1_a_held_or_doubled_enter_never_skips_a_page(
 ) -> None:
     monkeypatch.setattr("clearmd.frontend.presenter.chrome.primary_gate.PRIMARY_PAUSE_SECONDS", 0.5)
     app.presenter.add_paths([tmp_path])
-    app._primary()
+    app.primary_button.press()
     pump(app, until=lambda: app.presenter.page == 2)
     time.sleep(0.6)
-    app._primary()  # Review → Convert
-    app._primary()  # at once again: the same burst must not start the batch
+    app.primary_button.press()  # Review → Convert
+    app.primary_button.press()  # at once again: the same burst must not start the batch
     pump(app, seconds=0.05)
     assert app.presenter.page == 3 and app.presenter.state is AppState.WAITING_DECISION
     time.sleep(0.6)
-    app._primary()  # a deliberate press, later, does
+    app.primary_button.press()  # a deliberate press, later, does
     pump(app, until=lambda: app.presenter.page == 4)
     assert app.presenter.page == 4
 
@@ -747,7 +747,7 @@ def test_c7_1_after_an_edit_review_convert_and_results_are_emptied(
     app: TtkApp, tmp_path: Path
 ) -> None:
     app.presenter.add_paths([tmp_path])
-    app._primary()
+    app.primary_button.press()
     pump(app, until=lambda: app.presenter.page == 2)
     app.presenter.add_paths([tmp_path / "more.pdf"])
     assert app.review.files.names() == [] and app.review.stats.dimmed  # waiting, faded (014)
@@ -841,7 +841,7 @@ def test_f1_the_pause_after_a_page_change_is_shown_on_the_button(
 ) -> None:
     monkeypatch.setattr("clearmd.frontend.presenter.chrome.primary_gate.PRIMARY_PAUSE_SECONDS", 0.3)
     app.presenter.add_paths([tmp_path])
-    app._primary()
+    app.primary_button.press()
     pump(app, until=lambda: app.presenter.page == 2)
     assert app.actions.primary.instate(["disabled"])
     pump(app, until=lambda: app.actions.primary.instate(["!disabled"]), seconds=2)
@@ -850,7 +850,7 @@ def test_f1_the_pause_after_a_page_change_is_shown_on_the_button(
 
 def test_a7_1_convert_more_leaves_nothing_of_the_last_batch(app: TtkApp, tmp_path: Path) -> None:
     app.presenter.add_paths([tmp_path])
-    app._primary()
+    app.primary_button.press()
     pump(app, until=lambda: app.presenter.page == 2)
     confirm(app)
     pump(app, until=lambda: app.presenter.page == 4)

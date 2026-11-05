@@ -19,7 +19,7 @@ from clearmd.backend.schemas.formats import EXTENSIONS
 from clearmd.frontend.design.metrics import COMPACT_BELOW, SHORT_BELOW, SPACE
 from clearmd.frontend.design.palette import LIGHT, PALETTES, Palette
 from clearmd.frontend.presenter import Action, AppState, Presenter
-from clearmd.frontend.presenter.chrome import close_policy, primary_gate
+from clearmd.frontend.presenter.chrome import close_policy
 from clearmd.frontend.presenter.chrome.header import header_of
 from clearmd.frontend.presenter.chrome.secondary import SecondaryKind, ready_line, secondary_of
 from clearmd.frontend.presenter.models import (
@@ -45,6 +45,7 @@ from clearmd.frontend.ttk.visuals.style_names import WARNING
 from clearmd.frontend.ttk.window import toolkit
 from clearmd.frontend.ttk.window.dialog_host import DialogHost
 from clearmd.frontend.ttk.window.presses import Presses
+from clearmd.frontend.ttk.window.primary_button import PrimaryButton
 from clearmd.frontend.ttk.window.scheduler import Scheduler
 from clearmd.frontend.ttk.window.shown import Shown
 from clearmd.i18n import Catalog
@@ -67,8 +68,6 @@ class TtkApp:
         self.presenter = Presenter(self, backend)
         self.dialogs = DialogHost(self.root, self.fonts, self.presenter, self.shown)
         self._closing_since: float | None = None  # closed while converting: waiting for the end
-        self._page_shown_at = 0.0  # when the page on screen changed (F-1)
-        self._unpause: str | None = None  # the end of that pause
         self.presses = Presses()
         self._build()
         self.rail.show_version(self.presenter.version)
@@ -116,7 +115,7 @@ class TtkApp:
         page = self.surface.page
 
         # One action bar for every page (ADR-0029), the message above it.
-        self.actions = ActionBar(page, on_primary=self._primary)
+        self.actions = ActionBar(page, on_primary=lambda: self.primary_button.press())
         self.actions.pack(side="bottom", fill="x", pady=(SPACE, 0))
         self.message = ttk.Label(page, style=WARNING, anchor="w", justify="left")
         page.bind("<Configure>", lambda event: self.message.configure(wraplength=event.width))
@@ -137,6 +136,9 @@ class TtkApp:
         self.converting = ConvertView(page, fonts=self.fonts)
         self.results = ResultsView(page, fonts=self.fonts)
         # One page per step (ADR-0027): Choose (also while analyzing), Review, Convert, Results.
+        self.primary_button = PrimaryButton(
+            self.root, self.actions, self.review, self.presenter, self.dialogs, self.shown
+        )
         self.pages: tuple[ttk.Frame, ...] = (self.main, self.review, self.converting, self.results)
         self._show_page(self.main)
 
@@ -201,36 +203,10 @@ class TtkApp:
 
     def _enter(self, event: Any) -> None:
         if self.presses.pressed(event):  # held down: one press, whatever the page (F-1)
-            self._primary()
+            self.primary_button.press()
 
     def _space(self, event: Any) -> str | None:
         return None if self.presses.pressed(event) else "break"  # "break": the button stays
-
-    def _primary(self) -> None:
-        """The page's primary action, from its button or Enter (UX §6, ADR-0029). Right after the
-        page changes it waits a moment, shown disabled: a double click must not run Next and
-        Convert past a page the user did not see (security audit of 007, F-1)."""
-        if self.dialogs.current is not None:
-            return
-        if not primary_gate.gate_open(self._page_shown_at, time.monotonic()):
-            return
-        self.presenter.press_primary(self.review.overwrite_answer())
-
-    def _pause_primary(self) -> None:
-        """The primary button is disabled for the pause after a page change, so it is seen."""
-        if self._unpause is not None:
-            self.root.after_cancel(self._unpause)
-            self._unpause = None
-        pause = primary_gate.pause_milliseconds()
-        if pause == 0 or self.actions.primary.instate(["disabled"]):
-            return
-        self.actions.primary.state(["disabled"])
-        self._unpause = self.root.after(pause, self._end_pause)
-
-    def _end_pause(self) -> None:
-        self._unpause = None
-        if self.shown.state is not None:
-            self.actions.show(self.shown.state.primary)
 
     def _window_resized(self, event: Any) -> None:
         if event.widget is self.root:
@@ -268,9 +244,7 @@ class TtkApp:
         self._destroy()
 
     def _destroy(self) -> None:
-        if self._unpause is not None:
-            self.root.after_cancel(self._unpause)
-            self._unpause = None
+        self.primary_button.cancel_pause()
         self.scheduler.close()
         self.root.update_idletasks()  # Tk's own idle work (a theme change) runs before the end
         self.root.destroy()
@@ -287,7 +261,7 @@ class TtkApp:
             self.shown.scan = None
         if previous is not None and previous.page != state.page:
             self.message.configure(text="")  # a message belongs to the page it was given on
-            self._page_shown_at = time.monotonic()
+            self.primary_button.page_shown()
         converting = state.state is AppState.CONVERTING
         if converting and (previous is None or previous.state is not AppState.CONVERTING):
             self.converting.clear()
@@ -297,7 +271,7 @@ class TtkApp:
         self.rail.show_page(state.page)
         self.actions.show(state.primary)
         if previous is not None and previous.page != state.page:
-            self._pause_primary()
+            self.primary_button.pause()
         self._show_secondary(state)
         self._header()
         main = self.main
