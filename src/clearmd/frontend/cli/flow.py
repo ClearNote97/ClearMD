@@ -1,0 +1,85 @@
+"""The flow of one run: settings, plan, decision, batch, summary, open."""
+
+import sys
+from collections.abc import Sequence
+
+from clearmd.backend.api import Strategy, load_settings, open_folder, plan_batch
+from clearmd.frontend.cli.batch import (
+    EXIT_CANCELLED,
+    EXIT_DECISION_REQUIRED,
+    EXIT_OK,
+    EXIT_USAGE,
+    exit_code,
+    run_cancellable,
+)
+from clearmd.frontend.cli.parser import build_parser, requested_language
+from clearmd.frontend.cli.progress import Progress
+from clearmd.frontend.cli.prompts import decision as decide
+from clearmd.frontend.cli.report import (
+    p,
+    print_dry_run,
+    print_plan_notes,
+    print_settings_warnings,
+    print_summary,
+    summary_roots,
+)
+from clearmd.i18n import load_catalog, resolve_language
+
+
+def run(argv: Sequence[str] | None) -> int:
+    settings, settings_warnings = load_settings()
+    catalog = load_catalog(resolve_language(requested_language(argv), settings.language))
+    args = build_parser(catalog).parse_args(argv)
+    err = sys.stderr
+    print_settings_warnings(catalog, settings_warnings, err)
+
+    # A flag decides for this run only; without one, the shared settings do (AC-34).
+    recursive = settings.recursive if args.recursive is None else args.recursive
+    on_existing = (
+        "overwrite" if args.overwrite else "skip" if args.skip else settings.on_existing_output
+    )
+    try:
+        plan = plan_batch(
+            args.paths,
+            recursive=recursive,
+            output_root=args.output_root,
+            html_strategy=Strategy(args.html or settings.html_strategy),
+        )
+    except KeyboardInterrupt:
+        print(catalog.text("cli.cancelled_before_start"), file=err)
+        return EXIT_CANCELLED
+    print_plan_notes(catalog, plan, quiet=args.quiet, stream=err)
+    if plan.is_empty:
+        if plan.input_errors and not plan.skipped:
+            print(catalog.text("cli.no_valid_input"), file=err)
+            return EXIT_USAGE
+        print(catalog.text("cli.nothing_to_convert"))
+        return EXIT_OK
+    if args.dry_run:
+        print_dry_run(catalog, plan)
+        return EXIT_OK
+
+    try:
+        decision = decide(catalog, plan, on_existing, err)
+    except KeyboardInterrupt:
+        print(catalog.text("cli.cancelled_before_start"), file=err)
+        return EXIT_CANCELLED
+    if decision is None:
+        return EXIT_DECISION_REQUIRED
+    progress = Progress(catalog, quiet=args.quiet, stream=err)
+    # A flag decides for this run only (--summary-pdf, --no-summary-pdf); without one, the setting.
+    summary_pdf = (
+        settings.summary_format == "markdown_pdf" if args.summary_pdf is None else args.summary_pdf
+    )
+    images = settings.images == "folder" if args.images is None else args.images
+    report = run_cancellable(
+        catalog, plan, decision, progress, err, summary_pdf=summary_pdf, images=images
+    )
+    print_summary(catalog, report)
+    if args.open:
+        for root in summary_roots(report):
+            try:
+                open_folder(root)
+            except (OSError, ValueError):  # a root refused as a link, no file browser…
+                print(catalog.text("cli.cannot_open", path=p(root)), file=err)
+    return exit_code(report)

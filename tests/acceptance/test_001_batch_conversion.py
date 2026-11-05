@@ -474,12 +474,12 @@ def _outputs(workdir: Path) -> dict[str, str]:
 def test_ac_16_existing_outputs_are_asked_about_once(
     workdir: Path, monkeypatch: pytest.MonkeyPatch, answers: list[str], expected: dict[str, str]
 ) -> None:
-    from clearmd.frontend.cli import app
+    from clearmd.frontend.cli import prompts
 
     first, second = _with_existing_outputs(workdir)
     replies = iter(answers)
-    monkeypatch.setattr(app, "_is_interactive", lambda: True)
-    monkeypatch.setattr(app, "_ask", lambda prompt: next(replies, None))
+    monkeypatch.setattr(prompts, "is_interactive", lambda: True)
+    monkeypatch.setattr(prompts, "ask", lambda prompt: next(replies, None))
     assert main([str(first), str(second), "--quiet"]) == 0
     got = {name: ("old" if text == "old" else "new") for name, text in _outputs(workdir).items()}
     assert got == expected
@@ -565,10 +565,10 @@ def test_ac_35_exit_codes(workdir: Path) -> None:
 def test_ac_36_open_shows_the_results_folder_only_when_asked(
     workdir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from clearmd.frontend.cli import app
+    from clearmd.frontend.cli import flow
 
     opened: list[Path] = []
-    monkeypatch.setattr(app, "open_folder", opened.append)
+    monkeypatch.setattr(flow, "open_folder", opened.append)
     source = put(workdir, "sample.txt", "a.txt")
     assert main([str(source), "--quiet"]) == 0
     assert opened == []
@@ -683,15 +683,15 @@ def test_ac_39_a_converter_that_tries_the_network_is_stopped(
 def test_ac_26_ctrl_c_at_the_question_exits_130_and_writes_nothing_new(
     workdir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from clearmd.frontend.cli import app
+    from clearmd.frontend.cli import prompts
 
     first, second = _with_existing_outputs(workdir)
 
     def interrupted(prompt: str) -> str:
         raise KeyboardInterrupt
 
-    monkeypatch.setattr(app, "_is_interactive", lambda: True)
-    monkeypatch.setattr(app, "_ask", interrupted)
+    monkeypatch.setattr(prompts, "is_interactive", lambda: True)
+    monkeypatch.setattr(prompts, "ask", interrupted)
     assert main([str(first), str(second), "--quiet"]) == 130
     assert _outputs(workdir) == {"a": "old", "b": "old"}
 
@@ -725,12 +725,12 @@ def test_ac_28_a_summary_that_cannot_be_written_is_reported(
 def test_ac_35_an_unexpected_error_is_a_message_not_a_traceback(
     workdir: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from clearmd.frontend.cli import app
+    from clearmd.frontend.cli import flow
 
     def broken(*args: object, **kwargs: object) -> None:
         raise RuntimeError("something nobody expected")
 
-    monkeypatch.setattr(app, "plan_batch", broken)
+    monkeypatch.setattr(flow, "plan_batch", broken)
     source = put(workdir, "sample.txt", "a.txt")
     assert main([str(source)]) == 1
     err = capsys.readouterr().err
@@ -753,10 +753,10 @@ def test_ac_36_open_tells_a_folder_it_cannot_open_and_ends_normally(
 def test_ac_36_open_shows_the_summary_even_when_every_file_failed(
     workdir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from clearmd.frontend.cli import app
+    from clearmd.frontend.cli import flow
 
     opened: list[Path] = []
-    monkeypatch.setattr(app, "open_folder", opened.append)
+    monkeypatch.setattr(flow, "open_folder", opened.append)
     broken = workdir / "broken.pdf"
     broken.write_bytes(b"%PDF-1.4 not really")
     main([str(broken), "--open", "--quiet"])

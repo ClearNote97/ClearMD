@@ -15,7 +15,7 @@ from clearmd.backend.schemas.models import (
 )
 from clearmd.backend.services.conversion.registry import ConverterRegistry
 from clearmd.backend.use_cases.planning import build_plan
-from clearmd.frontend.cli.app import build_parser
+from clearmd.frontend.cli import build_parser
 from clearmd.i18n import load_catalog
 
 

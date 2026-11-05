@@ -207,7 +207,7 @@ def test_c9_5_an_old_pdf_never_stays_next_to_a_newer_summary(workdir: Path) -> N
 def test_c9_6_the_setting_decides_and_a_flag_overrides_it(
     workdir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    import clearmd.frontend.cli.app as cli
+    import clearmd.frontend.cli.flow as cli
 
     monkeypatch.setattr(cli, "load_settings", lambda: (Settings(summary_format="markdown_pdf"), ()))
     put(workdir, "sample.txt", "a.txt")

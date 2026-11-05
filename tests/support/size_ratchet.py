@@ -15,7 +15,6 @@ FILES: dict[str, int] = {  # path -> lines (over 250)
     "src/clearmd/backend/services/conversion/tex/macros.py": 272,
     "src/clearmd/backend/services/conversion/tex/render.py": 892,
     "src/clearmd/backend/services/summary/pdf_report.py": 400,
-    "src/clearmd/frontend/cli/app.py": 405,
     "src/clearmd/frontend/pyside/app.py": 520,
     "src/clearmd/frontend/pyside/dialogs.py": 270,
     "src/clearmd/frontend/pyside/pages.py": 489,  # +1: design imports (P3); dissolved in P8
@@ -58,7 +57,6 @@ CLASSES: dict[str, int] = {  # "path::Class" -> lines (over 150)
 }
 # The GUIs' entry files (≤ 40 lines) that are still whole windows.
 ENTRY_FILES: dict[str, int] = {
-    "src/clearmd/frontend/cli/app.py": 405,
     "src/clearmd/frontend/pyside/app.py": 520,
     "src/clearmd/frontend/ttk/app.py": 574,
 }
