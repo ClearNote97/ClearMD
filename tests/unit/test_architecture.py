@@ -75,7 +75,11 @@ RULES: dict[str, Rule] = {
     ),
     # Inline text as ClearMD's own converters write it: the standard library and markdown_out.
     "clearmd.backend.services.conversion.inline": Rule(
-        False, ("clearmd.backend.services.conversion.markdown_out",)
+        False,
+        (
+            "clearmd.backend.services.conversion.markdown_out",
+            "clearmd.backend.services.conversion.inline",
+        ),
     ),
     "clearmd.backend.services.conversion.markdown_out": Rule(
         False, ("clearmd.backend.services.conversion.markdown_out",)

@@ -3,7 +3,6 @@ then. Each may only shrink; once under the limit its entry must go. Empty at the
 
 FILES: dict[str, int] = {  # path -> lines (over 250)
     "src/clearmd/backend/services/conversion/html/render.py": 485,
-    "src/clearmd/backend/services/conversion/inline.py": 450,
     "src/clearmd/backend/services/conversion/odt/mathml.py": 291,
     "src/clearmd/backend/services/conversion/odt/render.py": 642,
     "src/clearmd/backend/services/conversion/tex/context.py": 423,
