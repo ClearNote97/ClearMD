@@ -8,7 +8,6 @@ FILES: dict[str, int] = {  # path -> lines (over 250)
     "tests/gui/make_assets.py": 318,
     "tests/unit/backend/services/conversion/images/test_images.py": 295,
     "tests/unit/backend/services/conversion/odt/test_render.py": 267,
-    "tests/unit/backend/services/conversion/odt/test_review_code.py": 295,
     "tests/unit/backend/services/worker/test_supervisor.py": 261,
 }
 
