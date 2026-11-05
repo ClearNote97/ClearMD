@@ -11,6 +11,7 @@ import os
 import re
 from pathlib import Path, PurePosixPath
 
+from clearmd.backend.services.conversion.markdown_out import ENTITY
 from clearmd.backend.services.conversion.tex.includes import is_outside_by_name, walk_inside
 
 IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".pdf", ".svg", ".gif", ".webp", ".eps")
@@ -77,3 +78,11 @@ class ImageFinder:
             return None if refused else argument.strip()
         self._seen[argument] = image_link(argument, self._folder, self._prefixes, self._target)
         return self._seen[argument]
+
+
+def name_only_image(path: str) -> str | None:
+    """Without a folder to look in: a path that names something outside or remote is no link."""
+    name = path.strip().replace("\\", "/")
+    if not name or is_outside_by_name(name) is not None or ENTITY.search(name):
+        return None
+    return path.strip()

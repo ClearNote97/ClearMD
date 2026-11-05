@@ -42,10 +42,9 @@ from clearmd.backend.services.conversion.markdown_out import (
     outside_code,
     tidy,
 )
-from clearmd.backend.services.conversion.tex.includes import is_outside_by_name
+from clearmd.backend.services.conversion.tex.images import name_only_image
 from clearmd.backend.services.conversion.tex.macros import (
     BudgetExceeded,
-    MacroDefinition,
     MacroExpander,
     build_expander,
     collect_definitions,
@@ -62,170 +61,48 @@ from clearmd.backend.services.conversion.tex.nodes import (
 )
 from clearmd.backend.services.conversion.tex.parsing import (
     CITATION_MACROS,
-    CODE_ENVIRONMENTS,
     REFERENCE_MACROS,
     Unparseable,
     make_context,
     parse,
 )
 from clearmd.backend.services.conversion.tex.tables import tabular_to_markdown
+from clearmd.backend.services.conversion.tex.writer.conditionals import matching_fi
+from clearmd.backend.services.conversion.tex.writer.floats import is_float, own_caption
+from clearmd.backend.services.conversion.tex.writer.math import is_label
+from clearmd.backend.services.conversion.tex.writer.state import ImageHandler
+from clearmd.backend.services.conversion.tex.writer.structure import (
+    is_spanish,
+    split_document,
+    top_level,
+)
+from clearmd.backend.services.conversion.tex.writer.vocab import (
+    ALIGNED,
+    CODE,
+    CONTAINERS,
+    DISPLAY_MATH,
+    DROPPED,
+    INCLUDES,
+    INLINE,
+    LISTS,
+    MAX_UNKNOWN,
+    METADATA,
+    PLAIN,
+    QUOTES,
+    SECTION_LEVELS,
+    SPECIALS,
+    TABULARS,
+    WORDS,
+)
 
-SECTION_LEVELS = {
-    "part": 0,
-    "chapter": 1,
-    "section": 2,
-    "subsection": 3,
-    "subsubsection": 4,
-    "paragraph": 5,
-    "subparagraph": 6,
-}
 _CONTROL_WORD_AT_END = re.compile(r"\\[A-Za-z]+$")
 _INDENTATION = re.compile(r"\n[ \t]+")
-_SECTIONING_IN_BODY = re.compile(r"\\(" + "|".join(SECTION_LEVELS) + r")(?![A-Za-z@])")
-
-INLINE = {
-    "textbf": "**{}**",
-    "textit": "*{}*",
-    "textsl": "*{}*",
-    "emph": "*{}*",
-    "underline": "<u>{}</u>",
-}
-PLAIN = frozenset(
-    {"textrm", "textsf", "textsc", "textup", "textmd", "textnormal", "mbox", "hbox", "text"}
-)
-# Layout and definitions: nothing to show (definitions are expanded by macros.py). Their arguments
-# are declared in context.py, so they go with them.
-DROPPED = frozenset(
-    {
-        "label", "index", "vspace", "hspace", "newpage", "clearpage", "cleardoublepage",
-        "noindent", "centering", "tableofcontents", "listoffigures", "listoftables", "medskip",
-        "bigskip", "smallskip", "vfill", "hfill", "linebreak", "pagebreak", "nopagebreak",
-        "raggedright", "raggedleft", "documentclass", "usepackage", "graphicspath",
-        "bibliographystyle", "bibliography", "printbibliography", "addbibresource", "pagestyle",
-        "thispagestyle", "setlength", "setcounter", "addcontentsline", "phantomsection",
-        "frontmatter", "mainmatter", "backmatter", "appendix", "thanks", "newcommand",
-        "renewcommand", "providecommand", "DeclareMathOperator", "makeatletter", "makeatother",
-        "small", "footnotesize", "large", "Large", "LARGE", "normalsize", "tiny", "huge", "Huge",
-        "scriptsize", "bfseries", "itshape", "rmfamily", "sffamily", "ttfamily",
-        "selectlanguage", "setmainlanguage", "onehalfspacing", "doublespacing", "singlespacing",
-        "nocite", "hline", "toprule", "midrule", "bottomrule", "cline", "cmidrule", "today",
-    }
-)  # fmt: skip
-METADATA = frozenset({"title", "author", "date"})
-WORDS = {"LaTeXe": "LaTeX2e"}  # latex2text knows \LaTeX and \TeX
-SPECIALS = {"~": " ", "--": "–", "---": "—", "``": "“", "''": "”", "!`": "¡", "?`": "¿"}
-INCLUDES = frozenset({"input", "include", "subfile"})
-
-LISTS = frozenset({"itemize", "enumerate", "description"})
-QUOTES = frozenset({"quote", "quotation", "verse"})
-CODE = frozenset(CODE_ENVIRONMENTS)
-DISPLAY_MATH = frozenset({"equation", "equation*", "displaymath", "math"})
-ALIGNED = {
-    "align": "aligned",
-    "align*": "aligned",
-    "flalign": "aligned",
-    "flalign*": "aligned",
-    "eqnarray": "aligned",
-    "eqnarray*": "aligned",
-    "multline": "aligned",
-    "multline*": "aligned",
-    "gather": "gathered",
-    "gather*": "gathered",
-}
-CONTAINERS = frozenset({"center", "flushleft", "flushright", "document"})
-FLOATS = frozenset({"figure", "figure*", "wrapfigure", "table", "table*", "subfigure", "subtable"})
-TABULARS = frozenset({"tabular", "tabular*", "tabularx", "longtable"})
-LANGUAGES = frozenset(
-    {
-        "spanish", "english", "british", "american", "usenglish", "ukenglish", "french",
-        "german", "ngerman", "italian", "portuguese", "brazil", "brazilian", "catalan",
-        "basque", "galician",
-    }
-)  # fmt: skip
-MAX_UNKNOWN = 1000  # distinct names kept for the note; the text keeps every one as written
 
 _LATEX2TEXT = LatexNodes2Text(math_mode="verbatim", strict_latex_spaces=False)
 _LATEX2TEXT_DB = get_default_latex_context_db()
 
-# The link target for an image argument, or ``None`` when it must not become a link (ADR-0022).
-ImageHandler = Callable[[str], str | None]
 # "file, line N" for a position of the source (documents made of several files).
 Locator = Callable[[int], str]
-
-
-def _is_label(node: Any) -> bool:
-    return is_macro(node, "label")
-
-
-def _is_float(node: Any) -> bool:
-    if not isinstance(node, LatexEnvironmentNode):
-        return False
-    if node.environmentname in FLOATS:
-        return True
-    return node.environmentname == "minipage" and _own_caption(node) is not None
-
-
-def _own_caption(node: Any) -> Any:
-    """The first ``\\caption`` of a float, not looking into the floats inside it."""
-    for found in walk(node.nodelist, skip=_is_float):
-        if is_macro(found, "caption"):
-            return found
-    return None
-
-
-def _body(nodes: list[Any]) -> tuple[list[Any], list[Any]]:
-    """The preamble and the body (everything, when there is no ``document`` environment)."""
-    for index, node in enumerate(nodes):
-        if isinstance(node, LatexEnvironmentNode) and node.environmentname == "document":
-            return nodes[:index], list(node.nodelist or [])
-    return nodes, nodes
-
-
-def top_level(nodes: list[Any], definitions: dict[str, MacroDefinition] | None = None) -> int:
-    """The shallowest sectioning command really used (comments and code are separate nodes),
-    also inside the author's macros that are used (``\\mychap`` → ``\\chapter``)."""
-    _, body = _body(nodes)
-    used: set[str] = set()
-    present = []
-    for node in walk(body):
-        if isinstance(node, LatexMacroNode):
-            if node.macroname in SECTION_LEVELS:
-                present.append(SECTION_LEVELS[node.macroname])
-            elif definitions and node.macroname in definitions:
-                used.add(node.macroname)
-    for name in used:
-        assert definitions is not None
-        present.extend(
-            SECTION_LEVELS[n] for n in _SECTIONING_IN_BODY.findall(definitions[name].body)
-        )
-    return min(present, default=SECTION_LEVELS["section"])
-
-
-def _options(node: Any, index: int) -> list[str]:
-    return [option.strip() for option in raw(argument(node, index)).split(",") if option.strip()]
-
-
-def is_spanish(nodes: list[Any]) -> bool:
-    """babel's main language (its last option, else the class's) or polyglossia's is Spanish."""
-    preamble, _ = _body(nodes)
-    babel: list[str] = []
-    global_options: list[str] = []
-    main = ""
-    for node in walk(preamble):
-        if is_macro(node, "usepackage") and "babel" in _options(node, 1):
-            babel = _options(node, 0) or babel
-            chosen = [o.split("=", 1)[1] for o in babel if o.replace(" ", "").startswith("main=")]
-            main = chosen[-1].strip() if chosen else main
-        elif is_macro(node, "documentclass"):
-            global_options = _options(node, 0)
-        elif is_macro(node, "setmainlanguage") or is_macro(node, "setdefaultlanguage"):
-            main = raw(argument(node, -1)).strip()
-    if not main and babel:
-        main = babel[-1]
-    elif not main:
-        languages = [o for o in global_options if o.lower() in LANGUAGES]
-        main = languages[-1] if languages else ""
-    return main.lower().startswith(("spanish", "español"))
 
 
 class Renderer:
@@ -241,7 +118,7 @@ class Renderer:
     ) -> None:
         self._top_level = level
         self._spanish = spanish
-        self._image = image or _name_only_image
+        self._image = image or name_only_image
         self._macros = macros
         self.unknown: dict[str, None] = {}
         self.refused: dict[NoteItem, None] = {}
@@ -258,7 +135,7 @@ class Renderer:
     # --- Entry points -------------------------------------------------------------------------
 
     def document(self, nodes: list[Any]) -> str:
-        preamble, body = _body(nodes)
+        preamble, body = split_document(nodes)
         if body is not preamble:
             for node in walk(preamble):
                 if isinstance(node, LatexMacroNode) and node.macroname in METADATA:
@@ -296,7 +173,7 @@ class Renderer:
         while index < len(nodes):
             node = nodes[index]
             if is_macro(node, "iffalse"):
-                closing = _matching_fi(nodes, index + 1)
+                closing = matching_fi(nodes, index + 1)
                 if closing is not None:
                     index = closing + 1
                     continue
@@ -414,7 +291,7 @@ class Renderer:
         name: str = node.environmentname
         if name == "comment":
             return ""
-        if name in CONTAINERS or (name == "minipage" and not _is_float(node)):
+        if name in CONTAINERS or (name == "minipage" and not is_float(node)):
             return self.render(node.nodelist or [])
         if name == "abstract":
             heading = "Resumen" if self._spanish else "Abstract"
@@ -433,7 +310,7 @@ class Renderer:
             inner = ALIGNED[name]
             body = self._math_body(node.nodelist)
             return block(self._display(f"\\begin{{{inner}}}\n{body}\n\\end{{{inner}}}"))
-        if _is_float(node):
+        if is_float(node):
             return self._float(node)
         if name in TABULARS:
             return self._tabular(node)
@@ -542,7 +419,7 @@ class Renderer:
             return written if math else self._esc(written)
 
     def _math_source(self, nodes: list[Any]) -> str:
-        return "".join(self._serialize(n) for n in nodes if n is not None and not _is_label(n))
+        return "".join(self._serialize(n) for n in nodes if n is not None and not is_label(n))
 
     def _serialize(self, node: Any) -> str:
         """Math as written; only comments and spans that use an author's macro are replaced."""
@@ -633,12 +510,12 @@ class Renderer:
 
     def _float(self, node: Any) -> str:
         """A figure or table: its content in order; the caption on its only image, or under it."""
-        caption_node = _own_caption(node)
+        caption_node = own_caption(node)
         with self._text_mode():
             caption = self.inline(self._last_arg(caption_node)) if caption_node else ""
         if caption_node is not None:
             self._consumed.add(id(caption_node))
-        images = [n for n in walk(node.nodelist, skip=_is_float) if is_macro(n, "includegraphics")]
+        images = [n for n in walk(node.nodelist, skip=is_float) if is_macro(n, "includegraphics")]
         if len(images) == 1 and caption:
             self._alt.append(caption)
             try:
@@ -687,24 +564,6 @@ class Renderer:
                 ConversionNote(NoteKind.TABLE_KEPT_AS_LATEX, (NoteItem(str(self.tables_kept)),))
             )
         return tuple(found)
-
-
-_CONDITIONAL_NAME = re.compile(r"if(?!thenelse)[A-Za-z@]*")
-
-
-def _matching_fi(nodes: list[Any], start: int) -> int | None:
-    r"""The index of the sibling ``\fi`` closing a conditional opened before ``start``."""
-    depth = 1
-    for index in range(start, len(nodes)):
-        node = nodes[index]
-        if isinstance(node, LatexMacroNode):
-            if node.macroname == "fi":
-                depth -= 1
-                if depth == 0:
-                    return index
-            elif _CONDITIONAL_NAME.fullmatch(node.macroname):
-                depth += 1
-    return None
 
 
 def _kept_as_latex(text: str, cause: str, refused: tuple[NoteItem, ...]) -> ConversionResult:
@@ -785,12 +644,4 @@ def _through(locate: Locator, original: Callable[[int], int]) -> Locator:
 
 def render_latex(text: str) -> ConversionResult:
     """Convert one LaTeX source on its own (no includes followed: see ``convert_document``)."""
-    return render_source(text, image=_name_only_image)
-
-
-def _name_only_image(path: str) -> str | None:
-    """Without a folder to look in: a path that names something outside or remote is no link."""
-    name = path.strip().replace("\\", "/")
-    if not name or is_outside_by_name(name) is not None or ENTITY.search(name):
-        return None
-    return path.strip()
+    return render_source(text, image=name_only_image)
