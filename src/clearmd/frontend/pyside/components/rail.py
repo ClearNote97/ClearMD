@@ -106,6 +106,8 @@ class Rail(QFrame):
             self.setFixedWidth(COMPACT_RAIL_WIDTH if compact else RAIL_WIDTH)
             self.wordmark.setVisible(not compact)
             self.foot.setWordWrap(not compact)
+            side = 0 if compact else SPACE  # the compact rail's 56 px hold the version whole
+            self.foot.setContentsMargins(side, SPACE, side, 0)
             self.foot.setAlignment(
                 Qt.AlignmentFlag.AlignCenter
                 if compact
