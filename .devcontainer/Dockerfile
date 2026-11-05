@@ -15,6 +15,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 # No build-essential: every dependency ships wheels for 3.14 (ADR-0009).
 # - libtk8.6, libxcursor1 (tkdnd), xvfb, xauth, fonts-dejavu-core: the ttkbootstrap GUI (feature 005,
 #   ADR-0008/0026), run and screenshotted under a virtual display; never shown from the container.
+# - libxkbcommon0, libegl1, libgl1, libfontconfig1, libdbus-1-3, libglib2.0-0, libxkbcommon-x11-0, the xcb
+#   libraries: the Qt GUI (feature 016), tested offscreen and screenshotted under the same display.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     git \
@@ -26,6 +28,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xauth \
     binutils \
     fonts-dejavu-core \
+    libxkbcommon0 \
+    libxkbcommon-x11-0 \
+    libegl1 \
+    libgl1 \
+    libfontconfig1 \
+    libdbus-1-3 \
+    libglib2.0-0 \
+    libxcb-cursor0 \
+    libxcb-icccm4 \
+    libxcb-keysyms1 \
+    libxcb-shape0 \
+    libxcb-randr0 \
+    libxcb-render-util0 \
+    libxcb-xinerama0 \
+    libxcb-image0 \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # 'uv', the package manager: binaries copied from Astral's official image.

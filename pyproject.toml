@@ -31,6 +31,11 @@ dependencies = [
     # The window's rounded shapes and the file icons (ADR-0027); ttkbootstrap requires it already.
     "pillow>=12.3,<13",
 ]
+
+[project.optional-dependencies]
+# The Qt GUI (feature 016, ADR-0003, ADR-0038): only for whoever wants it (~80 MB), so
+# ``pip install clearmd`` stays light. Pinned, like every GUI toolkit.
+qt = ["pyside6-essentials==6.12.0"]
 # Only what is used: the GUIs and PyInstaller arrive in their own feature, not before (ADR-0009).
 
 [project.scripts]
@@ -39,6 +44,7 @@ clearmd = "clearmd.frontend.cli:main"
 [project.gui-scripts]
 # A GUI script: no console window on Windows (ADR-0026).
 clearmd-ttk = "clearmd.frontend.ttk:main"
+clearmd-qt = "clearmd.frontend.qt:main"  # needs the ``qt`` extra (feature 016)
 
 [dependency-groups]
 dev = [
@@ -47,10 +53,12 @@ dev = [
     "mypy>=2.4",
     "pypdf>=6",
     "markdown-it-py>=3,<5",
+    "pyside6-essentials==6.12.0",  # the Qt GUI's tests (feature 016); the same pin as the extra
 ]
 # Building the executables (feature 006, ADR-0028): only in CI and the dev container.
 build = [
     "pyinstaller==6.22.3",
+    "pyside6-essentials==6.12.0",  # the Qt executable (feature 016)
 ]
 
 [build-system]
