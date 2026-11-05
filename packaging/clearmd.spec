@@ -58,7 +58,13 @@ def version_file(filename: str) -> str | None:
 
 # The worker builds its converters from a name (``module:function``): import everything of ClearMD.
 # Pillow finds Tk through a module it imports by name (the window's images, ADR-0027).
-hidden = collect_submodules("clearmd") + ["PIL._tkinter_finder"]
+# Each executable holds one GUI: the other toolkits' modules, and the toolkits themselves, stay
+# out (the Qt GUI, feature 016, would add ~45 MB of PySide6 to the ttk window and the CLI).
+OTHER_GUIS = ("clearmd.frontend.qt", "clearmd.frontend.pyside", "clearmd.frontend.flet")
+OTHER_TOOLKITS = ["PySide6", "shiboken6", "flet"]
+hidden = [
+    module for module in collect_submodules("clearmd") if not module.startswith(OTHER_GUIS)
+] + ["PIL._tkinter_finder"]
 
 
 def analysis(script: str) -> Analysis:  # noqa: F821
@@ -67,7 +73,7 @@ def analysis(script: str) -> Analysis:  # noqa: F821
         pathex=[str(ROOT / "src")],
         datas=datas,
         hiddenimports=hidden,
-        excludes=["pytest", "mypy", "ruff", *HEAVY],
+        excludes=["pytest", "mypy", "ruff", *HEAVY, *OTHER_TOOLKITS],
         runtime_hooks=[str(ROOT / "packaging" / "no_magika.py")],
         noarchive=False,
     )

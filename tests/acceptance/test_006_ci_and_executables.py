@@ -75,3 +75,11 @@ def test_ac_06_pyinstaller_is_a_pinned_build_only_dependency() -> None:
     assert not any("pyinstaller" in d.lower() for d in project["project"]["dependencies"])
     build = project["dependency-groups"]["build"]
     assert any(re.fullmatch(r"pyinstaller==[\d.]+", d) for d in build)
+
+
+def test_each_executable_holds_one_gui_and_no_other_toolkit() -> None:
+    """The ttk window and the CLI never carry PySide6 (found at the start of the refactor: the
+    Qt draft of 016 had added 45 MB to both)."""
+    spec = (PACKAGING / "clearmd.spec").read_text(encoding="utf-8")
+    assert '"PySide6"' in spec and '"shiboken6"' in spec and "*OTHER_TOOLKITS" in spec
+    assert "not module.startswith(OTHER_GUIS)" in spec
