@@ -1,4 +1,6 @@
-"""Installs ClearMD's styles in the theme in use, once per theme, and keeps their images."""
+"""Installs ClearMD's styles in the theme in use, once per theme, and keeps their images.
+A module of its own: the window and the theme change both need the one object that remembers
+which themes already have their styles."""
 
 import tkinter as tk
 from typing import Any

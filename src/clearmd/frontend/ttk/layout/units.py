@@ -1,5 +1,6 @@
 """The ttk window's own units (UX §5): Tk font sizes are negative numbers of pixels; the start
-size is a geometry string. The rhythm itself is shared: ``frontend.design``."""
+size is a geometry string. The rhythm itself is shared: ``frontend.design``. A module of its own:
+the fonts, the styles and the widgets all read these numbers, so none of them can hold them."""
 
 from clearmd.frontend.design import metrics, typography
 

@@ -1,4 +1,5 @@
-"""The named fonts of the window: the body font and the bold ones the styles and widgets use."""
+"""The named fonts of the window: the body font and the bold ones the styles and widgets use.
+A module of its own: ``units`` has no Tk in it; this is where the sizes meet Tk's font registry."""
 
 import tkinter as tk
 import tkinter.font as tkfont

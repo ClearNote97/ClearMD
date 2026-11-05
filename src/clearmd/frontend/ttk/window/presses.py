@@ -2,7 +2,7 @@
 
 Windows repeats a held key as more presses; X11 as a release and a press with the same time.
 Either way a held Enter or Space must not run Next, Next and Convert past pages the user did not
-see: only a press after a real release counts.
+see: only a press after a real release counts. A module of its own: Enter and space both use it.
 """
 
 from typing import Any

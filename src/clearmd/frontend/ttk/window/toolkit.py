@@ -10,8 +10,10 @@ from PIL import ImageTk
 from tkinterdnd2 import TkinterDnD
 
 from clearmd.frontend.design.metrics import MIN_HEIGHT, MIN_WIDTH
+from clearmd.frontend.ttk.layout.fonts import make_fonts
 from clearmd.frontend.ttk.layout.units import START_SIZE
 from clearmd.frontend.ttk.visuals import marks
+from clearmd.frontend.ttk.visuals.look import Look
 from clearmd.frontend.ttk.visuals.themes import register_themes
 
 _APP_ICON_SIZES = (16, 32, 48, 64, 128, 256)
@@ -32,9 +34,9 @@ def root_with_drop() -> Any:
         return root
 
 
-def prepare(root: Any) -> tb.Style:
+def prepare(root: Any) -> tuple[tb.Style, dict[str, Any], Look]:
     """The root hidden, sized and made tkinter's default root; its ttkbootstrap style, with the
-    two themes registered."""
+    two themes registered, the named fonts and the look that installs the styles."""
     root.withdraw()  # shown once laid out, in its theme (no flash of the wrong one)
     root.minsize(MIN_WIDTH, MIN_HEIGHT)
     root.geometry(START_SIZE)
@@ -49,7 +51,8 @@ def prepare(root: Any) -> tb.Style:
         root.tk.call("package", "require", "msgcat")
     style = tb.Style()
     register_themes(style)
-    return style
+    fonts = make_fonts(root)
+    return style, fonts, Look(style, root, fonts)
 
 
 def forget_dead_style() -> None:

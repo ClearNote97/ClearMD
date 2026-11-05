@@ -1,4 +1,5 @@
-"""The two themes (``clearmd-light``, ``clearmd-dark``) made from the palettes, for ttkbootstrap."""
+"""The two themes (``clearmd-light``, ``clearmd-dark``) made from the palettes, for ttkbootstrap.
+A module of its own: the only place that writes ttkbootstrap's theme registry, before any widget."""
 
 import ttkbootstrap as tb
 from ttkbootstrap.style.theme import ThemeDefinition
