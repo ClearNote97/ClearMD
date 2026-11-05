@@ -17,7 +17,7 @@ from clearmd.frontend.design.colors import blend
 from clearmd.frontend.design.metrics import COMPACT_RAIL_WIDTH, GAP, HALF, RADIUS, RAIL_WIDTH, SPACE
 from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.presenter.state import STEPS
-from clearmd.frontend.ttk.layout import REDRAW_MS
+from clearmd.frontend.ttk.layout.units import REDRAW_MS
 from clearmd.frontend.ttk.visuals import marks, shapes
 from clearmd.frontend.ttk.visuals.style_names import RAIL, RAIL_COMPACT
 from clearmd.i18n import Catalog

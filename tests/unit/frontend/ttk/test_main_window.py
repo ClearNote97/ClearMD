@@ -159,8 +159,8 @@ def test_every_gap_is_on_the_8_px_grid_and_text_is_at_least_14_px(app: TtkApp) -
                     off_grid.append((str(widget), option, part))
     assert off_grid == []
     for name in ("TkDefaultFont", "TkTextFont", "TkHeadingFont"):
-        assert tkfont.nametofont(name, root=app.root).cget("size") <= layout.BODY  # px: negative
-    assert all(font.cget("size") <= layout.BODY for font in app.fonts.values())
+        assert tkfont.nametofont(name, root=app.root).cget("size") <= layout.units.BODY  # px: < 0
+    assert all(font.cget("size") <= layout.units.BODY for font in app.fonts.values())
 
 
 # --- Review, convert, results (T05) --------------------------------------------------------------

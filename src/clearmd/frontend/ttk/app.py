@@ -8,11 +8,10 @@ import contextlib
 import sys
 import time
 import tkinter as tk
-import tkinter.font as tkfont
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from tkinter import filedialog, ttk
-from typing import Any, Literal
+from typing import Any
 
 import ttkbootstrap as tb
 from PIL import ImageTk
@@ -39,7 +38,8 @@ from clearmd.frontend.ttk.components.action_bar import ActionBar
 from clearmd.frontend.ttk.components.dialog import Dialog
 from clearmd.frontend.ttk.components.rail import Rail
 from clearmd.frontend.ttk.components.surface import Surface
-from clearmd.frontend.ttk.layout import BODY, EYEBROW, START_SIZE, STRONG, TITLE, WORDMARK
+from clearmd.frontend.ttk.layout.fonts import make_fonts
+from clearmd.frontend.ttk.layout.units import START_SIZE
 from clearmd.frontend.ttk.presses import Presses
 from clearmd.frontend.ttk.scheduler import Scheduler
 from clearmd.frontend.ttk.views.dialogs import (
@@ -58,7 +58,6 @@ from clearmd.frontend.ttk.visuals.style_names import WARNING
 from clearmd.frontend.ttk.visuals.themes import register_themes
 from clearmd.i18n import Catalog
 
-_NAMED_FONTS = ("TkDefaultFont", "TkTextFont", "TkMenuFont", "TkHeadingFont", "TkCaptionFont")
 _APP_ICON_SIZES = (16, 32, 48, 64, 128, 256)
 
 
@@ -84,7 +83,7 @@ class TtkApp:
             self.root.tk.call("package", "require", "msgcat")
         self.style = tb.Style()
         register_themes(self.style)
-        self.fonts = self._fonts()
+        self.fonts = make_fonts(self.root)
         self.look = Look(self.style, self.root, self.fonts)
         self.palette: Palette = LIGHT
         self.look.use(self.palette)  # the styles exist before the widgets that use them
@@ -106,22 +105,6 @@ class TtkApp:
         self.root.protocol("WM_DELETE_WINDOW", self.close)
 
     # --- Building ------------------------------------------------------------------------------
-
-    def _fonts(self) -> dict[str, tkfont.Font]:
-        for name in _NAMED_FONTS:
-            tkfont.nametofont(name, root=self.root).configure(size=BODY)
-        family = tkfont.nametofont("TkDefaultFont", root=self.root).actual("family")
-
-        def font(size: int, weight: Literal["normal", "bold"] = "normal") -> tkfont.Font:
-            return tkfont.Font(root=self.root, family=family, size=size, weight=weight)
-
-        return {
-            "body": tkfont.nametofont("TkDefaultFont", root=self.root),
-            "strong": font(STRONG, "bold"),
-            "eyebrow": font(EYEBROW, "bold"),
-            "title": font(TITLE, "bold"),
-            "wordmark": font(WORDMARK, "bold"),
-        }
 
     def _build(self) -> None:
         icons = [

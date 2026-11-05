@@ -8,7 +8,7 @@ from PIL import ImageTk
 
 from clearmd.frontend.design.metrics import RADIUS, SPACE
 from clearmd.frontend.design.palette import Palette
-from clearmd.frontend.ttk.layout import REDRAW_MS
+from clearmd.frontend.ttk.layout.units import REDRAW_MS
 from clearmd.frontend.ttk.visuals import shapes
 
 

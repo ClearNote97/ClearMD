@@ -19,7 +19,7 @@ FILES: dict[str, int] = {  # path -> lines (over 250)
     "src/clearmd/frontend/pyside/dialogs.py": 270,
     "src/clearmd/frontend/pyside/pages.py": 489,  # +1: design imports (P3); dissolved in P8
     "src/clearmd/frontend/pyside/widgets.py": 538,
-    "src/clearmd/frontend/ttk/app.py": 574,
+    "src/clearmd/frontend/ttk/app.py": 531,
     "src/clearmd/frontend/ttk/views/dialogs.py": 264,
     "tests/acceptance/test_001_batch_conversion.py": 763,
     "tests/acceptance/test_005_ttk_gui.py": 620,
@@ -49,7 +49,7 @@ CLASSES: dict[str, int] = {  # "path::Class" -> lines (over 150)
     "src/clearmd/backend/services/worker/supervisor.py::WorkerRunner": 159,
     "src/clearmd/frontend/pyside/app.py::PySideApp": 397,
     "src/clearmd/frontend/pyside/pages.py::ChoosePage": 159,
-    "src/clearmd/frontend/ttk/app.py::TtkApp": 447,
+    "src/clearmd/frontend/ttk/app.py::TtkApp": 422,
     "src/clearmd/frontend/ttk/components/file_list.py::FileList": 211,
     "src/clearmd/frontend/ttk/components/rail.py::Rail": 207,
     "src/clearmd/frontend/ttk/views/main.py::MainView": 189,
@@ -57,5 +57,5 @@ CLASSES: dict[str, int] = {  # "path::Class" -> lines (over 150)
 # The GUIs' entry files (≤ 40 lines) that are still whole windows.
 ENTRY_FILES: dict[str, int] = {
     "src/clearmd/frontend/pyside/app.py": 520,
-    "src/clearmd/frontend/ttk/app.py": 574,
+    "src/clearmd/frontend/ttk/app.py": 531,
 }

@@ -489,7 +489,7 @@ def test_ac_17_the_8_px_grid_14_px_text_and_one_primary_action_per_screen(
             value = info.get(option, 0)
             for part in value if isinstance(value, tuple) else str(value).split():
                 assert on_grid(int(float(part))), (str(widget), option, part)
-    assert all(font.cget("size") <= layout.BODY for font in app.fonts.values())  # pixels: negative
+    assert all(font.cget("size") <= layout.units.BODY for font in app.fonts.values())  # px: < 0
     # One primary action per screen: the page's bar holds the only one (ADR-0029).
     primaries = [w for w in widgets(app.surface.page) if styled(w) == PRIMARY]
     assert primaries == [app.actions.primary]
