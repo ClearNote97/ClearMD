@@ -1,12 +1,9 @@
 """Runs conversions in a worker process and enforces the limits of ADR-0015."""
 
 import multiprocessing
-import time
 from multiprocessing.connection import Connection
 from multiprocessing.process import BaseProcess
 from pathlib import Path
-
-import psutil
 
 from clearmd.backend.schemas.errors import Cancelled, ConversionError, ErrorCode
 from clearmd.backend.schemas.formats import FormatId
@@ -18,23 +15,23 @@ from clearmd.backend.schemas.models import (
     PlannedConversion,
 )
 from clearmd.backend.services.worker.child import worker_main
+from clearmd.backend.services.worker.processes import (
+    JOIN_SECONDS,
+    kill_children,
+    wait_for_response,
+    wait_until_ready,
+)
 from clearmd.backend.services.worker.protocol import (
     Converted,
     ConvertRequest,
     Detected,
     DetectRequest,
-    Failed,
-    Ready,
     Request,
     Response,
 )
 from clearmd.backend.use_cases.cancel import CancelToken
 
 REAL_REGISTRY = "clearmd.backend.services.conversion.registry:build_registry"
-POLL_SECONDS = 0.1
-JOIN_SECONDS = 5.0
-# Loading Python and the converters' libraries; generous for packaged apps and antivirus scans.
-STARTUP_SECONDS = 120.0
 # Virtual memory the libraries reserve without using it (a loaded worker: ~1.4 GiB virtual for
 # ~170 MiB resident, mostly onnxruntime threads); the OS hard cap is the limit plus this.
 VIRTUAL_HEADROOM = 2 * 1024**3
@@ -92,7 +89,9 @@ class WorkerRunner:
             connection.send(request)
         except OSError:  # it died while idle (e.g. the system's OOM killer)
             raise self._crashed(process) from None
-        return self._wait(connection, process, cancel)
+        return wait_for_response(
+            connection, process, cancel, self._limits, self._stop, self._crashed
+        )
 
     def close(self) -> None:
         if self._process is None or self._connection is None:
@@ -118,70 +117,8 @@ class WorkerRunner:
         process.start()
         child_end.close()
         self._process, self._connection = process, parent_end
-        self._wait_until_ready(parent_end, process, cancel)
+        wait_until_ready(parent_end, process, cancel, self._stop, self._crashed)
         return parent_end, process
-
-    def _wait_until_ready(
-        self, connection: Connection, process: BaseProcess, cancel: CancelToken
-    ) -> None:
-        """Start-up is not a file's time: wait for ``Ready`` with its own limit."""
-        started = time.monotonic()
-        while not connection.poll(POLL_SECONDS):
-            if cancel.is_set():
-                self._stop()
-                raise Cancelled
-            if not process.is_alive():
-                raise self._crashed(process)
-            if time.monotonic() - started > STARTUP_SECONDS:
-                self._stop()
-                raise ConversionError(
-                    ErrorCode.WORKER_CRASHED, f"worker not ready after {STARTUP_SECONDS:g} s"
-                )
-        try:
-            message = connection.recv()
-        except EOFError:
-            raise self._crashed(process) from None
-        if not isinstance(message, Ready):
-            self._stop()
-            raise ConversionError(ErrorCode.WORKER_CRASHED, f"unexpected start-up {message!r}")
-
-    def _wait(self, connection: Connection, process: BaseProcess, cancel: CancelToken) -> Response:
-        started = time.monotonic()
-        while True:
-            if connection.poll(POLL_SECONDS):
-                try:
-                    response: Response = connection.recv()
-                except EOFError:
-                    raise self._crashed(process) from None
-                if isinstance(response, Failed):
-                    limit = None
-                    if response.code == ErrorCode.OUT_OF_MEMORY.value:
-                        self._stop()  # after a MemoryError the worker's heap is not trusted
-                        limit = self._limits.worker_memory
-                    raise ConversionError(ErrorCode(response.code), response.detail, limit=limit)
-                return response
-            if cancel.is_set():
-                self._stop()
-                raise Cancelled
-            elapsed = time.monotonic() - started
-            if elapsed > self._limits.time_per_file:
-                self._stop()
-                raise ConversionError(
-                    ErrorCode.TIMED_OUT,
-                    f"stopped after {self._limits.time_per_file:g} s",
-                    limit=self._limits.time_per_file,
-                )
-            rss = _memory_of(process)
-            if rss is not None and rss > self._limits.worker_memory:
-                self._stop()
-                limit_mib = self._limits.worker_memory // 1024**2
-                raise ConversionError(
-                    ErrorCode.OUT_OF_MEMORY,
-                    f"worker used {rss // 1024**2} MiB, limit {limit_mib} MiB",
-                    limit=self._limits.worker_memory,
-                )
-            if not process.is_alive():
-                raise self._crashed(process)
 
     def _crashed(self, process: BaseProcess) -> ConversionError:
         process.join(JOIN_SECONDS)
@@ -191,7 +128,7 @@ class WorkerRunner:
 
     def _stop(self) -> None:
         if self._process is not None:
-            _kill_children(self._process)
+            kill_children(self._process)
             if self._process.is_alive():
                 self._process.kill()
             self._process.join(JOIN_SECONDS)
@@ -199,28 +136,3 @@ class WorkerRunner:
         if self._connection is not None:
             self._connection.close()
         self._process, self._connection = None, None
-
-
-def _kill_children(process: BaseProcess) -> None:
-    """Anything a converter started (e.g. a helper program) dies with the worker."""
-    if process.pid is None:
-        return
-    try:
-        children = psutil.Process(process.pid).children(recursive=True)
-    except psutil.Error:
-        return
-    for child in children:
-        try:
-            child.kill()
-        except psutil.Error:
-            pass
-
-
-def _memory_of(process: BaseProcess) -> int | None:
-    if process.pid is None:
-        return None
-    try:
-        rss: int = psutil.Process(process.pid).memory_info().rss
-    except psutil.Error:
-        return None
-    return rss

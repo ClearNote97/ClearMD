@@ -22,7 +22,6 @@ FILES: dict[str, int] = {  # path -> lines (over 250)
 }
 
 CLASSES: dict[str, int] = {  # "path::Class" -> lines (over 150)
-    "src/clearmd/backend/services/worker/supervisor.py::WorkerRunner": 159,
 }
 # The GUIs' entry files (≤ 40 lines) that are still whole windows.
 ENTRY_FILES: dict[str, int] = {}
