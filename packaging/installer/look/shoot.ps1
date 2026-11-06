@@ -104,7 +104,8 @@ $uninstall = Start-Process -FilePath (Join-Path $dir "unins000.exe") -PassThru
 Start-Sleep -Seconds 3
 Shot "uninstall-confirm"; Press "{ENTER}"
 Start-Sleep -Seconds 4
-Shot "uninstall-done"; Press "{ENTER}"
+# Its last message may carry a title without "ClearMD"; then the foreground window is taken.
+try { Shot "uninstall-done"; Press "{ENTER}" } catch { "  (no last message found: $_)"; [System.Windows.Forms.SendKeys]::SendWait("{ENTER}") }
 $uninstall.WaitForExit(30000) | Out-Null
 Start-Sleep -Seconds 2
 exit 0
