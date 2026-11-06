@@ -41,8 +41,8 @@ $SettingsFile = Join-Path $SettingsFolder 'settings.toml'
 $SettingsText = "language = `"en`"`ntheme = `"dark`"`n"
 
 # The shortcut file name of each part, and what it must open.
-$Shortcut = @{ ttk = 'ClearMD.lnk'; qt = 'ClearMD (Qt).lnk'; cli = 'ClearMD (command line).lnk' }
-$Program = @{ ttk = 'ClearMD.exe'; qt = 'ClearMD-Qt\ClearMD-Qt.exe'; cli = 'clearmd-cli.exe' }
+$Shortcut = @{ ttk = 'ClearMD.lnk'; qt = 'ClearMD (Qt).lnk'; flet = 'ClearMD (flet).lnk'; cli = 'ClearMD (command line).lnk' }
+$Program = @{ ttk = 'ClearMD.exe'; qt = 'ClearMD-Qt\ClearMD-Qt.exe'; flet = 'ClearMD-Flet\ClearMD-Flet.exe'; cli = 'clearmd-cli.exe' }
 
 function Step([string]$Title) { Write-Host ""; Write-Host "== $Title" }
 
@@ -81,9 +81,9 @@ function Test-OnUserPath {
   return $entries -contains $Install.TrimEnd('\')
 }
 
-# The files, shortcuts and registry entry for the parts chosen (a list of 'ttk', 'qt', 'cli').
+# The files, shortcuts and registry entry for the parts chosen (a list of 'ttk', 'qt', 'flet', 'cli').
 function Assert-Layout([string[]]$Chosen) {
-  $parts = 'ttk', 'qt', 'cli'
+  $parts = 'ttk', 'qt', 'flet', 'cli'
   foreach ($part in $parts) {
     $wanted = $Chosen -contains $part
     $exe = Join-Path $Install $Program[$part]
@@ -94,6 +94,11 @@ function Assert-Layout([string[]]$Chosen) {
   }
   # The Qt folder keeps its own license (LGPL): it goes with the folder.
   Expect ((Test-Path (Join-Path $Install 'ClearMD-Qt')) -eq ($Chosen -contains 'qt')) 'the ClearMD-Qt folder matches the choice'
+  # The flet folder carries flet's window program (ADR-0042): it goes with the folder.
+  Expect ((Test-Path (Join-Path $Install 'ClearMD-Flet')) -eq ($Chosen -contains 'flet')) 'the ClearMD-Flet folder matches the choice'
+  if ($Chosen -contains 'flet') {
+    Expect (Test-Path (Join-Path $Install 'ClearMD-Flet\flet-client\flet\flet.exe')) "flet's window program is installed with the flet app"
+  }
   # Always present, whatever the choice: the uninstaller, the license, the notices, the icon.
   foreach ($name in 'unins000.exe', 'LICENSE', 'THIRD-PARTY-NOTICES.txt', 'clearmd.ico') {
     Expect (Test-Path (Join-Path $Install $name)) "$name is in the install folder"
@@ -212,14 +217,17 @@ try {
   Expect (-not (Test-OnUserPath)) 'the PATH is not changed without its option'
   Invoke-Smoke 'ttk'
 
-  Step '2. Reinstall: all three parts, the PATH option ticked'
-  Invoke-Setup @('/COMPONENTS=ttk,qt,cli', '/TASKS=addpath')
-  Assert-Layout @('ttk', 'qt', 'cli')
-  Assert-Targets @('ttk', 'qt', 'cli')
+  Step '2. Reinstall: all four parts, the PATH option ticked'
+  Invoke-Setup @('/COMPONENTS=ttk,qt,flet,cli', '/TASKS=addpath')
+  Assert-Layout @('ttk', 'qt', 'flet', 'cli')
+  Assert-Targets @('ttk', 'qt', 'flet', 'cli')
   Expect (Test-OnUserPath) 'the install folder is on the user PATH (the option was ticked)'
   Expect (Test-Path $MarkerKey) 'the installer remembers the PATH entry it added'
   Invoke-Smoke 'ttk'
   Invoke-Smoke 'qt'
+  Invoke-Smoke 'flet'
+  # The installed flet app used its own window program: nothing unpacked into the user's home.
+  Expect (-not (Test-Path (Join-Path $env:USERPROFILE '.flet'))) 'the flet app downloaded and unpacked nothing (no ~\.flet)'
   Invoke-CliBatch
 
   Step '3. Reinstall: only the modern app'

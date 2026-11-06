@@ -29,6 +29,10 @@ jobs:
           cp dl/clearmd-cli-v0.12.0-windows.exe dist/clearmd-cli.exe
           cp dl/THIRD-PARTY-NOTICES.txt dist/installer/
           (cd dist && unzip -q ../dl/ClearMD-Qt-v0.12.0-windows.zip)
+          # v0.12.0 has no flet app (feature 018): a stand-in folder, for the photographs only.
+          mkdir -p dist/ClearMD-Flet/flet-client/flet
+          cp dist/ClearMD.exe dist/ClearMD-Flet/ClearMD-Flet.exe
+          cp dist/ClearMD.exe dist/ClearMD-Flet/flet-client/flet/flet.exe
           ls -la dist dist/ClearMD-Qt | head -20
       - name: Compile the three looks
         shell: pwsh

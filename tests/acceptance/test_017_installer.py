@@ -70,10 +70,17 @@ def test_ac_02_per_user_only_in_the_local_programs_folder() -> None:
     assert any("LICENSE" in f and "ClearMD-Qt" in f for f in files)
     script = sections(read(ISS))
     components = script["Components"]
-    assert [c.split(";")[0].split('"')[1] for c in components] == ["ttk", "qt", "cli"]
+    assert [c.split(";")[0].split('"')[1] for c in components] == ["ttk", "qt", "flet", "cli"]
     types = script["Types"]
     assert types[0].startswith('Name: "ttkonly"'), "the classic app is the default type"
-    assert [t.split('"')[1] for t in types] == ["ttkonly", "qtonly", "clionly", "full", "custom"]
+    assert [t.split('"')[1] for t in types] == [
+        "ttkonly",
+        "qtonly",
+        "fletonly",
+        "clionly",
+        "full",
+        "custom",
+    ]
     assert any("Flags: iscustom" in t for t in types)
 
 
@@ -109,6 +116,7 @@ def test_ac_03_the_wizard_speaks_english_and_spanish_and_explains_each_part() ->
     for key in (
         "CompareTtk",
         "CompareQt",
+        "CompareFlet",
         "CompareCli",
         "CompareAll",
         "NeedOneComponent",
@@ -127,7 +135,10 @@ def test_ac_03_at_least_one_component_must_be_chosen() -> None:
     assert "procedure InitializeWizard" in script
     assert "if CurPageID = wpSelectComponents then" in script
     needle = "WizardIsComponentSelected('ttk') or WizardIsComponentSelected('qt')"
-    assert needle + " or WizardIsComponentSelected('cli')" in script
+    assert (
+        needle + " or WizardIsComponentSelected('flet') or WizardIsComponentSelected('cli')"
+        in script
+    )
     assert "CustomMessage('NeedOneComponent')" in script
 
 
@@ -171,7 +182,7 @@ def test_ac_06_the_check_installs_uses_uninstalls_and_looks_for_leftovers() -> N
     check = read(CHECK)
     for needle in (
         "/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/CURRENTUSER",
-        "'/COMPONENTS=ttk,qt,cli', '/TASKS=addpath'",
+        "'/COMPONENTS=ttk,qt,flet,cli', '/TASKS=addpath'",
         "'/COMPONENTS=qt'",
         "'/REMOVESETTINGS'",
         "'--smoke'",

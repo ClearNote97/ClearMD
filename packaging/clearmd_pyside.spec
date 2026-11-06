@@ -57,7 +57,7 @@ def version_file() -> str | None:
 # Every ClearMD module, the Qt window's included (the worker imports its converters by name).
 # The ttk window and flet stay out: each executable holds one GUI.
 OTHER_GUIS = ("clearmd.frontend.ttk", "clearmd.frontend.flet")
-OTHER_TOOLKITS = ["tkinter", "_tkinter", "ttkbootstrap", "tkinterdnd2", "flet"]
+OTHER_TOOLKITS = ["tkinter", "_tkinter", "ttkbootstrap", "tkinterdnd2", "flet", "flet_desktop"]
 # The Qt modules ClearMD does not import: their Python bindings (the libraries go by qt_kept).
 QT_MODULES_LEFT_OUT = ["PySide6.QtNetwork", "PySide6.QtDBus"]
 hidden = [

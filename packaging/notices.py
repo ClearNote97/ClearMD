@@ -18,6 +18,14 @@ QT_NOTE = (
     "takes the LGPL option the packages offer. Its Qt libraries are plain files in that folder: "
     "you can replace them with other builds of the same libraries."
 )
+# The flet window's folder (ClearMD-Flet/, ADR-0042): flet's window program is a Flutter app; its
+# own notices (Flutter, Skia and the libraries it bundles) travel inside it.
+FLET_NOTE = (
+    "The flet window (the folder ClearMD-Flet/) bundles flet's window program, version 1.0.5, "
+    "from https://github.com/flet-dev/flet (Apache-2.0), built with Flutter (BSD-3-Clause). The "
+    "licenses of Flutter and the libraries it bundles are in that folder, in "
+    "flet-client/flet/data/flutter_assets/NOTICES.Z (a compressed text file)."
+)
 # Installed with markitdown, left out of the executables (packaging/clearmd.spec, ADR-0032).
 NOT_SHIPPED = {"magika", "onnxruntime", "numpy", "pandas", "flatbuffers", "coloredlogs",
                "humanfriendly", "sympy", "mpmath", "protobuf", "click"}  # fmt: skip
@@ -55,6 +63,7 @@ def main() -> int:
     bundled = [d for d in found if d.metadata["Name"].lower() not in left_out]
     print("ClearMD bundles the following open-source software. Thank you to their authors.\n")
     print(QT_NOTE + "\n")
+    print(FLET_NOTE + "\n")
     separator = "\n\n" + "=" * 78 + "\n\n"
     print(separator.join(describe(d) for d in bundled))
     return 0

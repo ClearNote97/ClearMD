@@ -5,22 +5,28 @@
 [CustomMessages]
 english.CardTtkTitle=ClearMD (ttk) - The Classic App
 english.CardTtkTag=RECOMMENDED · about 36 MB
-english.CardTtkBody=The lightest: one program file. The first start takes a few seconds, while it unpacks itself.
+english.CardTtkBody=The lightest: one file. The first start takes a few seconds.
 english.CardQtTitle=ClearMD (Qt) - The Modern App
 english.CardQtTag=about 130 MB
-english.CardQtBody=Smoother, with sharper text on high-resolution screens, and it opens quickly. Its Qt libraries can be replaced (LGPL).
+english.CardQtBody=Smoother, sharper on high-resolution screens; opens quickly.
+english.CardFletTitle=ClearMD (flet) - The Flutter App
+english.CardFletTag=about 120 MB
+english.CardFletBody=Drawn like phone apps; opens quickly. Files added with its buttons.
 english.CardCliTitle=Command Line - For Advanced Users
 english.CardCliTag=about 36 MB
-english.CardCliBody=No window: you type clearmd-cli "C:\My documents". Good for many folders, scripts and automation.
+english.CardCliBody=No window: you type clearmd-cli "C:\My documents". For scripts.
 spanish.CardTtkTitle=ClearMD (ttk) - La App Clásica
 spanish.CardTtkTag=RECOMENDADA · unos 36 MB
-spanish.CardTtkBody=La más liviana: un solo archivo. El primer inicio tarda unos segundos, mientras se descomprime.
+spanish.CardTtkBody=La más liviana: un solo archivo. El primer inicio tarda unos segundos.
 spanish.CardQtTitle=ClearMD (Qt) - La App Moderna
 spanish.CardQtTag=unos 130 MB
-spanish.CardQtBody=Más suave, con texto más nítido en pantallas de alta resolución, y abre rápido. Sus bibliotecas de Qt se pueden reemplazar (LGPL).
+spanish.CardQtBody=Más suave y nítida en pantallas de alta resolución; abre rápido.
+spanish.CardFletTitle=ClearMD (flet) - La App Flutter
+spanish.CardFletTag=unos 120 MB
+spanish.CardFletBody=Dibujada como las apps de teléfono; abre rápido. Archivos con sus botones.
 spanish.CardCliTitle=Línea de Comandos - Para Usuarios Avanzados
 spanish.CardCliTag=unos 36 MB
-spanish.CardCliBody=Sin ventana: escribes clearmd-cli "C:\Mis documentos". Buena para muchas carpetas, scripts y automatización.
+spanish.CardCliBody=Sin ventana: escribes clearmd-cli "C:\Mis documentos". Para scripts.
 
 [Code]
 // ---- ClearMD's colours (frontend/design/palette.py), light and dark ---------------------------
@@ -138,7 +144,7 @@ begin
   Face.Height := BodyText.Top + BodyText.Height + Pad;
   Border.Height := Face.Height + 2;
   if Recommended then Border.Controls[0].Height := Border.Height;
-  Result := Top + Border.Height + ScaleY(8);
+  Result := Top + Border.Height + ScaleY(6);
 end;
 
 procedure PaintCompareCards(Page: TWizardPage);
@@ -148,6 +154,7 @@ var
 begin
   Top := Card(Page, 0, CustomMessage('CardTtkTitle'), CustomMessage('CardTtkTag'), CustomMessage('CardTtkBody'), True);
   Top := Card(Page, Top, CustomMessage('CardQtTitle'), CustomMessage('CardQtTag'), CustomMessage('CardQtBody'), False);
+  Top := Card(Page, Top, CustomMessage('CardFletTitle'), CustomMessage('CardFletTag'), CustomMessage('CardFletBody'), False);
   Top := Card(Page, Top, CustomMessage('CardCliTitle'), CustomMessage('CardCliTag'), CustomMessage('CardCliBody'), False);
   Note := TNewStaticText.Create(WizardForm);
   Note.Parent := Page.Surface;

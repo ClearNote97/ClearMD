@@ -93,3 +93,46 @@ if [[ -d "$qt_dir" ]]; then
   fi
   echo "ClearMD-Qt: $size MB (folder)"
 fi
+
+# The flet window (feature 018, ADR-0042): a folder with flet's window program inside. It starts
+# the same way (the window program drawing it), holds no heavy library and no toolkit of the other
+# windows, carries its window program, and its whole folder has a size cap of its own.
+FLET_MAX_MB=250
+flet_dir="$dist/ClearMD-Flet"
+if [[ -d "$flet_dir" ]]; then
+  flet="$flet_dir/ClearMD-Flet$suffix"
+  client="$flet_dir/flet-client/flet/flet$suffix"
+  if [[ ! -f "$client" ]]; then
+    echo "$client is missing: the folder must carry flet's window program" >&2
+    exit 1
+  fi
+  if [[ "$(uname -s)" == "Linux" ]]; then
+    HOME="$work" timeout 120 xvfb-run -a "$flet" --smoke
+  else
+    HOME="$work" timeout 120 "$flet" --smoke
+  fi
+  # Nothing downloaded or unpacked into the home folder: flet's cache is never made.
+  if [[ -e "$work/.flet" ]]; then
+    echo "the flet window wrote $work/.flet: it must use the window program in its folder" >&2
+    exit 1
+  fi
+  echo "window (flet): opened and closed"
+  listing=$(cd "$here" && uv run --no-default-groups --group build pyi-archive_viewer -r "$flet")
+  if [[ -z "$listing" ]]; then
+    echo "$flet could not be listed" >&2
+    exit 1
+  fi
+  heavy=$(echo "$listing" | grep -E "'(numpy|pandas|onnxruntime|magika|tkinter|_tkinter|ttkbootstrap|tkinterdnd2|PySide6|shiboken6)[./']" || true)
+  if [[ -n "$heavy" ]]; then
+    echo "$flet holds a library it should leave out:" >&2
+    echo "$heavy" | head -5 >&2
+    exit 1
+  fi
+  size=$(find "$flet_dir" -type f -exec cat {} + | wc -c)
+  size=$(( size / 1000 / 1000 ))
+  if (( size >= FLET_MAX_MB )); then
+    echo "ClearMD-Flet folder is $size MB, over $FLET_MAX_MB MB" >&2
+    exit 1
+  fi
+  echo "ClearMD-Flet: $size MB (folder)"
+fi

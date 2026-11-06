@@ -84,20 +84,24 @@ spanish.FinishedHeadingLabel=Completando la Instalación de [name]
 ; CustomMessage('Name'); in the other sections with {cm:Name}.
 english.TypeTtk=Only the classic app (recommended: the lightest)
 english.TypeQt=Only the modern app
+english.TypeFlet=Only the flet app
 english.TypeCli=Only the command line
-english.TypeFull=Everything: both apps and the command line
+english.TypeFull=Everything: the three apps and the command line
 english.TypeCustom=Custom: I choose each part
 spanish.TypeTtk=Solo la app clásica (recomendada: la más liviana)
 spanish.TypeQt=Solo la app moderna
+spanish.TypeFlet=Solo la app flet
 spanish.TypeCli=Solo la línea de comandos
-spanish.TypeFull=Todo: las dos apps y la línea de comandos
+spanish.TypeFull=Todo: las tres apps y la línea de comandos
 spanish.TypeCustom=Personalizada: elijo cada parte
 
 english.CompTtk=ClearMD (ttk) - The Classic App
 english.CompQt=ClearMD (Qt) - The Modern App
+english.CompFlet=ClearMD (flet) - The Flutter App
 english.CompCli=Command Line - For Advanced Users
 spanish.CompTtk=ClearMD (ttk) - La App Clásica
 spanish.CompQt=ClearMD (Qt) - La App Moderna
+spanish.CompFlet=ClearMD (flet) - La App Flutter
 spanish.CompCli=Línea de Comandos - Para Usuarios Avanzados
 
 english.TaskDesktop=A desktop shortcut for each part I chose
@@ -112,14 +116,16 @@ spanish.CompareDescription=Léelo y elige en la página siguiente. Puedes volver
 english.CompareTtk=ClearMD (ttk), the classic window (RECOMMENDED for most people: the lightest). One program file of about 36 MB. The first start takes a few seconds, because the program unpacks itself. Simpler drawing.
 spanish.CompareTtk=ClearMD (ttk), la ventana clásica (RECOMENDADA para la mayoría: la más liviana). Un solo archivo de unos 36 MB. El primer inicio tarda unos segundos, porque el programa se descomprime solo. Dibujo más sencillo.
 english.CompareQt=ClearMD (Qt), the modern window: it looks smoother, with sharper text and controls on high-resolution screens, and it opens quickly. The price is space: a folder of about 130 MB. Its Qt libraries can be replaced (LGPL).
+english.CompareFlet=ClearMD (flet), the Flutter window: drawn like phone apps, smooth, and it opens quickly; files are added with its two buttons (it cannot receive files dragged onto it). A folder of about 120 MB.
+spanish.CompareFlet=ClearMD (flet), la ventana Flutter: dibujada como las apps de teléfono, suave, y abre rápido; los archivos se añaden con sus dos botones (no recibe archivos arrastrados). Una carpeta de unos 120 MB.
 spanish.CompareQt=ClearMD (Qt), la ventana moderna: se ve más suave, con texto y controles más nítidos en pantallas de alta resolución, y abre rápido. El costo es el espacio: una carpeta de unos 130 MB. Sus bibliotecas de Qt se pueden reemplazar (LGPL).
 english.CompareCli=Command line: no window. You type a command, for example clearmd-cli "C:\My documents". Good for many folders, scripts and automation. Needs typing. About 36 MB.
 spanish.CompareCli=Línea de comandos: sin ventana. Escribes un comando, por ejemplo clearmd-cli "C:\Mis documentos". Buena para muchas carpetas, scripts y automatización. Requiere escribir. Unos 36 MB.
 english.CompareAll=All of them do exactly the same conversions, with the same results.
 spanish.CompareAll=Todas hacen exactamente las mismas conversiones, con los mismos resultados.
 
-english.NeedOneComponent=Choose at least one part: the classic app, the modern app or the command line.
-spanish.NeedOneComponent=Elige al menos una parte: la app clásica, la app moderna o la línea de comandos.
+english.NeedOneComponent=Choose at least one part: the classic app, the modern app, the flet app or the command line.
+spanish.NeedOneComponent=Elige al menos una parte: la app clásica, la app moderna, la app flet o la línea de comandos.
 
 english.RemoveSettings=Also delete ClearMD's settings in%n%n%1%n%nYour documents and your ClearMD_Output folders are never touched.
 spanish.RemoveSettings=¿Borrar también la configuración de ClearMD en%n%n%1%n%nTus documentos y tus carpetas ClearMD_Output nunca se tocan.
@@ -130,6 +136,7 @@ spanish.RemoveSettings=¿Borrar también la configuración de ClearMD en%n%n%1%n
 ; lightest) is the default: a silent install with no /TYPE or /COMPONENTS installs only that one.
 Name: "ttkonly"; Description: "{cm:TypeTtk}"
 Name: "qtonly"; Description: "{cm:TypeQt}"
+Name: "fletonly"; Description: "{cm:TypeFlet}"
 Name: "clionly"; Description: "{cm:TypeCli}"
 Name: "full"; Description: "{cm:TypeFull}"
 Name: "custom"; Description: "{cm:TypeCustom}"; Flags: iscustom
@@ -142,6 +149,7 @@ Name: "custom"; Description: "{cm:TypeCustom}"; Flags: iscustom
 ; by "full". In "custom" the user ticks what he wants; the components not in its list start unticked.
 Name: "ttk"; Description: "{cm:CompTtk}"; Types: ttkonly full custom
 Name: "qt"; Description: "{cm:CompQt}"; Types: qtonly full
+Name: "flet"; Description: "{cm:CompFlet}"; Types: fletonly full
 Name: "cli"; Description: "{cm:CompCli}"; Types: clionly full
 
 ; ---------------------------------------------------------------------------------------------
@@ -168,6 +176,8 @@ Source: "{#Root}\dist\ClearMD-Qt\*"; DestDir: "{app}\ClearMD-Qt"; Components: qt
 ; The license and notices travel with the Qt libraries too (the LGPL asks for it).
 Source: "{#Root}\LICENSE"; DestDir: "{app}\ClearMD-Qt"; Components: qt; Flags: ignoreversion
 Source: "{#Root}\dist\installer\THIRD-PARTY-NOTICES.txt"; DestDir: "{app}\ClearMD-Qt"; Components: qt; Flags: ignoreversion
+; The flet app: a folder too, with flet's window program inside (flet-client\, ADR-0042).
+Source: "{#Root}\dist\ClearMD-Flet\*"; DestDir: "{app}\ClearMD-Flet"; Components: flet; Flags: ignoreversion recursesubdirs createallsubdirs
 ; The command line: one console program.
 Source: "{#Root}\dist\clearmd-cli.exe"; DestDir: "{app}"; Components: cli; Flags: ignoreversion
 
@@ -177,6 +187,7 @@ Source: "{#Root}\dist\clearmd-cli.exe"; DestDir: "{app}"; Components: cli; Flags
 ; The classic and modern apps open directly.
 Name: "{group}\ClearMD"; Filename: "{app}\ClearMD.exe"; Components: ttk
 Name: "{group}\ClearMD (Qt)"; Filename: "{app}\ClearMD-Qt\ClearMD-Qt.exe"; WorkingDir: "{app}\ClearMD-Qt"; Components: qt
+Name: "{group}\ClearMD (flet)"; Filename: "{app}\ClearMD-Flet\ClearMD-Flet.exe"; WorkingDir: "{app}\ClearMD-Flet"; Components: flet
 ; The command line must NOT open clearmd-cli.exe directly: a console program started by a double
 ; click closes at once. Instead it opens cmd.exe (the Windows command prompt) in the user's
 ; Documents folder, shows the help, and leaves the prompt open to use the program.
@@ -189,6 +200,7 @@ Name: "{group}\{cm:UninstallProgram,ClearMD}"; Filename: "{uninstallexe}"
 ; Desktop shortcuts: only when the task is ticked, and only for the components chosen.
 Name: "{autodesktop}\ClearMD"; Filename: "{app}\ClearMD.exe"; Components: ttk; Tasks: desktopicon
 Name: "{autodesktop}\ClearMD (Qt)"; Filename: "{app}\ClearMD-Qt\ClearMD-Qt.exe"; WorkingDir: "{app}\ClearMD-Qt"; Components: qt; Tasks: desktopicon
+Name: "{autodesktop}\ClearMD (flet)"; Filename: "{app}\ClearMD-Flet\ClearMD-Flet.exe"; WorkingDir: "{app}\ClearMD-Flet"; Components: flet; Tasks: desktopicon
 Name: "{autodesktop}\ClearMD (command line)"; Filename: "{cmd}"; Parameters: "/k """"{app}\clearmd-cli.exe"" --help & echo. & echo Type: clearmd-cli ""<folder or file>"""""; WorkingDir: "{userdocs}"; Components: cli; Tasks: desktopicon
 
 ; ---------------------------------------------------------------------------------------------
@@ -203,6 +215,9 @@ Type: files; Name: "{autodesktop}\ClearMD.lnk"; Check: NotTtk
 Type: filesandordirs; Name: "{app}\ClearMD-Qt"; Check: NotQt
 Type: files; Name: "{group}\ClearMD (Qt).lnk"; Check: NotQt
 Type: files; Name: "{autodesktop}\ClearMD (Qt).lnk"; Check: NotQt
+Type: filesandordirs; Name: "{app}\ClearMD-Flet"; Check: NotFlet
+Type: files; Name: "{group}\ClearMD (flet).lnk"; Check: NotFlet
+Type: files; Name: "{autodesktop}\ClearMD (flet).lnk"; Check: NotFlet
 Type: files; Name: "{app}\clearmd-cli.exe"; Check: NotCli
 Type: files; Name: "{group}\ClearMD (command line).lnk"; Check: NotCli
 Type: files; Name: "{autodesktop}\ClearMD (command line).lnk"; Check: NotCli
@@ -240,6 +255,11 @@ begin
   Result := not WizardIsComponentSelected('qt');
 end;
 
+function NotFlet: Boolean;
+begin
+  Result := not WizardIsComponentSelected('flet');
+end;
+
 function NotCli: Boolean;
 begin
   Result := not WizardIsComponentSelected('cli');
@@ -268,6 +288,7 @@ begin
   Memo.WordWrap := True;
   Memo.ScrollBars := ssVertical;
   Body := CustomMessage('CompareTtk') + #13#10 + #13#10 + CustomMessage('CompareQt') + #13#10 + #13#10 +
+    CustomMessage('CompareFlet') + #13#10 + #13#10 +
     CustomMessage('CompareCli') + #13#10 + #13#10 + CustomMessage('CompareAll');
   Memo.Text := Body;
 end;
@@ -277,7 +298,7 @@ begin
   Result := True;
   // At least one part must be chosen: an installer with nothing in it would be pointless.
   if CurPageID = wpSelectComponents then
-    if not (WizardIsComponentSelected('ttk') or WizardIsComponentSelected('qt') or WizardIsComponentSelected('cli')) then
+    if not (WizardIsComponentSelected('ttk') or WizardIsComponentSelected('qt') or WizardIsComponentSelected('flet') or WizardIsComponentSelected('cli')) then
     begin
       MsgBox(CustomMessage('NeedOneComponent'), mbError, MB_OK);
       Result := False;

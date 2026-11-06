@@ -127,7 +127,7 @@ def test_ac_09_the_packaging_zips_the_folder_and_puts_it_in_the_linux_archive() 
     package = read(PACKAGING / "package.sh")
     assert 'release/ClearMD-Qt-$version-windows.zip" ClearMD-Qt' in package
     assert "python -m zipfile -c" in package and "--group build" in package
-    assert 'cp -a "$dist/ClearMD-Qt" "stage/ClearMD-$version-linux/"' in package
+    assert 'cp -a "$dist/ClearMD-Qt" ' in package and '"stage/ClearMD-$version-linux/"' in package
     assert 'version="${version//\\//-}"' in package
 
 

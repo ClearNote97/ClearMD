@@ -54,7 +54,7 @@ def test_ac_03_the_palette_is_the_apps_palette() -> None:
 
 def test_ac_04_the_parts_are_cards_with_the_recommended_one_marked() -> None:
     painted = read(PAINTED)
-    for part in ("Ttk", "Qt", "Cli"):
+    for part in ("Ttk", "Qt", "Flet", "Cli"):
         for field in ("Title", "Tag", "Body"):
             for language in ("english", "spanish"):
                 assert f"{language}.Card{part}{field}=" in painted
@@ -65,7 +65,9 @@ def test_ac_04_the_parts_are_cards_with_the_recommended_one_marked() -> None:
 
 
 def _titles() -> list[str]:
-    names = re.compile(r"^(?:english|spanish)\.(?:Comp(?:Ttk|Qt|Cli)|Card\w+Title|CompareCaption)=")
+    names = re.compile(
+        r"^(?:english|spanish)\.(?:Comp(?:Ttk|Qt|Flet|Cli)|Card\w+Title|CompareCaption)="
+    )
     text = read(ISS) + read(PAINTED)
     titles = [x.split("=", 1)[1] for x in text.splitlines() if names.match(x)]
     titles += [x.split("=", 1)[1] for x in text.splitlines() if x.startswith("spanish.Welcome")]
@@ -81,7 +83,7 @@ def test_ac_05_titles_in_title_case() -> None:
     for title in parts:
         words = [w for w in title.split() if w and w[0].isalpha()]
         for position, word in enumerate(words):
-            if word.startswith(("ClearMD", "[name]")) or word in {"ttk"}:
+            if word.startswith(("ClearMD", "[name]")) or word in {"ttk", "flet"}:
                 continue
             if position > 0 and word.lower() in CONNECTORS:
                 assert word == word.lower(), (title, word)

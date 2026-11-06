@@ -61,7 +61,7 @@ def version_file(filename: str) -> str | None:
 # Each executable holds one GUI: the other toolkits' modules, and the toolkits themselves, stay
 # out (the PySide6 GUI, feature 016, would add ~45 MB of PySide6 to the ttk window and the CLI).
 OTHER_GUIS = ("clearmd.frontend.pyside", "clearmd.frontend.flet")
-OTHER_TOOLKITS = ["PySide6", "shiboken6", "flet"]
+OTHER_TOOLKITS = ["PySide6", "shiboken6", "flet", "flet_desktop"]
 hidden = [
     module for module in collect_submodules("clearmd") if not module.startswith(OTHER_GUIS)
 ] + ["PIL._tkinter_finder"]
