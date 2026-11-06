@@ -149,7 +149,7 @@ anteriores._
 | **016** La misma app en PySide6 (Qt) | ✅ lista | v0.11.0 |
 | **017** Instalador y desinstalador para Windows | ✅ lista | v0.12.0 |
 | **018** La app en flet | ⏳ | |
-| **019** El instalador con el aspecto de ClearMD (claro y oscuro) | ✅ lista | v0.13.0 · [capturas](./docs/screenshots/019/) |
+| **019** El instalador con el aspecto de ClearMD (claro y oscuro) | ✅ lista | v0.13.1 · [capturas](./docs/screenshots/019/) |
 
 El plan completo está en el [roadmap](./spec/roadmap.md). ClearMD tiene **línea de comandos** y la misma **app de
 escritorio** en dos toolkits, ttkbootstrap (`clearmd-ttk`) y PySide6 (`clearmd-pyside`, [capturas](./docs/screenshots/016/)),

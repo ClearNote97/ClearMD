@@ -104,7 +104,7 @@ def test_ac_07_adr_version_notes_readme_and_photographs() -> None:
     version = re.search(r'^version = "(.+)"', pyproject, re.M)
     assert version and tuple(map(int, version.group(1).split("."))) >= (0, 13, 0)
     notes = (ROOT / "packaging" / "RELEASE_NOTES.md").read_text(encoding="utf-8")
-    assert "ClearMD-Setup-0.13.0.exe" in notes
+    assert "ClearMD-Setup-0.13.1.exe" in notes
     assert "look/" in read(INSTALLER / "README.md")
     photos = sorted((ROOT / "docs" / "screenshots" / "019").glob("*.png"))
     assert len(photos) >= 6

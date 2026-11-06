@@ -1,9 +1,9 @@
 **ClearMD — documents to Markdown, 100 % local.** / **Documentos a Markdown, 100 % local.**
 
-**New in 0.13.0 / Novedades de la 0.13.0**
-- The installer (`ClearMD-Setup-0.13.0.exe`) now looks like ClearMD: its logo and colours, light or
+**New in 0.13.1 / Novedades de la 0.13.1**
+- The installer (`ClearMD-Setup-0.13.1.exe`) now looks like ClearMD: its logo and colours, light or
   dark as your Windows, and the three parts shown as cards, the recommended one marked. What it
-  installs and how it uninstalls do not change. / El instalador (`ClearMD-Setup-0.13.0.exe`) ahora
+  installs and how it uninstalls do not change. / El instalador (`ClearMD-Setup-0.13.1.exe`) ahora
   se ve como ClearMD: su logo y sus colores, claro u oscuro según tu Windows, y las tres partes
   como tarjetas, con la recomendada marcada. Lo que instala y cómo se desinstala no cambia.
 
