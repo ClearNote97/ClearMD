@@ -14,6 +14,11 @@
   ; The build passes the real version (/DAppVersion=...). This fallback is for a local test build.
   #define AppVersion "0.0.0-local"
 #endif
+; The look (feature 019): "plain" is Inno's own; "brand" adds ClearMD's pictures and colours
+; (look\brand.iss); "painted" also paints the header, titles and cards with code (look\painted.iss).
+#ifndef Look
+  #define Look "plain"
+#endif
 
 ; ---------------------------------------------------------------------------------------------
 [Setup]
@@ -43,7 +48,11 @@ OutputDir=..\..\dist\installer
 OutputBaseFilename=ClearMD-Setup-{#AppVersion}
 Compression=lzma2
 SolidCompression=yes
+#if Look == "plain"
 WizardStyle=modern
+#else
+  #include "look\brand.iss"
+#endif
 ; Windows 10 or newer (the Python runtime inside the programs needs it).
 MinVersion=10.0
 ; If ClearMD is open when the installer starts, Windows' Restart Manager lists it and asks the
@@ -196,6 +205,9 @@ Type: files; Name: "{autodesktop}\ClearMD (command line).lnk"; Check: NotCli
 ; entry here so the uninstaller removes it too.
 
 ; ---------------------------------------------------------------------------------------------
+#if Look == "painted"
+  #include "look\painted.iss"
+#endif
 [Code]
 // The Pascal Script part: the logic Inno's sections cannot express alone. Comments use //.
 
@@ -235,6 +247,12 @@ begin
   // A page of its own, between "Where to install" and "Components": the explanation is read
   // before the choice. It is skipped in a silent install (there is nothing to read then).
   ComparePage := CreateCustomPage(wpSelectDir, CustomMessage('CompareCaption'), CustomMessage('CompareDescription'));
+#if Look == "painted"
+  // Option 2: one card per part instead of the plain text, and ClearMD's colours (look\painted.iss).
+  PaintCompareCards(ComparePage);
+  PaintWizard;
+  Exit;
+#endif
   Memo := TNewMemo.Create(WizardForm);
   Memo.Parent := ComparePage.Surface;
   Memo.Align := alClient;
