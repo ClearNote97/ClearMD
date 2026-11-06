@@ -89,7 +89,7 @@ already tested (ADR-0001).
 
 - [x] **016 — PySide6-Essentials GUI** (*onedir* distribution because of LGPL, ADR-0003, ADR-0038): v0.11.0.
 - [x] **017 — Windows installer and uninstaller** (Inno Setup, ADR-0040): v0.12.0.
-- [ ] **018 — flet GUI.**
+- [x] **018 — flet GUI** (a folder with flet's own window program, ADR-0042): v1.0.0, ClearMD 1.0.
 - [x] **019 — The installer looks like ClearMD** (pictures, light and dark, the apps' palette, ADR-0041): v0.13.2.
 - [ ] Incremental mode: skip files unchanged since the last run.
 - [ ] Minor formats: `.eml`, `.rtf`, subtitles.

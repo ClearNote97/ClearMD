@@ -19,10 +19,13 @@ that knows exactly what was installed, so it can undo it.
   (the lightest). The choices are the *components*:
   - `ttk`: the classic app (`ClearMD.exe`, one file, about 36 MB). The default.
   - `qt`: the modern app (`ClearMD-Qt\`, a folder, about 130 MB, its Qt libraries can be replaced).
+  - `flet`: the flet app (`ClearMD-Flet\`, a folder, about 120 MB, with flet's own window program
+    inside, ADR-0042).
   - `cli`: the command line (`clearmd-cli.exe`, no window, about 36 MB).
 
-  The *types* are ready-made choices: classic app only (default), modern app only, command line
-  only, everything, or custom. Both apps do exactly the same conversions with the same results.
+  The *types* are ready-made choices: classic app only (default), modern app only, flet app only,
+  command line only, everything, or custom. The three apps do exactly the same conversions with
+  the same results.
 - **Shortcuts** in the Start menu folder `ClearMD`: one per chosen part, and the uninstaller. The
   command line's shortcut opens the Windows command prompt with the help shown; it does not open
   the console program directly (it would close at once).

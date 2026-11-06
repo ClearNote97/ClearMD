@@ -1,5 +1,15 @@
 **ClearMD — documents to Markdown, 100 % local.** / **Documentos a Markdown, 100 % local.**
 
+**ClearMD 1.0.0**
+- The same app drawn with flet (Flutter), the third toolkit: `ClearMD-Flet-1.0.0-windows.zip` —
+  unzip it and open `ClearMD-Flet.exe` in the folder — or tick "ClearMD (flet)" in the installer.
+  Same steps, texts and look as the other two; files are added with its two buttons. With it,
+  ClearMD offers its three apps and reaches version 1.0. / La misma app dibujada con flet
+  (Flutter), el tercer toolkit: `ClearMD-Flet-1.0.0-windows.zip` — descomprímela y abre
+  `ClearMD-Flet.exe` en la carpeta — o marca "ClearMD (flet)" en el instalador. Los mismos pasos,
+  textos y aspecto que las otras dos; los archivos se añaden con sus dos botones. Con ella,
+  ClearMD ofrece sus tres apps y llega a la versión 1.0.
+
 **New in 0.13.2 / Novedades de la 0.13.2**
 - The installer (`ClearMD-Setup-0.13.2.exe`) now looks like ClearMD: its logo and colours, light or
   dark as your Windows, and the three parts shown as cards, the recommended one marked. What it

@@ -179,8 +179,11 @@ jobs:
       - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
-        run: >
-          gh release create "$GITHUB_REF_NAME" release/*
-          --title "ClearMD $GITHUB_REF_NAME"
-          --notes-file packaging/RELEASE_NOTES.md
-          --prerelease
+        # 0.x versions were pre-releases; from 1.0.0 on (feature 018) a version is a full release,
+        # so GitHub's "latest release" link (the READMEs' download link) points to it.
+        run: |
+          stage=()
+          if [[ "$GITHUB_REF_NAME" == v0.* ]]; then stage=(--prerelease); fi
+          gh release create "$GITHUB_REF_NAME" release/* \
+            --title "ClearMD $GITHUB_REF_NAME" \
+            --notes-file packaging/RELEASE_NOTES.md "${stage[@]}"

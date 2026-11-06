@@ -19,7 +19,7 @@ built first for people who never open a terminal._
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![Status](https://img.shields.io/badge/status-under%20construction-orange)
 
-### [⬇️ Download ClearMD for Windows](https://github.com/ClearNote97/ClearMD/releases)
+### [⬇️ Download ClearMD for Windows](https://github.com/ClearNote97/ClearMD/releases/latest)
 
 <sub>Open the newest release and take <code>ClearMD-Setup-&lt;version&gt;.exe</code>: it installs and uninstalls like any Windows program. Linux: the <code>.tar.gz</code> of the same release.</sub>
 
@@ -144,12 +144,13 @@ _Plus the failed and skipped files with a plain-words reason, and the history of
 | **015** A PDF's equations as LaTeX | ✅ done | v0.10.0 |
 | **016** The same app in PySide6 (Qt) | ✅ done | v0.11.0 |
 | **017** Windows installer and uninstaller | ✅ done | v0.12.0 |
-| **018** The flet app | ⏳ | |
+| **018** The flet app — ClearMD 1.0 | ✅ done | v1.0.0 · [screenshots](./docs/screenshots/018/) |
 | **019** The installer looks like ClearMD (light and dark) | ✅ done | v0.13.2 · [screenshots](./docs/screenshots/019/) |
 
-Full plan in the [roadmap](./spec/roadmap.md). ClearMD has a **command line** and the same **desktop app** in two toolkits,
-ttkbootstrap (`clearmd-ttk`) and PySide6 (`clearmd-pyside`, [screenshots](./docs/screenshots/016/)), all also as
-Windows and Linux executables built and checked by CI.
+Full plan in the [roadmap](./spec/roadmap.md). ClearMD has a **command line** and the same **desktop app** in three toolkits,
+ttkbootstrap (`clearmd-ttk`), PySide6 (`clearmd-pyside`, [screenshots](./docs/screenshots/016/)) and flet
+(`clearmd-flet`, [screenshots](./docs/screenshots/018/)), all also as Windows and Linux executables built and
+checked by CI.
 
 ---
 
@@ -157,7 +158,8 @@ Windows and Linux executables built and checked by CI.
 
 **Install it on Windows** (recommended): from the [latest release](https://github.com/ClearNote97/ClearMD/releases/latest),
 download `ClearMD-Setup-….exe` and open it. It installs for your user only (no administrator) and lets you choose:
-the classic app (the lightest, the default), the modern app (Qt), the command line, or all of them, each explained;
+the classic app (the lightest, the default), the modern app (Qt), the flet app, the command line, or all of them,
+each explained;
 then open ClearMD from the Start menu.
 
 **Or download the app** (nothing to install): `ClearMD-…-windows.exe` for Windows or `ClearMD-…-linux.tar.gz` for
@@ -166,6 +168,9 @@ Windows may warn that the app is not recognized, because it is not code-signed y
 Signing is on its way: [Code signing policy](./CODE_SIGNING.md).
 The same app drawn with Qt is `ClearMD-Qt-…-windows.zip`: unzip it and open `ClearMD-Qt.exe` inside the folder
 (a folder, not one file: Qt's libraries stay replaceable, as their LGPL license asks; on Linux it is in the archive).
+The same app drawn with flet (Flutter) is `ClearMD-Flet-…-windows.zip`: unzip it and open `ClearMD-Flet.exe` inside
+the folder. It carries flet's own window program, so it never downloads anything; files are added with its two
+buttons (flet cannot receive dragged files). On Linux it needs GTK 3, and `zenity` for its file dialogs.
 The first start takes a few seconds while the app unpacks itself.
 
 **From the repository**, for the command line (the package is not on PyPI yet):

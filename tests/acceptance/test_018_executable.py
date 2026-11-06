@@ -71,3 +71,12 @@ def test_ac_10_the_installer_offers_the_flet_app_as_a_fourth_part() -> None:
     check = read(PACKAGING / "check_installer.ps1")
     assert "'/COMPONENTS=ttk,qt,flet,cli'" in check and "Invoke-Smoke 'flet'" in check
     assert "flet-client\\flet\\flet.exe" in check
+
+
+def test_ac_09_the_version_resource_names_the_flet_exe() -> None:
+    import runpy
+
+    version_info = runpy.run_path(str(PACKAGING / "version_info.py"))
+    text = version_info["version_text"]("1.0.0", "ClearMD-Flet.exe")
+    assert "StringStruct('OriginalFilename', 'ClearMD-Flet.exe')" in text
+    assert "desktop app, flet" in text

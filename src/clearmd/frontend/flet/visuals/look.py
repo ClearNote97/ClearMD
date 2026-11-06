@@ -87,7 +87,9 @@ def button_style(kind: str) -> ft.ButtonStyle:
     if kind == "link":
         return ft.ButtonStyle(
             color=_states("accent_text", disabled="disabled"),
-            bgcolor={DEFAULT: ft.Colors.TRANSPARENT, HOVERED: role("selected")},
+            # Every state named: Flutter fills a state left out (disabled) with its own grey box.
+            bgcolor={DEFAULT: role("card"), DISABLED: role("card"), HOVERED: role("selected")},
+            shadow_color=ft.Colors.TRANSPARENT,
             shape=shape,
             padding=ft.Padding.symmetric(horizontal=SPACE),
             text_style=bold,
@@ -97,7 +99,8 @@ def button_style(kind: str) -> ft.ButtonStyle:
     side = ft.BorderSide(2 if strong else 1, role("accent" if strong else "border"))
     return ft.ButtonStyle(
         color=_states("accent_text" if strong else "text", disabled="disabled"),
-        bgcolor=_states("card"),
+        bgcolor=_states("card", disabled="card"),
+        shadow_color=ft.Colors.TRANSPARENT,
         side={DEFAULT: side, HOVERED: ft.BorderSide(side.width, role("accent"))},
         shape=shape,
         padding=ft.Padding.symmetric(horizontal=GAP),

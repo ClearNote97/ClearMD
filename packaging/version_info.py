@@ -6,6 +6,7 @@ DESCRIPTIONS = {
     "ClearMD.exe": "ClearMD: documents to Markdown (desktop app)",
     "clearmd-cli.exe": "ClearMD: documents to Markdown (command line)",
     "ClearMD-Qt.exe": "ClearMD: documents to Markdown (desktop app, Qt)",
+    "ClearMD-Flet.exe": "ClearMD: documents to Markdown (desktop app, flet)",
 }
 
 
