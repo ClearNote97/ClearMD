@@ -51,7 +51,8 @@ function Expect([bool]$Ok, [string]$What) {
 function Invoke-Setup([string[]]$Choice) {
   $arguments = @($Choice) + '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/CURRENTUSER'
   $process = Start-Process -FilePath $Installer -ArgumentList $arguments -Wait -PassThru
-  Expect ($process.ExitCode -eq 0) "the silent install ($($Choice -join ' ')) exits with 0 (it was $($process.ExitCode))"
+  $label = if ($Choice.Count -gt 0) { $Choice -join ' ' } else { 'the default choice' }
+  Expect ($process.ExitCode -eq 0) "the silent install ($label) exits with 0 (it was $($process.ExitCode))"
 }
 
 function Invoke-Uninstall([string[]]$Extra = @()) {

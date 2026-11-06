@@ -110,7 +110,9 @@ jobs:
             choco install innosetup --version=6.4.3 -y --no-progress
           }
           if (-not (Test-Path $iscc)) { throw "Inno Setup was not found at $iscc" }
-          "Inno Setup compiler: $iscc, version $((Get-Item $iscc).VersionInfo.ProductVersion)"
+          # The compiler prints its own version first ("Inno Setup 6.x.y Command-Line Compiler").
+          $banner = (& $iscc /? 2>&1 | Select-Object -First 1)
+          "Inno Setup compiler: $iscc ($banner)"
           "iscc=$iscc" >> $env:GITHUB_OUTPUT
       - name: Installer (compiled from dist/, its version from the tag or the branch)
         id: installer
