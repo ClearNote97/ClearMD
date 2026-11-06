@@ -1,0 +1,61 @@
+# The installer's look (feature 019): compiles the three looks of the installer from the
+# published v0.12.0 programs (no rebuild) and photographs every wizard page in light and dark.
+# The installers and the pictures are artifacts of the run, to compare before choosing one.
+name: Installer look
+
+on:
+  push:
+    branches: ["feat/installer-look"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  look:
+    name: Installer looks
+    runs-on: windows-2025
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: The published programs (v0.12.0), laid out as the build leaves them in dist/
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p dl dist/installer
+          gh release download v0.12.0 -D dl -p "ClearMD-v0.12.0-windows.exe" -p "clearmd-cli-v0.12.0-windows.exe" -p "ClearMD-Qt-v0.12.0-windows.zip" -p "THIRD-PARTY-NOTICES.txt"
+          cp dl/ClearMD-v0.12.0-windows.exe dist/ClearMD.exe
+          cp dl/clearmd-cli-v0.12.0-windows.exe dist/clearmd-cli.exe
+          cp dl/THIRD-PARTY-NOTICES.txt dist/installer/
+          (cd dist && unzip -q ../dl/ClearMD-Qt-v0.12.0-windows.zip)
+          ls -la dist dist/ClearMD-Qt | head -20
+      - name: Compile the three looks
+        shell: pwsh
+        run: |
+          $iscc = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"
+          "Inno Setup: " + (& $iscc /? 2>&1 | Select-Object -First 1)
+          foreach ($look in "plain", "brand", "painted") {
+            & $iscc /Q "/DAppVersion=0.12.0" "/DLook=$look" "/O$PWD\looks" "/FClearMD-Setup-0.12.0-$look" packaging\installer\clearmd.iss
+            if ($LASTEXITCODE -ne 0) { throw "The $look look did not compile" }
+          }
+          Get-ChildItem looks
+      - name: Photograph every page (light and dark Windows)
+        shell: pwsh
+        run: |
+          foreach ($look in "plain", "brand", "painted") {
+            foreach ($theme in "light", "dark") {
+              pwsh -NoProfile -File packaging/installer/look/shoot.ps1 -Setup "looks\ClearMD-Setup-0.12.0-$look.exe" -Out "shots\$look-$theme" -Theme $theme
+              if ($LASTEXITCODE -ne 0) { throw "Photographing $look ($theme) failed" }
+            }
+          }
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: installer-look-shots
+          path: shots/
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: installer-look-setups
+          path: looks/*.exe
