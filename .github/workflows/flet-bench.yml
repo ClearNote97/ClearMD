@@ -4,6 +4,9 @@
 name: flet bench
 
 on:
+  # A workflow is dispatched only from the default branch: a bench/* branch runs it on push.
+  push:
+    branches: ["bench/**"]
   workflow_dispatch:
 
 permissions:
