@@ -71,6 +71,13 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
 
 ; ---------------------------------------------------------------------------------------------
+[Messages]
+; Titles are written in Title Case (every word capitalised except connectors): Inno's English
+; titles already are; these two Spanish ones are not, so they are replaced here.
+spanish.WelcomeLabel1=Bienvenido al Asistente de Instalación de [name]
+spanish.FinishedHeadingLabel=Completando la Instalación de [name]
+
+; ---------------------------------------------------------------------------------------------
 [CustomMessages]
 ; Our own texts, one line per message, in each language. In the Pascal code they are read with
 ; CustomMessage('Name'); in the other sections with {cm:Name}.
@@ -85,20 +92,20 @@ spanish.TypeCli=Solo la línea de comandos
 spanish.TypeFull=Todo: las dos apps y la línea de comandos
 spanish.TypeCustom=Personalizada: elijo cada parte
 
-english.CompTtk=ClearMD (ttk) - the classic app
-english.CompQt=ClearMD (Qt) - the modern app
-english.CompCli=Command line - for advanced users
-spanish.CompTtk=ClearMD (ttk) - la app clásica
-spanish.CompQt=ClearMD (Qt) - la app moderna
-spanish.CompCli=Línea de comandos - para usuarios avanzados
+english.CompTtk=ClearMD (ttk) - The Classic App
+english.CompQt=ClearMD (Qt) - The Modern App
+english.CompCli=Command Line - for Advanced Users
+spanish.CompTtk=ClearMD (ttk) - La App Clásica
+spanish.CompQt=ClearMD (Qt) - La App Moderna
+spanish.CompCli=Línea de Comandos - para Usuarios Avanzados
 
 english.TaskDesktop=A desktop shortcut for each part I chose
 spanish.TaskDesktop=Un acceso directo en el escritorio para cada parte que elegí
 english.TaskAddPath=Add the command line to my PATH, so that clearmd-cli works in any terminal (this changes your user's PATH; the uninstaller removes it)
 spanish.TaskAddPath=Añadir la línea de comandos a mi PATH, para que clearmd-cli funcione en cualquier terminal (esto cambia el PATH de tu usuario; el desinstalador lo quita)
 
-english.CompareCaption=What each part is
-spanish.CompareCaption=Qué es cada parte
+english.CompareCaption=What Each Part Is
+spanish.CompareCaption=Qué Es Cada Parte
 english.CompareDescription=Read this, then choose on the next page. You can run the installer again later to change your choice.
 spanish.CompareDescription=Léelo y elige en la página siguiente. Puedes volver a ejecutar el instalador más adelante para cambiar tu elección.
 english.CompareTtk=ClearMD (ttk), the classic window (RECOMMENDED for most people: the lightest). One program file of about 36 MB. The first start takes a few seconds, because the program unpacks itself. Simpler drawing.
