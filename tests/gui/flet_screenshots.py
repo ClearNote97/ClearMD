@@ -48,11 +48,12 @@ class Shooter:
             await asyncio.sleep(0.1)
 
 
-def close_dialog(app: FletApp) -> None:
+async def close_dialog(app: FletApp) -> None:
+    """As Esc does: the dialog's own close, then a moment for flet's program to take it away."""
     dialog = app.dialogs.current
     if dialog is not None:
-        app.page.close_dialog(dialog.control)
-        app.dialogs.current = None
+        dialog.close_dialog()
+        await asyncio.sleep(0.5)
 
 
 async def screens(page: ft.Page, out: Path, theme: str, language: str) -> None:
@@ -89,11 +90,11 @@ async def screens(page: ft.Page, out: Path, theme: str, language: str) -> None:
     for name, show in dialogs:
         show()
         await shooter.shot(name)
-        close_dialog(app)
+        await close_dialog(app)
     catalog = load_catalog(language)
     app.dialogs.welcome(tuple(catalog.text(f"gui.welcome.step{n}") for n in (1, 2, 3)))
     await shooter.shot("0-welcome")
-    close_dialog(app)
+    await close_dialog(app)
     page.window.width, page.window.height = COMPACT
     app.presenter.go_to(1)
     await shooter.shot("1-choose-compact")
