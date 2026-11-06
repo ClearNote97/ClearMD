@@ -90,7 +90,9 @@ $process = Start-Process -FilePath $Setup -ArgumentList "/LANG=$Lang", "/DIR=`"$
 Start-Sleep -Seconds 3
 # The plain look has no Welcome page (Inno's default); the others show it, with the tall picture.
 if ($Setup -notmatch "plain") { Shot "welcome"; Press $next }
-Shot "license"; Press "%a"; Press $next
+# Accept the license. In Spanish Alt+A is both "&Acepto" and "&Atrás" (Back): there the
+# "&No acepto" button is focused with Alt+N and the arrow key moves to "Acepto", choosing it.
+if ($Lang -eq "spanish") { Shot "license"; Press "%n"; Press "{UP}"; Press $next } else { Shot "license"; Press "%a"; Press $next }
 Shot "folder"; Press $next
 Shot "compare"; Press $next
 Shot "components"; Press $next
