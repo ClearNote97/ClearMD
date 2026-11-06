@@ -32,5 +32,5 @@ Each criterion has an acceptance test (`tests/acceptance/test_019_*.py`) or a CI
   and Spanish.
 - [x] **AC-06** A workflow photographs every page of the three looks on Windows, light and dark, and
   in Spanish, and keeps the installers and the photographs as artifacts.
-- [x] **AC-07** ADR-0041; version 0.13.1; the release notes and the installer's README describe it;
+- [x] **AC-07** ADR-0041; version 0.13.2; the release notes and the installer's README describe it;
   photographs in `docs/screenshots/019/`.
