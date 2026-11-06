@@ -113,8 +113,11 @@ jobs:
           # The compiler prints its own version first ("Inno Setup 6.x.y Command-Line Compiler").
           $banner = (& $iscc /? 2>&1 | Select-Object -First 1)
           "Inno Setup compiler: $iscc ($banner)"
-          # The installer's look (ADR-0041) needs 6.7: older compilers reject its directives.
-          if ($banner -notmatch "Inno Setup (\d+)\.(\d+)" -or [version]"$($Matches[1]).$($Matches[2])" -lt [version]"6.7") { throw "Inno Setup 6.7 or newer is needed: $banner" }
+          # The installer's look (ADR-0041) needs 6.7: older compilers reject its directives. The
+          # banner says only "Inno Setup 6"; the exact version is in the program file's details.
+          $inno = (Get-Item $iscc).VersionInfo.ProductVersion
+          "Inno Setup version: $inno"
+          if ([version]($inno -replace '[^0-9.].*$', '') -lt [version]"6.7") { throw "Inno Setup 6.7 or newer is needed (found $inno)" }
           "iscc=$iscc" >> $env:GITHUB_OUTPUT
       - name: Installer (compiled from dist/, its version from the tag or the branch)
         id: installer
