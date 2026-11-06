@@ -1,0 +1,123 @@
+"""Screenshots of the flet GUI for docs/ (feature 018, AC-11): every screen, light and dark,
+English and Spanish, drawn by flet's real window program with the presenter's fake backend (the
+same demo as ttk's and Qt's). flet draws in its own program, so this runs on a machine with a
+screen: the "flet screenshots" workflow on Windows, with the pinned program fetched first.
+
+    uv run python packaging/fetch_flet_client.py
+    FLET_VIEW_PATH=build/flet-client/flet uv run python tests/gui/flet_screenshots.py \\
+        --out docs/screenshots/018 --theme light --language en
+"""
+
+import argparse
+import asyncio
+import sys
+import threading
+from collections.abc import Callable
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # tests/: support.*, gui.*
+
+import flet as ft  # noqa: E402
+import gui.screenshots as demo  # noqa: E402
+from support.gui_fakes import FakeBackend  # noqa: E402
+
+from clearmd.backend.schemas.settings import Settings  # noqa: E402
+from clearmd.frontend.flet.visuals.images import ASSETS  # noqa: E402
+from clearmd.frontend.flet.window.flet_page import FletPage  # noqa: E402
+from clearmd.frontend.flet.window.window import FletApp  # noqa: E402
+from clearmd.i18n import load_catalog  # noqa: E402
+
+COMPACT = (900, 640)  # below 1000 px the rail is compact (feature 007)
+
+
+class Shooter:
+    def __init__(self, page: ft.Page, out: Path, tag: str) -> None:
+        self.page, self.out, self.tag = page, out, tag
+
+    async def shot(self, name: str, settle: float = 0.9) -> None:
+        # Past the primary action's pause after a page change (F-1), and flet's own drawing.
+        await asyncio.sleep(settle)
+        picture = await self.page.take_screenshot()
+        (self.out / f"{name}-{self.tag}.png").write_bytes(picture)
+
+    @staticmethod
+    async def until(done: Callable[[], bool], seconds: float = 10) -> None:
+        for _ in range(int(seconds / 0.1)):
+            if done():
+                return
+            await asyncio.sleep(0.1)
+
+
+def close_dialog(app: FletApp) -> None:
+    dialog = app.dialogs.current
+    if dialog is not None:
+        app.page.close_dialog(dialog.control)
+        app.dialogs.current = None
+
+
+async def screens(page: ft.Page, out: Path, theme: str, language: str) -> None:
+    shooter = Shooter(page, out, f"{theme}-{language}")
+    held = threading.Event()
+    settings = Settings(
+        show_welcome=False, open_output_when_done=False, theme=theme, language=language
+    )
+    fake = FakeBackend(settings=settings, plan=demo.PLAN, statuses=demo.FAILED)
+    page.enable_screenshots = True
+    page.window.width, page.window.height = demo.WIDTH, demo.HEIGHT
+    app = FletApp(FletPage(page), fake)
+    app.start()
+    await shooter.shot("1-choose-empty")
+    app.presenter.add_paths(demo.INPUTS)
+    await shooter.shot("1-choose")
+    app.presenter.press_primary()
+    await shooter.until(lambda: app.presenter.page == 2)
+    await shooter.shot("2-review")
+    app.presenter.go_to(3)
+    await shooter.shot("3-convert-ready")
+
+    def hold() -> None:  # the batch waits here: the progress stays on screen for the shot
+        held.wait(20)
+
+    fake.before_finish = hold
+    app.presenter.confirm(False)
+    await shooter.until(lambda: app.presenter.state.value == "converting")
+    await shooter.shot("3-convert")
+    held.set()
+    await shooter.until(lambda: app.presenter.page == 4)
+    await shooter.shot("4-results")
+    dialogs = (("5-help", app.dialogs.show_help), ("6-settings", app.dialogs.show_settings))
+    for name, show in dialogs:
+        show()
+        await shooter.shot(name)
+        close_dialog(app)
+    catalog = load_catalog(language)
+    app.dialogs.welcome(tuple(catalog.text(f"gui.welcome.step{n}") for n in (1, 2, 3)))
+    await shooter.shot("0-welcome")
+    close_dialog(app)
+    page.window.width, page.window.height = COMPACT
+    app.presenter.go_to(1)
+    await shooter.shot("1-choose-compact")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--theme", choices=("light", "dark"), required=True)
+    parser.add_argument("--language", choices=("en", "es"), required=True)
+    arguments = parser.parse_args()
+    arguments.out.mkdir(parents=True, exist_ok=True)
+    demo.demo_files()
+
+    async def start(page: ft.Page) -> None:
+        try:
+            await screens(page, arguments.out, arguments.theme, arguments.language)
+        finally:
+            await page.window.destroy()
+
+    ft.run(start, assets_dir=str(ASSETS))
+    print(f"{len(list(arguments.out.glob('*.png')))} screenshots in {arguments.out}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

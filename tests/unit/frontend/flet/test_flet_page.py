@@ -1,0 +1,127 @@
+"""``FletPage``, the window's port on flet's real page (feature 018): the window's sizes and close
+button, the theme, the dialogs, the work queued to the page's loop, the pickers and the events."""
+
+from collections.abc import Callable
+from pathlib import Path
+from types import SimpleNamespace
+from typing import Any, cast
+
+import flet as ft
+import pytest
+from support.flet_page_stub import StubPage
+
+from clearmd.frontend.design.metrics import MIN_HEIGHT, MIN_WIDTH, START_HEIGHT, START_WIDTH
+from clearmd.frontend.flet.window.flet_page import FletPage
+from clearmd.frontend.flet.window.page_port import KeyPress
+
+
+class FakePicker:
+    files: list[ft.FilePickerFile] = []
+    folder: str | None = None
+    asked: list[dict[str, Any]] = []
+
+    async def pick_files(self, **options: Any) -> list[ft.FilePickerFile]:
+        self.asked.append(options)
+        return self.files
+
+    async def get_directory_path(self, **options: Any) -> str | None:
+        self.asked.append(options)
+        return self.folder
+
+
+@pytest.fixture
+def picker(monkeypatch: pytest.MonkeyPatch) -> type[FakePicker]:
+    monkeypatch.setattr(ft, "FilePicker", FakePicker)  # the one flet_page makes
+    FakePicker.asked = []
+    return FakePicker
+
+
+def test_the_window_has_clearmds_sizes_and_its_close_button_only_asks() -> None:
+    stub = StubPage()
+    FletPage(stub.as_page())
+    window = stub.window
+    assert (window.width, window.height) == (START_WIDTH, START_HEIGHT)
+    assert (window.min_width, window.min_height) == (MIN_WIDTH, MIN_HEIGHT)
+    assert window.prevent_close is True and window.icon and Path(window.icon).is_file()
+    assert stub.padding == 0 and stub.spacing == 0
+
+
+def test_mount_title_theme_refresh_and_dialogs() -> None:
+    stub = StubPage()
+    page = FletPage(stub.as_page())
+    root = ft.Container()
+    page.mount(root)
+    page.set_title("ClearMD")
+    light, dark = ft.Theme(), ft.Theme()
+    page.set_theme(light, dark, ft.ThemeMode.DARK)
+    page.refresh()
+    assert stub.added == [root] and stub.title == "ClearMD" and stub.updates == 1
+    assert (stub.theme, stub.dark_theme, stub.theme_mode) == (light, dark, ft.ThemeMode.DARK)
+    dialog = ft.AlertDialog()
+    page.show_dialog(dialog)
+    assert stub.dialogs == [dialog] and dialog.open
+    page.close_dialog(dialog)
+    page.close_dialog(dialog)  # already closed: nothing else is popped
+    assert stub.dialogs == [] and not dialog.open
+
+
+def test_work_is_queued_to_the_loop_and_the_screen_refreshed_after_it() -> None:
+    stub = StubPage()
+    page = FletPage(stub.as_page())
+    ran: list[str] = []
+    page.post(0.25, lambda: ran.append("work"))
+    assert ran == [] and stub.loop.later[0][0] == 0.25
+    stub.loop.run_all()
+    assert ran == ["work"] and stub.updates == 1
+    closed = StubPage(closed=True)
+    FletPage(closed.as_page()).post(0, lambda: ran.append("late"))  # the window is gone: dropped
+    assert ran == ["work"]
+
+
+def test_the_pickers_ask_on_the_loop_and_answer_with_paths(picker: type[FakePicker]) -> None:
+    stub = StubPage()
+    page = FletPage(stub.as_page())
+    picker.files = [
+        ft.FilePickerFile(id=1, name="a.pdf", size=1, path="/docs/a.pdf"),
+        ft.FilePickerFile(id=2, name="web", size=1, path=None),  # no path (the web): skipped
+    ]
+    picker.folder = "/docs"
+    answers: list[object] = []
+    page.pick_files("Choose documents", ["pdf", "docx"], answers.append)
+    page.pick_folder("Choose a folder", "/home", answers.append)
+    assert answers == []  # asked later, on the page's loop
+    stub.run_tasks()
+    assert answers == [["/docs/a.pdf"], "/docs"] and stub.updates == 2
+    files, folder = picker.asked
+    assert files["allow_multiple"] and files["allowed_extensions"] == ["pdf", "docx"]
+    assert files["file_type"] is ft.FilePickerFileType.CUSTOM
+    assert folder == {"dialog_title": "Choose a folder", "initial_directory": "/home"}
+
+
+def test_keys_the_close_button_and_the_size_reach_the_window() -> None:
+    stub = StubPage()
+    page = FletPage(stub.as_page())
+    keys: list[KeyPress] = []
+    closes: list[bool] = []
+    sizes: list[tuple[float, float]] = []
+    page.listen(
+        on_key=keys.append,
+        on_close=lambda: closes.append(True),
+        on_resize=lambda width, height: sizes.append((width, height)),
+    )
+    stub.on_keyboard_event(SimpleNamespace(key="1", ctrl=False, meta=True, shift=False))
+    window_event = cast(Callable[[object], None], stub.window.on_event)
+    window_event(SimpleNamespace(type=ft.WindowEventType.FOCUS))
+    window_event(SimpleNamespace(type=ft.WindowEventType.CLOSE))
+    stub.on_resize(SimpleNamespace(width=900.0, height=700.0))
+    assert keys == [KeyPress("1", ctrl=True)]  # Cmd on a Mac is Ctrl
+    assert closes == [True] and sizes == [(900.0, 700.0)]
+
+
+def test_hide_and_destroy() -> None:
+    stub = StubPage()
+    page = FletPage(stub.as_page())
+    page.hide()
+    assert stub.window.visible is False and stub.updates == 1
+    page.destroy()
+    assert stub.tasks == [stub.window.destroy]  # flet's program ends; ``ft.run`` returns

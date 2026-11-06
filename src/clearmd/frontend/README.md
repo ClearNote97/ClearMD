@@ -7,4 +7,5 @@ Every interface talks only to `backend/api` and `backend/schemas` (ADR-0014) and
 |---|---|
 | `cli/` | Command-line interface (feature 001). |
 | `presenter/` | Interaction logic shared by the GUIs, the template's `state/` role (feature 005). |
-| `ttk/`, `qt/`, `flet/` | One GUI each, in its phase, with the template's `app/`, `views/`, `components/`, `layout/`. |
+| `ttk/`, `pyside/` | One GUI each, in its phase, with the template's `app/`, `views/`, `components/`, `layout/`. |
+| `flet/` | The flet GUI (feature 018): the same layout, drawn by flet; no drop on the window. |

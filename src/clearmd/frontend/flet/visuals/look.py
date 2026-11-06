@@ -1,0 +1,106 @@
+"""The look of the controls (ADR-0027): what each kind of text is (size, weight, colour) and how
+each kind of button is drawn. Colours are theme slots (``theme.role``), so a theme change redraws
+nothing. A module of its own: Qt's style sheet, as data flet's controls take."""
+
+import flet as ft
+
+from clearmd.frontend.design.metrics import GAP, RADIUS, SPACE
+from clearmd.frontend.design.typography import (
+    BODY,
+    EYEBROW,
+    FIGURE,
+    SMALL,
+    STRONG,
+    SUBTITLE,
+    TITLE,
+    WORDMARK,
+)
+from clearmd.frontend.flet.visuals.theme import role
+
+# kind of text: (size in px, bold, colour role)
+TEXTS: dict[str, tuple[int, bool, str]] = {
+    "onPage": (BODY, False, "text"),
+    "strong": (STRONG, True, "text"),
+    "muted": (BODY, False, "muted"),
+    "hint": (SMALL, False, "muted"),
+    "empty": (BODY, False, "muted"),
+    "message": (BODY, False, "warning"),
+    "warning": (BODY, False, "warning"),
+    "title": (TITLE, True, "text"),
+    "subtitle": (BODY, False, "muted"),
+    "eyebrow": (EYEBROW, True, "accent_text"),
+    "dialogTitle": (SUBTITLE, True, "text"),
+    "figure": (FIGURE, True, "text"),
+    "bigText": (TITLE, True, "text"),
+    "wordmark": (WORDMARK, True, "rail_text"),
+    "local": (SMALL, False, "rail_muted"),
+    "rail": (BODY, False, "rail_dim"),
+    "railCurrent": (BODY, True, "on_accent"),
+    "railButton": (BODY, False, "rail_text"),
+    "badge": (SMALL, True, "rail_dim"),
+}
+TONES = {"accent": "accent_text", "warning": "warning", "danger": "danger", "neutral": "text"}
+DEFAULT, HOVERED = ft.ControlState.DEFAULT, ft.ControlState.HOVERED
+DISABLED = ft.ControlState.DISABLED
+
+
+def paint(text: ft.Text, kind: str) -> ft.Text:
+    """Give ``text`` the size, weight and colour of its kind."""
+    size, bold, colour = TEXTS[kind]
+    text.size = size
+    text.weight = ft.FontWeight.BOLD if bold else ft.FontWeight.NORMAL
+    text.color = role(colour)
+    return text
+
+
+def text_style(kind: str) -> ft.TextStyle:
+    size, bold, colour = TEXTS[kind]
+    weight = ft.FontWeight.BOLD if bold else ft.FontWeight.NORMAL
+    return ft.TextStyle(size=size, weight=weight, color=role(colour))
+
+
+def _states(
+    normal: str, *, hovered: str | None = None, disabled: str | None = None
+) -> dict[ft.ControlState, ft.ColorValue]:
+    found: dict[ft.ControlState, ft.ColorValue] = {DEFAULT: role(normal)}
+    if hovered is not None:
+        found[HOVERED] = role(hovered)
+    if disabled is not None:
+        found[DISABLED] = role(disabled)
+    return found
+
+
+def button_style(kind: str) -> ft.ButtonStyle:
+    """``""`` a plain button, ``primary`` the page's action, ``strong`` as prominent as it,
+    ``link`` a text link."""
+    shape = ft.RoundedRectangleBorder(radius=RADIUS - 2)
+    bold = ft.TextStyle(size=STRONG, weight=ft.FontWeight.BOLD)
+    if kind == "primary":
+        return ft.ButtonStyle(
+            color=_states("on_accent", disabled="disabled"),
+            bgcolor=_states("accent", hovered="accent_hover", disabled="border"),
+            shape=shape,
+            padding=ft.Padding.symmetric(horizontal=GAP),
+            text_style=bold,
+            elevation=0,
+        )
+    if kind == "link":
+        return ft.ButtonStyle(
+            color=_states("accent_text", disabled="disabled"),
+            bgcolor={DEFAULT: ft.Colors.TRANSPARENT, HOVERED: role("selected")},
+            shape=shape,
+            padding=ft.Padding.symmetric(horizontal=SPACE),
+            text_style=bold,
+            elevation=0,
+        )
+    strong = kind == "strong"
+    side = ft.BorderSide(2 if strong else 1, role("accent" if strong else "border"))
+    return ft.ButtonStyle(
+        color=_states("accent_text" if strong else "text", disabled="disabled"),
+        bgcolor=_states("card"),
+        side={DEFAULT: side, HOVERED: ft.BorderSide(side.width, role("accent"))},
+        shape=shape,
+        padding=ft.Padding.symmetric(horizontal=GAP),
+        text_style=bold,
+        elevation=0,
+    )

@@ -1,0 +1,46 @@
+# The flet window's screenshots (feature 018, AC-11): flet draws in its own window program, so
+# the pictures are taken on Windows, with the pinned program, by tests/gui/flet_screenshots.py.
+# They come back as an artifact; docs/screenshots/018/ holds the ones committed.
+name: flet screenshots
+
+on:
+  push:
+    branches: ["feat/018-flet"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  UV_PYTHON_PREFERENCE: only-managed
+
+jobs:
+  shots:
+    name: flet screenshots
+    runs-on: windows-2025
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.13"
+      - run: uv sync --locked
+      - name: flet's window program (pinned)
+        run: uv run python packaging/fetch_flet_client.py
+      - name: Every screen, light and dark, English and Spanish
+        shell: bash
+        env:
+          FLET_VIEW_PATH: ${{ github.workspace }}/build/flet-client/flet
+        run: |
+          set -euo pipefail
+          for theme in light dark; do
+            for language in en es; do
+              timeout 300 uv run python tests/gui/flet_screenshots.py --out shots --theme "$theme" --language "$language"
+            done
+          done
+          ls shots
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: flet-screenshots
+          path: shots/
