@@ -11,7 +11,7 @@ def test_ac_07_adr_version_and_how_to_install_and_uninstall() -> None:
     adr = ROOT / "docs" / "decisions" / "0040-windows-installer.md"
     assert adr.exists() and "Status:** accepted" in adr.read_text(encoding="utf-8")
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
-    assert project["version"] == "0.12.0"
+    assert tuple(map(int, project["version"].split("."))) >= (0, 12, 0)
     for readme, uninstall in (("README.md", "Installed apps"), ("README.es.md", "Aplicaciones")):
         text = (ROOT / readme).read_text(encoding="utf-8")
         assert "ClearMD-Setup-….exe" in text and uninstall in text

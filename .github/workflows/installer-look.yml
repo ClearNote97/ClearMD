@@ -1,11 +1,10 @@
-# The installer's look (feature 019): compiles the three looks of the installer from the
+# The installer's look (feature 019, ADR-0041): compiles the three looks of the installer from the
 # published v0.12.0 programs (no rebuild) and photographs every wizard page in light and dark.
 # The installers and the pictures are artifacts of the run, to compare before choosing one.
 name: Installer look
 
+# Run by hand (Actions → Installer look → Run workflow) after changing the look.
 on:
-  push:
-    branches: ["feat/installer-look"]
   workflow_dispatch:
 
 permissions:

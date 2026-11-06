@@ -9,7 +9,7 @@ english.CardTtkBody=The lightest: one program file. The first start takes a few 
 english.CardQtTitle=ClearMD (Qt) - The Modern App
 english.CardQtTag=about 130 MB
 english.CardQtBody=Smoother, with sharper text on high-resolution screens, and it opens quickly. Its Qt libraries can be replaced (LGPL).
-english.CardCliTitle=Command Line - for Advanced Users
+english.CardCliTitle=Command Line - For Advanced Users
 english.CardCliTag=about 36 MB
 english.CardCliBody=No window: you type clearmd-cli "C:\My documents". Good for many folders, scripts and automation.
 spanish.CardTtkTitle=ClearMD (ttk) - La App Clásica
@@ -18,7 +18,7 @@ spanish.CardTtkBody=La más liviana: un solo archivo. El primer inicio tarda uno
 spanish.CardQtTitle=ClearMD (Qt) - La App Moderna
 spanish.CardQtTag=unos 130 MB
 spanish.CardQtBody=Más suave, con texto más nítido en pantallas de alta resolución, y abre rápido. Sus bibliotecas de Qt se pueden reemplazar (LGPL).
-spanish.CardCliTitle=Línea de Comandos - para Usuarios Avanzados
+spanish.CardCliTitle=Línea de Comandos - Para Usuarios Avanzados
 spanish.CardCliTag=unos 36 MB
 spanish.CardCliBody=Sin ventana: escribes clearmd-cli "C:\Mis documentos". Buena para muchas carpetas, scripts y automatización.
 

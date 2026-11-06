@@ -46,7 +46,7 @@ def test_ac_01_the_release_builds_the_installer_after_the_signed_executables() -
     assert 'cp "${setups[0]}" release/' in package
     assert "ClearMD-Setup-*.exe" in package and "expected one ClearMD-Setup" in package
     release = read(RELEASE)
-    assert "choco install innosetup --version=6.4.3 -y --no-progress" in release
+    assert "choco install innosetup --version=6.7.1 -y --no-progress" in release
     assert "Inno Setup compiler:" in release and "ProductVersion" in release
     assert "uses: " not in release.split("name: Inno Setup 6")[1].split("      - name:")[0]
 

@@ -14,10 +14,11 @@
   ; The build passes the real version (/DAppVersion=...). This fallback is for a local test build.
   #define AppVersion "0.0.0-local"
 #endif
-; The look (feature 019): "plain" is Inno's own; "brand" adds ClearMD's pictures and colours
-; (look\brand.iss); "painted" also paints the header, titles and cards with code (look\painted.iss).
+; The look (feature 019, ADR-0041): "painted", the default, is ClearMD's pictures and colours
+; (look\brand.iss) plus the header, titles and cards painted with code (look\painted.iss);
+; "brand" is the pictures and colours alone; "plain" is Inno's own look. Inno Setup 6.7 or newer.
 #ifndef Look
-  #define Look "plain"
+  #define Look "painted"
 #endif
 
 ; ---------------------------------------------------------------------------------------------
@@ -94,10 +95,10 @@ spanish.TypeCustom=Personalizada: elijo cada parte
 
 english.CompTtk=ClearMD (ttk) - The Classic App
 english.CompQt=ClearMD (Qt) - The Modern App
-english.CompCli=Command Line - for Advanced Users
+english.CompCli=Command Line - For Advanced Users
 spanish.CompTtk=ClearMD (ttk) - La App Clásica
 spanish.CompQt=ClearMD (Qt) - La App Moderna
-spanish.CompCli=Línea de Comandos - para Usuarios Avanzados
+spanish.CompCli=Línea de Comandos - Para Usuarios Avanzados
 
 english.TaskDesktop=A desktop shortcut for each part I chose
 spanish.TaskDesktop=Un acceso directo en el escritorio para cada parte que elegí

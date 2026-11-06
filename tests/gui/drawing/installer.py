@@ -44,15 +44,17 @@ def _row(
 def wizard_png(size: tuple[int, int], theme: str) -> Image.Image:
     """The app icon, Clear·MD, and the formats flowing down into Markdown, on the rail's ink;
     a large faint mark fills the bottom. No words: the same picture serves every language."""
+    # The mark and the icon are drawn at the picture's own size (they smooth their edges
+    # themselves); the letters, chips and arrow are drawn larger on a layer, then reduced.
+    small = size[0] / 202
+    image = Image.new("RGBA", size, _rgba(GROUNDS[theme]))
+    ghost = mark_png(MARKS[1], round(240 * small))
+    ghost.putalpha(ghost.getchannel("A").point(lambda alpha: alpha * 7 // 100))
+    image.alpha_composite(ghost, (round(size[0] - 180 * small), round(size[1] - 150 * small)))
     width, height = size[0] * SUPERSAMPLE, size[1] * SUPERSAMPLE
     unit = width / 202
-    image = Image.new("RGBA", (width, height), _rgba(GROUNDS[theme]))
-    ghost = mark_png(MARKS[1], round(240 * unit))
-    ghost.putalpha(ghost.getchannel("A").point(lambda alpha: alpha * 7 // 100))
-    image.alpha_composite(ghost, (round(width - 180 * unit), round(height - 150 * unit)))
-    icon = app_png(round(84 * unit))
-    image.alpha_composite(icon, (round((width - icon.width) / 2), round(52 * unit)))
-    draw = ImageDraw.Draw(image)
+    layer = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(layer)
     font = _font(28 * unit)
     parts = (("Clear", WORD), ("·", CLEAR_BRIGHT), ("MD", WORD))
     x = (width - sum(draw.textlength(part, font=font) for part, _ in parts)) / 2
@@ -67,7 +69,10 @@ def wizard_png(size: tuple[int, int], theme: str) -> Image.Image:
     head = [(middle - 7 * unit, 293 * unit), (middle, 301 * unit), (middle + 7 * unit, 293 * unit)]
     draw.line(head, fill=_rgba(TEAL_BRIGHT), width=round(3 * unit), joint="curve")
     _chip(draw, middle, 310 * unit, ".md", unit, accent=True)
-    return image.resize(size, Image.Resampling.LANCZOS)
+    image.alpha_composite(layer.resize(size, Image.Resampling.LANCZOS))
+    icon = app_png(round(84 * small))
+    image.alpha_composite(icon, (round((size[0] - icon.width) / 2), round(52 * small)))
+    return image
 
 
 def small_png(size: int, theme: str) -> Image.Image:

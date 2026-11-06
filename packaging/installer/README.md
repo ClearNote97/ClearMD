@@ -79,9 +79,27 @@ keeps the settings.
 - **Never** the user's documents or the `ClearMD_Output` folders: the uninstaller does not know
   where they are, and it deletes nothing outside the list above.
 
+## How it looks (`look/`, feature 019, ADR-0041)
+
+The wizard wears ClearMD's colours and follows Windows' light or dark setting
+([photographs](../../docs/screenshots/019/)). Two layers, both in `look/`:
+
+- `brand.iss` — Inno's own directives: `WizardStyle=modern dynamic hidebevels` (light or dark like
+  Windows, no grey lines), the background colours, and ClearMD's pictures in `images/`: the tall one
+  beside Welcome and Finished, the mark in the top corner, one file per DPI (100–200 %) and theme.
+  They are **drawn by a script**, never by hand: `uv run python tests/gui/make_installer_images.py`.
+- `painted.iss` — Pascal code that paints Inno's controls: the header in the rail's ink with a teal
+  line, the titles in teal, and the comparison page as one card per part. Windows still draws the
+  buttons and the check list. The lesson it holds: a styled control keeps the style's painter for
+  its background (`StyleElements - [seFont]` only); without it, Windows draws see-through text in black.
+
+`/DLook=painted` is the default; `/DLook=brand` (pictures only) and `/DLook=plain` (Inno's own look)
+still compile. After changing the look, run the **Installer look** workflow (Actions → Run workflow):
+it compiles the three looks on Windows and photographs every page, light, dark and in Spanish.
+
 ## Build it locally (Windows)
 
-1. Install Inno Setup 6 (https://jrsoftware.org/isinfo.php), or `choco install innosetup --version=6.4.3`.
+1. Install Inno Setup 6.7 or newer (https://jrsoftware.org/isinfo.php), or `choco install innosetup --version=6.7.1`.
 2. From the repository root, with the programs already built into `dist\` (see `packaging/`):
 
    ```
