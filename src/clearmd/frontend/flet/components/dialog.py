@@ -16,14 +16,21 @@ class Dialog:
     """A body and a row of actions at the foot; ``on_close`` once, however it is closed."""
 
     def __init__(
-        self, *, title: str, on_close: Callable[[], None], width: int = DIALOG_WIDTH
+        self,
+        *,
+        title: str,
+        on_close: Callable[[], None],
+        width: int = DIALOG_WIDTH,
+        scrolls: bool = False,
     ) -> None:
         self._on_close = on_close
         self._finished = False
         self._default: Callable[[], None] = self.close_dialog
         self.dismiss: Callable[[], None] = lambda: None  # the window's: takes it off the screen
-        # It scrolls when the window is too short for it: the actions at the foot stay visible.
-        self.body = ft.Column(spacing=0, tight=True, scroll=ft.ScrollMode.AUTO)
+        # ``scrolls``: a long dialog (Settings) scrolls when the window is too short for it, its
+        # actions staying visible. Only then: a scrolling body takes all the height it is given,
+        # so a short question would stand in a tall empty box (v1.0.1).
+        self.body = ft.Column(spacing=0, tight=True, scroll=ft.ScrollMode.AUTO if scrolls else None)
         self.foot = ft.Row(spacing=SPACE, alignment=ft.MainAxisAlignment.END)
         self.title = label("dialogTitle", title)
         self.control = ft.AlertDialog(

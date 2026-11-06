@@ -110,7 +110,9 @@ class FletApp:
         self.view.show_plan(plan)
 
     def show_progress(self, progress: ProgressView) -> None:
+        # Alone in its callback (each second, each file's start): only the progress card is sent.
         self.view.show_progress(progress)
+        self.page.narrow(self.converting.progress_card)
 
     def show_result(self, result: ResultView) -> None:
         self.view.show_result(result)

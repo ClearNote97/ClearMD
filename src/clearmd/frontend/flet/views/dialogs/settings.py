@@ -42,7 +42,10 @@ class SettingsDialog(Dialog):
         on_close: Callable[[], None],
     ) -> None:
         super().__init__(
-            title=catalog.text("gui.settings.title"), on_close=on_close, width=SETTINGS_WIDTH
+            title=catalog.text("gui.settings.title"),
+            on_close=on_close,
+            width=SETTINGS_WIDTH,
+            scrolls=True,  # its rows are many: it scrolls when the window is short
         )
         self._settings = settings
         self._on_save = on_save

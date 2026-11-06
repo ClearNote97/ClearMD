@@ -27,7 +27,9 @@ class FakePage:
         self.asked: list[tuple[str, str, str | None]] = []  # (picker, title, start folder)
         self.extensions: list[str] = []
         self.hidden = self.destroyed = False
-        self.refreshes = 0
+        self.refreshes = 0  # whole-page refreshes
+        self.narrowed: list[ft.Control] = []  # every control sent alone (a progress tick)
+        self._narrowing: list[ft.Control] = []
         self._queue: list[tuple[float, int, Callable[[], None]]] = []
         self._lock = threading.Lock()
         self._order = itertools.count()
@@ -41,6 +43,9 @@ class FakePage:
 
     def refresh(self) -> None:
         self.refreshes += 1
+
+    def narrow(self, *controls: ft.Control) -> None:
+        self._narrowing.extend(controls)
 
     def set_title(self, title: str) -> None:
         self.title = title
@@ -68,8 +73,12 @@ class FakePage:
                 if not due:
                     return
                 self._queue.remove(due[0])
+            self._narrowing = []
             due[0][2]()
-            self.refreshes += 1
+            if self._narrowing:
+                self.narrowed.extend(self._narrowing)  # as the real page: only these are sent
+            else:
+                self.refreshes += 1
 
     def pick_files(
         self, title: str, extensions: Sequence[str], done: Callable[[list[str]], None]

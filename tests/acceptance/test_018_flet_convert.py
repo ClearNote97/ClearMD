@@ -16,6 +16,7 @@ from support.flet_acceptance import (
     confirm,
     converted,
     copy_documents,
+    page_of,
     pump,
     to_review,
     windows,
@@ -106,6 +107,9 @@ def test_ac_03_the_progress_says_where_it_is_and_reassures_on_a_long_file(
         assert str(app.converting.file_icon.src) == "icons/pdf@2x.png"
         assert app.converting.time_left.value == "about 2 min left"
         assert app.converting.bar.value == 0 and app.converting.progress_card.visible
+        # Each file's start and each second's tick send the progress card alone, not the page:
+        # flet's program redraws all it is sent (it slowed the conversion 4x, v1.0.1).
+        assert app.converting.progress_card in page_of(app).narrowed
         assert not app.converting.ready.visible
         long_file = ProgressView(
             "1 of 2", "Informe.pdf", 0.5, None, "0:25", "Large files can take a few minutes.", "pdf"

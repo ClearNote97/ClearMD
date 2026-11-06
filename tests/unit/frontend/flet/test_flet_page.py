@@ -81,6 +81,28 @@ def test_work_is_queued_to_the_loop_and_the_screen_refreshed_after_it() -> None:
     assert ran == ["work"]
 
 
+class _Card:
+    """A control that counts the times it is sent alone."""
+
+    def __init__(self) -> None:
+        self.sent = 0
+
+    def update(self) -> None:
+        self.sent += 1
+
+
+def test_a_narrowed_callback_sends_only_its_controls_not_the_page() -> None:
+    stub = StubPage()
+    page = FletPage(stub.as_page())
+    card = _Card()
+    page.post(0, lambda: page.narrow(cast(ft.Control, card)))  # a progress tick
+    stub.loop.run_all()
+    assert card.sent == 1 and stub.updates == 0  # flet's program redraws the card alone
+    page.post(0, lambda: None)  # anything else: the whole page, as before
+    stub.loop.run_all()
+    assert card.sent == 1 and stub.updates == 1
+
+
 def test_the_pickers_ask_on_the_loop_and_answer_with_paths(picker: type[FakePicker]) -> None:
     stub = StubPage()
     page = FletPage(stub.as_page())

@@ -36,8 +36,13 @@ class PagePort(Protocol):
     def close_dialog(self, dialog: ft.AlertDialog) -> None: ...
 
     def post(self, seconds: float, callback: Callable[[], None]) -> None:
-        """Run ``callback`` on the page's loop after ``seconds``, then refresh the screen.
-        Safe to call from any thread."""
+        """Run ``callback`` on the page's loop after ``seconds``, then refresh the screen (only
+        the controls ``narrow`` named, if it was called). Safe to call from any thread."""
+
+    def narrow(self, *controls: ft.Control) -> None:
+        """The running ``post`` callback changed only these controls: only they are sent. flet's
+        program redraws all it is sent: the whole page each second slowed the conversion 4x on
+        the owner's computer (v1.0.1); the progress card alone costs nothing."""
 
     def pick_files(
         self, title: str, extensions: Sequence[str], done: Callable[[list[str]], None]

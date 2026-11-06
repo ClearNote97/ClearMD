@@ -29,6 +29,10 @@ class FletPage:
         window.prevent_close = True  # closing is the window's: it may wait for a batch to end
         page.padding = 0
         page.spacing = 0
+        self._narrowed: list[ft.Control] = []  # what the running ``post`` callback narrowed to
+
+    def narrow(self, *controls: ft.Control) -> None:
+        self._narrowed.extend(controls)
 
     def mount(self, root: ft.Control) -> None:
         self._page.add(root)
@@ -51,8 +55,14 @@ class FletPage:
 
     def post(self, seconds: float, callback: Callable[[], None]) -> None:
         def run() -> None:
+            self._narrowed = []
             callback()
-            self._page.update()
+            narrowed, self._narrowed = self._narrowed, []
+            if narrowed:
+                for control in narrowed:
+                    control.update()
+            else:
+                self._page.update()
 
         loop = self._page.loop
         try:
