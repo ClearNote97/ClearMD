@@ -30,5 +30,7 @@ read files only; none of them is a third-party service, and none sends data anyw
 
 ## Uninstall
 
-ClearMD installs nothing: delete the executable, and optionally its settings folder
+Installed with `ClearMD-Setup-<version>.exe`: remove it from Windows' *Installed apps* (it asks before deleting
+the settings, and never touches documents). Without the installer, ClearMD installs nothing: delete the executable,
+and optionally its settings folder
 (`%LOCALAPPDATA%\ClearMD` on Windows, `~/.config/ClearMD` on Linux). See the README.

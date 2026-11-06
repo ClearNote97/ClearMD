@@ -139,7 +139,7 @@ _Plus the failed and skipped files with a plain-words reason, and the history of
 | **014** Sub- and superscripts in PDFs, one gutter, faded waiting cards | ✅ done | v0.9.0 · reviewed |
 | **015** A PDF's equations as LaTeX | ✅ done | v0.10.0 |
 | **016** The same app in PySide6 (Qt) | ✅ done | v0.11.0 |
-| **017** Windows installer and uninstaller | ⏳ | |
+| **017** Windows installer and uninstaller | ✅ done | v0.12.0 |
 | **018** The flet app | ⏳ | |
 
 Full plan in the [roadmap](./spec/roadmap.md). ClearMD has a **command line** and the same **desktop app** in two toolkits,
@@ -150,8 +150,13 @@ Windows and Linux executables built and checked by CI.
 
 ## ▶️ How to run
 
-**Download the app** (nothing to install): from the [latest release](https://github.com/ClearNote97/ClearMD/releases/latest),
-`ClearMD-…-windows.exe` for Windows or `ClearMD-…-linux.tar.gz` for Linux, then open it with a double click.
+**Install it on Windows** (recommended): from the [latest release](https://github.com/ClearNote97/ClearMD/releases/latest),
+download `ClearMD-Setup-….exe` and open it. It installs for your user only (no administrator) and lets you choose:
+the classic app (the lightest, the default), the modern app (Qt), the command line, or all of them, each explained;
+then open ClearMD from the Start menu.
+
+**Or download the app** (nothing to install): `ClearMD-…-windows.exe` for Windows or `ClearMD-…-linux.tar.gz` for
+Linux, then open it with a double click.
 Windows may warn that the app is not recognized, because it is not code-signed yet: *More info → Run anyway*.
 Signing is on its way: [Code signing policy](./CODE_SIGNING.md).
 The same app drawn with Qt is `ClearMD-Qt-…-windows.zip`: unzip it and open `ClearMD-Qt.exe` inside the folder
@@ -189,7 +194,9 @@ clearmd saved_page.html --html article   # only the page's article
 user configuration folder (on Linux `~/.config/ClearMD/`) — `language = "es"`, `on_existing_output = "skip"`,
 `recursive = false`, `html_strategy = "article"`…
 
-**Uninstall:** the app installs nothing; delete the executable. `uv tool uninstall clearmd` (or
+**Uninstall:** installed with `ClearMD-Setup`, remove it from *Settings → Apps → Installed apps* (or *Uninstall
+ClearMD* in the Start menu); it asks whether to delete your settings too, and never touches your documents. Without
+the installer, the app installs nothing: delete the executable. `uv tool uninstall clearmd` (or
 `pip uninstall clearmd`) removes the command line. ClearMD's settings, if any, stay in a folder of their own:
 delete it too to leave no trace (`%LOCALAPPDATA%\ClearMD`, that is `C:\Users\<you>\AppData\Local\ClearMD`, on
 Windows; `~/.config/ClearMD` on Linux).

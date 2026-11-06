@@ -22,7 +22,7 @@ def test_ac_11_adr_version_and_how_to_get_it() -> None:
     adr = ROOT / "docs" / "decisions" / "0038-pyside-gui-delivery.md"
     assert adr.exists() and "Status:** accepted" in adr.read_text(encoding="utf-8")
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
-    assert project["version"] == "0.11.0"
+    assert tuple(map(int, project["version"].split("."))) >= (0, 11, 0)
     for readme in ("README.md", "README.es.md"):
         text = (ROOT / readme).read_text(encoding="utf-8")
         assert "ClearMD-Qt-…-windows.zip" in text and "clearmd-pyside" in text

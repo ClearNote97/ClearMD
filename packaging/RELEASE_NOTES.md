@@ -1,5 +1,15 @@
 **ClearMD — documents to Markdown, 100 % local.** / **Documentos a Markdown, 100 % local.**
 
+**New in 0.12.0 / Novedades de la 0.12.0**
+- An installer for Windows: `ClearMD-Setup-0.12.0.exe`. It installs for your user only (no
+  administrator) and lets you choose the classic app (the lightest, the default), the modern
+  app (Qt), the command line, or all of them; each with a short explanation. Remove it from
+  *Installed apps*: it asks before deleting your settings. / Un instalador para Windows:
+  `ClearMD-Setup-0.12.0.exe`. Instala solo para tu usuario (sin administrador) y te deja elegir la
+  app clásica (la más liviana, la marcada), la moderna (Qt), la línea de comandos, o todas; cada
+  una con una explicación corta. Se quita desde *Aplicaciones instaladas*: pregunta antes de
+  borrar tus ajustes.
+
 **New in 0.11.0 / Novedades de la 0.11.0**
 - The same app drawn with Qt (PySide6): `ClearMD-Qt-0.11.0-windows.zip` — unzip it and open
   `ClearMD-Qt.exe` in the folder. Same steps, texts and look as the other app; try both. / La

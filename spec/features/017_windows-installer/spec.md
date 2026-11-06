@@ -42,5 +42,5 @@ Each criterion has an acceptance test (`tests/acceptance/test_017_*.py`) or a CI
   windows open and close (`--smoke`), a reinstall with only the modern app (the other parts and the
   PATH entry gone), a silent uninstall that keeps the settings, and nothing left in the install
   folder, the Start menu or the registry.
-- [ ] **AC-07** ADR-0040; version 0.12.0; the READMEs and the release notes say how to install and
+- [x] **AC-07** ADR-0040; version 0.12.0; the READMEs and the release notes say how to install and
   uninstall.

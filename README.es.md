@@ -143,7 +143,7 @@ anteriores._
 | **014** Subíndices y superíndices en PDF, un solo margen, tarjetas atenuadas | ✅ lista | v0.9.0 · revisada |
 | **015** Las ecuaciones de un PDF como LaTeX | ✅ lista | v0.10.0 |
 | **016** La misma app en PySide6 (Qt) | ✅ lista | v0.11.0 |
-| **017** Instalador y desinstalador para Windows | ⏳ | |
+| **017** Instalador y desinstalador para Windows | ✅ lista | v0.12.0 |
 | **018** La app en flet | ⏳ | |
 
 El plan completo está en el [roadmap](./spec/roadmap.md). ClearMD tiene **línea de comandos** y la misma **app de
@@ -154,8 +154,13 @@ todas también como ejecutables para Windows y Linux, construidos y verificados 
 
 ## ▶️ Cómo correr
 
-**Descarga la app** (nada que instalar): desde la [última versión](https://github.com/ClearNote97/ClearMD/releases/latest),
-`ClearMD-…-windows.exe` para Windows o `ClearMD-…-linux.tar.gz` para Linux, y ábrela con doble clic.
+**Instálala en Windows** (recomendado): desde la [última versión](https://github.com/ClearNote97/ClearMD/releases/latest),
+descarga `ClearMD-Setup-….exe` y ábrelo. Instala solo para tu usuario (sin administrador) y te deja elegir, con su
+explicación: la app clásica (la más liviana, la que viene marcada), la app moderna (Qt), la línea de comandos, o
+todas; luego abre ClearMD desde el menú Inicio.
+
+**O descarga la app** (nada que instalar): `ClearMD-…-windows.exe` para Windows o `ClearMD-…-linux.tar.gz` para
+Linux, y ábrela con doble clic.
 Windows puede advertir que la app no es reconocida, porque aún no está firmada: *Más información → Ejecutar de todas
 formas*. La firma está en camino: [Code signing policy](./CODE_SIGNING.md) (política de firma). El primer inicio tarda unos segundos mientras la app se descomprime.
 La misma app dibujada con Qt es `ClearMD-Qt-…-windows.zip`: descomprímela y abre `ClearMD-Qt.exe` dentro de la carpeta
@@ -193,7 +198,9 @@ entrada válida · `3` hay resultados existentes y nadie puede responder · `130
 (opcional): `settings.toml` en tu carpeta de configuración de usuario (en Linux `~/.config/ClearMD/`) —
 `language = "es"`, `on_existing_output = "skip"`, `recursive = false`, `html_strategy = "article"`…
 
-**Desinstalar:** la app no instala nada; borra el ejecutable. `uv tool uninstall clearmd` (o
+**Desinstalar:** si la instalaste con `ClearMD-Setup`, quítala desde *Configuración → Aplicaciones → Aplicaciones
+instaladas* (o *Desinstalar ClearMD* en el menú Inicio); pregunta si borrar también tus ajustes y nunca toca tus
+documentos. Sin el instalador, la app no instala nada: borra el ejecutable. `uv tool uninstall clearmd` (o
 `pip uninstall clearmd`) quita la línea de comandos. Los ajustes de ClearMD, si los hay, quedan en su propia carpeta:
 bórrala también para no dejar rastro (`%LOCALAPPDATA%\ClearMD`, es decir `C:\Users\<tú>\AppData\Local\ClearMD`, en
 Windows; `~/.config/ClearMD` en Linux).

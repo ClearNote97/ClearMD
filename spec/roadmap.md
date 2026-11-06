@@ -88,7 +88,7 @@ already tested (ADR-0001).
 ## Later
 
 - [x] **016 — PySide6-Essentials GUI** (*onedir* distribution because of LGPL, ADR-0003, ADR-0038): v0.11.0.
-- [ ] **017 — Windows installer and uninstaller** (Inno Setup, ADR-0040).
+- [x] **017 — Windows installer and uninstaller** (Inno Setup, ADR-0040): v0.12.0.
 - [ ] **018 — flet GUI.**
 - [ ] Incremental mode: skip files unchanged since the last run.
 - [ ] Minor formats: `.eml`, `.rtf`, subtitles.
