@@ -32,7 +32,7 @@ Each criterion has an acceptance test (`tests/acceptance/test_017_*.py`) or a CI
   user ticks it; an optional, unticked PATH entry for the command line (announced on the page, removed
   by the uninstaller); the wizard in English or Spanish (the system's language), showing the license.
   Installing again with other parts removes the files and shortcuts of the parts no longer chosen.
-- [ ] **AC-04** Installing a newer version over an older one replaces it (no second entry, no leftovers
+- [x] **AC-04** Installing a newer version over an older one replaces it (no second entry, no leftovers
   from the old one); the app must be closed first (the installer says so).
 - [x] **AC-05** The uninstaller is in "Installed apps" (name, version, publisher, icon) and in the Start
   menu; it removes every installed file, shortcut and registry entry; it asks whether to delete the
