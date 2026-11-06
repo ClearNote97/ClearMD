@@ -80,6 +80,16 @@ def small_png(size: int, theme: str) -> Image.Image:
     return mark_png(MARKS[0] if theme == "light" else MARKS[1], size)
 
 
+def image_names() -> list[str]:
+    """The pictures' file names, without drawing them (no font needed)."""
+    names: list[str] = []
+    for theme in GROUNDS:
+        suffix = "" if theme == "light" else "-dark"
+        names += [f"wizard{suffix}-{size[0]}.png" for size in WIZARD_SIZES]
+        names += [f"small{suffix}-{side}.png" for side in SMALL_SIZES]
+    return names
+
+
 def installer_images() -> dict[str, Image.Image]:
     """Every picture, by its file name in packaging/installer/images."""
     images: dict[str, Image.Image] = {}

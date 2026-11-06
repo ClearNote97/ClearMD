@@ -34,7 +34,8 @@ jobs:
         shell: pwsh
         run: |
           $iscc = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"
-          "Inno Setup: " + (& $iscc /? 2>&1 | Select-Object -First 1)
+          pwsh -NoProfile -File packaging/installer/inno_version.ps1
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup 6.7 or newer is needed (see above)" }
           foreach ($look in "plain", "brand", "painted") {
             & $iscc /Q "/DAppVersion=0.12.0" "/DLook=$look" "/O$PWD\looks" "/FClearMD-Setup-0.12.0-$look" packaging\installer\clearmd.iss
             if ($LASTEXITCODE -ne 0) { throw "The $look look did not compile" }

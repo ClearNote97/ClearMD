@@ -30,6 +30,7 @@ def test_ac_01_the_painted_look_is_the_default_and_needs_inno_6_7() -> None:
     assert "PaintCompareCards(ComparePage);" in script and "PaintWizard;" in script
     release = read(RELEASE)
     assert "--version=6.7.1" in release and "Inno Setup 6.7 or newer is needed" in release
+    assert "packaging/installer/inno_version.ps1" in release
     assert "/DLook=" not in release  # the release builds the default
 
 

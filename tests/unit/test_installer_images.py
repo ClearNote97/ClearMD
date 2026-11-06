@@ -6,6 +6,7 @@ import hashlib
 import pytest
 from gui import make_installer_images
 from gui.drawing.canvas import FONT, FONT_SHA256
+from gui.drawing.installer import image_names
 
 
 def _same_font() -> bool:
@@ -21,4 +22,4 @@ def test_the_committed_pictures_match_the_script() -> None:
 
 def test_no_picture_is_left_over() -> None:
     committed = {path.name for path in make_installer_images.TARGET.glob("*.png")}
-    assert committed == set(make_installer_images.files())
+    assert committed == set(image_names())  # names only: drawing needs the container's font
