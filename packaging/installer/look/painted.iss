@@ -34,16 +34,18 @@ begin
     Result := StrToColor(Light);
 end;
 
-procedure OwnColour(Control: TControl);
+procedure OwnBackground(Control: TControl);
 begin
-  // A style (light "windows11" or the dark one) repaints every control; these lines tell it to
-  // leave this control's background and text to us.
-  Control.StyleElements := Control.StyleElements - [seClient, seFont];
+  // A style (light "windows11" or the dark one) repaints every control; this tells it to leave
+  // this control's background to us.
+  Control.StyleElements := Control.StyleElements - [seClient];
 end;
 
 procedure Ink(Text: TNewStaticText; Colour: TColor; Size: Integer; Bold: Boolean);
 begin
-  OwnColour(Text);
+  // Only the letters' colour is taken from the style (seFont). The background must stay with it:
+  // without the style's painter, Windows draws the text of a see-through label in black.
+  Text.StyleElements := Text.StyleElements - [seFont];
   Text.Font.Color := Colour;
   if Size > 0 then Text.Font.Size := Size;
   if Bold then Text.Font.Style := [fsBold] else Text.Font.Style := [];
@@ -56,7 +58,7 @@ begin
   Result.Parent := Parent;
   Result.BevelOuter := bvNone;
   Result.ParentBackground := False;
-  OwnColour(Result);
+  OwnBackground(Result);
   Result.Color := Colour;
   Result.SetBounds(Left, Top, Width, Height);
 end;
@@ -69,19 +71,20 @@ var
 begin
   Panel := WizardForm.MainPanel;
   Panel.ParentBackground := False;
-  OwnColour(Panel);
+  OwnBackground(Panel);
   Panel.Color := Tone('#1B2733', '#0F161C');
-  Ink(WizardForm.PageNameLabel, StrToColor('#F3F5F7'), 11, True);
+  Ink(WizardForm.PageNameLabel, StrToColor('#F3F5F7'), 0, True);
   Ink(WizardForm.PageDescriptionLabel, StrToColor('#A9B4BE'), 0, False);
-  Block(WizardForm, Tone('#0D9488', '#2DD4BF'), 0, Panel.Top + Panel.Height, WizardForm.ClientWidth, ScaleY(3));
+  // The teal line belongs to the inner pages (the header's own page), not to Welcome or Finished.
+  Block(WizardForm.InnerPage, Tone('#0D9488', '#2DD4BF'), 0, Panel.Top + Panel.Height, Panel.Width, ScaleY(3));
 end;
 
 // ---- The Welcome and Finished pages: the title in the brand's teal ------------------------------
 
 procedure PaintTitles;
 begin
-  Ink(WizardForm.WelcomeLabel1, Tone('#0F766E', '#5EEAD4'), 15, True);
-  Ink(WizardForm.FinishedHeadingLabel, Tone('#0F766E', '#5EEAD4'), 15, True);
+  Ink(WizardForm.WelcomeLabel1, Tone('#0F766E', '#5EEAD4'), 0, True);
+  Ink(WizardForm.FinishedHeadingLabel, Tone('#0F766E', '#5EEAD4'), 0, True);
   WizardForm.AdjustLabelHeight(WizardForm.WelcomeLabel1);
   WizardForm.AdjustLabelHeight(WizardForm.FinishedHeadingLabel);
 end;
@@ -160,7 +163,8 @@ end;
 
 procedure PaintComponents;
 begin
-  OwnColour(WizardForm.ComponentsList);
+  OwnBackground(WizardForm.ComponentsList);
+  WizardForm.ComponentsList.StyleElements := WizardForm.ComponentsList.StyleElements - [seFont];
   WizardForm.ComponentsList.Color := Tone('#FFFFFF', '#202B36');
   WizardForm.ComponentsList.Font.Color := Tone('#1B2733', '#E6EBEF');
 end;

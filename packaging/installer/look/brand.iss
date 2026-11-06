@@ -26,4 +26,5 @@ WizardSmallImageBackColorDynamicDark=#0F161C
 WizardSmallImageFile=images\small-58.png,images\small-77.png,images\small-97.png,images\small-124.png
 WizardSmallImageFileDynamicDark=images\small-dark-58.png,images\small-dark-77.png,images\small-dark-97.png,images\small-dark-124.png
 WizardSmallImageBackColor=none
+WizardSmallImageBackColorDynamicDark=none
 #endif
