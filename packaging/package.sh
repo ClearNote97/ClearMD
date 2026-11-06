@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The release files of one system (feature 006, feature 016): the desktop app, the command line,
-# the PySide6 window (a folder, ClearMD-Qt/) and the third-party notices.
+# the PySide6 window (a folder, ClearMD-Qt/), the Windows installer and the third-party notices.
 # Usage: packaging/package.sh <dist folder> <windows|linux> <version>
 # A version taken from a branch (refactor/modularity) has its "/" replaced by "-" in the names.
 set -euo pipefail
@@ -16,6 +16,14 @@ cp LICENSE release/THIRD-PARTY-NOTICES.txt "$dist/ClearMD-Qt/"
 if [[ "$system" == "windows" ]]; then
   cp "$dist/ClearMD.exe" "release/ClearMD-$version-windows.exe"
   cp "$dist/clearmd-cli.exe" "release/clearmd-cli-$version-windows.exe"
+  # The installer (feature 017, ADR-0040) was compiled and checked by the workflow, step "Installer".
+  # Its name carries its own version (ClearMD-Setup-<version>.exe), so it is copied as it is.
+  setups=("$dist"/installer/ClearMD-Setup-*.exe)
+  if [[ "${#setups[@]}" -ne 1 || ! -f "${setups[0]}" ]]; then
+    echo "expected one ClearMD-Setup-*.exe in $dist/installer, found ${#setups[@]}" >&2
+    exit 1
+  fi
+  cp "${setups[0]}" release/
   # The folder is the zip's top level. Python's zipfile is used (not a Git Bash zip) so it works
   # the same on every runner; the project is named explicitly because the folder is not in it.
   here="$(pwd)"

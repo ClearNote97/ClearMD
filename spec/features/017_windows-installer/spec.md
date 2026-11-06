@@ -21,17 +21,26 @@ Each criterion has an acceptance test (`tests/acceptance/test_017_*.py`) or a CI
 - [ ] **AC-01** One file, `ClearMD-Setup-<version>.exe`, built by the release workflow on Windows from
   the same programs as the other files, and released with them.
 - [ ] **AC-02** It installs for the current user only (no administrator) into
-  `%LOCALAPPDATA%\Programs\ClearMD`: the ttk app, the PySide6 folder (its Qt libraries still
-  replaceable, LGPL) and the command line, with LICENSE and the notices.
-- [ ] **AC-03** Start menu shortcuts for both apps (and the uninstaller); a desktop shortcut only when
-  the user ticks it; the wizard in English or Spanish (the system's language), showing the license.
+  `%LOCALAPPDATA%\Programs\ClearMD`. The person chooses the parts, each with a plain explanation of
+  its trade-offs: the ttk app (the classic window, the default: the lightest), the PySide6 app (the
+  modern window, a folder whose Qt libraries stay replaceable, LGPL) and the command line (no window).
+  Ready-made choices (classic app only, modern app only, command line only, everything, custom); a
+  choice with no part is refused. Each part's files come only if it is chosen; LICENSE and the
+  notices always come.
+- [ ] **AC-03** Start menu shortcuts for each chosen part (and the uninstaller); the command line's
+  shortcut opens a console with its help, not the program itself; a desktop shortcut only when the
+  user ticks it; an optional, unticked PATH entry for the command line (announced on the page, removed
+  by the uninstaller); the wizard in English or Spanish (the system's language), showing the license.
+  Installing again with other parts removes the files and shortcuts of the parts no longer chosen.
 - [ ] **AC-04** Installing a newer version over an older one replaces it (no second entry, no leftovers
   from the old one); the app must be closed first (the installer says so).
 - [ ] **AC-05** The uninstaller is in "Installed apps" (name, version, publisher, icon) and in the Start
   menu; it removes every installed file, shortcut and registry entry; it asks whether to delete the
   settings too (default: keep them); it never touches the user's documents or ClearMD_Output folders.
-- [ ] **AC-06** CI on Windows proves it: a silent install, the installed command line converts a real
-  batch, both installed windows open and close (`--smoke`), a silent uninstall, and nothing left in
-  the install folder, the Start menu or the registry.
+- [ ] **AC-06** CI on Windows proves it: a silent install of the default choice, a reinstall of all
+  the parts (the PATH option ticked), the installed command line converts a real batch, the installed
+  windows open and close (`--smoke`), a reinstall with only the modern app (the other parts and the
+  PATH entry gone), a silent uninstall that keeps the settings, and nothing left in the install
+  folder, the Start menu or the registry.
 - [ ] **AC-07** ADR-0040; version 0.12.0; the READMEs and the release notes say how to install and
   uninstall.

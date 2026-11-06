@@ -18,9 +18,16 @@ way to remove it from "Installed apps". The budget is zero.
   administrators), MSIX (needs signing to install at all).
 - **Per user, no administrator:** `%LOCALAPPDATA%\Programs\ClearMD`, as modern apps do; nothing in the
   system's Program Files, no UAC prompt.
-- **Everything in one installer:** both apps (ttk and PySide6) and the command line, so the owner can
-  compare them; Start menu shortcuts for both, a desktop one if ticked. The PySide6 folder keeps its Qt
-  libraries as files (still replaceable, LGPL).
+- **The person chooses the parts.** Three components: the ttk app, the PySide6 app and the command
+  line. Ready-made choices on the first page: the classic app only (the default, the lightest), the
+  modern app only, the command line only, everything, or custom. Each part is explained in plain
+  language, in English and Spanish, on a page before the choice (the classic app is recommended for
+  most people; the modern one looks smoother at the cost of space). A choice with no part is refused.
+  Only the chosen parts get files and shortcuts. The PySide6 folder keeps its Qt libraries as files
+  (still replaceable, LGPL). The command line's Start menu entry opens a console with its help. An
+  optional, unticked PATH entry for the command line is removed by the uninstaller.
+- **A re-install follows the choice:** the files and shortcuts of parts no longer chosen are removed;
+  the PATH entry follows the same rule.
 - **A fixed AppId:** a newer version replaces the older one in place.
 - **The uninstaller** removes what the installer wrote (files, shortcuts, its registry entry), asks
   before deleting the settings folder (kept by default), and never touches the user's documents.
@@ -32,3 +39,6 @@ way to remove it from "Installed apps". The budget is zero.
 
 - **Gains:** an ordinary install and uninstall for non-technical users; the folder question disappears.
 - **Costs:** one more build step on Windows; unsigned, so SmartScreen still warns (ADR-0037).
+- **TODO (not done in feature 017):** sign the installer itself. The programs inside are signed
+  through SignPath (ADR-0037); the setup file is not, yet. Signing it is a later step of the release
+  workflow, after the signing service accepts it.

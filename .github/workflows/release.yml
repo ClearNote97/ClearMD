@@ -97,6 +97,46 @@ jobs:
       - name: Check the executables (a real batch with the command line; the window opens)
         shell: bash
         run: bash packaging/check_executables.sh dist
+      # The Windows installer (feature 017, ADR-0040): built from the executables above (signed, when
+      # SignPath is on), installed, used and uninstalled by packaging/check_installer.ps1, then shipped.
+      - name: Inno Setup 6 (the installer's compiler; pinned)
+        id: inno
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # The runner image may already have it: then that one is used. Otherwise the pinned version.
+          $iscc = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup --version=6.4.3 -y --no-progress
+          }
+          if (-not (Test-Path $iscc)) { throw "Inno Setup was not found at $iscc" }
+          "Inno Setup compiler: $iscc, version $((Get-Item $iscc).VersionInfo.ProductVersion)"
+          "iscc=$iscc" >> $env:GITHUB_OUTPUT
+      - name: Installer (compiled from dist/, its version from the tag or the branch)
+        id: installer
+        if: runner.os == 'Windows'
+        shell: bash
+        env:
+          ISCC: ${{ steps.inno.outputs.iscc }}
+        run: |
+          set -euo pipefail
+          # A tag v0.12.0 gives 0.12.0; a branch gives 0.0.0-<branch with / as ->, as the zip names do.
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then version="${GITHUB_REF_NAME#v}"; else version="0.0.0-${GITHUB_REF_NAME//\//-}"; fi
+          mkdir -p dist/installer
+          # The license pack of the installer: the same notices as the zip (packaging/notices.py).
+          uv run --no-default-groups --group build python packaging/notices.py > dist/installer/THIRD-PARTY-NOTICES.txt
+          # MSYS_NO_PATHCONV: Git Bash must not rewrite the compiler's /D option into a path.
+          MSYS_NO_PATHCONV=1 "$(cygpath -u "$ISCC")" "/DAppVersion=$version" packaging/installer/clearmd.iss
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          ls -la dist/installer
+      - name: Installer checks (silent install, use, uninstall, nothing left)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -File packaging/check_installer.ps1 `
+            -Installer "dist/installer/ClearMD-Setup-${{ steps.installer.outputs.version }}.exe" `
+            -Version "${{ steps.installer.outputs.version }}"
+          if ($LASTEXITCODE -ne 0) { throw "The installer checks failed (see above)" }
       - name: Package
         shell: bash
         run: bash packaging/package.sh dist "${{ matrix.name }}" "${GITHUB_REF_NAME}"
