@@ -1,4 +1,5 @@
 ﻿# Photographs every page of one installer, in light or dark Windows (feature 019, the look).
+# Buttons are pressed by their Alt shortcuts (Alt+N is Next), never Enter: the text boxes eat it.
 # Runs on the CI's Windows desktop: it drives the wizard with the keyboard, as a person would,
 # installs into a folder of its own, then runs the uninstaller and photographs its dialogs too.
 param(
@@ -85,17 +86,17 @@ $dir = Join-Path $env:RUNNER_TEMP ("look-" + [IO.Path]::GetFileNameWithoutExtens
 $process = Start-Process -FilePath $Setup -ArgumentList "/LANG=english", "/DIR=`"$dir`"" -PassThru
 Start-Sleep -Seconds 3
 # The plain look has no Welcome page (Inno's default); the others show it, with the tall picture.
-if ($Setup -notmatch "plain") { Shot "welcome"; Press "{ENTER}" }
-Shot "license"; Press "%a"; Press "{ENTER}"
-Shot "folder"; Press "{ENTER}"
-Shot "compare"; Press "{ENTER}"
-Shot "components"; Press "{ENTER}"
-Shot "tasks"; Press "{ENTER}"
-Shot "ready"; Press "{ENTER}"
+if ($Setup -notmatch "plain") { Shot "welcome"; Press "%n" }
+Shot "license"; Press "%a"; Press "%n"
+Shot "folder"; Press "%n"
+Shot "compare"; Press "%n"
+Shot "components"; Press "%n"
+Shot "tasks"; Press "%n"
+Shot "ready"; Press "%i"
 # Installing: the classic app alone (the default) takes a few seconds.
 for ($i = 0; $i -lt 60 -and -not (Test-Path (Join-Path $dir "unins000.exe")); $i++) { Start-Sleep -Milliseconds 500 }
 Start-Sleep -Seconds 3
-Shot "finished"; Press "{ENTER}"
+Shot "finished"; Press "%f"
 $process.WaitForExit(30000) | Out-Null
 
 # The uninstaller, as from "Installed apps": its question, then its last message.
