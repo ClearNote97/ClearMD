@@ -22,11 +22,28 @@ def blocked(*args: Any, **kwargs: Any) -> Any:
     raise NetworkBlockedError(f"network access is forbidden in tests (ADR-0005): {args!r}")
 
 
+_CONNECT = socket.socket.connect  # the real one, before the guard replaces it
+_SOCKETPAIR = socket.socketpair
+
+
+def _local_pair(*args: Any, **kwargs: Any) -> tuple[socket.socket, socket.socket]:
+    """A pipe inside this process, as asyncio's event loop makes one (flet, 018). On Windows,
+    Python builds it by connecting to a listener of its own on 127.0.0.1: that is not the network,
+    so only that connection goes through, and the guard is back before the pair is returned."""
+    socket.socket.connect = _CONNECT  # type: ignore[method-assign]
+    try:
+        return _SOCKETPAIR(*args, **kwargs)
+    finally:
+        socket.socket.connect = blocked  # type: ignore[method-assign]
+
+
 def install_network_guard() -> None:
     """Make every outgoing connection fail in this process (also used inside worker processes)."""
     socket.socket.connect = blocked  # type: ignore[method-assign]
     socket.socket.connect_ex = blocked  # type: ignore[method-assign]
     socket.create_connection = blocked
+    if WINDOWS:
+        socket.socketpair = _local_pair
 
 
 def put(folder: Path, name: str, as_name: str | None = None) -> Path:
