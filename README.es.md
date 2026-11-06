@@ -19,6 +19,10 @@ pensado primero para quienes nunca abren una terminal._
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![Estado](https://img.shields.io/badge/estado-en%20construcci%C3%B3n-orange)
 
+### [⬇️ Descargar ClearMD para Windows](https://github.com/ClearNote97/ClearMD/releases)
+
+<sub>Abre la versión más reciente y toma <code>ClearMD-Setup-&lt;versión&gt;.exe</code>: se instala y desinstala como cualquier programa de Windows. Linux: el <code>.tar.gz</code> de la misma versión.</sub>
+
 [Read in English](./README.md)
 
 </div>
