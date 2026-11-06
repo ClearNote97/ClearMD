@@ -17,3 +17,7 @@ HELP_HEIGHT = 420  # the help's scrolled sections
 SETTINGS_WIDTH = 720
 QUESTION_WIDTH = 480  # "Convert more"
 CONTROL_WIDTH = 28 * SPACE  # the settings' controls column
+# flet sizes the window from its outer edge (Windows' invisible resize borders and the title bar
+# included); Qt sizes the inside. Measured on Windows 11 (CI, 2026-11-06): a 1080 x 720 flet
+# window showed 1028 x 681 of page. Added to the shared sizes, the page is as large as Qt's.
+FRAME_WIDTH, FRAME_HEIGHT = 52, 39

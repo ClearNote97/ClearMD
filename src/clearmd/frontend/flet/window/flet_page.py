@@ -10,6 +10,7 @@ from collections.abc import Callable, Sequence
 import flet as ft
 
 from clearmd.frontend.design.metrics import MIN_HEIGHT, MIN_WIDTH, START_HEIGHT, START_WIDTH
+from clearmd.frontend.flet.layout.units import FRAME_HEIGHT, FRAME_WIDTH
 from clearmd.frontend.flet.visuals.images import window_icon
 from clearmd.frontend.flet.window.page_port import KeyPress
 
@@ -21,8 +22,9 @@ class FletPage:
         self._page = page
         self._picker = ft.FilePicker()  # a service of the page: made while the page is current
         window = page.window
-        window.width, window.height = START_WIDTH, START_HEIGHT
-        window.min_width, window.min_height = MIN_WIDTH, MIN_HEIGHT
+        # The shared sizes are the page's; flet's window counts its frame too (layout/units.py).
+        window.width, window.height = START_WIDTH + FRAME_WIDTH, START_HEIGHT + FRAME_HEIGHT
+        window.min_width, window.min_height = MIN_WIDTH + FRAME_WIDTH, MIN_HEIGHT + FRAME_HEIGHT
         window.icon = window_icon()
         window.prevent_close = True  # closing is the window's: it may wait for a batch to end
         page.padding = 0

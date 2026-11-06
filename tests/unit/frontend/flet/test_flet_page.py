@@ -11,6 +11,7 @@ import pytest
 from support.flet_page_stub import StubPage
 
 from clearmd.frontend.design.metrics import MIN_HEIGHT, MIN_WIDTH, START_HEIGHT, START_WIDTH
+from clearmd.frontend.flet.layout.units import FRAME_HEIGHT, FRAME_WIDTH
 from clearmd.frontend.flet.window.flet_page import FletPage
 from clearmd.frontend.flet.window.page_port import KeyPress
 
@@ -40,8 +41,10 @@ def test_the_window_has_clearmds_sizes_and_its_close_button_only_asks() -> None:
     stub = StubPage()
     FletPage(stub.as_page())
     window = stub.window
-    assert (window.width, window.height) == (START_WIDTH, START_HEIGHT)
-    assert (window.min_width, window.min_height) == (MIN_WIDTH, MIN_HEIGHT)
+    # The shared sizes are the page's; flet's window adds its frame (layout/units.py).
+    frame = (FRAME_WIDTH, FRAME_HEIGHT)
+    assert (window.width, window.height) == (START_WIDTH + frame[0], START_HEIGHT + frame[1])
+    assert (window.min_width, window.min_height) == (MIN_WIDTH + frame[0], MIN_HEIGHT + frame[1])
     assert window.prevent_close is True and window.icon and Path(window.icon).is_file()
     assert stub.padding == 0 and stub.spacing == 0
 

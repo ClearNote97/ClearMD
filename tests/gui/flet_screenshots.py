@@ -22,6 +22,7 @@ import gui.screenshots as demo  # noqa: E402
 from support.gui_fakes import FakeBackend  # noqa: E402
 
 from clearmd.backend.schemas.settings import Settings  # noqa: E402
+from clearmd.frontend.flet.layout.units import FRAME_HEIGHT, FRAME_WIDTH  # noqa: E402
 from clearmd.frontend.flet.visuals.images import ASSETS  # noqa: E402
 from clearmd.frontend.flet.window.flet_page import FletPage  # noqa: E402
 from clearmd.frontend.flet.window.window import FletApp  # noqa: E402
@@ -64,7 +65,7 @@ async def screens(page: ft.Page, out: Path, theme: str, language: str) -> None:
     )
     fake = FakeBackend(settings=settings, plan=demo.PLAN, statuses=demo.FAILED)
     page.enable_screenshots = True
-    page.window.width, page.window.height = demo.WIDTH, demo.HEIGHT
+    page.window.width, page.window.height = demo.WIDTH + FRAME_WIDTH, demo.HEIGHT + FRAME_HEIGHT
     app = FletApp(FletPage(page), fake)
     app.start()
     await shooter.shot("1-choose-empty")
@@ -95,7 +96,7 @@ async def screens(page: ft.Page, out: Path, theme: str, language: str) -> None:
     app.dialogs.welcome(tuple(catalog.text(f"gui.welcome.step{n}") for n in (1, 2, 3)))
     await shooter.shot("0-welcome")
     await close_dialog(app)
-    page.window.width, page.window.height = COMPACT
+    page.window.width, page.window.height = COMPACT[0] + FRAME_WIDTH, COMPACT[1] + FRAME_HEIGHT
     app.presenter.go_to(1)
     await shooter.shot("1-choose-compact")
 
