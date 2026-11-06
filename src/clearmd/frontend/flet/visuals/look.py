@@ -88,7 +88,11 @@ def button_style(kind: str) -> ft.ButtonStyle:
         return ft.ButtonStyle(
             color=_states("accent_text", disabled="disabled"),
             # Every state named: Flutter fills a state left out (disabled) with its own grey box.
-            bgcolor={DEFAULT: role("card"), DISABLED: role("card"), HOVERED: role("selected")},
+            bgcolor={
+                DEFAULT: ft.Colors.TRANSPARENT,
+                DISABLED: ft.Colors.TRANSPARENT,
+                HOVERED: role("selected"),
+            },
             shadow_color=ft.Colors.TRANSPARENT,
             shape=shape,
             padding=ft.Padding.symmetric(horizontal=SPACE),

@@ -80,3 +80,8 @@ def test_ac_09_the_version_resource_names_the_flet_exe() -> None:
     text = version_info["version_text"]("1.0.0", "ClearMD-Flet.exe")
     assert "StringStruct('OriginalFilename', 'ClearMD-Flet.exe')" in text
     assert "desktop app, flet" in text
+
+
+def test_ac_09_the_notices_are_written_as_utf8_on_any_console() -> None:
+    notices = read(PACKAGING / "notices.py")
+    assert 'sys.stdout.reconfigure(encoding="utf-8")' in notices

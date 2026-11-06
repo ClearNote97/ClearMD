@@ -58,6 +58,10 @@ def _decoded(data: bytes) -> str:
 
 
 def main() -> int:
+    # Some license texts are not in Windows' console code page (a Polish "ł" arrived with flet's
+    # dependencies, 018): the notices are always written as UTF-8.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     found = sorted(distributions(), key=lambda d: d.metadata["Name"].lower())
     left_out = BUILD_ONLY | NOT_SHIPPED
     bundled = [d for d in found if d.metadata["Name"].lower() not in left_out]

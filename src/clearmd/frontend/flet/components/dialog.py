@@ -22,7 +22,8 @@ class Dialog:
         self._finished = False
         self._default: Callable[[], None] = self.close_dialog
         self.dismiss: Callable[[], None] = lambda: None  # the window's: takes it off the screen
-        self.body = ft.Column(spacing=0, tight=True)
+        # It scrolls when the window is too short for it: the actions at the foot stay visible.
+        self.body = ft.Column(spacing=0, tight=True, scroll=ft.ScrollMode.AUTO)
         self.foot = ft.Row(spacing=SPACE, alignment=ft.MainAxisAlignment.END)
         self.title = label("dialogTitle", title)
         self.control = ft.AlertDialog(
