@@ -57,3 +57,4 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 | [0037](./0037-code-signing.md) | The Windows executables signed by SignPath | accepted |
 | [0038](./0038-pyside-gui-delivery.md) | The PySide6 GUI, delivered as a folder next to the ttk app | accepted |
 | [0039](./0039-modular-layout-and-file-size.md) | Modular layout and file size: ≤ 200 lines (250 at most), one layout for every GUI | accepted |
+| [0040](./0040-windows-installer.md) | A Windows installer and uninstaller, with Inno Setup | accepted |

@@ -88,8 +88,8 @@ already tested (ADR-0001).
 ## Later
 
 - [x] **016 — PySide6-Essentials GUI** (*onedir* distribution because of LGPL, ADR-0003, ADR-0038): v0.11.0.
-- [ ] **017 — flet GUI.**
-- [ ] A small Windows installer (a Start menu shortcut), optional.
+- [ ] **017 — Windows installer and uninstaller** (Inno Setup, ADR-0040).
+- [ ] **018 — flet GUI.**
 - [ ] Incremental mode: skip files unchanged since the last run.
 - [ ] Minor formats: `.eml`, `.rtf`, subtitles.
 - [ ] A second queue lane for heavy files, or parallel workers — only if the benchmark shows blocking

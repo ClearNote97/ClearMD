@@ -139,7 +139,8 @@ _Plus the failed and skipped files with a plain-words reason, and the history of
 | **014** Sub- and superscripts in PDFs, one gutter, faded waiting cards | ✅ done | v0.9.0 · reviewed |
 | **015** A PDF's equations as LaTeX | ✅ done | v0.10.0 |
 | **016** The same app in PySide6 (Qt) | ✅ done | v0.11.0 |
-| **017** The flet app | ⏳ | |
+| **017** Windows installer and uninstaller | ⏳ | |
+| **018** The flet app | ⏳ | |
 
 Full plan in the [roadmap](./spec/roadmap.md). ClearMD has a **command line** and the same **desktop app** in two toolkits,
 ttkbootstrap (`clearmd-ttk`) and PySide6 (`clearmd-pyside`, [screenshots](./docs/screenshots/016/)), all also as

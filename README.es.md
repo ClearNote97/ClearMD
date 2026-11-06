@@ -143,7 +143,8 @@ anteriores._
 | **014** Subíndices y superíndices en PDF, un solo margen, tarjetas atenuadas | ✅ lista | v0.9.0 · revisada |
 | **015** Las ecuaciones de un PDF como LaTeX | ✅ lista | v0.10.0 |
 | **016** La misma app en PySide6 (Qt) | ✅ lista | v0.11.0 |
-| **017** La app en flet | ⏳ | |
+| **017** Instalador y desinstalador para Windows | ⏳ | |
+| **018** La app en flet | ⏳ | |
 
 El plan completo está en el [roadmap](./spec/roadmap.md). ClearMD tiene **línea de comandos** y la misma **app de
 escritorio** en dos toolkits, ttkbootstrap (`clearmd-ttk`) y PySide6 (`clearmd-pyside`, [capturas](./docs/screenshots/016/)),
