@@ -33,12 +33,18 @@ way to remove it from "Installed apps". The budget is zero.
   before deleting the settings folder (kept by default), and never touches the user's documents.
 - **Proved in CI:** install silently, use what was installed, uninstall silently, check that nothing
   is left.
+- **Upgrade (AC-04):** CI installs an older build of the same script (AppId unchanged), then
+  installs the current one over it: one Installed apps entry, the new version's name, one uninstaller,
+  no leftover shortcut. The older build here carries the same programs (only the version differs).
 - The zip and the single `.exe` stay in the release for whoever prefers no installer.
 
 ## Consequences
 
 - **Gains:** an ordinary install and uninstall for non-technical users; the folder question disappears.
 - **Costs:** one more build step on Windows; unsigned, so SmartScreen still warns (ADR-0037).
+- **Running apps:** the installer's `CloseApplications=yes` makes Windows' Restart Manager ask the
+  user to close a running ClearMD before it replaces the files. CI does not test that prompt (silent
+  installs); the mechanism is Inno Setup's own.
 - **TODO (not done in feature 017):** sign the installer itself. The programs inside are signed
   through SignPath (ADR-0037); the setup file is not, yet. Signing it is a later step of the release
   workflow, after the signing service accepts it.

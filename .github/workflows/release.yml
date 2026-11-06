@@ -129,15 +129,21 @@ jobs:
           uv run --no-default-groups --group build python packaging/notices.py > dist/installer/THIRD-PARTY-NOTICES.txt
           # MSYS_NO_PATHCONV: Git Bash must not rewrite the compiler's /D option into a path.
           MSYS_NO_PATHCONV=1 "$(cygpath -u "$ISCC")" "/DAppVersion=$version" packaging/installer/clearmd.iss
+          # AC-04: the same script compiled as an older version, into its own folder, so that the
+          # check can install it first and then replace it with the current one (check_installer.ps1).
+          mkdir -p dist/installer-old
+          MSYS_NO_PATHCONV=1 "$(cygpath -u "$ISCC")" "/DAppVersion=0.0.1" "/O$(cygpath -w "$PWD/dist/installer-old")" packaging/installer/clearmd.iss
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          ls -la dist/installer
+          ls -la dist/installer dist/installer-old
       - name: Installer checks (silent install, use, uninstall, nothing left)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           pwsh -NoProfile -File packaging/check_installer.ps1 `
             -Installer "dist/installer/ClearMD-Setup-${{ steps.installer.outputs.version }}.exe" `
-            -Version "${{ steps.installer.outputs.version }}"
+            -Version "${{ steps.installer.outputs.version }}" `
+            -OldInstaller "dist/installer-old/ClearMD-Setup-0.0.1.exe" `
+            -OldVersion "0.0.1"
           if ($LASTEXITCODE -ne 0) { throw "The installer checks failed (see above)" }
       - name: Package
         shell: bash

@@ -17,6 +17,9 @@
 param(
   [Parameter(Mandatory)][string]$Installer,
   [Parameter(Mandatory)][string]$Version,
+  # An older build of the same script (the workflow compiles it): installed first, then replaced.
+  [Parameter(Mandatory)][string]$OldInstaller,
+  [Parameter(Mandatory)][string]$OldVersion,
   [string]$Root = (Split-Path -Parent $PSScriptRoot)
 )
 
@@ -48,9 +51,9 @@ function Expect([bool]$Ok, [string]$What) {
   Write-Host "  ok: $What"
 }
 
-function Invoke-Setup([string[]]$Choice) {
+function Invoke-Setup([string[]]$Choice, [string]$Setup = $Installer) {
   $arguments = @($Choice) + '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/CURRENTUSER'
-  $process = Start-Process -FilePath $Installer -ArgumentList $arguments -Wait -PassThru
+  $process = Start-Process -FilePath $Setup -ArgumentList $arguments -Wait -PassThru
   $label = if ($Choice.Count -gt 0) { $Choice -join ' ' } else { 'the default choice' }
   Expect ($process.ExitCode -eq 0) "the silent install ($label) exits with 0 (it was $($process.ExitCode))"
 }
@@ -169,12 +172,38 @@ function Assert-Gone {
   Expect ($desk -eq 0) 'no ClearMD desktop shortcut is left'
 }
 
+# AC-04: a newer version installed over an older one replaces it: one Installed apps entry (for the
+# AppId, with the new version's name), the files of the chosen parts, and one uninstaller. Called
+# with the install folder empty; leaves it empty again. Closing a running app is handled by the
+# installer's CloseApplications (ADR-0040), not checked here.
+function Assert-Upgrade {
+  Step '0. An older version is installed, then the current one is installed over it'
+  Invoke-Setup @() $OldInstaller
+  Expect ((Get-ItemProperty -Path $UninstallKey).DisplayVersion -eq $OldVersion) "the older version $OldVersion is registered"
+  Invoke-Setup @('/COMPONENTS=ttk,qt')
+  $entries = @(Get-ChildItem 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall' |
+      Where-Object { $_.GetValue('DisplayName') -eq 'ClearMD' })
+  Expect ($entries.Count -eq 1) "exactly one Installed apps entry for ClearMD after the upgrade (found $($entries.Count))"
+  Expect ($entries[0].PSChildName -eq "{$appId}_is1") 'that entry is the one for the AppId'
+  Expect ((Get-ItemProperty -Path $UninstallKey).DisplayVersion -eq $Version) "its DisplayVersion is the new version $Version"
+  Expect (Test-Path (Join-Path $Install $Program['ttk'])) 'the classic app of the new version is installed'
+  Expect (Test-Path (Join-Path $Install $Program['qt'])) 'the modern app of the new version is installed'
+  $uninstallers = @(Get-ChildItem $Install -Filter 'unins*.exe').Count
+  Expect ($uninstallers -eq 1) "one uninstaller in the install folder after the upgrade (found $uninstallers)"
+  $links = @(Get-ChildItem $StartMenu -Filter '*.lnk').Count
+  Expect ($links -eq 3) "the Start menu has no leftover shortcut from the older version (found $links, expected 3)"
+  Invoke-Uninstall
+  Assert-Gone
+}
+
 try {
   if (-not (Test-Path $Installer)) { throw "FAILED: the installer is missing: $Installer" }
   Write-Host ("installer: {0} ({1:N1} MB)" -f (Resolve-Path $Installer), ((Get-Item $Installer).Length / 1MB))
   Expect (-not (Test-Path $Install)) 'the machine starts with no ClearMD installed'
   # The settings folder is the runner's own: start from none, so the checks are exact.
   if (Test-Path $SettingsFolder) { Remove-Item $SettingsFolder -Recurse -Force }
+
+  Assert-Upgrade
 
   Step '1. Silent install with no choice: the classic app only'
   Invoke-Setup @()

@@ -45,9 +45,6 @@ def test_ac_01_the_release_builds_the_installer_after_the_signed_executables() -
     package = read(PACKAGE)
     assert 'cp "${setups[0]}" release/' in package
     assert "ClearMD-Setup-*.exe" in package and "expected one ClearMD-Setup" in package
-
-
-def test_ac_01_the_inno_setup_compiler_is_pinned_and_its_version_printed() -> None:
     release = read(RELEASE)
     assert "choco install innosetup --version=6.4.3 -y --no-progress" in release
     assert "Inno Setup compiler:" in release and "ProductVersion" in release
@@ -71,9 +68,6 @@ def test_ac_02_per_user_only_in_the_local_programs_folder() -> None:
     assert any("dist\\clearmd-cli.exe" in f and "Components: cli" in f for f in files)
     assert any("THIRD-PARTY-NOTICES.txt" in f and '"{app}"' in f for f in files)
     assert any("LICENSE" in f and "ClearMD-Qt" in f for f in files)
-
-
-def test_ac_02_the_choices_are_components_and_types_with_the_classic_app_first() -> None:
     script = sections(read(ISS))
     components = script["Components"]
     assert [c.split(";")[0].split('"')[1] for c in components] == ["ttk", "qt", "cli"]
@@ -95,19 +89,16 @@ def test_ac_03_every_program_file_and_shortcut_belongs_to_a_component() -> None:
     assert any("{cmd}" in e and "Components: cli" in e for e in script["Icons"])
 
 
-def test_ac_03_the_command_line_shortcut_opens_a_prompt_not_the_console_program() -> None:
-    icons = "\n".join(sections(read(ISS))["Icons"])
-    assert '"{group}\\ClearMD (command line)"' in icons
-    assert 'Filename: "{cmd}"' in icons and "--help" in icons
-    assert 'Filename: "{app}\\clearmd-cli.exe"' not in icons  # never started directly
-
-
 def test_ac_03_the_desktop_task_is_unticked_and_the_path_task_is_for_the_command_line() -> None:
     tasks = sections(read(ISS))["Tasks"]
     desktop = next(t for t in tasks if t.startswith('Name: "desktopicon"'))
     assert "Flags: unchecked" in desktop
     path = next(t for t in tasks if t.startswith('Name: "addpath"'))
     assert "Components: cli" in path and "Flags: unchecked" in path
+    icons = "\n".join(sections(read(ISS))["Icons"])
+    assert '"{group}\\ClearMD (command line)"' in icons
+    assert 'Filename: "{cmd}"' in icons and "--help" in icons
+    assert 'Filename: "{app}\\clearmd-cli.exe"' not in icons  # never started directly
 
 
 def test_ac_03_the_wizard_speaks_english_and_spanish_and_explains_each_part() -> None:
@@ -169,9 +160,6 @@ def test_ac_05_the_settings_folder_is_deleted_only_on_consent() -> None:
     assert "Pos('/REMOVESETTINGS', Uppercase(GetCmdTail)) > 0" in code
     assert "UninstallSilent" in code and "DelTree(Folder, True, True, True)" in code
     assert code.count("DelTree(") == 1  # the one folder, and nothing else
-
-
-def test_ac_05_the_uninstaller_undoes_the_path_entry_it_added_and_only_that() -> None:
     code = read(ISS)
     assert "RemoveOwnPathEntry;   // before the files go" in code
     assert "RegQueryStringValue(HKEY_CURRENT_USER, MarkerKey, MarkerValue, Marker)" in code
@@ -196,9 +184,16 @@ def test_ac_06_the_check_installs_uses_uninstalls_and_looks_for_leftovers() -> N
     ):
         assert needle in check, needle
     assert "Get-Content -Raw -Encoding utf8" in check  # the AppId is read from the script itself
+    assert "packaging/check_installer.ps1" in read(RELEASE)
 
 
-def test_ac_06_the_workflow_runs_the_check_on_windows_after_the_build() -> None:
+def test_ac_04_an_older_build_is_installed_and_replaced_in_ci() -> None:
     release = read(RELEASE)
-    assert "packaging/check_installer.ps1" in release
-    assert "The installer checks failed" in release
+    assert '"/DAppVersion=0.0.1"' in release and "dist/installer-old" in release
+    assert "-OldInstaller" in release and "-OldVersion" in release
+    check = read(CHECK)
+    assert "function Assert-Upgrade" in check and "Assert-Upgrade\n" in check
+    assert (
+        "exactly one Installed apps entry" in check
+        and "one uninstaller in the install folder" in check
+    )
