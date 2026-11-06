@@ -1,8 +1,9 @@
 ; Option 1 of the installer's look: ClearMD's pictures and colours through Inno Setup's own
 ; directives (6.7 or newer). Included inside [Setup] by clearmd.iss when Look is brand or painted.
 ;
-; "dynamic" follows Windows: light or dark, like the apps. "hidebevels" drops the grey lines.
-WizardStyle=modern dynamic hidebevels
+; Always light (v1.0.1, the owner: the dark wizard felt too heavy). "hidebevels" drops the grey
+; lines. The "DynamicDark" lines below are only read with "dynamic": they stay, ready, unused.
+WizardStyle=modern light hidebevels
 ; The Welcome page is off by default in Inno; it is where the tall picture shows.
 DisableWelcomePage=no
 ; The page background: the apps' working area ("ground") in each theme (frontend/design/palette.py).

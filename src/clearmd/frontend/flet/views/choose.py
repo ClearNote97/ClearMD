@@ -55,7 +55,13 @@ class ChooseView:
         self.mode, self.pick, self.output_label = output.mode, output.pick, output.output_label
         self.summary, self.images = output.summary, output.images
         self.choices = output.choices
-        self.control = ft.Column([*inputs.controls, output.control], spacing=SPACE, expand=True)
+        # Stretched: every card spans the page's width, as in Qt (flet's column hugs by default).
+        self.control = ft.Column(
+            [*inputs.controls, output.control],
+            spacing=SPACE,
+            expand=True,
+            horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
+        )
 
     def show_inputs(self, rows: tuple[InputRow, ...]) -> None:
         self.inputs.show_rows(

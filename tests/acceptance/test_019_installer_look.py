@@ -36,7 +36,7 @@ def test_ac_01_the_painted_look_is_the_default_and_needs_inno_6_7() -> None:
 
 def test_ac_02_clearmd_pictures_for_every_dpi_in_light_and_dark() -> None:
     brand = read(BRAND)
-    assert "WizardStyle=modern dynamic hidebevels" in brand
+    assert "WizardStyle=modern light hidebevels" in brand  # always light since v1.0.1
     assert "DisableWelcomePage=no" in brand
     for directive in ("WizardImageFile", "WizardImageFileDynamicDark", "WizardSmallImageFile"):
         line = next(x for x in brand.splitlines() if x.startswith(f"{directive}="))

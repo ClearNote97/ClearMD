@@ -30,6 +30,7 @@ class ResultsView:
              self.detail],
             spacing=GAP,
             expand=True,
+            horizontal_alignment=ft.CrossAxisAlignment.STRETCH,  # full-width cards, as in Qt
         )  # fmt: skip
         self._showing(None)
 

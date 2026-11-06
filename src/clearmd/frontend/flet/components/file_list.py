@@ -8,7 +8,7 @@ from typing import Any
 
 import flet as ft
 
-from clearmd.frontend.design.metrics import HALF, RADIUS, SPACE
+from clearmd.frontend.design.metrics import GAP, HALF, RADIUS, SPACE
 from clearmd.frontend.flet.components.primitives import card, label
 from clearmd.frontend.flet.layout.units import CHECK_WIDTH, ICON, NUMBER_WIDTH, ROW_HEIGHT
 from clearmd.frontend.flet.visuals.images import icon_src
@@ -59,10 +59,22 @@ class FileList:
         self.table = card([self.header, self.list], padding=SPACE, spacing=HALF, expand=True)
         self.empty = label("empty")
         self.empty.text_align = ft.TextAlign.CENTER
+        # Empty: the list's own frame with its sentence in the middle, as in Qt.
         self.placeholder = ft.Container(
-            content=card([self.empty]), alignment=ft.Alignment.CENTER, expand=True
+            content=self.empty,
+            alignment=ft.Alignment.CENTER,
+            expand=True,
+            padding=ft.Padding.all(GAP),
+            bgcolor=role("card"),
+            border=ft.Border.all(1, role("border")),
+            border_radius=ft.BorderRadius.all(RADIUS),
         )
-        self.control = ft.Column([self.table, self.placeholder], spacing=0, expand=True)
+        self.control = ft.Column(
+            [self.table, self.placeholder],
+            spacing=0,
+            expand=True,
+            horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
+        )
         self._show_which()
 
     def apply_headings(self, headings: Sequence[str], empty: str) -> None:

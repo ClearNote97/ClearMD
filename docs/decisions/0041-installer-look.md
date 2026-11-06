@@ -32,3 +32,9 @@ uninstall, and adds an unsigned component.
   6.7.1 and the version is checked).
 - Lesson: a label painted by hand must keep the style's painter (`StyleElements - [seFont]`); removing
   `seClient` too makes Windows draw see-through text in black.
+
+## Amendment (v1.0.1, 2026-11-06)
+
+The owner found the dark wizard too heavy: the installer is **always light**
+(`WizardStyle=modern light hidebevels`), whatever Windows' setting. The dark pictures and the
+`DynamicDark` directives stay in place, unused, should a dark wizard come back.

@@ -43,7 +43,13 @@ class ConvertView:
             padding=3 * SPACE,
         )  # fmt: skip
         self.progress_card.visible = False
-        self.control = ft.Column([self.ready, self.progress_card], spacing=GAP, expand=True)
+        # Stretched: the cards span the page's width, as in Qt (flet's column hugs by default).
+        self.control = ft.Column(
+            [self.ready, self.progress_card],
+            spacing=GAP,
+            expand=True,
+            horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
+        )
         self.dimmed = False
         self._fade(True)
 

@@ -24,7 +24,7 @@ Each criterion has an acceptance test (`tests/acceptance/test_019_*.py`) or a CI
   needs Inno Setup 6.7 or newer and says so when it is older.
 - [x] **AC-02** ClearMD's pictures replace Inno's (the tall picture and the top-corner mark), one file
   per DPI (100, 125, 150, 200 %) in light and dark, drawn by a script (never by hand) and checked
-  against it; the wizard follows Windows' light or dark setting; the Welcome page shows.
+  against it; the wizard follows Windows' light or dark setting (always light since v1.0.1, ADR-0041); the Welcome page shows.
 - [x] **AC-03** Every colour the look uses comes from the apps' palette (`frontend/design/palette.py`).
 - [x] **AC-04** The comparison page shows one card per part (title, size, a short explanation), the
   recommended one marked; English and Spanish.

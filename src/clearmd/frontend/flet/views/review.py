@@ -31,7 +31,10 @@ class ReviewView:
         self.existing = card([question, self.answer.control])
         self.existing.visible = False
         self.control = ft.Column(
-            [self.stats.control, self.files.control, self.existing], spacing=GAP, expand=True
+            [self.stats.control, self.files.control, self.existing],
+            spacing=GAP,
+            expand=True,
+            horizontal_alignment=ft.CrossAxisAlignment.STRETCH,  # full-width cards, as in Qt
         )
 
     def show(self, plan: PlanView) -> None:
