@@ -1,5 +1,6 @@
 """Helpers shared by every test: the network guard and the paths of the fixtures."""
 
+import _socket
 import shutil
 import socket
 import sys
@@ -22,8 +23,10 @@ def blocked(*args: Any, **kwargs: Any) -> Any:
     raise NetworkBlockedError(f"network access is forbidden in tests (ADR-0005): {args!r}")
 
 
-_CONNECT = socket.socket.connect  # the real one, before the guard replaces it
-_SOCKETPAIR = socket.socketpair
+# The real ones, from where the guard never writes: this module may be imported twice (pytest's
+# importlib mode), after the guard has replaced ``socket.socket.connect`` and ``socketpair``.
+_CONNECT = _socket.socket.connect
+_SOCKETPAIR = getattr(socket, "_fallback_socketpair", socket.socketpair)
 
 
 def _local_pair(*args: Any, **kwargs: Any) -> tuple[socket.socket, socket.socket]:
