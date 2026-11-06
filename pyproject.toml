@@ -36,6 +36,9 @@ dependencies = [
 # The Qt GUI (feature 016, ADR-0003, ADR-0038): only for whoever wants it (~80 MB), so
 # ``pip install clearmd`` stays light. Pinned, like every GUI toolkit.
 pyside = ["pyside6-essentials==6.12.0"]
+# The flet GUI (feature 018, ADR-0042): flet and its desktop window program, for whoever wants it.
+# 1.0.5, not 1.1.0: no release younger than two weeks (1.1.0 came out on 2026-11-05).
+flet = ["flet==1.0.5", "flet-desktop==1.0.5"]
 # Only what is used: the GUIs and PyInstaller arrive in their own feature, not before (ADR-0009).
 
 [project.scripts]
@@ -45,6 +48,7 @@ clearmd = "clearmd.frontend.cli:main"
 # A GUI script: no console window on Windows (ADR-0026).
 clearmd-ttk = "clearmd.frontend.ttk:main"
 clearmd-pyside = "clearmd.frontend.pyside:main"  # needs the ``pyside`` extra (feature 016)
+clearmd-flet = "clearmd.frontend.flet:main"  # needs the ``flet`` extra (feature 018)
 
 [dependency-groups]
 dev = [
@@ -54,11 +58,15 @@ dev = [
     "pypdf>=6",
     "markdown-it-py>=3,<5",
     "pyside6-essentials==6.12.0",  # the Qt GUI's tests (feature 016); the same pin as the extra
+    "flet==1.0.5",  # the flet GUI's tests (feature 018); the same pins as the extra
+    "flet-desktop==1.0.5",
 ]
 # Building the executables (feature 006, ADR-0028): only in CI and the dev container.
 build = [
     "pyinstaller==6.22.3",
     "pyside6-essentials==6.12.0",  # the Qt executable (feature 016)
+    "flet==1.0.5",  # the flet executable (feature 018)
+    "flet-desktop==1.0.5",
 ]
 
 [build-system]
@@ -69,6 +77,10 @@ build-backend = "uv_build"
 # Supply chain: no release younger than two weeks enters the lock (2026-10-26: these two were
 # published days before trafilatura was added; their previous release is used).
 constraint-dependencies = [
+    # 2026-11-06 (flet, 018): these came with flet and were days old; their predecessors are used.
+    "anyio<4.16",
+    "msgpack<1.2.4",
+    "oauthlib<4.0.1",
     "lxml-html-clean<0.4.6",
     "tzlocal<5.4.5",
     # 2026-10-28 (PyInstaller, 006): these were eight days old; their predecessors are used.
