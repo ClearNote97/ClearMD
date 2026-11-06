@@ -7,7 +7,7 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
-from support import DOCUMENTS_DIR, blocked
+from support import DOCUMENTS_DIR, WINDOWS, blocked, local_pair
 from support.display import virtual_display
 
 
@@ -16,6 +16,8 @@ def _no_network(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(socket.socket, "connect", blocked)
     monkeypatch.setattr(socket.socket, "connect_ex", blocked)
     monkeypatch.setattr(socket, "create_connection", blocked)
+    if WINDOWS:  # asyncio's in-process pipe is built over 127.0.0.1 there: it goes through
+        monkeypatch.setattr(socket, "socketpair", local_pair)
 
 
 @pytest.fixture(autouse=True)

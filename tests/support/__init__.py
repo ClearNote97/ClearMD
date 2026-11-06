@@ -29,7 +29,7 @@ _CONNECT = _socket.socket.connect
 _SOCKETPAIR = getattr(socket, "_fallback_socketpair", socket.socketpair)
 
 
-def _local_pair(*args: Any, **kwargs: Any) -> tuple[socket.socket, socket.socket]:
+def local_pair(*args: Any, **kwargs: Any) -> tuple[socket.socket, socket.socket]:
     """A pipe inside this process, as asyncio's event loop makes one (flet, 018). On Windows,
     Python builds it by connecting to a listener of its own on 127.0.0.1: that is not the network,
     so only that connection goes through, and the guard is back before the pair is returned."""
@@ -46,7 +46,7 @@ def install_network_guard() -> None:
     socket.socket.connect_ex = blocked  # type: ignore[method-assign]
     socket.create_connection = blocked
     if WINDOWS:
-        socket.socketpair = _local_pair
+        socket.socketpair = local_pair
 
 
 def put(folder: Path, name: str, as_name: str | None = None) -> Path:

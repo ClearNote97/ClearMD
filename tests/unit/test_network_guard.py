@@ -8,7 +8,7 @@ import support
 
 
 def test_a_local_pipe_works_and_the_guard_is_back_afterwards() -> None:
-    left, right = support._local_pair()
+    left, right = support.local_pair()
     try:
         left.sendall(b"ok")
         assert right.recv(2) == b"ok"
