@@ -110,5 +110,8 @@ Start-Sleep -Seconds 4
 # Its last message may carry a title without "ClearMD"; then the foreground window is taken.
 try { Shot "uninstall-done"; Press "{ENTER}" } catch { "  (no last message found: $_)"; [System.Windows.Forms.SendKeys]::SendWait("{ENTER}") }
 $uninstall.WaitForExit(30000) | Out-Null
+# unins000.exe hands over to a copy of itself in the temporary folder: wait until the program's
+# folder is gone, so the next run starts clean (with an earlier install, Inno skips the folder page).
+for ($i = 0; $i -lt 60 -and (Test-Path (Join-Path $dir "unins000.exe")); $i++) { Start-Sleep -Milliseconds 500 }
 Start-Sleep -Seconds 2
 exit 0
