@@ -5,7 +5,8 @@
 param(
     [Parameter(Mandatory)] [string] $Setup,
     [Parameter(Mandatory)] [string] $Out,
-    [ValidateSet("light", "dark")] [string] $Theme = "light"
+    [ValidateSet("light", "dark")] [string] $Theme = "light",
+    [ValidateSet("english", "spanish")] [string] $Lang = "english"
 )
 $ErrorActionPreference = "Stop"
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
@@ -81,17 +82,19 @@ function Press([string] $keys) {
     [System.Windows.Forms.SendKeys]::SendWait($keys)
 }
 
-$dir = Join-Path $env:RUNNER_TEMP ("look-" + [IO.Path]::GetFileNameWithoutExtension($Setup) + "-$Theme")
+# The Next button's shortcut: Alt+N in English ("&Next"), Alt+S in Spanish ("&Siguiente").
+$next = if ($Lang -eq "spanish") { "%s" } else { "%n" }
+$dir = Join-Path $env:RUNNER_TEMP ("look-" + [IO.Path]::GetFileNameWithoutExtension($Setup) + "-$Theme-$Lang")
 "$Setup ($Theme) -> $Out"
-$process = Start-Process -FilePath $Setup -ArgumentList "/LANG=english", "/DIR=`"$dir`"" -PassThru
+$process = Start-Process -FilePath $Setup -ArgumentList "/LANG=$Lang", "/DIR=`"$dir`"" -PassThru
 Start-Sleep -Seconds 3
 # The plain look has no Welcome page (Inno's default); the others show it, with the tall picture.
-if ($Setup -notmatch "plain") { Shot "welcome"; Press "%n" }
-Shot "license"; Press "%a"; Press "%n"
-Shot "folder"; Press "%n"
-Shot "compare"; Press "%n"
-Shot "components"; Press "%n"
-Shot "tasks"; Press "%n"
+if ($Setup -notmatch "plain") { Shot "welcome"; Press $next }
+Shot "license"; Press "%a"; Press $next
+Shot "folder"; Press $next
+Shot "compare"; Press $next
+Shot "components"; Press $next
+Shot "tasks"; Press $next
 Shot "ready"; Press "%i"
 # Installing: the classic app alone (the default) takes a few seconds.
 for ($i = 0; $i -lt 60 -and -not (Test-Path (Join-Path $dir "unins000.exe")); $i++) { Start-Sleep -Milliseconds 500 }

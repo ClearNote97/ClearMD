@@ -3,22 +3,22 @@
 ; Look is painted. Windows draws the buttons and the check list itself: those stay native.
 
 [CustomMessages]
-english.CardTtkTitle=ClearMD (ttk) - the classic app
+english.CardTtkTitle=ClearMD (ttk) - The Classic App
 english.CardTtkTag=RECOMMENDED · about 36 MB
 english.CardTtkBody=The lightest: one program file. The first start takes a few seconds, while it unpacks itself.
-english.CardQtTitle=ClearMD (Qt) - the modern app
+english.CardQtTitle=ClearMD (Qt) - The Modern App
 english.CardQtTag=about 130 MB
 english.CardQtBody=Smoother, with sharper text on high-resolution screens, and it opens quickly. Its Qt libraries can be replaced (LGPL).
-english.CardCliTitle=Command line - for advanced users
+english.CardCliTitle=Command Line - for Advanced Users
 english.CardCliTag=about 36 MB
 english.CardCliBody=No window: you type clearmd-cli "C:\My documents". Good for many folders, scripts and automation.
-spanish.CardTtkTitle=ClearMD (ttk) - la app clásica
+spanish.CardTtkTitle=ClearMD (ttk) - La App Clásica
 spanish.CardTtkTag=RECOMENDADA · unos 36 MB
 spanish.CardTtkBody=La más liviana: un solo archivo. El primer inicio tarda unos segundos, mientras se descomprime.
-spanish.CardQtTitle=ClearMD (Qt) - la app moderna
+spanish.CardQtTitle=ClearMD (Qt) - La App Moderna
 spanish.CardQtTag=unos 130 MB
 spanish.CardQtBody=Más suave, con texto más nítido en pantallas de alta resolución, y abre rápido. Sus bibliotecas de Qt se pueden reemplazar (LGPL).
-spanish.CardCliTitle=Línea de comandos - para usuarios avanzados
+spanish.CardCliTitle=Línea de Comandos - para Usuarios Avanzados
 spanish.CardCliTag=unos 36 MB
 spanish.CardCliBody=Sin ventana: escribes clearmd-cli "C:\Mis documentos". Buena para muchas carpetas, scripts y automatización.
 
