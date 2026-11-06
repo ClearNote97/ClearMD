@@ -41,5 +41,6 @@ def test_a_refusal_or_an_older_windows_changes_nothing() -> None:
     assert not power.keep_full_speed(FakeKernel32(missing=True))
 
 
-def test_elsewhere_it_does_nothing() -> None:
+def test_the_real_call_succeeds_on_windows_and_does_nothing_elsewhere() -> None:
+    # On Windows CI this is the real call: Windows must accept it (the handle's type matters).
     assert power.keep_full_speed() is (sys.platform == "win32")

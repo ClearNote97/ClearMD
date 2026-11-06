@@ -34,7 +34,7 @@ def keep_full_speed(kernel32: Any = None) -> bool:
     if kernel32 is None:
         if sys.platform != "win32":
             return False
-        kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined,unused-ignore]
+        kernel32 = _typed_kernel32()
     state = ThrottlingState(THROTTLING_VERSION, EXECUTION_SPEED, 0)
     try:
         done = kernel32.SetProcessInformation(
@@ -46,3 +46,22 @@ def keep_full_speed(kernel32: Any = None) -> bool:
     except (AttributeError, OSError):
         return False
     return bool(done)
+
+
+def _typed_kernel32() -> Any:
+    """Windows' kernel32 with the two calls' exact types. Without them ctypes passes the
+    process handle (64 bits on 64-bit Windows) as a 32-bit int, and Windows refuses the call
+    (found on Windows CI, v1.0.1)."""
+    from ctypes import wintypes
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)  # type: ignore[attr-defined,unused-ignore]
+    kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+    kernel32.GetCurrentProcess.argtypes = []
+    kernel32.SetProcessInformation.restype = wintypes.BOOL
+    kernel32.SetProcessInformation.argtypes = [
+        wintypes.HANDLE,
+        ctypes.c_int,
+        ctypes.c_void_p,
+        wintypes.DWORD,
+    ]
+    return kernel32
