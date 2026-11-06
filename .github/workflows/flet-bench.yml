@@ -1,0 +1,53 @@
+# How much the flet window costs a conversion (v1.0.1): the same documents converted by the
+# command line and through the real flet window, on Windows; the summary's times and the CPU of
+# each process are printed. Run by hand (Actions → flet bench → Run workflow) on a branch.
+name: flet bench
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  UV_PYTHON_PREFERENCE: only-managed
+
+jobs:
+  bench:
+    name: flet bench
+    runs-on: windows-2025
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.13"
+      - run: uv sync --locked
+      - name: flet's window program (pinned)
+        run: uv run python packaging/fetch_flet_client.py
+      - name: The documents (the fixtures, five times over)
+        shell: bash
+        run: |
+          for round in 1 2 3 4 5; do
+            mkdir -p "bench/cli/r$round" "bench/flet/r$round"
+            cp tests/fixtures/documents/* tests/fixtures/odt/report.odt tests/fixtures/tex/paper.tex "bench/cli/r$round/"
+            cp tests/fixtures/documents/* tests/fixtures/odt/report.odt tests/fixtures/tex/paper.tex "bench/flet/r$round/"
+          done
+      - name: The command line
+        shell: bash
+        run: |
+          start=$(date +%s.%N)
+          uv run clearmd bench/cli --summary-pdf > /dev/null
+          echo "command line: $(python -c "print(round($(date +%s.%N) - $start, 1))") s"
+      - name: The flet window
+        shell: bash
+        env:
+          FLET_VIEW_PATH: ${{ github.workspace }}/build/flet-client/flet
+        run: timeout 600 uv run python tests/gui/flet_bench.py bench/flet
+      - name: Each file's time, side by side
+        shell: bash
+        run: |
+          for side in cli flet; do
+            echo "== $side"
+            grep -E '^\| `' "bench/$side/ClearMD_Output/Resumen_ClearMD.md" | awk -F'|' '{print $6}' | sort | uniq -c
+          done
