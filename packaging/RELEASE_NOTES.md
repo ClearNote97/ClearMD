@@ -1,5 +1,17 @@
 **ClearMD — documents to Markdown, 100 % local.** / **Documentos a Markdown, 100 % local.**
 
+**New in 1.0.1 / Novedades de la 1.0.1**
+- The flet app converts at full speed: Windows could slow ClearMD's converter down as background
+  work while flet's window was in front (a PDF took 19 s instead of 5). The converter now asks
+  Windows not to; the window also redraws only the progress while converting. / La app flet
+  convierte a toda velocidad: Windows podía frenar el convertidor de ClearMD como trabajo de fondo
+  mientras la ventana de flet estaba al frente (un PDF tardaba 19 s en vez de 5). Ahora el
+  convertidor le pide a Windows que no lo haga; además, la ventana solo redibuja el avance.
+- flet: "Convert more" and Settings answer at the first press; the empty list and the cards look
+  as in the other apps. The installer is always light. / flet: "Convertir más" y Ajustes responden
+  a la primera; la lista vacía y las tarjetas se ven como en las otras apps. El instalador es
+  siempre claro.
+
 **ClearMD 1.0.0**
 - The same app drawn with flet (Flutter), the third toolkit: `ClearMD-Flet-1.0.0-windows.zip` —
   unzip it and open `ClearMD-Flet.exe` in the folder — or tick "ClearMD (flet)" in the installer.

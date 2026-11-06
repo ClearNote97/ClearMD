@@ -1,5 +1,8 @@
 """One dialog at a time: help, settings, welcome, and the question after Convert more."""
 
+from collections.abc import Callable
+from typing import Any
+
 from clearmd.frontend.flet.components.dialog import Dialog
 from clearmd.frontend.flet.views.dialogs.help import HelpDialog
 from clearmd.frontend.flet.views.dialogs.keep_inputs import KeepInputsDialog
@@ -25,7 +28,7 @@ class DialogHost:
             self._open(
                 KeepInputsDialog(
                     self._shown.need_catalog(),
-                    on_answer=lambda keep: self._presenter.convert_more(keep=keep),
+                    on_answer=lambda keep: self._sent(self._presenter.convert_more, keep=keep),
                     on_close=self._closed,
                 )
             )
@@ -48,7 +51,7 @@ class DialogHost:
             SettingsDialog(
                 self._shown.need_catalog(),
                 self._presenter.settings,
-                on_save=self._presenter.save_settings,
+                on_save=lambda chosen: self._sent(self._presenter.save_settings, chosen),
                 on_close=self._closed,
             )
         )
@@ -59,7 +62,7 @@ class DialogHost:
 
         def done(show_again: bool) -> None:
             self._closed()
-            self._presenter.dismiss_welcome(show_again=show_again)
+            self._sent(self._presenter.dismiss_welcome, show_again=show_again)
 
         self._open(WelcomeDialog(self._shown.need_catalog(), steps, done))
 
@@ -69,6 +72,13 @@ class DialogHost:
         self._focus.forget()  # the window's controls are behind the dialog now
         self._focus.watch(dialog.control)
         self._page.show_dialog(dialog.control)
+
+    def _sent(self, action: Callable[..., None], *args: Any, **kwargs: Any) -> None:
+        """A dialog's answer, then the page to the screen. Closing the dialog already updated
+        flet's page, so flet sends nothing more after the click: without this, what the answer
+        changed (Choose again, a new theme) showed only at the next click (v1.0.1)."""
+        action(*args, **kwargs)
+        self._page.refresh()
 
     def _closed(self) -> None:
         self.current = None

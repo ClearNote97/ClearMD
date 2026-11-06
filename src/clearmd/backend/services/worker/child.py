@@ -13,6 +13,7 @@ from clearmd.backend.schemas.models import Detection, DetectionMethod
 from clearmd.backend.schemas.notes import ConversionNote, NoteItem, NoteKind
 from clearmd.backend.services.conversion.images import ImageSink
 from clearmd.backend.services.conversion.registry import DocumentConverter
+from clearmd.backend.services.worker.power import keep_full_speed
 from clearmd.backend.services.worker.protocol import (
     Converted,
     ConvertRequest,
@@ -105,6 +106,7 @@ def worker_main(
 ) -> None:
     # Ctrl+C reaches the whole process group; only the supervisor decides what to stop.
     signal.signal(signal.SIGINT, signal.SIG_IGN)
+    keep_full_speed()  # Windows: never throttled as background work (power.py, v1.0.1)
     if memory_cap is not None:
         apply_memory_cap(memory_cap)
     registry = load_factory(factory_path)

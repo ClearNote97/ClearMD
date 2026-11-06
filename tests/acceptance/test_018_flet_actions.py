@@ -87,8 +87,12 @@ def test_ac_04_convert_more_asks_every_time(
         click(app.actions.secondary)
         dialog = app.dialogs.current
         assert isinstance(dialog, KeepInputsDialog) and page_of(app).dialogs == [dialog.control]
+        refreshes = page_of(app).refreshes
         click(dialog.keep if keep else dialog.clear)
         assert app.dialogs.current is None and page_of(app).dialogs == []
+        # Sent at once: closing the dialog had already updated flet's page, so without this the
+        # Choose page showed only at the next click (the owner pressed twice, v1.0.1).
+        assert page_of(app).refreshes > refreshes
         assert app.presenter.page == 1
         names = [row.name for row in app.main.inputs.rows()]
         assert names == ([f"{tmp_path.name}/"] if keep else [])
