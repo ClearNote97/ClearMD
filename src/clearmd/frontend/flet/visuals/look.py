@@ -113,9 +113,10 @@ def button_style(kind: str) -> ft.ButtonStyle:
     )
 
 
-def tile_style() -> ft.ButtonStyle:
+def tile_style(top: int = GAP) -> ft.ButtonStyle:
     """A start tile (feature 021): the page's ground in the card, its border turning to the accent
-    and its ground to the selection under the pointer."""
+    and its ground to the selection under the pointer; its content from the top, ``top`` below
+    the edge (feature 024: two tiles' icons at the same height)."""
     border = ft.BorderSide(1, role("border"))
     return ft.ButtonStyle(
         color=_states("text", disabled="disabled"),
@@ -124,6 +125,7 @@ def tile_style() -> ft.ButtonStyle:
         shadow_color=ft.Colors.TRANSPARENT,
         side={DEFAULT: border, HOVERED: ft.BorderSide(2, role("accent"))},
         shape=ft.RoundedRectangleBorder(radius=RADIUS),
-        padding=ft.Padding.all(GAP),
+        padding=ft.Padding.only(left=GAP, top=top, right=GAP, bottom=GAP),
+        alignment=ft.Alignment.TOP_CENTER,  # icons and titles in line, whatever the text below
         elevation=0,
     )

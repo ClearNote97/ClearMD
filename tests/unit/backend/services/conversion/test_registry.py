@@ -1,7 +1,7 @@
 import pytest
 
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
-from clearmd.backend.schemas.formats import FormatId
+from clearmd.backend.schemas.formats import CONVERTIBLE, FormatId
 from clearmd.backend.services.conversion.markitdown_adapter import MarkItDownConverter
 from clearmd.backend.services.conversion.registry import ConverterRegistry, build_registry
 
@@ -17,7 +17,7 @@ def test_every_supported_format_has_a_converter() -> None:
     assert isinstance(registry.for_format(FormatId.ODT), OdtConverter)
     assert isinstance(registry.for_format(FormatId.PDF), PdfConverter)  # ADR-0030
     assert isinstance(registry.for_format(FormatId.XLSX), XlsxConverter)  # ADR-0032
-    others = set(FormatId) - {FormatId.TEX, FormatId.ODT, FormatId.PDF, FormatId.XLSX}
+    others = CONVERTIBLE - {FormatId.TEX, FormatId.ODT, FormatId.PDF, FormatId.XLSX}
     assert all(isinstance(registry.for_format(fmt), MarkItDownConverter) for fmt in others)
 
 

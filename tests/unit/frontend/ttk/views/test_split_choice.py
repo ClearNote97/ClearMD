@@ -48,7 +48,7 @@ def test_the_split_block_shows_only_for_split_in_place_of_the_images(app: TtkApp
     assert app.main.split.winfo_ismapped()
     assert not app.main.pictures.winfo_manager()  # the images' choice is hidden
     note = app.main.split.note.cget("text")
-    assert note == "Each part keeps whole pages, in order. Nothing inside them changes."
+    assert note == "Each part keeps whole pages or sections, in order. Nothing inside them changes."
     assert app.main.summary_buttons[0].winfo_ismapped()  # the summary's choice stays
     app.presenter.go_to(0)
     app.presenter.choose_tool(Tool.CONVERT)
@@ -94,7 +94,7 @@ def test_the_settings_group_round_trips(app: TtkApp) -> None:
     assert isinstance(dialog, dialogs.settings.SettingsDialog)
     group = dialog.split
     assert group.cut.get() == "parts" and group.keep.get() == "Both"
-    assert [n.get() for n in group.numbers.values()] == ["2", "50"]
+    assert [n.get() for n in group.numbers.values()] == ["2", "50", "30000"]
     group.cut.set("pages")
     group.keep.set("Their Markdown")
     group.numbers["pages"].delete(0, "end")

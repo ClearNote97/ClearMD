@@ -30,7 +30,7 @@ def test_the_window_opens_on_home_with_its_two_tiles_and_no_action_bar(app: TtkA
     assert app.home.tiles[Tool.CONVERT].texts() == (
         "Convert to Markdown", "PDF, Word, Excel, PowerPoint, HTML and more",
     )  # fmt: skip
-    assert app.home.tiles[Tool.SPLIT].texts()[0] == "Split a PDF"
+    assert app.home.tiles[Tool.SPLIT].texts()[0] == "Split a Document"
     assert app.home.note.cget("text") == "The tools change files, never what is inside them."
     assert not app.actions.winfo_manager()  # no primary action on Home
     assert app.rail.home_text() == "> Home"

@@ -167,7 +167,7 @@ def test_ac_06_the_size_is_always_about_and_no_ai_is_named(language: str) -> Non
     about = {"en": "about", "es": "unas"}[language]
     for key in ("gui.split.by_words", "gui.settings.split_words", "cli.help.split_words"):
         assert about in catalog.text_template(key).lower()
-    assert about.capitalize() in catalog.text("gui.split.words")
+    assert about in catalog.text("gui.split.words")
     every = " ".join(catalog.text_template(key) for key in catalog.keys())
     for brand in ("ChatGPT", "Claude", "Gemini", "GPT-", "Copilot"):
         assert brand not in every

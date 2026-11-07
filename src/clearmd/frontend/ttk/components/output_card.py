@@ -125,7 +125,7 @@ class OutputCard:
         self.pictures.pack_forget()
         self._summary.pack_forget()
         if splitting:
-            self.split.pack(fill="x", pady=(0, GAP), before=self._heading)
+            self.split.pack(fill="x", pady=(0, SPACE), before=self._heading)
             self._summary.pack(in_=self._heading, side="right")
         else:
             self.split.pack_forget()

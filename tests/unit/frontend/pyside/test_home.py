@@ -21,7 +21,7 @@ def test_the_window_opens_on_the_start_screen_with_its_two_tiles(window: Window)
     assert app.presenter.page == HOME
     assert app.home.isVisible() and not app.main.isVisible()
     assert app.home.convert.title.text() == "Convert to Markdown"
-    assert app.home.split.title.text() == "Split a PDF"
+    assert app.home.split.title.text() == "Split a Document"
     assert app.home.convert.body.text() and app.home.split.body.text()
     assert app.home.note.text() == "The tools change files, never what is inside them."
     assert not app.home.convert.icon.pixmap().isNull()
@@ -84,7 +84,7 @@ def test_home_in_the_rail_is_shut_while_working(window: Window) -> None:
 
 def test_the_start_screen_speaks_spanish(window: Window) -> None:
     app = window(FakeBackend(settings=replace(QUIET, language="es")))
-    assert app.home.split.title.text() == "Dividir un PDF"
+    assert app.home.split.title.text() == "Dividir un Documento"
     assert app.surface.title.text() == "¿Qué Quieres Hacer?"
     assert app.rail.home.accessibleName() == "Inicio"
 

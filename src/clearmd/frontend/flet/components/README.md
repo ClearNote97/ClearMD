@@ -8,7 +8,7 @@
 | `file_list.py` | The numbered file list, with boxes where its selection does something. |
 | `inputs_card.py`, `output_card.py` | Choose's two halves: what to convert, where it goes. |
 | `start_panel.py` | Choose before anything is listed: two large tiles, Add files and Add folder (feature 021); its `Tile` is Home's too. |
-| `split_block.py` | How to Split on step 1 of Split: the cut, its numbers, what to keep (feature 023). |
+| `split_block.py`, `number_field.py` | How to Split on step 1 of Split: the three cuts and their numbers, what to keep, the note and the hint (features 023, 024). |
 | `action_bar.py`, `stats.py`, `surface.py` | Bottom bar, figures, the working area and its header. |
 | `dialog.py` | The base of every dialog. |
 

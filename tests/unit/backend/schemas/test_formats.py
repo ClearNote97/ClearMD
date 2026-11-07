@@ -3,7 +3,8 @@ from clearmd.backend.schemas.formats import FormatId
 
 
 def test_every_format_has_an_extension() -> None:
-    assert set(formats.EXTENSIONS.values()) == set(FormatId)
+    assert set(formats.EXTENSIONS.values()) == formats.CONVERTIBLE
+    assert formats.CONVERTIBLE == set(FormatId) - {FormatId.MARKDOWN}  # split only (024)
 
 
 def test_extensions_are_lowercase_and_dotted() -> None:

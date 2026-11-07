@@ -40,7 +40,7 @@ class OutputCard:
         self.split = SplitChoice(parent, text=text, on_split=on_split)
         self.split.widget.hide()
         output_layout.addWidget(self.split.widget)
-        heading = QHBoxLayout()
+        heading = self._heading = QHBoxLayout()
         title = label("strong")
         text(title, "gui.main.output_title")
         heading.addWidget(title)
@@ -77,7 +77,10 @@ class OutputCard:
         self.output_label = label("muted", wrap=True)
         output_layout.addWidget(self.output_label)
 
-        summary = QHBoxLayout()
+        self._summary_row = QWidget()  # its own line; for Split on the heading, as the images
+        summary = QHBoxLayout(self._summary_row)
+        summary.setContentsMargins(0, 0, 0, 0)
+        summary.setSpacing(SPACE)
         summary_title = label("strong")
         text(summary_title, "gui.main.summary_title")
         summary.addWidget(summary_title)
@@ -91,8 +94,10 @@ class OutputCard:
         for radio in (self.summary_md, self.summary_pdf, self.summary_pdf_only):
             summary.addSpacing(GAP)
             summary.addWidget(radio)
-        summary.addStretch(1)
-        output_layout.addLayout(summary)
+        self._summary_line = QHBoxLayout()
+        self._summary_line.addWidget(self._summary_row)
+        self._summary_line.addStretch(1)
+        output_layout.addLayout(self._summary_line)
         layout.addWidget(output)
         self.choice_buttons = (
             self.next_to,
@@ -113,3 +118,16 @@ class OutputCard:
             widget.setVisible(not split)
         self.split.widget.setVisible(split)
         self.split.show(choice)
+        self._place_summary(on_heading=split)
+
+    def _place_summary(self, *, on_heading: bool) -> None:
+        """For Split the summary goes up to the heading, where the images are for Convert: the
+        block above takes the line it frees (feature 024, the window at 1080 x 720)."""
+        source, target = self._summary_line, self._heading
+        if on_heading:
+            target.removeWidget(self._summary_row)  # no-op unless it is there
+            source.removeWidget(self._summary_row)
+            target.addWidget(self._summary_row)
+        else:
+            target.removeWidget(self._summary_row)
+            source.insertWidget(0, self._summary_row)

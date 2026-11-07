@@ -1,5 +1,6 @@
-"""Settings' "Split a PDF" group (feature 023, AC-10): into N parts or every N pages, the two
-numbers, and what to keep. The same choices as step 1 of Split, saved by the dialog's Save."""
+"""Settings' Split group (features 023, 024): into N parts, every N pages or parts of about N
+words, the three numbers, and what to keep. The same choices as step 1 of Split, saved by the
+dialog's Save."""
 
 import tkinter as tk
 import tkinter.font as tkfont
@@ -31,25 +32,26 @@ class SplitSettings:
         controls.columnconfigure(0, weight=1)
         self.cut = tk.StringVar(master=body, value="parts")
         self.numbers: dict[str, ttk.Spinbox] = {}
-        for line, name in enumerate(("parts", "pages")):
+        for line, name in enumerate(("parts", "pages", "words")):  # words: feature 024
             ttk.Radiobutton(
                 controls, variable=self.cut, value=name, text=text(f"gui.settings.split_{name}")
             ).grid(row=line, column=0, sticky="w", pady=(0 if line == 0 else HALF, 0))
             low, high = RANGES[f"split_{name}"]
-            number = ttk.Spinbox(controls, from_=low, to=high, increment=1, width=6)
+            step = 1000 if name == "words" else 1
+            number = ttk.Spinbox(controls, from_=low, to=high, increment=step, width=7)
             number.grid(
                 row=line, column=1, sticky="e", padx=(GAP, 0), pady=(0 if line == 0 else HALF, 0)
             )
             self.numbers[name] = number
         self._keeps = {value: text(f"gui.split.keep_{value}") for value in _KEEP}
         ttk.Label(controls, text=text("gui.settings.split_keep")).grid(
-            row=2, column=0, sticky="w", pady=(HALF, 0)
+            row=3, column=0, sticky="w", pady=(HALF, 0)
         )
         self.keep = tk.StringVar(master=body)
         ttk.Combobox(
             controls, textvariable=self.keep, values=list(self._keeps.values()),
             state="readonly", width=18,
-        ).grid(row=2, column=1, sticky="e", padx=(GAP, 0), pady=(HALF, 0))  # fmt: skip
+        ).grid(row=3, column=1, sticky="e", padx=(GAP, 0), pady=(HALF, 0))  # fmt: skip
         self._settings = Settings()
 
     def load(self, settings: Settings) -> None:

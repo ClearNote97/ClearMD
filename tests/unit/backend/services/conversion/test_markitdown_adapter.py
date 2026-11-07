@@ -11,6 +11,7 @@ from markitdown import FileConversionException, UnsupportedFormatException
 from markitdown._exceptions import FailedConversionAttempt
 from support import DOCUMENTS_DIR, WINDOWS
 
+from clearmd.backend.schemas import formats
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.schemas.formats import FormatId, format_for_extension
 from clearmd.backend.schemas.models import Detection, DetectionMethod
@@ -91,7 +92,7 @@ def test_no_image_audio_or_zip_converter_is_ever_registered() -> None:
     assert names.isdisjoint(
         {"ZipConverter", "ImageConverter", "AudioConverter", "OutlookMsgConverter"}
     )
-    assert set(MarkItDownConverter().converters) == set(FormatId) - {
+    assert set(MarkItDownConverter().converters) == formats.CONVERTIBLE - {
         FormatId.TEX,
         FormatId.ODT,
         FormatId.PDF,

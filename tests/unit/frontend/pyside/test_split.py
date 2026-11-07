@@ -1,5 +1,6 @@
-"""Feature 023 in the Qt window: How to Split on step 1 in place of the images, each control sent to
-the presenter (AC-09, AC-10), and the Split a PDF group of Settings."""
+"""Features 023 and 024 in the Qt window: How to Split on step 1 in place of the images, its three
+cuts and Keep sent to the presenter (023 AC-09, AC-10; 024 AC-05), and the Split group of
+Settings."""
 
 from collections.abc import Callable
 from dataclasses import replace
@@ -28,6 +29,10 @@ def test_the_split_block_is_shown_only_for_split_in_place_of_the_images(window: 
     assert app.main.split.widget.isVisible() and not images_shown(app)
     assert app.main.summary_md.isVisible() and app.main.next_to.isVisible()  # they stay
     assert app.main.split.by_parts.text() == "Into" and app.main.split.parts.value() == 2
+    assert (
+        app.main.split.by_words.text() == "Parts of about"
+        and app.main.split.words.value() == 30_000
+    )
     assert app.main.split.pages.value() == 50 and app.main.split.keep["both"].isChecked()
     app.presenter.choose_tool(Tool.CONVERT)
     assert not app.main.split.widget.isVisible() and images_shown(app)
@@ -44,10 +49,14 @@ def test_each_split_control_is_sent_to_the_presenter(window: Window) -> None:
     for value in ("pdf", "markdown", "both"):
         split.keep[value].click()
         assert app.presenter.settings.split_keep == value
+    split.by_words.click()
+    assert app.presenter.settings.split_cut == "words"
     split.parts.setValue(4)
     split.pages.setValue(10)
+    split.words.setValue(12_000)
     assert app.presenter.settings.split_parts == 4
     assert app.presenter.settings.split_pages == 10
+    assert app.presenter.settings.split_words == 12_000
 
 
 def type_number(app: PySideApp, box: QSpinBox, text: str) -> None:
@@ -69,11 +78,27 @@ def test_a_typed_number_is_sent_on_enter_not_on_every_key(window: Window) -> Non
 
 
 def test_the_boxes_show_what_the_presenter_keeps(window: Window) -> None:
-    app = window(FakeBackend(settings=replace(QUIET, split_parts=7, split_pages=3)))
+    settings = replace(QUIET, split_cut="words", split_parts=7, split_pages=3, split_words=9000)
+    app = window(FakeBackend(settings=settings))
     app.presenter.choose_tool(Tool.SPLIT)
     assert app.main.split.parts.value() == 7 and app.main.split.pages.value() == 3
+    assert app.main.split.words.value() == 9000 and app.main.split.by_words.isChecked()
     app.presenter.choose_split(parts=1)  # out of range: refused, the box keeps 7
     assert app.main.split.parts.value() == 7
+    app.presenter.choose_split(words=100)  # under 500: refused, the box keeps 9000
+    assert app.main.split.words.value() == 9000
+
+
+def test_a_typed_word_count_out_of_range_is_put_back(window: Window) -> None:
+    app = window()
+    app.presenter.choose_tool(Tool.SPLIT)
+    box = app.main.split.words
+    type_number(app, box, "20000")
+    press(app, Qt.Key.Key_Return)
+    assert app.presenter.settings.split_words == 20_000
+    type_number(app, box, "100")  # under the box's range: it goes back to its value
+    press(app, Qt.Key.Key_Return)
+    assert app.presenter.settings.split_words == 20_000 and box.value() == 20_000
 
 
 def test_the_settings_group_round_trips(window: Window) -> None:
@@ -85,18 +110,23 @@ def test_the_settings_group_round_trips(window: Window) -> None:
     group = dialog.split
     assert group.by_pages.isChecked() and group.keep.currentText() == "The parts as PDF"
     assert group.parts.value() == 2 and group.pages.value() == 50
-    group.by_parts.setChecked(True)
     group.parts.setValue(5)
     group.pages.setValue(20)
     group.keep.setCurrentIndex(1)
+    assert group.words.value() == 30_000
+    group.by_words.setChecked(True)
+    group.words.setValue(8000)
     dialog.save()
     saved = backend.saved[-1]
-    assert (saved.split_cut, saved.split_parts, saved.split_pages) == ("parts", 5, 20)
+    assert (saved.split_cut, saved.split_parts, saved.split_pages) == ("words", 5, 20)
+    assert saved.split_words == 8000
     assert saved.split_keep == "markdown"
     assert app.presenter.settings.split_parts == 5
     app.rail.settings.click()
     again = app.dialogs.current
     assert isinstance(again, SettingsDialog) and again.split.parts.value() == 5
+    assert again.split.by_words.isChecked() and again.split.words.value() == 8000
     again.restore()
     assert again.chosen().split_parts == 2 and again.chosen().split_keep == "both"
+    assert again.chosen().split_words == 30_000 and again.chosen().split_cut == "parts"
     again.close_dialog()

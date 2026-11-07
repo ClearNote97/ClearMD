@@ -50,6 +50,9 @@ EXTENSIONS: Mapping[str, FormatId] = MappingProxyType(
     }
 )
 
+# The formats ClearMD converts; Markdown is only ever split (feature 024).
+CONVERTIBLE: frozenset[FormatId] = frozenset(FormatId) - {FormatId.MARKDOWN}
+
 # ZIP containers: checked from their central directory before converting (ADR-0015).
 ZIP_BASED: frozenset[FormatId] = frozenset(
     {FormatId.DOCX, FormatId.PPTX, FormatId.XLSX, FormatId.EPUB, FormatId.ODT}

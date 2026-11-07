@@ -12,8 +12,9 @@ from clearmd.frontend.flet.components.start_panel import Tile
 from clearmd.frontend.presenter.state import Tool
 from clearmd.i18n import Catalog
 
-HOME_TILE_HEIGHT = 25 * SPACE  # 200: larger than step 1's tiles, the page's one choice
+HOME_TILE_HEIGHT = 24 * SPACE  # 192: larger than step 1's tiles, the page's one choice
 HOME_ICON_SIZE = 7 * SPACE  # 56
+HOME_TOP = 4 * SPACE  # the content from the top, as Qt's: icons and titles in line (024)
 
 
 class HomeView:
@@ -29,6 +30,7 @@ class HomeView:
             lambda: on_tool(Tool.CONVERT),
             height=HOME_TILE_HEIGHT,
             icon_size=HOME_ICON_SIZE,
+            top=HOME_TOP,
         )
         self.split = Tile(
             self._wording,
@@ -38,6 +40,7 @@ class HomeView:
             lambda: on_tool(Tool.SPLIT),
             height=HOME_TILE_HEIGHT,
             icon_size=HOME_ICON_SIZE,
+            top=HOME_TOP,
         )
         self.tiles = (self.convert, self.split)
         self.note = label("hint")

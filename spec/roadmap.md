@@ -104,7 +104,7 @@ follows Choose → Review → Results in the three windows; the command line get
 - [x] **023 — Start screen and Split PDF** (ADR-0044): v2.0.0: the tiles Convert and Split (Merge's tile arrives with
       026: never a tile without its action); Split cuts a PDF into a number of parts or every N pages,
       and keeps the PDF parts, their Markdown, or both (`OutputSep/`).
-- [ ] **024 — Split into parts that fit an AI** (v2.1.0): the cut by estimated context size (approximate,
+- [x] **024 — Split into parts that fit an AI** (ADR-0045): v2.1.0: the cut by estimated context size (approximate,
       no tokenizer downloaded), for PDF and Markdown (Markdown by headings).
 - [ ] **025 — "Split It" from Convert** (v2.2.0): a file marked too big or too slow (AC-42/43 of feature
       001) offers to split it, with the recommended cut; the parts come back to the batch.

@@ -70,6 +70,7 @@ def build_frame(
     review, converting, results = ReviewView(), ConvertView(), ResultsView()
     pages = tuple(view.control for view in (main, review, converting, results))
     message = label("message")
+    message.visible = False  # until there is one
     actions = ActionBar(on_primary=on_primary)
     panel = ft.Container(
         content=ft.Column(

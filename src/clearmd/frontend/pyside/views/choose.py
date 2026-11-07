@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QLabel, QPushButton, QRadioButton, QVBoxLayout, QW
 from clearmd.frontend.design.metrics import GAP, SPACE
 from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.presenter.models import InputRow, OutputChoice, OutputMode
+from clearmd.frontend.presenter.state import Tool
 from clearmd.frontend.pyside.components.file_list import ListRow
 from clearmd.frontend.pyside.components.inputs_card import InputsCard
 from clearmd.frontend.pyside.components.output_card import OutputCard
@@ -32,6 +33,7 @@ class ChooseView(QWidget):
     ) -> None:
         super().__init__()
         self._texts: list[tuple[QLabel | QPushButton | QRadioButton, str]] = []
+        self._short = self._split = False
         self.layout_ = QVBoxLayout(self)
         self.layout_.setContentsMargins(0, 0, 0, 0)
         self.layout_.setSpacing(GAP)
@@ -92,13 +94,21 @@ class ChooseView(QWidget):
         radios.get(choice.summary_format, self.summary_md).setChecked(True)
         (self.images_omit if choice.images == "omit" else self.images_folder).setChecked(True)
         self._output_card.show_tool(choice)
+        self._split = choice.tool is Tool.SPLIT
+        self._fit()
 
     def output_mode(self) -> str:
         return OutputMode.FOLDER.value if self.in_folder.isChecked() else OutputMode.NEXT_TO.value
 
     def set_short(self, short: bool) -> None:
         """A short window: the add buttons side by side, so the list keeps its rows (011)."""
-        self._inputs_card.set_short(short)
+        self._short = short
+        self._fit()
+
+    def _fit(self) -> None:
+        """Split's block is taller than the images' choice: with it, the add buttons go side by
+        side at any height, so the list keeps a row (feature 024; ttk's are always so)."""
+        self._inputs_card.set_short(self._short or self._split)
 
     def apply_language(self, catalog: Catalog) -> None:
         for widget, key in self._texts:

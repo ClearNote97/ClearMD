@@ -20,6 +20,7 @@ from clearmd.frontend.presenter.state import Tool
 from clearmd.frontend.pyside.components.action_bar import ActionBar
 from clearmd.frontend.pyside.components.primitives import label
 from clearmd.frontend.pyside.components.rail import Rail
+from clearmd.frontend.pyside.components.scroll_page import ScrollPage
 from clearmd.frontend.pyside.components.surface import Surface
 from clearmd.frontend.pyside.views.choose import ChooseView
 from clearmd.frontend.pyside.views.convert import ConvertView
@@ -99,6 +100,6 @@ def build_frame(
     review = ReviewView()
     converting = ConvertView()
     results = ResultsView()
-    for page in (home, main, review, converting, results):  # their index is the page's number
+    for page in (home, ScrollPage(main), review, converting, results):  # index: the page number
         stack.addWidget(page)
     return Frame(rail, surface, stack, actions, message, home, main, review, converting, results)

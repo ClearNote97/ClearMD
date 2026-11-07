@@ -4,7 +4,6 @@ from pathlib import Path
 
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.schemas.split import Cut
-from clearmd.backend.services.conversion.tex.source import decode_source
 from clearmd.backend.services.split.markdown_cut import cut_markdown
 from clearmd.backend.services.split.pdf_pages import count_pages, cut_pages
 from clearmd.backend.services.split.words import page_words
@@ -26,6 +25,9 @@ def _markdown(request: MarkdownCutRequest, max_result_bytes: int) -> Response:
     source = Path(request.source)
     if source.stat().st_size > max_result_bytes:
         return Failed(ErrorCode.CONVERSION_FAILED.value, "file too large to split")
+    # Imported here: its module brings pylatexenc, which only TeX needs at start (feature 002).
+    from clearmd.backend.services.conversion.tex.source import decode_source
+
     text = decode_source(source.read_bytes()).text
     parts, over = cut_markdown(text, Cut(request.cut), request.size)
     return MarkdownParts(parts, over)

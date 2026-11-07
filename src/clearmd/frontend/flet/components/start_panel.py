@@ -28,6 +28,7 @@ class Tile:
         *,
         height: int = TILE_HEIGHT,
         icon_size: int = ICON_SIZE,
+        top: int = GAP,
     ) -> None:
         self.icon = ft.Icon(icon, size=icon_size, color=role("accent_text"))
         self.title = label("strong")
@@ -40,11 +41,11 @@ class Tile:
             spacing=HALF,
             tight=True,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            alignment=ft.MainAxisAlignment.CENTER,
+            alignment=ft.MainAxisAlignment.START,
         )
         self.control = ft.Button(
             content=column,
-            style=tile_style(),
+            style=tile_style(top),
             height=height,
             expand=True,
             on_click=on_click,

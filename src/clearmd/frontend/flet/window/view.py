@@ -54,7 +54,7 @@ class FletView:
             self._shown.scan = None
         page_changed = previous is not None and previous.page != state.page
         if page_changed:
-            self._frame.message.value = ""  # a message belongs to the page it was given on
+            self._show_message("")  # a message belongs to the page it was given on
             self._primary_button.page_shown()
         converting = state.state is AppState.CONVERTING
         if converting and (previous is None or previous.state is not AppState.CONVERTING):
@@ -126,7 +126,12 @@ class FletView:
         self._results.forget()
 
     def show_message(self, text: str) -> None:
+        self._show_message(text)
+
+    def _show_message(self, text: str) -> None:
+        """Without a message its line takes no room: the page keeps it (024: Split's block)."""
         self._frame.message.value = text
+        self._frame.message.visible = bool(text)
 
     def apply_theme(self, name: str) -> None:
         """The two themes are always the page's; the mode says which one is on screen."""

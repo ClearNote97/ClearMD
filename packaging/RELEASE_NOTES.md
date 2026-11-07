@@ -2,6 +2,15 @@
 
 Each file can be checked against `SHA256SUMS.txt` ([how](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)). / Cada archivo se puede comprobar con `SHA256SUMS.txt` ([cómo](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)).
 
+**New in 2.1.0 / Novedades de la 2.1.0**
+- Split into **parts of about N words**, to fit an AI (30,000 by default; always approximate):
+  whole pages, in order. A PDF without text says so instead of guessing. Command line:
+  `--split-words N`. / Divide en **partes de unas N palabras**, para que quepan en una IA (30.000
+  por defecto; siempre aproximado): páginas enteras, en orden. Un PDF sin texto lo dice en vez de
+  adivinar. Línea de comandos: `--split-words N`.
+- Split takes **Markdown** files too, cut at their headings and never inside code. / Dividir
+  acepta también archivos **Markdown**, cortados en sus títulos y nunca dentro del código.
+
 **ClearMD 2.0 — a local toolkit that prepares documents for AI / una caja de herramientas local que prepara documentos para IA**
 - A start screen with two tools: **Convert to Markdown** and **Split a PDF**. / Una pantalla de
   inicio con dos herramientas: **Convertir a Markdown** y **Dividir un PDF**.
