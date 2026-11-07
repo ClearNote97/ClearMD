@@ -46,7 +46,7 @@ from GitHub issues and discussions.
   or both.
 - **One start screen.** Three large tiles, Convert, Split and Merge, in the style of feature 021's
   tiles. Each tool follows the same three steps (Choose → Review → Results) in the three
-  windows. The command line gets `clearmd split` and `clearmd merge`. A tile appears only with its
+  windows. The command line gets `--split-parts`, `--split-pages` and (with Merge) `--merge`. A tile appears only with its
   tool: the screen starts with Convert and Split, and Merge's tile comes with Merge. In Convert,
   a file that is too big offers **"Split It"**, which opens Split with a recommended cut.
 - **Output folders** (ADR-0019, unchanged): `OutputMD/` (Markdown), `OutputSep/` (parts),
