@@ -138,3 +138,19 @@ refactor playbook:
 - **Private examples**: a git-ignored folder used for local evaluation only, and a history scan before making
   the repository public.
 - **Commits**: stage by path, never `git add -A`, so ignored and private files can never slip in.
+
+## 11. Interface text
+
+- **Fix the capitalisation rule on day one, and test it.** ClearMD moved to Title Case at 1.2.0. That meant
+  rewriting most of the catalog's titles and buttons across three windows and the summary. A test now checks
+  every title, button and summary heading, in both languages, against a list of lowercase connectors.
+- **One text rule covers every surface.** The first pass changed only the window titles, and the user then
+  asked for the buttons and the generated summary (Markdown and PDF) too. Make the rule cover all of them from
+  the start: titles, buttons and generated documents.
+- **Tests should read strings from the catalog, not repeat them.** Dozens of tests, across every interface,
+  had copies of the catalog text, so changing the wording broke them. Regex fixes missed cases. What worked
+  was pairing old and new values by key with `tomllib` and doing plain replacements. A template should give
+  tests a `text(key)` helper instead.
+- **When a toolkit lacks a feature, redesign the space it leaves.** flet 1.0 cannot receive files dropped from
+  the system. An empty list that says "use the buttons" was dead space. Two large tiles (an icon, a title and
+  what each one takes) became the way in and turned the gap into the first step.
