@@ -147,6 +147,7 @@ _Plus the failed and skipped files with a plain-words reason, and the history of
 | **018** The flet app — ClearMD 1.0 | ✅ done | v1.0.0 · [screenshots](./docs/screenshots/018/) |
 | **019** The installer looks like ClearMD (light and dark) | ✅ done | v0.13.2 · [screenshots](./docs/screenshots/019/) |
 | **020** The summary as a PDF alone | ✅ done | v1.1.0 |
+| **021** flet's empty list as two large tiles; titles in Title Case | ✅ done | v1.2.0 · [screenshots](./docs/screenshots/018/) |
 
 Full plan in the [roadmap](./spec/roadmap.md). ClearMD has a **command line** and the same **desktop app** in three toolkits,
 ttkbootstrap (`clearmd-ttk`), PySide6 (`clearmd-pyside`, [screenshots](./docs/screenshots/016/)) and flet

@@ -1,5 +1,13 @@
 **ClearMD — documents to Markdown, 100 % local.** / **Documentos a Markdown, 100 % local.**
 
+**New in 1.2.0 / Novedades de la 1.2.0**
+- flet: before anything is chosen, the list shows two large tiles, **Add Files** and **Add Folder**,
+  each with what it takes. / flet: antes de elegir nada, la lista muestra dos tarjetas grandes,
+  **Agregar Archivos** y **Agregar Carpeta**, cada una con lo que recibe.
+- Titles, buttons and the summary's headings in Title Case, in the three apps and in
+  `Resumen_ClearMD` (Markdown and PDF). / Títulos, botones y encabezados del resumen con mayúscula
+  inicial en cada palabra, en las tres apps y en `Resumen_ClearMD` (Markdown y PDF).
+
 **New in 1.1.0 / Novedades de la 1.1.0**
 - A third summary format, **PDF only**: just `Resumen_ClearMD.pdf`, no Markdown summary. Choose it
   on step 1 or in Settings, or use `--summary-pdf-only`. / Un tercer formato de resumen, **Solo
