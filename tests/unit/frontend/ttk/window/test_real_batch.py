@@ -28,7 +28,7 @@ def test_a_real_batch_through_the_window_writes_the_markdown(display: str, tmp_p
         app.presenter.add_paths([folder])
         app.actions.primary.invoke()
         pump(app, until=lambda: app.presenter.state is AppState.WAITING_DECISION, seconds=30)
-        assert app.review.stats.figures()[:2] == [("To convert", "4"), ("Skipped", "1")]
+        assert app.review.stats.figures()[:2] == [("To Convert", "4"), ("Skipped", "1")]
         confirm(app)
         finished = {AppState.FINISHED, AppState.FINISHED_WITH_PROBLEMS}
         pump(app, until=lambda: app.presenter.state in finished, seconds=120)

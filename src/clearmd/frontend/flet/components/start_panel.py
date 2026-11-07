@@ -61,14 +61,14 @@ class StartPanel:
         self.files = Tile(
             wording,
             ft.Icons.NOTE_ADD_OUTLINED,
-            "gui.main.add_files",
+            "gui.main.tile_files",
             "gui.main.start_files",
             on_add_files,
         )
         self.folder = Tile(
             wording,
             ft.Icons.CREATE_NEW_FOLDER_OUTLINED,
-            "gui.main.add_folder",
+            "gui.main.tile_folder",
             "gui.main.start_folder",
             on_add_folder,
         )

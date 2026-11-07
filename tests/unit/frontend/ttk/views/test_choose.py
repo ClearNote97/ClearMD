@@ -12,7 +12,7 @@ from clearmd.frontend.ttk import TtkApp
 def test_the_window_shows_the_first_step_with_convert_disabled(app: TtkApp) -> None:
     assert app.root.title() == "ClearMD"
     assert app.surface.header()["eyebrow"] == "Step 1 of 4"
-    assert app.surface.header()["title"] == "Choose what to convert"
+    assert app.surface.header()["title"] == "Choose What to Convert"
     assert app.rail.step_texts() == ["> Choose", "Review", "Convert", "Results"]
     assert app.actions.primary.instate(["disabled"])
     assert app.main.remove.instate(["disabled"])

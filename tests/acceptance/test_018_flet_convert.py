@@ -43,9 +43,9 @@ def test_ac_03_review_shows_the_figures_and_the_skipped_first_with_what_to_do(
     app = flet_window(MemoryBackend(QUIET))
     to_review(app, folder)
     assert app.review.stats.figures() == [
-        ("To convert", "2"),
+        ("To Convert", "2"),
         ("Skipped", "1"),
-        ("Already exist", "0"),
+        ("Already Exist", "0"),
     ]
     first = app.review.files.rows()[0]
     assert first.name == "notes.md" and first.warning and first.values[1]  # what to do about it

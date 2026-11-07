@@ -1,4 +1,5 @@
 # Tasks — Feature 021: flet's empty list as two large tiles
 
 - [x] **T01 — The tiles** (AC-01 – AC-04).
-- [x] **T02 — Close.** Texts, ADR-0042's amendment, screenshots (AC-05).
+- [x] **T02 — Titles in Title Case** (AC-06).
+- [x] **T03 — Close.** Texts, ADR-0042's amendment, screenshots (AC-05).

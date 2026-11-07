@@ -15,9 +15,9 @@ def test_help_opens_from_the_rail_and_esc_closes_it(app: TtkApp) -> None:
     app.rail.help.invoke()
     pump(app, seconds=0.2)
     assert app.dialog is not None
-    assert app.dialog.title() == "How to use ClearMD"
+    assert app.dialog.title() == "How to Use ClearMD"
     texts = [child.cget("text") for child in app.dialog.body.winfo_children()]
-    assert "Your privacy" in texts and "What it converts" in texts
+    assert "Your Privacy" in texts and "What It Converts" in texts
     app.dialog.focus_force()
     pump(app, seconds=0.1)
     app.dialog.event_generate("<Escape>", when="tail")

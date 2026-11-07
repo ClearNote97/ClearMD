@@ -1,4 +1,4 @@
-# Feature 021 — flet's empty list as two large tiles
+# Feature 021 — flet's empty list as two large tiles; titles in Title Case
 
 ## Goal
 
@@ -9,7 +9,8 @@ under them (ADR-0042, amended). The ttk and Qt windows keep their drop zone.
 
 ## Scope
 
-- **Includes:** the tiles on step 1 of the flet window; their texts in English and Spanish.
+- **Includes:** the tiles on step 1 of the flet window; their texts in English and Spanish; the
+  windows' titles in Title Case (the owner's rule, already the installer's).
 - **Does not include:** dropping files on the flet window (it needs a Flutter client built for it:
   `flet build` with an extension); the ttk and Qt windows.
 
@@ -26,3 +27,6 @@ Each criterion has an acceptance test (`tests/acceptance/test_021_*.py`).
 - [x] **AC-04** The tiles are enabled and disabled with the small buttons.
 - [x] **AC-05** Their texts in English and Spanish; the sentence that sent people to the two buttons
   is gone from the catalogs.
+- [x] **AC-06** Every title of the three windows (pages, cards, dialogs, columns, figures, settings,
+  the tiles) is in Title Case in both languages: each word capitalised but the connectors, the first
+  word always; brands keep their own form.

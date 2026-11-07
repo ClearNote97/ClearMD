@@ -15,6 +15,8 @@ from clearmd.frontend.flet.window.controls import apply_enabled
 from clearmd.frontend.presenter import Action
 from clearmd.i18n import load_catalog
 
+from .test_019_installer_look import CONNECTORS
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -43,8 +45,8 @@ def test_ac_01_nothing_listed_the_two_tiles_alone(flet_window: Window, language:
     start = app.main.start
     assert shown(app) == {"tiles": True, "buttons": False, "list": False, "links": False}
     for tile, title, body in (
-        (start.files, "gui.main.add_files", "gui.main.start_files"),
-        (start.folder, "gui.main.add_folder", "gui.main.start_folder"),
+        (start.files, "gui.main.tile_files", "gui.main.start_files"),
+        (start.folder, "gui.main.tile_folder", "gui.main.start_folder"),
     ):
         assert isinstance(tile.icon, ft.Icon) and tile.icon.icon is not None
         assert tile.title.value == catalog.text(title)
@@ -91,3 +93,50 @@ def test_ac_05_their_texts_in_both_languages() -> None:
         for key in ("start_files", "start_folder", "start_hint"):
             assert f"\n{key} = " in text
         assert "empty_use_buttons" not in text
+
+
+# The windows' titles (the owner's Title Case rule): pages, cards, dialogs, columns, figures,
+# settings, the tiles. Body text and buttons keep sentence case.
+TITLES = {
+    "gui.welcome": ("title",),
+    "gui.plan": ("stat_convert", "stat_skipped", "stat_existing", "column_what"),
+    "gui.progress": ("current",),
+    "gui.result": (
+        "stat_converted", "stat_skipped", "stat_failed", "stat_stopped", "problems", "column_what",
+    ),
+    "gui.settings": (
+        "title", "language", "theme", "open_when_done", "existing", "recursive", "html", "welcome",
+        "summary", "images",
+    ),
+    "gui.help": (
+        "title", "how_title", "formats_title", "where_title", "privacy_title", "language_title",
+        "keyboard_title",
+    ),
+    "gui.more": ("title",),
+    "gui.page": ("choose_title", "review_title", "convert_title", "results_title"),
+    "gui.main": (
+        "column_name", "column_location", "output_title", "pick_files_title", "pick_folder_title",
+        "pick_output_title", "summary_title", "images_title", "tile_files", "tile_folder",
+    ),
+}  # fmt: skip
+SMALL = CONNECTORS | {"que", "se", "as", "at"}
+
+
+@pytest.mark.parametrize("language", ["en", "es"])
+def test_ac_06_every_title_in_title_case(language: str) -> None:
+    catalog = load_catalog(language)
+    checked = 0
+    for section, keys in TITLES.items():
+        for key in keys:
+            title = catalog.text(f"{section}.{key}")
+            for part in title.split(" · "):
+                words = [w.lstrip("¿¡") for w in part.split()]
+                for position, word in enumerate(words):
+                    if not word[:1].isalpha() or word.startswith("ClearMD"):
+                        continue
+                    if position > 0 and word.lower() in SMALL:
+                        assert word == word.lower(), (title, word)
+                    else:
+                        assert word[0].isupper(), (title, word)
+            checked += 1
+    assert checked == sum(len(keys) for keys in TITLES.values())

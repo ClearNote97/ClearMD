@@ -48,9 +48,9 @@ def test_the_plan_gives_its_counts_as_figures_for_the_summary_cards() -> None:
     presenter.analyze()
     view.drain()
     assert view.last("plan").stats == (
-        Stat("To convert", 2, Tone.ACCENT),
+        Stat("To Convert", 2, Tone.ACCENT),
         Stat("Skipped", 1, Tone.WARNING),
-        Stat("Already exist", 1, Tone.NEUTRAL),
+        Stat("Already Exist", 1, Tone.NEUTRAL),
     )
 
 

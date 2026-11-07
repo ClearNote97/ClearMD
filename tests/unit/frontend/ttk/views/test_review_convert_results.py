@@ -33,9 +33,9 @@ def test_review_shows_the_figures_and_each_file_then_converting_ends_in_results(
         pump(app, until=lambda: app.presenter.state is AppState.WAITING_DECISION)
         assert shown(app) is app.review
         assert app.review.stats.figures() == [
-            ("To convert", "2"),
+            ("To Convert", "2"),
             ("Skipped", "1"),
-            ("Already exist", "1"),
+            ("Already Exist", "1"),
         ]
         assert app.review.files.names() == ["notes.md", "a.pdf", "b.docx"]  # attention first
         assert app.review.existing.winfo_ismapped()  # the setting is "ask"

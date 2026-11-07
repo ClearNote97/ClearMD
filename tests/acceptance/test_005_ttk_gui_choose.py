@@ -70,7 +70,7 @@ def test_ac_07_convert_first_shows_the_plan_and_writes_nothing(
     app = window(MemoryBackend(QUIET))
     to_review(app, folder)
     assert app.review.stats.figures() == [
-        ("To convert", "2"), ("Skipped", "1"), ("Already exist", "0")
+        ("To Convert", "2"), ("Skipped", "1"), ("Already Exist", "0")
     ]  # fmt: skip
     assert app.review.files.names()[0] == "notes.md"  # what will not be converted, first
     assert not (tmp_path / "ClearMD_Output").exists()

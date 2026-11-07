@@ -40,7 +40,7 @@ def test_ac_02_add_files_add_folder_and_nothing_listed_twice(
     click(app.main.add_files)  # the same files again: never listed twice
     assert names(app) == ["a.pdf", "b.docx", f"{tmp_path.name}/"]
     assert [kind for kind, _title, _start in page.asked] == ["files", "folder", "files"]
-    assert page.asked[0][1] == "Choose documents" and page.asked[1][1] == "Choose a folder"
+    assert page.asked[0][1] == "Choose Documents" and page.asked[1][1] == "Choose a Folder"
     assert page.extensions == sorted(extension.lstrip(".") for extension in EXTENSIONS)
     page.files, page.folder = [], None  # both dialogs cancelled: nothing changes
     click(app.main.add_files)
@@ -56,7 +56,7 @@ def test_ac_02_no_drop_on_the_window_the_empty_list_is_the_two_buttons(
     catalog = load_catalog(language)
     start = app.main.start
     assert start.control.visible and not app.main.inputs.control.visible  # feature 021's tiles
-    for tile, key in ((start.files, "gui.main.add_files"), (start.folder, "gui.main.add_folder")):
+    for tile, key in ((start.files, "gui.main.tile_files"), (start.folder, "gui.main.tile_folder")):
         assert tile.title.value == catalog.text(key)
     assert catalog.text("gui.main.drop") not in texts(app.root)  # no drop zone
 
