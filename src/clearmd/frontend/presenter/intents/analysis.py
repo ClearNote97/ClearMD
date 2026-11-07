@@ -23,7 +23,8 @@ def split_spec(s: Session) -> SplitSpec | None:
         return None
     settings = s.settings
     cut = Cut(settings.split_cut)
-    size = settings.split_parts if cut is Cut.PARTS else settings.split_pages
+    sizes = {Cut.PARTS: settings.split_parts, Cut.PAGES: settings.split_pages}
+    size = sizes.get(cut, settings.split_words)
     return SplitSpec(cut, size, Keep(settings.split_keep))
 
 

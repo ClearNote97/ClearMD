@@ -11,6 +11,7 @@ from clearmd.backend.services.detection.content_policy import ExtensionlessOnly
 from clearmd.backend.services.detection.extension import ExtensionDetector
 from clearmd.backend.services.summary.pdf_report import PdfReport
 from clearmd.backend.services.summary.writer import MarkdownSummaryWriter
+from clearmd.backend.services.worker.page_runner import PageRunner
 from clearmd.backend.services.worker.supervisor import REAL_REGISTRY, WorkerRunner
 from clearmd.i18n import load_catalog
 
@@ -35,6 +36,11 @@ def build_detector(worker: WorkerRunner) -> ChainDetector:
 
 def build_runner(limits: Limits) -> WorkerRunner:
     return WorkerRunner(REGISTRY_FACTORY, limits)
+
+
+def build_page_runner(runner: WorkerRunner) -> PageRunner:
+    """Split's page jobs, on the same worker as the conversions (ADR-0044)."""
+    return PageRunner(runner)
 
 
 def build_clock() -> SystemClock:

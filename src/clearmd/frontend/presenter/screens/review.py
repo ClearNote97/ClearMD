@@ -1,6 +1,6 @@
 """Review: the plan's rows, summary and figures."""
 
-from clearmd.backend.api import Cut, Strategy, skip_action, skip_reason
+from clearmd.backend.api import Strategy, skip_action, skip_reason
 from clearmd.backend.schemas.models import BatchPlan, PlannedConversion
 from clearmd.frontend.presenter.icons import icon_for, icon_of_format
 from clearmd.frontend.presenter.models import PlanRow, PlanView, RowKind, Stat, Tone
@@ -53,7 +53,7 @@ def _cut(catalog: Catalog, item: PlannedConversion) -> str:
     """How a file will be split (feature 023): " · into 4 parts"; nothing for Convert."""
     if item.split is None:
         return ""
-    key = "gui.split.by_parts" if item.split.cut is Cut.PARTS else "gui.split.by_pages"
+    key = f"gui.split.by_{item.split.cut.value}"  # by_parts, by_pages, by_words
     return " · " + catalog.text(key, count=item.split.size)
 
 

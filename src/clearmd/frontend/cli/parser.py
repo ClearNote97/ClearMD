@@ -53,6 +53,12 @@ def build_parser(catalog: Catalog) -> argparse.ArgumentParser:
     split.add_argument(
         "--split-pages", type=whole(1), metavar="N", help=help_("cli.help.split_pages")
     )
+    split.add_argument(
+        "--split-words",
+        type=whole(500, 1_000_000),
+        metavar="N",
+        help=help_("cli.help.split_words"),
+    )
     parser.add_argument(
         "--keep", choices=[keep.value for keep in Keep], help=help_("cli.help.keep")
     )

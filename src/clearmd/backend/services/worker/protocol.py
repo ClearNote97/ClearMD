@@ -43,6 +43,33 @@ class CutRequest:
 
 
 @dataclass(frozen=True)
+class WordsRequest:
+    """The words on each page of a PDF (Split by words, feature 024)."""
+
+    source: str
+
+
+@dataclass(frozen=True)
+class MarkdownCutRequest:
+    """A Markdown file cut at its headings (feature 024): ``cut`` is "parts" or "words"."""
+
+    source: str
+    cut: str
+    size: int
+
+
+@dataclass(frozen=True)
+class Words:
+    per_page: tuple[int, ...]
+
+
+@dataclass(frozen=True)
+class MarkdownParts:
+    parts: tuple[str, ...]
+    over: tuple[int, ...] = ()  # the parts (1-based) larger than the size
+
+
+@dataclass(frozen=True)
 class Counted:
     pages: int
 
@@ -70,6 +97,7 @@ class Failed:
     detail: str
 
 
-type Job = ConvertRequest | DetectRequest | CountPagesRequest | CutRequest
+type PageJob = CountPagesRequest | CutRequest | WordsRequest | MarkdownCutRequest
+type Job = ConvertRequest | DetectRequest | PageJob
 type Request = Job | None  # None asks the worker to exit
-type Response = Converted | Detected | Counted | CutDone | Failed
+type Response = Converted | Detected | Counted | CutDone | Words | MarkdownParts | Failed

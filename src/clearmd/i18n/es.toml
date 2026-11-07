@@ -36,6 +36,10 @@ action = "Prueba dividiéndolo en archivos más pequeños."
 message = "Este archivo necesita más memoria de la que ClearMD permite."
 action = "Prueba dividiéndolo en archivos más pequeños o cierra otros programas."
 
+[error.nothing_to_measure]
+message = "Este PDF no tiene texto para medir: sus páginas seguramente son imágenes escaneadas."
+action = "Divídelo mejor cada N páginas."
+
 [error.worker_crashed]
 message = "El conversor se detuvo de forma inesperada con este archivo."
 action = "Inténtalo de nuevo; si vuelve a pasar, puede que el archivo esté dañado."
@@ -57,7 +61,8 @@ unreadable = "no se puede leer"
 too_deep = "carpetas demasiado profundas ({measured} niveles; límite {limit})"
 too_much_memory = "requiere unos {measured} de memoria; límite {limit}"
 too_much_memory_for_article = "en modo artículo requiere unos {measured} de memoria; límite {limit}"
-not_splittable = "no es un PDF (Dividir recibe archivos PDF)"
+not_splittable = "no es un PDF ni un Markdown (Dividir recibe esos)"
+cut_not_for_markdown = "Markdown no tiene páginas para cortar cada N"
 
 [skip_action]
 output_folder = "ClearMD no convierte sus propios resultados."
@@ -77,6 +82,7 @@ too_deep = "Muévelo a una carpeta menos profunda."
 too_much_memory = "Divídelo en archivos más pequeños."
 too_much_memory_for_article = "Conviértelo con --html full (la página completa de markitdown, sin la garantía de este modo)."
 not_splittable = "Conviértelo, o guárdalo primero como PDF."
+cut_not_for_markdown = "Elige En N partes o Partes de unas N palabras."
 
 [stop]
 timed_out = "Superó el límite de tiempo ({limit})."
@@ -99,6 +105,7 @@ summary_pdf_only = "escribe el resumen solo en PDF, Resumen_ClearMD.pdf, sin el 
 images = "guarda las imágenes de cada documento en una carpeta junto a su Markdown (por defecto: el ajuste images, apagado)"
 split_parts = "divide cada PDF en N partes de páginas enteras (N ≥ 2), en ClearMD_Output/OutputSep, en vez de convertir"
 split_pages = "divide cada PDF cada N páginas (N ≥ 1), en ClearMD_Output/OutputSep, en vez de convertir"
+split_words = "divide cada PDF o Markdown en partes de unas N palabras (N de 500 a 1.000.000), para que quepan en una IA"
 keep = "al dividir: conserva las partes en PDF, su Markdown, o ambas (por defecto: el ajuste split_keep, ambas)"
 
 [cli]
@@ -235,6 +242,7 @@ pdf_text_decoded = "parte del texto usaba fuentes sin mapa de caracteres; ClearM
 pdf_text_unreadable = "algunos caracteres no se pudieron leer: aparecen como “�” o como letras que pueden estar mal"
 pdf_running_removed = "se omitieron los encabezados, pies y números de página que se repiten en las páginas"
 images_left_out = "imágenes que no se guardaron (un formato que los visores de Markdown no muestran, o por los límites): {items}"
+parts_over_size = "partes más grandes que el tamaño (una página o un párrafo que no se puede cortar): {items}"
 and_more = " y {count} más"
 
 [note.reason]
@@ -367,10 +375,11 @@ images = "Imágenes"
 images_help = "No incluirlas, o guardar las imágenes de cada documento en una carpeta junto a su Markdown (nombre_imagenes)."
 images_omit = "No incluir"
 images_folder = "En una carpeta"
-split = "Dividir un PDF"
+split = "Dividir un Documento"
 split_help = "En un número de partes, o cada tantas páginas; y qué guardar de las partes."
 split_parts = "En N partes"
 split_pages = "Cada N páginas"
+split_words = "Partes de unas N palabras"
 split_keep = "Guardar"
 
 [gui.help]
@@ -483,8 +492,8 @@ title = "¿Qué Quieres Hacer?"
 subtitle = "Todo pasa en tu computador: tus documentos nunca salen de él."
 convert = "Convertir a Markdown"
 convert_body = "PDF, Word, Excel, PowerPoint, HTML y más"
-split = "Dividir un PDF"
-split_body = "En partes de páginas enteras, como PDF, Markdown o ambos"
+split = "Dividir un Documento"
+split_body = "Un PDF o un Markdown, en partes de páginas o secciones enteras"
 files_note = "Las herramientas cambian archivos, nunca lo que hay dentro."
 step = "Inicio"
 
@@ -499,25 +508,29 @@ keep = "Guardar:"
 keep_pdf = "Las partes en PDF"
 keep_markdown = "Su Markdown"
 keep_both = "Ambas"
-note = "Cada parte conserva páginas enteras, en orden. Nada de lo que hay dentro cambia."
+note = "Cada parte conserva páginas o secciones enteras, en orden. Nada de lo que hay dentro cambia."
 by_parts = "en {count} partes"
 by_pages = "cada {count} páginas"
+words = "Partes de Unas"
+words_unit = "Palabras"
+by_words = "partes de unas {count} palabras"
+hint = "Aproximado: una IA lee una cantidad limitada de texto a la vez; si rechaza una parte, elige menos palabras."
 
 [tool.split]
 # Lo que dice Dividir en lugar de Convertir (feature 023): las mismas claves, sus palabras.
 "gui.page.choose_title" = "Elige Qué Dividir"
-"gui.page.choose_subtitle" = "Archivos PDF o carpetas: ClearMD los corta en partes de páginas enteras, en tu computador."
+"gui.page.choose_subtitle" = "Archivos PDF o Markdown, o carpetas: ClearMD los corta en partes, en tu computador."
 "gui.page.review_title" = "Revisa Antes de Dividir"
 "gui.page.convert_title" = "Dividir"
 "gui.page.convert_subtitle" = "Nada se escribe hasta que pulses Dividir; puedes cancelar cuando quieras."
 "gui.steps.convert" = "Dividir"
 "gui.main.convert" = "Dividir"
-"gui.main.start_files" = "Archivos PDF"
-"gui.main.start_folder" = "Los PDF que tenga dentro"
+"gui.main.start_files" = "Archivos PDF o Markdown"
+"gui.main.start_folder" = "Los PDF y Markdown que tenga dentro"
 "gui.plan.summary" = "Por dividir: {convert} · Omitidos: {skipped} · Ya existen: {existing}"
 "gui.plan.stat_convert" = "Por Dividir"
 "gui.plan.confirm" = "Dividir"
-"gui.plan.nothing" = "Aquí no hay nada para dividir. Vuelve y elige archivos PDF."
+"gui.plan.nothing" = "Aquí no hay nada para dividir. Vuelve y elige archivos PDF o Markdown."
 "gui.plan.ready" = "✓ Listo para dividir · {format}"
 "gui.plan.exists" = "↻ Sus partes ya existen · {format}: elige abajo"
 "gui.nav.nothing" = "Aquí no hay nada para dividir. Vuelve a Elegir."

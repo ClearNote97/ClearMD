@@ -49,7 +49,9 @@ class _Scanner:
         limits: Limits,
         on_progress: Callable[[ScanProgress], None] | None,
         cancel: CancelToken | None = None,
+        markdown: bool = False,
     ) -> None:
+        self.markdown = markdown
         self.recursive = recursive
         self.limits = limits
         self.on_progress = on_progress
@@ -104,7 +106,7 @@ class _Scanner:
     def _add_file(
         self, path: Path, origin: Path, relative: Path, size: int, *, input_is_dir: bool
     ) -> None:
-        reason = file_rule(path, size, self.limits)
+        reason = file_rule(path, size, self.limits, markdown=self.markdown)
         if reason is SkipReason.TOO_LARGE:
             self._skip(path, reason, origin, measured=size, limit=self.limits.max_file_size)
         elif reason is not None:
@@ -173,10 +175,17 @@ def scan(
     limits: Limits,
     on_progress: Callable[[ScanProgress], None] | None = None,
     cancel: CancelToken | None = None,
+    markdown: bool = False,
 ) -> ScanResult:
     """Files of every input, in a stable order: files of a folder before its subfolders. A
     cancelled scan stops at the next folder (the GUI's Cancel while analyzing)."""
-    scanner = _Scanner(recursive=recursive, limits=limits, on_progress=on_progress, cancel=cancel)
+    scanner = _Scanner(
+        recursive=recursive,
+        limits=limits,
+        on_progress=on_progress,
+        cancel=cancel,
+        markdown=markdown,
+    )
     for source in inputs:
         if scanner.cancelled():
             break

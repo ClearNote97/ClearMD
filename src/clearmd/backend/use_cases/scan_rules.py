@@ -31,11 +31,14 @@ def is_link_entry(entry: os.DirEntry[str]) -> bool:
     return entry.is_symlink() or bool(is_junction and is_junction())
 
 
-def file_rule(path: Path, size: int, limits: Limits) -> SkipReason | None:
+def file_rule(
+    path: Path, size: int, limits: Limits, *, markdown: bool = False
+) -> SkipReason | None:
+    """Why a file is left out, or ``None``. ``markdown``: Markdown is taken (Split, 024)."""
     if path.name.startswith(LOCK_FILE_PREFIX):
         return SkipReason.LOCK_FILE
     suffix = path.suffix.lower()
-    if suffix in MARKDOWN_EXTENSIONS:
+    if suffix in MARKDOWN_EXTENSIONS and not markdown:
         return SkipReason.ALREADY_MARKDOWN
     if suffix in ZIP_EXTENSIONS:
         return SkipReason.ZIP_ARCHIVE

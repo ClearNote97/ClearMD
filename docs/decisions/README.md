@@ -62,3 +62,4 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 | [0042](./0042-flet-gui-delivery.md) | The flet GUI, delivered as a folder with its own window program | accepted |
 | [0043](./0043-local-toolkit-for-ai.md) | A local toolkit that prepares documents for AI: Convert, Split, Merge | accepted |
 | [0044](./0044-split-by-whole-pages.md) | Split cuts a PDF by whole pages in the worker; Markdown part by part | accepted |
+| [0045](./0045-split-by-words.md) | Parts that fit an AI measured in words, approximately; Markdown cut at headings | accepted |

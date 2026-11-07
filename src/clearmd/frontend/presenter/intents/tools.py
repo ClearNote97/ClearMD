@@ -50,6 +50,7 @@ class Tools:
         parts: int | None = None,
         pages: int | None = None,
         keep: str | None = None,
+        words: int | None = None,
     ) -> None:
         """Split's cut, its sizes and what to keep: remembered (AC-10). A change drops the plan,
         which was made with the earlier cut."""
@@ -58,7 +59,11 @@ class Tools:
         for name, value in (("split_cut", cut), ("split_keep", keep)):
             if value is not None and value in CHOICES[name] and value != getattr(s.settings, name):
                 changes[name] = value
-        for name, number in (("split_parts", parts), ("split_pages", pages)):
+        for name, number in (
+            ("split_parts", parts),
+            ("split_pages", pages),
+            ("split_words", words),
+        ):
             low, high = RANGES[name]
             if number is not None and low <= number <= high:
                 if number != getattr(s.settings, name):

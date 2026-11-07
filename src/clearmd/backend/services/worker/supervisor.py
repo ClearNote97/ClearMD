@@ -24,10 +24,6 @@ from clearmd.backend.services.worker.processes import (
 from clearmd.backend.services.worker.protocol import (
     Converted,
     ConvertRequest,
-    Counted,
-    CountPagesRequest,
-    CutDone,
-    CutRequest,
     Detected,
     DetectRequest,
     Request,
@@ -73,23 +69,11 @@ class WorkerRunner:
             raise ConversionError(ErrorCode.CONVERSION_FAILED, f"unexpected reply {response!r}")
         return ConversionResult(response.markdown, response.notes, response.images)
 
-    def count_pages(self, item: PlannedConversion, cancel: CancelToken) -> int:
-        """A PDF's page count, read in the worker (Split, feature 023)."""
+    def job(self, request: Request, cancel: CancelToken) -> Response:
+        """Send one job to the worker (the page jobs of Split, ``PageRunner``)."""
         if cancel.is_set():
             raise Cancelled
-        response = self._request(CountPagesRequest(str(item.source)), cancel)
-        if not isinstance(response, Counted):
-            raise ConversionError(ErrorCode.CONVERSION_FAILED, f"unexpected reply {response!r}")
-        return response.pages
-
-    def cut(self, item: PlannedConversion, first: int, last: int, cancel: CancelToken) -> bytes:
-        """A new PDF with pages ``first``..``last`` of the item's source (feature 023)."""
-        if cancel.is_set():
-            raise Cancelled
-        response = self._request(CutRequest(str(item.source), first, last), cancel)
-        if not isinstance(response, CutDone):
-            raise ConversionError(ErrorCode.CONVERSION_FAILED, f"unexpected reply {response!r}")
-        return response.data
+        return self._request(request, cancel)
 
     def warm_up(self, cancel: CancelToken) -> None:
         """Start the worker now, so no file's time includes the start-up (AC-41)."""

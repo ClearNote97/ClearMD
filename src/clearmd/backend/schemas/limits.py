@@ -27,6 +27,7 @@ SECONDS_PER_MIB: Mapping[FormatId, float] = MappingProxyType(
         FormatId.EPUB: 0.15,
         FormatId.IPYNB: 0.03,
         FormatId.TXT: 0.03,
+        FormatId.MARKDOWN: 0.03,  # split only (024): read as text
         FormatId.TEX: 7.5,  # benchmark 002: 3.1 s/MiB at 1 MiB, 7.3 at 25 MiB (pylatexenc)
         FormatId.ODT: 0.35,  # benchmark 003: 0.30 s per MiB of content.xml, linear
     }
@@ -43,6 +44,7 @@ MEMORY_PER_MIB: Mapping[FormatId, float] = MappingProxyType(
         FormatId.HTML: 7.0,
         FormatId.PPTX: 6.7,
         FormatId.TXT: 3.9,
+        FormatId.MARKDOWN: 3.9,  # split only (024): read as text
         FormatId.IPYNB: 3.7,
         FormatId.EPUB: 3.2,
         FormatId.TEX: 90.0,  # benchmark 002: 40 plain, 88 with the author's macros

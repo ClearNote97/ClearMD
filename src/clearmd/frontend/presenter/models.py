@@ -55,6 +55,7 @@ class OutputChoice:
     split_parts: int = 2
     split_pages: int = 50
     split_keep: str = "both"  # or "pdf", "markdown"
+    split_words: int = 30_000  # parts of about N words (feature 024)
 
 
 class RowKind(StrEnum):

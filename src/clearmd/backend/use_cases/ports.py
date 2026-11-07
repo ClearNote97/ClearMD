@@ -39,6 +39,16 @@ class PageCutter(Protocol):
         set."""
         ...
 
+    def page_words(self, item: PlannedConversion, cancel: CancelToken) -> tuple[int, ...]:
+        """The words on each page (feature 024)."""
+        ...
+
+    def markdown_parts(
+        self, item: PlannedConversion, cut: str, size: int, cancel: CancelToken
+    ) -> tuple[tuple[str, ...], tuple[int, ...]]:
+        """A Markdown file's parts, and which ones are over the size (feature 024)."""
+        ...
+
 
 class Clock(Protocol):
     def now(self) -> datetime: ...

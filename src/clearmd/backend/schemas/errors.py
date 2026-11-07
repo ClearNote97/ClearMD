@@ -19,6 +19,8 @@ class ErrorCode(StrEnum):
     TIMED_OUT = "timed_out"
     OUT_OF_MEMORY = "out_of_memory"
     WORKER_CRASHED = "worker_crashed"
+    # Split by words: a PDF without any text (scanned) has nothing to measure (feature 024).
+    NOTHING_TO_MEASURE = "nothing_to_measure"
 
     @property
     def message_key(self) -> str:
@@ -48,7 +50,8 @@ class SkipReason(StrEnum):
     TOO_MUCH_MEMORY = "too_much_memory"
     TOO_MUCH_MEMORY_FOR_ARTICLE = "too_much_memory_for_article"  # HTML in article mode (004)
     TOO_DEEP = "too_deep"
-    NOT_SPLITTABLE = "not_splittable"  # Split takes PDF only, for now (feature 023)
+    NOT_SPLITTABLE = "not_splittable"  # Split takes PDF and Markdown (features 023, 024)
+    CUT_NOT_FOR_MARKDOWN = "cut_not_for_markdown"  # "every N pages" means nothing for Markdown
 
     @property
     def key(self) -> str:

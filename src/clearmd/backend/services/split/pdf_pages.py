@@ -15,7 +15,7 @@ _BROKEN = {2, 3}
 _LOCKED = {4, 5}
 
 
-def _open(path: Path) -> pdfium.PdfDocument:
+def open_pdf(path: Path) -> pdfium.PdfDocument:
     try:
         data = path.read_bytes()
     except OSError as error:
@@ -34,7 +34,7 @@ def _open(path: Path) -> pdfium.PdfDocument:
 
 
 def count_pages(path: Path) -> int:
-    document = _open(path)
+    document = open_pdf(path)
     try:
         return len(document)
     finally:
@@ -43,7 +43,7 @@ def count_pages(path: Path) -> int:
 
 def cut_pages(path: Path, first: int, last: int) -> bytes:
     """A new PDF with the pages ``first``..``last`` (1-based, inclusive) of ``path``."""
-    source = _open(path)
+    source = open_pdf(path)
     try:
         if not 1 <= first <= last <= len(source):
             raise ConversionError(

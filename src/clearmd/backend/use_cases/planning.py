@@ -35,7 +35,7 @@ from clearmd.backend.use_cases.paths import (
 from clearmd.backend.use_cases.ports import FormatDetector
 from clearmd.backend.use_cases.scanning import Candidate, scan
 from clearmd.backend.use_cases.scheduling import order_by_cost
-from clearmd.backend.use_cases.splitting import split_cost
+from clearmd.backend.use_cases.splitting import split_cost, split_detection, split_skip
 
 
 def _relative_dir(candidate: Candidate) -> Path:
@@ -73,7 +73,12 @@ def build_plan(
     and the parts' folder in OutputSep is the target."""
     unique_inputs = list(dict.fromkeys(inputs))  # "a.pdf a.pdf" is one file, converted once
     scanned = scan(
-        unique_inputs, recursive=recursive, limits=limits, on_progress=on_event, cancel=cancel
+        unique_inputs,
+        recursive=recursive,
+        limits=limits,
+        on_progress=on_event,
+        cancel=cancel,
+        markdown=split is not None,  # Split takes Markdown (024)
     )
     drafts: list[tuple[Candidate, Detection, Path, float, Strategy]] = []
     requests: list[NameRequest] = []
@@ -90,7 +95,8 @@ def build_plan(
         if cancel is not None and cancel.is_set():  # cancelled: what is left is not examined
             break
         root = output_root_for(candidate.input, is_dir=candidate.input_is_dir, override=output_root)
-        detection = detector.detect(candidate.path)
+        detection = split_detection(candidate.path) if split else None
+        detection = detection or detector.detect(candidate.path)
         if detection is None:
             skipped.append(
                 SkippedItem(
@@ -102,14 +108,10 @@ def build_plan(
             )
             continue
         if split is not None:
-            if detection.format is not FormatId.PDF:
+            reason = split_skip(detection, split)
+            if reason is not None:
                 skipped.append(
-                    SkippedItem(
-                        candidate.path,
-                        SkipReason.NOT_SPLITTABLE,
-                        output_root=root,
-                        **_found(candidate),
-                    )
+                    SkippedItem(candidate.path, reason, output_root=root, **_found(candidate))
                 )
                 continue
             cost = split_cost(limits, candidate.size, split)

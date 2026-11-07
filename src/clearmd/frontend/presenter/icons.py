@@ -7,7 +7,9 @@ from clearmd.backend.schemas.formats import EXTENSIONS, MARKDOWN_EXTENSIONS, For
 FOLDER = "folder"
 MARKDOWN = "markdown"
 UNKNOWN = "unknown"
-ICONS: frozenset[str] = frozenset({*(f.value for f in FormatId), FOLDER, MARKDOWN, UNKNOWN})
+ICONS: frozenset[str] = frozenset(
+    {*(f.value for f in FormatId if f is not FormatId.MARKDOWN), FOLDER, MARKDOWN, UNKNOWN}
+)
 
 
 def icon_for(path: Path, *, is_folder: bool) -> str:
@@ -23,4 +25,4 @@ def icon_for(path: Path, *, is_folder: bool) -> str:
 
 def icon_of_format(format_id: FormatId) -> str:
     """The icon of a detected format (a file without an extension still gets its format's icon)."""
-    return format_id.value
+    return MARKDOWN if format_id is FormatId.MARKDOWN else format_id.value

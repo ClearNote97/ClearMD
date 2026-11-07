@@ -140,7 +140,7 @@ def run_batch(
             cancel=cancel or CancelToken(),
             clock=composition.build_clock(),
             startup_seconds=composition.default_limits().worker_startup_seconds,
-            cutter=runner,
+            cutter=composition.build_page_runner(runner),
         )
     finally:
         runner.close()

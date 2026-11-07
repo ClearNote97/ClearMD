@@ -41,7 +41,7 @@ def run(argv: Sequence[str] | None) -> int:
     catalog = load_catalog(resolve_language(requested_language(argv), settings.language))
     parser = build_parser(catalog)
     args = parser.parse_args(argv)
-    if args.keep and not (args.split_parts or args.split_pages):
+    if args.keep and not (args.split_parts or args.split_pages or args.split_words):
         parser.error(catalog.text("cli.keep_needs_split"))
     split = split_spec(args, settings)
     err = sys.stderr
@@ -112,6 +112,8 @@ def split_spec(args: argparse.Namespace, settings: Settings) -> SplitSpec | None
         return SplitSpec(Cut.PARTS, args.split_parts, keep)
     if args.split_pages:
         return SplitSpec(Cut.PAGES, args.split_pages, keep)
+    if args.split_words:
+        return SplitSpec(Cut.WORDS, args.split_words, keep)
     return None
 
 

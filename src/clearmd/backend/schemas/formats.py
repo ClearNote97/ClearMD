@@ -19,6 +19,7 @@ class FormatId(StrEnum):
     TXT = "txt"
     TEX = "tex"  # ClearMD's own converter (feature 002)
     ODT = "odt"  # ClearMD's own converter, standard library only (feature 003)
+    MARKDOWN = "md"  # only split, never converted (feature 024)
 
 
 class Strategy(StrEnum):

@@ -33,6 +33,8 @@ class NoteKind(StrEnum):
     PDF_TEXT_UNREADABLE = "pdf_text_unreadable"
     PDF_RUNNING_REMOVED = "pdf_running_removed"
     IMAGES_LEFT_OUT = "images_left_out"
+    # Split by words (024): parts larger than the size, a page or a paragraph that cannot be cut.
+    PARTS_OVER_SIZE = "parts_over_size"
 
     @property
     def key(self) -> str:

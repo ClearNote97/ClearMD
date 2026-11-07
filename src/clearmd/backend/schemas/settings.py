@@ -22,9 +22,10 @@ class Settings:
     # The folder the user last picked for the results; empty: next to the originals (ADR-0016/0026).
     last_output_folder: str = ""
     # Split (feature 023): the cut, its two sizes, and what is kept.
-    split_cut: str = "parts"  # or "pages"
+    split_cut: str = "parts"  # or "pages", or "words" (feature 024)
     split_parts: int = 2
     split_pages: int = 50
+    split_words: int = 30_000  # about 40,000 tokens in English, more in Spanish (ADR-0045)
     split_keep: str = "both"  # or "pdf", "markdown"
 
 
@@ -37,14 +38,14 @@ CHOICES: Mapping[str, frozenset[str]] = MappingProxyType(
         "html_strategy": frozenset({"full", "article"}),
         "summary_format": frozenset({"markdown", "markdown_pdf", "pdf"}),
         "images": frozenset({"omit", "folder"}),
-        "split_cut": frozenset({"parts", "pages"}),
+        "split_cut": frozenset({"parts", "pages", "words"}),
         "split_keep": frozenset({"pdf", "markdown", "both"}),
     }
 )
 
 # The whole-number settings and their bounds (feature 023: as SplitSpec accepts them).
 RANGES: Mapping[str, tuple[int, int]] = MappingProxyType(
-    {"split_parts": (2, 10_000), "split_pages": (1, 10_000)}
+    {"split_parts": (2, 10_000), "split_pages": (1, 10_000), "split_words": (500, 1_000_000)}
 )
 
 

@@ -23,9 +23,11 @@ from clearmd.backend.services.worker.protocol import (
     DetectRequest,
     Failed,
     Job,
+    MarkdownCutRequest,
     Ready,
     Request,
     Response,
+    WordsRequest,
 )
 
 
@@ -63,7 +65,7 @@ def apply_memory_cap(limit: int) -> None:
 
 
 def handle(registry: _Registry, request: Job, max_result_chars: int) -> Response:
-    if isinstance(request, CountPagesRequest | CutRequest):  # Split (feature 023)
+    if isinstance(request, CountPagesRequest | CutRequest | WordsRequest | MarkdownCutRequest):
         return handle_pages(request, max_result_chars)
     if isinstance(request, DetectRequest):
         try:

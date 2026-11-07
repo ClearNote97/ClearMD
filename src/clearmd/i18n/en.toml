@@ -36,6 +36,10 @@ action = "Try splitting it into smaller files."
 message = "This file needs more memory than ClearMD allows."
 action = "Try splitting it into smaller files, or close other programs."
 
+[error.nothing_to_measure]
+message = "This PDF has no text to measure: its pages are probably scanned images."
+action = "Split it every N pages instead."
+
 [error.worker_crashed]
 message = "The converter stopped unexpectedly on this file."
 action = "Try again; if it happens again, the file may be damaged."
@@ -57,7 +61,8 @@ unreadable = "cannot be read"
 too_deep = "folders nested too deeply ({measured} levels; limit {limit})"
 too_much_memory = "needs about {measured} of memory; limit {limit}"
 too_much_memory_for_article = "needs about {measured} of memory in article mode; limit {limit}"
-not_splittable = "not a PDF (Split takes PDF files)"
+not_splittable = "not a PDF or Markdown file (Split takes those)"
+cut_not_for_markdown = "Markdown has no pages to cut every N"
 
 [skip_action]
 output_folder = "ClearMD does not convert its own results."
@@ -77,6 +82,7 @@ too_deep = "Move it to a shallower folder."
 too_much_memory = "Split it into smaller files."
 too_much_memory_for_article = "Convert it with --html full (markitdown's whole page, without this mode's guarantee)."
 not_splittable = "Convert it instead, or save it as PDF first."
+cut_not_for_markdown = "Choose Into N parts or Parts of about N words."
 
 [stop]
 timed_out = "Exceeded the time limit ({limit})."
@@ -99,6 +105,7 @@ summary_pdf_only = "write the summary only as a PDF, Resumen_ClearMD.pdf, with n
 images = "keep each document's images in a folder next to its Markdown (default: the images setting, off)"
 split_parts = "split each PDF into N parts of whole pages (N ≥ 2), into ClearMD_Output/OutputSep, instead of converting"
 split_pages = "split each PDF every N pages (N ≥ 1), into ClearMD_Output/OutputSep, instead of converting"
+split_words = "split each PDF or Markdown file into parts of about N words (N from 500 to 1,000,000), to fit an AI"
 keep = "with a split: keep the PDF parts, their Markdown, or both (default: the split_keep setting, both)"
 
 [cli]
@@ -235,6 +242,7 @@ pdf_text_decoded = "some text used fonts without a character map; ClearMD read i
 pdf_text_unreadable = "some characters could not be read: they are shown as “�”, or as letters that may be wrong"
 pdf_running_removed = "headers, footers and page numbers repeated on the pages were left out"
 images_left_out = "images left out (a format Markdown viewers do not show, or past the limits): {items}"
+parts_over_size = "parts larger than the size (a page or a paragraph that cannot be cut): {items}"
 and_more = " and {count} more"
 
 [note.reason]
@@ -367,10 +375,11 @@ images = "Images"
 images_help = "Leave them out, or keep each document's images in a folder next to its Markdown (name_images)."
 images_omit = "Leave out"
 images_folder = "In a folder"
-split = "Split a PDF"
+split = "Split a Document"
 split_help = "Into a number of parts, or every so many pages; and what to keep of the parts."
 split_parts = "Into N parts"
 split_pages = "Every N pages"
+split_words = "Parts of about N words"
 split_keep = "Keep"
 
 [gui.help]
@@ -483,8 +492,8 @@ title = "What Do You Want to Do?"
 subtitle = "Everything happens on your computer: your documents never leave it."
 convert = "Convert to Markdown"
 convert_body = "PDF, Word, Excel, PowerPoint, HTML and more"
-split = "Split a PDF"
-split_body = "Into parts of whole pages, as PDF, Markdown or both"
+split = "Split a Document"
+split_body = "A PDF or Markdown file, into parts of whole pages or sections"
 files_note = "The tools change files, never what is inside them."
 step = "Home"
 
@@ -499,25 +508,29 @@ keep = "Keep:"
 keep_pdf = "The parts as PDF"
 keep_markdown = "Their Markdown"
 keep_both = "Both"
-note = "Each part keeps whole pages, in order. Nothing inside them changes."
+note = "Each part keeps whole pages or sections, in order. Nothing inside them changes."
 by_parts = "into {count} parts"
 by_pages = "every {count} pages"
+words = "Parts of About"
+words_unit = "Words"
+by_words = "parts of about {count} words"
+hint = "About: an AI reads a limited amount of text at once; if it refuses a part, choose fewer words."
 
 [tool.split]
 # What Split says in place of Convert (feature 023): the same keys, its own words.
 "gui.page.choose_title" = "Choose What to Split"
-"gui.page.choose_subtitle" = "PDF files or folders: ClearMD cuts them into parts of whole pages, on your computer."
+"gui.page.choose_subtitle" = "PDF or Markdown files, or folders: ClearMD cuts them into parts, on your computer."
 "gui.page.review_title" = "Review Before Splitting"
 "gui.page.convert_title" = "Split"
 "gui.page.convert_subtitle" = "Nothing is written until you press Split; you can cancel at any time."
 "gui.steps.convert" = "Split"
 "gui.main.convert" = "Split"
-"gui.main.start_files" = "PDF files"
-"gui.main.start_folder" = "The PDFs inside it"
+"gui.main.start_files" = "PDF or Markdown files"
+"gui.main.start_folder" = "The PDFs and Markdown files inside it"
 "gui.plan.summary" = "To split: {convert} · Skipped: {skipped} · Already exist: {existing}"
 "gui.plan.stat_convert" = "To Split"
 "gui.plan.confirm" = "Split"
-"gui.plan.nothing" = "There is nothing to split here. Go back and choose PDF files."
+"gui.plan.nothing" = "There is nothing to split here. Go back and choose PDF or Markdown files."
 "gui.plan.ready" = "✓ Ready to split · {format}"
 "gui.plan.exists" = "↻ Its parts already exist · {format}: choose below"
 "gui.nav.nothing" = "Nothing here can be split. Go back to Choose."

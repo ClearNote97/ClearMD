@@ -10,11 +10,17 @@ import re
 from dataclasses import replace
 from pathlib import Path
 
-from clearmd.backend.schemas.errors import ConversionError, ErrorCode
-from clearmd.backend.schemas.formats import FormatId, Strategy
+from clearmd.backend.schemas.errors import ConversionError, ErrorCode, SkipReason
+from clearmd.backend.schemas.formats import MARKDOWN_EXTENSIONS, FormatId, Strategy
 from clearmd.backend.schemas.limits import Limits
-from clearmd.backend.schemas.models import ConversionOutcome, OutcomeStatus, PlannedConversion
-from clearmd.backend.schemas.notes import ConversionNote, NoteItem, NoteKind
+from clearmd.backend.schemas.models import (
+    ConversionOutcome,
+    Detection,
+    DetectionMethod,
+    OutcomeStatus,
+    PlannedConversion,
+)
+from clearmd.backend.schemas.notes import ConversionNote
 from clearmd.backend.schemas.split import Cut, SplitSpec
 from clearmd.backend.use_cases.cancel import CancelToken
 from clearmd.backend.use_cases.output_files import (
@@ -23,8 +29,23 @@ from clearmd.backend.use_cases.output_files import (
     remove_regular_file,
 )
 from clearmd.backend.use_cases.ports import ConversionRunner, PageCutter
+from clearmd.backend.use_cases.split_notes import merged, over_size
 
 STOPPING_CODES = frozenset({ErrorCode.TIMED_OUT, ErrorCode.OUT_OF_MEMORY})
+
+
+def split_detection(path: Path) -> Detection | None:
+    """Markdown, by its extension: it is only ever split, never converted (feature 024)."""
+    if path.suffix.lower() in MARKDOWN_EXTENSIONS:
+        return Detection(FormatId.MARKDOWN, DetectionMethod.EXTENSION)
+    return None
+
+
+def split_skip(detection: Detection, split: SplitSpec) -> SkipReason | None:
+    """Why a file is left out of Split: not a PDF or Markdown; Markdown with "every N pages"."""
+    if detection.format is FormatId.MARKDOWN:
+        return SkipReason.CUT_NOT_FOR_MARKDOWN if split.cut is Cut.PAGES else None
+    return None if detection.format is FormatId.PDF else SkipReason.NOT_SPLITTABLE
 
 
 def split_cost(limits: Limits, size: int, split: SplitSpec) -> float:
@@ -78,24 +99,73 @@ def _remove_earlier_parts(item: PlannedConversion, spec: SplitSpec) -> None:
         remove_regular_file(path, inside=item.output_root)
 
 
-def _shifted(pages: str, shift: int) -> str:
-    """``"1–3"`` of a part that starts at the PDF's page 11: ``"11–13"``."""
-    return re.sub(r"\d+", lambda number: str(int(number[0]) + shift), pages)
+def word_ranges(
+    words: tuple[int, ...], size: int
+) -> tuple[tuple[tuple[int, int], ...], tuple[int, ...]]:
+    """Whole pages, in order, up to ``size`` words a part (feature 024); a page larger than
+    ``size`` is a part alone. The ranges, and which parts are over the size."""
+    ranges: list[tuple[int, int]] = []
+    over: list[int] = []
+    total = 0
+    for page, count in enumerate(words, start=1):
+        if ranges and total + count <= size:
+            ranges[-1] = (ranges[-1][0], page)
+            total += count
+        else:
+            ranges.append((page, page))
+            total = count
+        if total > size and len(ranges) not in over:
+            over.append(len(ranges))
+    return tuple(ranges), tuple(over)
 
 
-def _merged(notes: list[tuple[int, ConversionNote]]) -> tuple[ConversionNote, ...]:
-    """The parts' notes as one file's: a note per kind, and pages counted in the whole PDF (a
-    part's page 1 is the PDF's page ``first``)."""
-    items: dict[NoteKind, list[NoteItem]] = {}
-    for first, note in notes:
-        shift = first - 1
-        found = items.setdefault(note.kind, [])
-        for item in note.items:
-            if note.kind is NoteKind.PDF_PAGES_WITHOUT_TEXT:
-                item = NoteItem(_shifted(item.subject, shift))
-            if item not in found:
-                found.append(item)
-    return tuple(ConversionNote(kind, tuple(found)) for kind, found in items.items())
+def _pdf(
+    item: PlannedConversion,
+    spec: SplitSpec,
+    runner: ConversionRunner,
+    cutter: PageCutter,
+    cancel: CancelToken,
+    where: list[str],
+) -> tuple[int, tuple[ConversionNote, ...]]:
+    over: tuple[int, ...] = ()
+    if spec.cut is Cut.WORDS:
+        words = cutter.page_words(item, cancel)
+        if not any(words):  # scanned: never one silent part (ADR-0045)
+            raise ConversionError(ErrorCode.NOTHING_TO_MEASURE, f"{len(words)} pages, no text")
+        ranges, over = word_ranges(words, spec.size)
+    else:
+        ranges = page_ranges(cutter.count_pages(item, cancel), spec.cut, spec.size)
+    if not ranges:
+        raise ConversionError(ErrorCode.CORRUPT_FILE, "the PDF has no pages")
+    _remove_earlier_parts(item, spec)
+    notes: list[tuple[int, ConversionNote]] = []
+    for index, (first, last) in enumerate(ranges, start=1):
+        name = part_name(spec, item.target.name, index, len(ranges))
+        where[0] = f"part {index} of {len(ranges)} (pages {first}-{last}): "
+        pdf = item.target / f"{name}.pdf"
+        atomic_write_bytes(pdf, cutter.cut(item, first, last, cancel), inside=item.output_root)
+        if spec.keep.markdown:
+            part = replace(item, source=pdf, target=item.target / f"{name}.md", split=None)
+            result = runner.convert(part, cancel)
+            atomic_write(part.target, result.markdown, inside=item.output_root)
+            notes.extend((first, note) for note in result.notes)
+            if not spec.keep.original:
+                remove_regular_file(pdf, inside=item.output_root)
+    return len(ranges), merged(notes) + over_size(over)
+
+
+def _markdown(
+    item: PlannedConversion, spec: SplitSpec, cutter: PageCutter, cancel: CancelToken
+) -> tuple[int, tuple[ConversionNote, ...]]:
+    """A Markdown file's parts, cut at its headings in the worker; always Markdown (024)."""
+    parts, over = cutter.markdown_parts(item, spec.cut.value, spec.size, cancel)
+    if not parts:
+        raise ConversionError(ErrorCode.NOTHING_TO_MEASURE, "an empty Markdown file")
+    _remove_earlier_parts(item, spec)
+    for index, text in enumerate(parts, start=1):
+        name = part_name(spec, item.target.name, index, len(parts))
+        atomic_write(item.target / f"{name}.md", text, inside=item.output_root)
+    return len(parts), over_size(over)
 
 
 def split_one(
@@ -104,30 +174,18 @@ def split_one(
     """Cut ``item.source`` and write its parts into ``item.target``; ``Cancelled`` propagates."""
     spec = item.split
     assert spec is not None
-    current = ""
+    where = [""]
     try:
-        ranges = page_ranges(cutter.count_pages(item, cancel), spec.cut, spec.size)
-        if not ranges:
-            raise ConversionError(ErrorCode.CORRUPT_FILE, "the PDF has no pages")
-        _remove_earlier_parts(item, spec)
-        notes: list[tuple[int, ConversionNote]] = []
-        for index, (first, last) in enumerate(ranges, start=1):
-            name = part_name(spec, item.target.name, index, len(ranges))
-            current = f"part {index} of {len(ranges)} (pages {first}-{last}): "
-            pdf = item.target / f"{name}.pdf"
-            atomic_write_bytes(pdf, cutter.cut(item, first, last, cancel), inside=item.output_root)
-            if spec.keep.markdown:
-                part = replace(item, source=pdf, target=item.target / f"{name}.md", split=None)
-                result = runner.convert(part, cancel)
-                atomic_write(part.target, result.markdown, inside=item.output_root)
-                notes.extend((first, note) for note in result.notes)
-                if not spec.keep.original:
-                    remove_regular_file(pdf, inside=item.output_root)
+        if item.detection.format is FormatId.MARKDOWN:
+            count, notes = _markdown(item, spec, cutter, cancel)
+        else:
+            count, notes = _pdf(item, spec, runner, cutter, cancel, where)
     except ConversionError as error:
         status = OutcomeStatus.STOPPED if error.code in STOPPING_CODES else OutcomeStatus.FAILED
-        detail = current + error.detail
-        return ConversionOutcome(item, status, error.code, detail, limit=error.limit)
+        return ConversionOutcome(
+            item, status, error.code, where[0] + error.detail, limit=error.limit
+        )
     except OSError as error:
-        detail = f"{current}{type(error).__name__}: {error}"
+        detail = f"{where[0]}{type(error).__name__}: {error}"
         return ConversionOutcome(item, OutcomeStatus.FAILED, ErrorCode.WRITE_FAILED, detail)
-    return ConversionOutcome(item, OutcomeStatus.CONVERTED, notes=_merged(notes), parts=len(ranges))
+    return ConversionOutcome(item, OutcomeStatus.CONVERTED, notes=notes, parts=count)
