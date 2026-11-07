@@ -13,6 +13,16 @@ class AppState(StrEnum):
     CANCELLED = "cancelled"
 
 
+class Tool(StrEnum):
+    """What the batch does (ADR-0043): convert to Markdown, or split PDFs (feature 023)."""
+
+    CONVERT = "convert"
+    SPLIT = "split"
+
+
+HOME = 0  # the start screen: the page before step 1 (feature 023)
+
+
 class Action(StrEnum):
     """What a view can offer; each state enables some of them."""
 

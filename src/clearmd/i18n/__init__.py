@@ -43,6 +43,19 @@ class Catalog:
     def keys(self) -> set[str]:
         return set(self._messages)
 
+    def for_tool(self, tool: str) -> "Catalog":
+        """This catalog as a tool speaks (feature 023): Split's own words, under
+        ``tool.split.<key>``, in place of Convert's; Convert is the catalog itself."""
+        prefix = f"tool.{tool}."
+        overrides = {
+            key.removeprefix(prefix): text
+            for key, text in self._messages.items()
+            if key.startswith(prefix)
+        }
+        if not overrides:
+            return self
+        return Catalog(self.language, {**self._messages, **overrides})
+
     def text_template(self, key: str) -> str:
         """The raw message, placeholders unfilled."""
         return self._messages[key]

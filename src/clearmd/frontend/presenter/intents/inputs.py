@@ -12,6 +12,7 @@ from clearmd.frontend.presenter.intents.reset import editable
 from clearmd.frontend.presenter.ports import Backend
 from clearmd.frontend.presenter.screens.choose import key
 from clearmd.frontend.presenter.session import Session
+from clearmd.frontend.presenter.state import HOME
 
 
 class Inputs:
@@ -32,6 +33,8 @@ class Inputs:
         if not new or not editable(s, self._display):  # nothing new: the plan stays (C7-4)
             return
         s.inputs.extend(new)
+        if s.page == HOME:  # dropped on the start screen: they go to step 1 (feature 023)
+            s.page = 1
         self._display.show_inputs()
         self._display.set_state(s.state)
 

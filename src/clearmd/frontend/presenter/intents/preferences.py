@@ -59,7 +59,7 @@ class Preferences:
         s = self._session
         view = self._display.view
         s.settings = settings
-        s.catalog = load_catalog(resolve_language(None, settings.language))
+        s.catalog = load_catalog(resolve_language(None, settings.language)).for_tool(s.tool)
         view.apply_language(s.catalog)
         theme = settings.theme if settings.theme != "system" else self._detect_theme()
         theme = theme if theme in {"light", "dark"} else "light"

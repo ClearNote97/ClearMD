@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 
-from clearmd.frontend.presenter.state import Action, AppState
+from clearmd.frontend.presenter.state import Action, AppState, Tool
 
 
 @dataclass(frozen=True)
@@ -22,8 +22,9 @@ class StateView:
     label: str
     enabled: frozenset[Action]
     step: int  # 1 Choose, 2 Review, 3 Convert, 4 Results: where the batch is
-    page: int = 1  # the step on screen (ADR-0029: every step can be opened)
+    page: int = 1  # the step on screen (ADR-0029: every step can be opened); 0: Home (023)
     primary: Primary = Primary("", False)
+    tool: Tool = Tool.CONVERT  # what the batch does (feature 023)
 
 
 @dataclass(frozen=True)
@@ -48,6 +49,12 @@ class OutputChoice:
     label: str
     summary_format: str = "markdown"  # or "markdown_pdf" (ADR-0031), or "pdf" (020)
     images: str = "omit"  # or "folder" (ADR-0033)
+    # Split (feature 023): its choices are shown in place of the images.
+    tool: Tool = Tool.CONVERT
+    split_cut: str = "parts"  # or "pages"
+    split_parts: int = 2
+    split_pages: int = 50
+    split_keep: str = "both"  # or "pdf", "markdown"
 
 
 class RowKind(StrEnum):

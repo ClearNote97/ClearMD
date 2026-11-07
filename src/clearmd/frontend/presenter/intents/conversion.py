@@ -13,7 +13,7 @@ from clearmd.frontend.presenter.intents.reset import unexpected
 from clearmd.frontend.presenter.ports import Backend
 from clearmd.frontend.presenter.screens.results import result_view
 from clearmd.frontend.presenter.session import Session
-from clearmd.frontend.presenter.state import AppState
+from clearmd.frontend.presenter.state import AppState, Tool
 from clearmd.i18n import printable
 
 TICK_MILLISECONDS = 1000
@@ -51,7 +51,7 @@ class Conversion:
         language = s.catalog.language  # read here: the worker never touches the presenter
         summary_pdf = s.settings.summary_format in {"markdown_pdf", "pdf"}
         summary_markdown = s.settings.summary_format != "pdf"  # "pdf": the PDF alone (020)
-        images = s.settings.images == "folder"
+        images = s.settings.images == "folder" and s.tool is Tool.CONVERT  # Split: none (023)
         s.done = 0
         s.current = None
         s.page = 3  # the progress is shown on Convert (ADR-0029)

@@ -7,7 +7,7 @@ from pathlib import Path
 from clearmd.backend.schemas.models import BatchPlan, BatchReport
 from clearmd.frontend.presenter.models import Primary
 from clearmd.frontend.presenter.screens.results import result_folders
-from clearmd.frontend.presenter.state import WORKING, AppState
+from clearmd.frontend.presenter.state import HOME, WORKING, AppState
 from clearmd.i18n import Catalog
 
 
@@ -35,6 +35,8 @@ def primary_of(
             return text("gui.nav.need_inputs_first")
         return text("gui.nav.need_plan")
 
+    if page == HOME:  # the start screen has its tiles, no primary action (feature 023)
+        return Primary("", False)
     if page == 1:
         if state in WORKING:
             return Primary(text("gui.nav.next"), False, why())

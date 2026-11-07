@@ -22,6 +22,7 @@ def test_every_page_can_be_opened_at_any_time_and_only_the_page_changes() -> Non
 
 def test_choose_says_next_and_why_it_is_disabled_without_inputs() -> None:
     presenter, view, _, _ = make()
+    presenter.go_to(1)  # from the start screen (feature 023)
     primary = state(view).primary
     assert (primary.label, primary.enabled) == ("Next", False)
     assert primary.hint == "Add at least one file or folder."

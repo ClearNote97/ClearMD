@@ -20,9 +20,10 @@ from clearmd.frontend.presenter.intents.inputs import Inputs
 from clearmd.frontend.presenter.intents.preferences import Preferences
 from clearmd.frontend.presenter.intents.reset import editable
 from clearmd.frontend.presenter.intents.results import Results
+from clearmd.frontend.presenter.intents.tools import Tools
 from clearmd.frontend.presenter.ports import ApiBackend, Backend, View
 from clearmd.frontend.presenter.session import Session
-from clearmd.frontend.presenter.state import AppState
+from clearmd.frontend.presenter.state import HOME, AppState, Tool
 from clearmd.frontend.presenter.system_theme import detect_system_theme
 from clearmd.i18n import Catalog
 
@@ -50,6 +51,7 @@ class Presenter:
         self._preferences = Preferences(
             session, display, self._backend, detect_theme or detect_system_theme
         )
+        self._tools = Tools(session, display, self._backend)
 
     @property
     def state(self) -> AppState:
@@ -58,6 +60,10 @@ class Presenter:
     @property
     def page(self) -> int:
         return self._session.page
+
+    @property
+    def tool(self) -> Tool:
+        return self._session.tool
 
     @property
     def settings(self) -> Settings:
@@ -102,9 +108,26 @@ class Presenter:
     def choose_output_folder(self, folder: Path) -> None:
         self._inputs.choose_output_folder(folder)
 
+    def choose_tool(self, tool: Tool) -> None:
+        """A tile of the start screen: step 1 of that tool (feature 023)."""
+        self._tools.choose_tool(tool)
+
+    def choose_split(
+        self,
+        *,
+        cut: str | None = None,
+        parts: int | None = None,
+        pages: int | None = None,
+        keep: str | None = None,
+    ) -> None:
+        """Split's choices on step 1, remembered (feature 023)."""
+        self._tools.choose_split(cut=cut, parts=parts, pages=pages, keep=keep)
+
     def go_to(self, page: int) -> None:
-        """Show a step; only what is on screen changes."""
-        if 1 <= page <= 4:
+        """Show a step (0: Home, the start screen); only what is on screen changes."""
+        if page == HOME:
+            self._tools.go_home()
+        elif 1 <= page <= 4:
             self._session.page = page
             self._display.set_state(self._session.state)
 

@@ -3,7 +3,7 @@ confirms. The scan's count, its cancel and the plan's arrival."""
 
 from functools import partial
 
-from clearmd.backend.api import CancelToken, Strategy
+from clearmd.backend.api import CancelToken, Cut, Keep, SplitSpec, Strategy
 from clearmd.backend.schemas.events import BatchEvent, ScanProgress
 from clearmd.backend.schemas.models import BatchPlan
 from clearmd.frontend.presenter.background import Background
@@ -12,9 +12,19 @@ from clearmd.frontend.presenter.intents.reset import unexpected
 from clearmd.frontend.presenter.ports import Backend
 from clearmd.frontend.presenter.screens.review import plan_view
 from clearmd.frontend.presenter.session import Session
-from clearmd.frontend.presenter.state import AppState
+from clearmd.frontend.presenter.state import AppState, Tool
 
 SCAN_MS = 100  # the scan count is shown at most this often (code review of 005)
+
+
+def split_spec(s: Session) -> SplitSpec | None:
+    """Split's cut and what to keep, from the settings; ``None`` for Convert (feature 023)."""
+    if s.tool is not Tool.SPLIT:
+        return None
+    settings = s.settings
+    cut = Cut(settings.split_cut)
+    size = settings.split_parts if cut is Cut.PARTS else settings.split_pages
+    return SplitSpec(cut, size, Keep(settings.split_keep))
 
 
 class Analysis:
@@ -38,6 +48,7 @@ class Analysis:
             "recursive": s.settings.recursive,
             "output_root": s.output_folder,
             "html_strategy": Strategy(s.settings.html_strategy),
+            "split": split_spec(s),
         }
         s.cancel = token = CancelToken()
         s.scan_count = None

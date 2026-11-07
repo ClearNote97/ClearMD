@@ -5,7 +5,7 @@ from pathlib import Path
 from clearmd.backend.api import CancelToken
 from clearmd.backend.schemas.models import BatchPlan, BatchReport
 from clearmd.backend.schemas.settings import Settings
-from clearmd.frontend.presenter.state import AppState
+from clearmd.frontend.presenter.state import HOME, AppState, Tool
 from clearmd.i18n import Catalog, load_catalog
 
 
@@ -27,5 +27,6 @@ class Session:
         self.theme: str | None = None
         self.shutting_down = False  # the window is closing: nothing is opened any more
         self.scan_count: tuple[int, int] | None = None  # (generation, latest count), SCAN_MS
-        self.page = 1  # the step on screen (ADR-0029)
+        self.page = HOME  # the step on screen (ADR-0029); the start screen first (feature 023)
+        self.tool = Tool.CONVERT
         self.plan_id = 0  # each plan's own number (security audit of 007, F-2)

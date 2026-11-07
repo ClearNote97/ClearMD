@@ -1,6 +1,6 @@
 """Review: the plan's rows, summary and figures."""
 
-from clearmd.backend.api import Strategy, skip_action, skip_reason
+from clearmd.backend.api import Cut, Strategy, skip_action, skip_reason
 from clearmd.backend.schemas.models import BatchPlan, PlannedConversion
 from clearmd.frontend.presenter.icons import icon_for, icon_of_format
 from clearmd.frontend.presenter.models import PlanRow, PlanView, RowKind, Stat, Tone
@@ -15,7 +15,7 @@ def plan_view(catalog: Catalog, plan: BatchPlan, on_existing_output: str, plan_i
         icon = icon_of_format(item.detection.format)
         name, location = shown(item.source)
         key = "gui.plan.exists" if item.exists else "gui.plan.ready"
-        detail = catalog.text(key, format=format_of(catalog, item))
+        detail = catalog.text(key, format=format_of(catalog, item) + _cut(catalog, item))
         rows.append(PlanRow(kind, name, location, detail, icon))
     for skipped in plan.skipped:
         reason = skip_reason(catalog, skipped)
@@ -47,6 +47,14 @@ def plan_view(catalog: Catalog, plan: BatchPlan, on_existing_output: str, plan_i
 def stat(catalog: Catalog, key: str, value: int, tone: Tone = Tone.WARNING) -> Stat:
     """A figure; a warning or a problem only when it is not zero."""
     return Stat(catalog.text(key), value, tone if value or tone is Tone.ACCENT else Tone.NEUTRAL)
+
+
+def _cut(catalog: Catalog, item: PlannedConversion) -> str:
+    """How a file will be split (feature 023): " · into 4 parts"; nothing for Convert."""
+    if item.split is None:
+        return ""
+    key = "gui.split.by_parts" if item.split.cut is Cut.PARTS else "gui.split.by_pages"
+    return " · " + catalog.text(key, count=item.split.size)
 
 
 def format_of(catalog: Catalog, item: PlannedConversion) -> str:

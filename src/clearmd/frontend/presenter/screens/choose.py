@@ -7,6 +7,7 @@ from pathlib import Path
 from clearmd.backend.schemas.settings import Settings
 from clearmd.frontend.presenter.icons import icon_for
 from clearmd.frontend.presenter.models import InputRow, OutputChoice, OutputMode
+from clearmd.frontend.presenter.state import Tool
 from clearmd.i18n import Catalog, printable
 
 
@@ -21,28 +22,28 @@ def input_rows(inputs: Sequence[Path]) -> tuple[InputRow, ...]:
     return tuple(rows)
 
 
-def output_choice(catalog: Catalog, output_folder: Path | None, settings: Settings) -> OutputChoice:
+def output_choice(
+    catalog: Catalog, output_folder: Path | None, settings: Settings, tool: Tool = Tool.CONVERT
+) -> OutputChoice:
     remembered = settings.last_output_folder
     suggestion = Path(remembered) if remembered else None
     if output_folder is None:
-        label = catalog.text("gui.output.next_to_detail")
-        return OutputChoice(
-            OutputMode.NEXT_TO,
-            None,
-            suggestion,
-            label,
-            settings.summary_format,
-            settings.images,
-        )
-    path = printable(str(output_folder))
-    label = catalog.text("gui.output.folder", path=path)
+        mode, label = OutputMode.NEXT_TO, catalog.text("gui.output.next_to_detail")
+    else:
+        mode = OutputMode.FOLDER
+        label = catalog.text("gui.output.folder", path=printable(str(output_folder)))
     return OutputChoice(
-        OutputMode.FOLDER,
+        mode,
         output_folder,
         suggestion,
         label,
         settings.summary_format,
         settings.images,
+        tool,
+        settings.split_cut,
+        settings.split_parts,
+        settings.split_pages,
+        settings.split_keep,
     )
 
 

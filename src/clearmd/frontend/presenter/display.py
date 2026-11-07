@@ -33,7 +33,7 @@ class Display:
             has_results=bool(result_folders(s.report)),
         )
         label = s.catalog.text(f"gui.state.{state.value}")
-        view = StateView(state, label, enabled, step_of(state), s.page, self.primary())
+        view = StateView(state, label, enabled, step_of(state), s.page, self.primary(), s.tool)
         self.view.show_state(view)
 
     def show_inputs(self) -> None:
@@ -41,7 +41,8 @@ class Display:
 
     def show_output(self) -> None:
         s = self._session
-        self.view.show_output_choice(output_choice(s.catalog, s.output_folder, s.settings))
+        choice = output_choice(s.catalog, s.output_folder, s.settings, s.tool)
+        self.view.show_output_choice(choice)
 
     def show_progress(self) -> None:
         s = self._session
