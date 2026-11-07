@@ -27,6 +27,7 @@ from clearmd.backend.services.rejections import (
 from clearmd.backend.use_cases.cancel import CancelToken
 from clearmd.backend.use_cases.execution import execute_plan
 from clearmd.backend.use_cases.planning import build_plan
+from clearmd.backend.use_cases.split_advice import large_in_plan, large_in_report, most_parts
 from clearmd.i18n import load_catalog
 
 __all__ = [
@@ -36,6 +37,9 @@ __all__ = [
     "SplitSpec",
     "Strategy",
     "failed_line",
+    "large_in_plan",
+    "large_in_report",
+    "most_parts",
     "load_settings",
     "open_folder",
     "plan_batch",

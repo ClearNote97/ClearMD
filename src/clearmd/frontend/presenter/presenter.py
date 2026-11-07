@@ -28,6 +28,13 @@ from clearmd.frontend.presenter.system_theme import detect_system_theme
 from clearmd.i18n import Catalog
 
 
+def app_version() -> str:
+    try:
+        return version("clearmd")
+    except PackageNotFoundError:  # running from sources without metadata
+        return "dev"
+
+
 class Presenter:
     def __init__(
         self,
@@ -79,10 +86,7 @@ class Presenter:
     @property
     def version(self) -> str:
         """ClearMD's version, as shown in the window and the help."""
-        try:
-            return version("clearmd")
-        except PackageNotFoundError:  # running from sources without metadata
-            return "dev"
+        return app_version()
 
     @property
     def output_folder(self) -> Path | None:
@@ -114,6 +118,10 @@ class Presenter:
     def choose_tool(self, tool: Tool) -> None:
         """A tile of the start screen: step 1 of that tool (feature 023)."""
         self._tools.choose_tool(tool)
+
+    def split_large(self) -> None:
+        """Review's or Results' "Split the Large PDFs" (feature 025)."""
+        self._tools.split_large()
 
     def choose_split(
         self,

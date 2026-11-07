@@ -2,12 +2,12 @@
 
 from pathlib import Path
 
-from clearmd.backend.api import skip_action, skip_reason, stopped_message
+from clearmd.backend.api import large_in_report, skip_action, skip_reason, stopped_message
 from clearmd.backend.schemas.models import BatchReport, OutcomeStatus
 from clearmd.frontend.presenter.icons import FOLDER, icon_for, icon_of_format
 from clearmd.frontend.presenter.models import ResultRow, ResultView, Tone
 from clearmd.frontend.presenter.screens.choose import shown
-from clearmd.frontend.presenter.screens.review import stat
+from clearmd.frontend.presenter.screens.review import split_offer, stat
 from clearmd.frontend.presenter.state import AppState
 from clearmd.i18n import Catalog
 
@@ -45,6 +45,7 @@ def result_view(catalog: Catalog, report: BatchReport, state: AppState) -> Resul
         len(report.skipped) + count[OutcomeStatus.KEPT],
         count[OutcomeStatus.FAILED],
         count[OutcomeStatus.STOPPED],
+        split=any(outcome.item.split is not None for outcome in report.outcomes),
     )
     headline = catalog.text(f"gui.state.{state.value}")
     stats = [
@@ -55,7 +56,8 @@ def result_view(catalog: Catalog, report: BatchReport, state: AppState) -> Resul
     if count[OutcomeStatus.STOPPED]:
         stats.append(stat(catalog, "gui.result.stat_stopped", count[OutcomeStatus.STOPPED]))
     folders = result_folders(report)
-    return ResultView(headline, counts, tuple(rows), folders, tuple(stats))
+    offer = split_offer(catalog, large_in_report(report))
+    return ResultView(headline, counts, tuple(rows), folders, tuple(stats), offer)
 
 
 def result_folders(report: BatchReport | None) -> tuple[Path, ...]:

@@ -99,6 +99,7 @@ class PlanView:
     asks_about_existing: bool  # the user chooses: overwrite or keep (setting "ask")
     stats: tuple[Stat, ...] = ()
     plan_id: int = 0  # another plan (even with the same rows): the user's answer starts over
+    split_offer: str = ""  # "Split the Large PDFs (2)"; empty: none to offer (feature 025)
 
 
 @dataclass(frozen=True)
@@ -127,3 +128,4 @@ class ResultView:
     rows: tuple[ResultRow, ...]
     folders: tuple[Path, ...]  # the ClearMD_Output folders of the batch
     stats: tuple[Stat, ...] = ()
+    split_offer: str = ""  # "Split the Large PDFs (1)"; empty: none to offer (feature 025)

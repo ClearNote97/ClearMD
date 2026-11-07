@@ -546,3 +546,7 @@ hint = "Aproximado: una IA lee una cantidad limitada de texto a la vez; si recha
 "gui.result.all_good" = "Todos los archivos se dividieron. Las partes están en la carpeta ClearMD_Output, en OutputSep."
 "gui.more.title" = "Dividir Más"
 "gui.more.explain" = "Consérvalos para dividirlos otra vez o agregar más; empieza vacío para un lote nuevo."
+
+[gui.offer]
+# Review and Results of Convert: the PDFs too large to convert, split instead (feature 025).
+split = "Dividir los PDF Muy Grandes ({count})"

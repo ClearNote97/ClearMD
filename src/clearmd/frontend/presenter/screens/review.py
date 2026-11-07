@@ -1,6 +1,8 @@
 """Review: the plan's rows, summary and figures."""
 
-from clearmd.backend.api import Strategy, skip_action, skip_reason
+from pathlib import Path
+
+from clearmd.backend.api import Strategy, large_in_plan, skip_action, skip_reason
 from clearmd.backend.schemas.models import BatchPlan, PlannedConversion
 from clearmd.frontend.presenter.icons import icon_for, icon_of_format
 from clearmd.frontend.presenter.models import PlanRow, PlanView, RowKind, Stat, Tone
@@ -41,7 +43,14 @@ def plan_view(catalog: Catalog, plan: BatchPlan, on_existing_output: str, plan_i
         stat(catalog, "gui.plan.stat_skipped", len(plan.skipped) + len(plan.input_errors)),
         stat(catalog, "gui.plan.stat_existing", existing, Tone.NEUTRAL),
     )
-    return PlanView(summary, tuple(rows), asks, stats, plan_id)
+    return PlanView(
+        summary, tuple(rows), asks, stats, plan_id, split_offer(catalog, large_in_plan(plan))
+    )
+
+
+def split_offer(catalog: Catalog, found: tuple[tuple[Path, int], ...]) -> str:
+    """The action that splits the PDFs too large to convert (feature 025); "" when none."""
+    return catalog.text("gui.offer.split", count=len(found)) if found else ""
 
 
 def stat(catalog: Catalog, key: str, value: int, tone: Tone = Tone.WARNING) -> Stat:

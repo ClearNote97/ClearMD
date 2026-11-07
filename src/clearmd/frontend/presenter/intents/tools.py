@@ -3,6 +3,7 @@ choices on step 1."""
 
 from dataclasses import replace
 
+from clearmd.backend.api import large_in_plan, large_in_report, most_parts
 from clearmd.backend.schemas.settings import CHOICES, RANGES
 from clearmd.frontend.presenter.display import Display
 from clearmd.frontend.presenter.intents.preferences import save
@@ -33,6 +34,26 @@ class Tools:
             self._display.show_inputs()
             self._display.show_output()
         s.page = 1
+        self._display.set_state(s.state)
+
+    def split_large(self) -> None:
+        """Split the PDFs too large to convert (feature 025): step 1 of Split with only them,
+        into the recommended number of parts, keeping their Markdown."""
+        s = self._session
+        if s.state in WORKING or s.tool is not Tool.CONVERT:
+            return
+        found = large_in_report(s.report) if s.report is not None else ()
+        if not found and s.plan is not None:
+            found = large_in_plan(s.plan)
+        if not found:
+            return
+        parts = most_parts(found)
+        self.choose_tool(Tool.SPLIT)  # drops the plan or the result
+        s.inputs = [path for path, _ in found]
+        settings = replace(s.settings, split_cut="parts", split_parts=parts, split_keep="markdown")
+        save(s, self._display, self._backend, settings)
+        self._display.show_inputs()
+        self._display.show_output()
         self._display.set_state(s.state)
 
     def go_home(self) -> None:

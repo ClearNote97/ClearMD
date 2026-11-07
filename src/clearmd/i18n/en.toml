@@ -546,3 +546,7 @@ hint = "About: an AI reads a limited amount of text at once; if it refuses a par
 "gui.result.all_good" = "Every file was split. The parts are in the ClearMD_Output folder, in OutputSep."
 "gui.more.title" = "Split More"
 "gui.more.explain" = "Keep them to split them again or add more; start empty for a new batch."
+
+[gui.offer]
+# Review and Results of Convert: the PDFs too large to convert, split instead (feature 025).
+split = "Split the Large PDFs ({count})"
