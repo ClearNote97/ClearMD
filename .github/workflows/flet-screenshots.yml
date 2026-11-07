@@ -5,7 +5,7 @@ name: flet screenshots
 
 on:
   push:
-    branches: ["feat/018-flet"]
+    branches: ["feat/018-flet", "feat/021-*"]
   workflow_dispatch:
 
 permissions:

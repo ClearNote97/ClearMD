@@ -13,11 +13,10 @@ from clearmd.frontend.flet.components.primitives import Wording
 from clearmd.frontend.presenter.models import InputRow, OutputChoice, OutputMode
 from clearmd.i18n import Catalog
 
-EMPTY = "gui.main.empty_use_buttons"  # no drop on a flet window: the two buttons say how
-
 
 class ChooseView:
-    """Add files / Add folder, the numbered list, the output choice."""
+    """Add files / Add folder (two tiles while nothing is listed), the numbered list, the output
+    choice."""
 
     def __init__(
         self,
@@ -42,6 +41,9 @@ class ChooseView:
             on_clear=on_clear,
         )
         self.add_files, self.add_folder = inputs.add_files, inputs.add_folder
+        self.start = inputs.start  # nothing listed yet: two large tiles (feature 021)
+        self.entry, self.editing = inputs.entry, inputs.editing
+        self._inputs_card = inputs
         self.inputs = inputs.inputs
         self.remove, self.clear, self.deselect = inputs.remove, inputs.clear, inputs.deselect
         self.remove_selected = inputs.remove_selected
@@ -64,6 +66,7 @@ class ChooseView:
         )
 
     def show_inputs(self, rows: tuple[InputRow, ...]) -> None:
+        self._inputs_card.show_start(not rows)
         self.inputs.show_rows(
             [
                 ListRow(row.icon, f"{row.name}/" if row.is_folder else row.name, (row.location,),
@@ -85,7 +88,7 @@ class ChooseView:
         self._wording.apply(catalog)
         self.inputs.apply_headings(
             [catalog.text("gui.main.column_name"), catalog.text("gui.main.column_location")],
-            catalog.text(EMPTY),
+            "",  # never shown: the start tiles stand in for an empty list
         )
 
     def _mode_chosen(self, mode: str) -> None:

@@ -49,15 +49,15 @@ def test_ac_02_add_files_add_folder_and_nothing_listed_twice(
 
 
 @pytest.mark.parametrize("language", ["en", "es"])
-def test_ac_02_no_drop_on_the_window_the_empty_list_says_to_use_the_two_buttons(
+def test_ac_02_no_drop_on_the_window_the_empty_list_is_the_two_buttons(
     flet_window: Window, language: str
 ) -> None:
     app = flet_window(FakeBackend(settings=replace(QUIET, language=language)))
     catalog = load_catalog(language)
-    empty = catalog.text("gui.main.empty_use_buttons")
-    assert app.main.inputs.placeholder.visible and app.main.inputs.empty.value == empty
-    for button in ("gui.main.add_files", "gui.main.add_folder"):
-        assert catalog.text(button) in empty
+    start = app.main.start
+    assert start.control.visible and not app.main.inputs.control.visible  # feature 021's tiles
+    for tile, key in ((start.files, "gui.main.add_files"), (start.folder, "gui.main.add_folder")):
+        assert tile.title.value == catalog.text(key)
     assert catalog.text("gui.main.drop") not in texts(app.root)  # no drop zone
 
 
@@ -67,7 +67,7 @@ def test_ac_02_the_list_is_numbered_with_an_icon_on_every_row(
     app = flet_window(FakeBackend(settings=QUIET))
     app.presenter.add_paths([tmp_path / "a.pdf", tmp_path / "b.docx", tmp_path / "n.xyz"])
     lines = app.main.inputs.lines
-    assert len(lines) == 3 and not app.main.inputs.placeholder.visible
+    assert len(lines) == 3 and not app.main.start.control.visible
     for number, line in enumerate(lines, start=1):
         row = line.frame.content
         assert row is not None and str(number) in texts(row)
@@ -105,7 +105,7 @@ def test_ac_02_remove_selected_clear_all_and_deselect_all(
     page_of(app).press("a", ctrl=True)  # Ctrl+A checks them all
     assert len(inputs.selected_rows()) == 2
     click(app.main.clear)
-    assert names(app) == [] and app.main.inputs.placeholder.visible  # it says what to do
+    assert names(app) == [] and app.main.start.control.visible  # the two tiles again
 
 
 def test_ac_02_the_output_next_to_the_originals_or_in_a_folder_is_remembered(

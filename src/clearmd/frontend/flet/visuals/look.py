@@ -111,3 +111,19 @@ def button_style(kind: str) -> ft.ButtonStyle:
         text_style=bold,
         elevation=0,
     )
+
+
+def tile_style() -> ft.ButtonStyle:
+    """A start tile (feature 021): the page's ground in the card, its border turning to the accent
+    and its ground to the selection under the pointer."""
+    border = ft.BorderSide(1, role("border"))
+    return ft.ButtonStyle(
+        color=_states("text", disabled="disabled"),
+        bgcolor={DEFAULT: role("ground"), HOVERED: role("selected"), DISABLED: role("ground")},
+        overlay_color=ft.Colors.TRANSPARENT,
+        shadow_color=ft.Colors.TRANSPARENT,
+        side={DEFAULT: border, HOVERED: ft.BorderSide(2, role("accent"))},
+        shape=ft.RoundedRectangleBorder(radius=RADIUS),
+        padding=ft.Padding.all(GAP),
+        elevation=0,
+    )

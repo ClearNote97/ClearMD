@@ -28,7 +28,8 @@ flet 1.0 cannot receive files dragged onto its window from the system.
   `ClearMD-Flet-<v>-windows.zip`, inside the Linux archive, and as a fourth part of the installer.
   The other executables leave flet out; this one leaves tkinter and Qt out.
 - **No drop on the window:** files come through Add files and Add folder (the UX contract asks for
-  drag and drop "where the toolkit allows it"); the empty list says so.
+  drag and drop "where the toolkit allows it"); the empty list says so. *Amended by feature 021:*
+  the empty list is two large tiles, Add Files and Add Folder, each with an icon and what it takes.
 - **The `flet` extra** (`pip install clearmd[flet]`, command `clearmd-flet`).
 
 ## Consequences

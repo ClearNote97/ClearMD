@@ -16,6 +16,8 @@ def apply_enabled(enabled: Collection[Action], main: ChooseView, rail: Rail) -> 
     controls: tuple[tuple[ft.Control, Action], ...] = (
         (main.add_files, Action.ADD),
         (main.add_folder, Action.ADD),
+        (main.start.files.control, Action.ADD),
+        (main.start.folder.control, Action.ADD),
         (main.remove, Action.REMOVE),
         (main.clear, Action.REMOVE),
         (main.pick, Action.CHOOSE_OUTPUT),
