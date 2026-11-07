@@ -16,6 +16,7 @@ from clearmd.backend.schemas.models import (
     PlannedConversion,
 )
 from clearmd.backend.schemas.settings import Settings, SettingsWarning
+from clearmd.backend.schemas.split import Cut, Keep, SplitSpec
 from clearmd.backend.services import folders, settings_store
 from clearmd.backend.services.rejections import (
     failed_line,
@@ -33,6 +34,9 @@ from clearmd.i18n import load_catalog
 
 __all__ = [
     "CancelToken",
+    "Cut",
+    "Keep",
+    "SplitSpec",
     "Strategy",
     "failed_line",
     "load_settings",
@@ -79,6 +83,7 @@ def plan_batch(
     on_event: Callable[[BatchEvent], None] | None = None,
     html_strategy: Strategy = Strategy.FULL,
     cancel: CancelToken | None = None,
+    split: SplitSpec | None = None,
 ) -> BatchPlan:
     """Everything that would happen, computed without writing anything.
 
@@ -98,6 +103,7 @@ def plan_batch(
             on_event=on_event,
             html_strategy=html_strategy,
             cancel=cancel,
+            split=split,
         )
     finally:
         worker.close()
@@ -126,6 +132,7 @@ def run_batch(
                 replace(item, images=f"{item.target.stem}{suffix}") for item in plan.conversions
             ),
         )
+    plan = _parts_named(plan, language)
     runner = composition.build_runner(composition.default_limits())
     try:
         report = execute_plan(
@@ -136,6 +143,7 @@ def run_batch(
             cancel=cancel or CancelToken(),
             clock=composition.build_clock(),
             startup_seconds=composition.default_limits().worker_startup_seconds,
+            cutter=runner,
         )
     finally:
         runner.close()
@@ -171,6 +179,20 @@ def run_batch(
             _remove_old_pdf(root_report.root)
     return replace(
         report, unwritten_summaries=tuple(unwritten), unwritten_pdfs=tuple(unwritten_pdfs)
+    )
+
+
+def _parts_named(plan: BatchPlan, language: str) -> BatchPlan:
+    """A split file's parts named in the user's language (feature 023)."""
+    template = load_catalog(language).text_template("split.part_name")
+    return replace(
+        plan,
+        conversions=tuple(
+            replace(item, split=replace(item.split, part_name=template))
+            if item.split is not None
+            else item
+            for item in plan.conversions
+        ),
     )
 
 

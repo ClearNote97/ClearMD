@@ -1,11 +1,11 @@
 """The command line parser and the language requested on it."""
 
 import argparse
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from importlib.metadata import version
 from pathlib import Path
 
-from clearmd.backend.api import Strategy
+from clearmd.backend.api import Keep, Strategy
 from clearmd.i18n import SUPPORTED_LANGUAGES, Catalog
 
 
@@ -46,12 +46,37 @@ def build_parser(catalog: Catalog) -> argparse.ArgumentParser:
         default=None,
         help=help_("cli.help.images"),
     )
+    split = parser.add_mutually_exclusive_group()  # Split instead of Convert (feature 023)
+    split.add_argument(
+        "--split-parts", type=whole(2), metavar="N", help=help_("cli.help.split_parts")
+    )
+    split.add_argument(
+        "--split-pages", type=whole(1), metavar="N", help=help_("cli.help.split_pages")
+    )
+    parser.add_argument(
+        "--keep", choices=[keep.value for keep in Keep], help=help_("cli.help.keep")
+    )
     parser.add_argument("--dry-run", action="store_true", help=help_("cli.help.dry_run"))
     parser.add_argument("--open", action="store_true", help=help_("cli.help.open"))
     parser.add_argument("--lang", choices=SUPPORTED_LANGUAGES, help=help_("cli.help.lang"))
     parser.add_argument("-q", "--quiet", action="store_true", help=help_("cli.help.quiet"))
     parser.add_argument("--version", action="version", version=f"%(prog)s {version('clearmd')}")
     return parser
+
+
+def whole(low: int, high: int = 10_000) -> Callable[[str], int]:
+    """An argument type: a whole number from ``low`` to ``high``."""
+
+    def parse(text: str) -> int:
+        try:
+            value = int(text)
+        except ValueError:
+            raise argparse.ArgumentTypeError(f"not a whole number: {text!r}") from None
+        if not low <= value <= high:
+            raise argparse.ArgumentTypeError(f"must be from {low} to {high}: {value}")
+        return value
+
+    return parse
 
 
 def requested_language(argv: Sequence[str] | None) -> str | None:

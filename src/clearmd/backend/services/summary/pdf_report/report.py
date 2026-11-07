@@ -3,7 +3,7 @@
 from clearmd.backend.schemas.formats import PDF_SUMMARY_NAME
 from clearmd.backend.schemas.models import OutputRootReport
 from clearmd.backend.services.summary.content import SummaryBuilder
-from clearmd.backend.services.summary.model import MARKDOWN_FOLDER, SummaryContent
+from clearmd.backend.services.summary.model import SummaryContent
 from clearmd.backend.services.summary.pdf_report.blocks import Blocks
 from clearmd.backend.services.summary.pdf_report.canvas import Canvas
 from clearmd.backend.services.summary.pdf_report.table import table
@@ -30,13 +30,13 @@ class PdfReport:
         blocks.headline(canvas, content)
         text = self._catalog.text
         blocks.heading(canvas, text("summary.where_title"))
-        blocks.paragraph(canvas, [Run(text("summary.where", folder=f"{MARKDOWN_FOLDER}/"))])
+        blocks.paragraph(canvas, [Run(text(content.where_key, folder=f"{content.folder}/"))])
         if content.attention:
             blocks.heading(canvas, text("summary.attention"))
             for entry in content.attention:
                 blocks.entry(canvas, entry)
         if content.converted:
-            blocks.heading(canvas, text("summary.converted"))
+            blocks.heading(canvas, text(content.done_key))
             table(self._catalog, canvas, content)
         for key, entries in (
             ("summary.left_out", content.left_out),

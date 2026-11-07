@@ -48,6 +48,7 @@ class SkipReason(StrEnum):
     TOO_MUCH_MEMORY = "too_much_memory"
     TOO_MUCH_MEMORY_FOR_ARTICLE = "too_much_memory_for_article"  # HTML in article mode (004)
     TOO_DEEP = "too_deep"
+    NOT_SPLITTABLE = "not_splittable"  # Split takes PDF only, for now (feature 023)
 
     @property
     def key(self) -> str:

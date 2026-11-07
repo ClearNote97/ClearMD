@@ -15,6 +15,7 @@ from clearmd.backend.services.rejections import skip_action, skip_reason, stoppe
 from clearmd.backend.services.summary.model import (
     DATE_FORMAT,
     MARKDOWN_FOLDER,
+    SPLIT_FOLDER,
     Entry,
     Mark,
     Row,
@@ -33,8 +34,11 @@ def _folder(path: Path) -> str:
 
 
 def _converted_place(outcome: ConversionOutcome, markdown: Path) -> tuple[str, str]:
-    """(name, folder): the folder is the result's, inside the Markdown folder, the same for every
-    output choice (code review of 009: never a long absolute path)."""
+    """(name, folder): the folder is the result's, inside the Markdown folder (OutputSep for a
+    split file), the same for every output choice (code review of 009: never a long absolute
+    path)."""
+    if outcome.item.split is not None:
+        markdown = markdown.parent / SPLIT_FOLDER
     target = _relative(outcome.item.target, markdown)
     return outcome.item.source.name, _folder(target.parent)
 
@@ -51,12 +55,16 @@ class SummaryBuilder:
     def __init__(self, catalog: Catalog, *, version: str) -> None:
         self._catalog = catalog
         self._version = version
+        self._split = False
 
     def plural(self, key: str, count: int, **values: object) -> str:
+        if self._split and key.startswith("summary.headline."):  # "were split" (feature 023)
+            key = "summary.split_headline." + key.removeprefix("summary.headline.")
         return self._catalog.plural(key, count, **values)
 
     def build(self, report: OutputRootReport) -> SummaryContent:
         by = {kind: [o for o in report.outcomes if o.status is kind] for kind in OutcomeStatus}
+        self._split = any(outcome.item.split is not None for outcome in report.outcomes)
         base = report.root.parent
         markdown = report.root / MARKDOWN_FOLDER
         converted = by[OutcomeStatus.CONVERTED]
@@ -86,6 +94,7 @@ class SummaryBuilder:
                 Entry(Mark.STOPPED, *_converted_place(o, markdown))
                 for o in by[OutcomeStatus.CANCELLED]
             ),
+            split=self._split,
         )
 
     def _headline(
@@ -120,6 +129,7 @@ class SummaryBuilder:
             len(report.skipped) + len(by[OutcomeStatus.KEPT]),
             len(by[OutcomeStatus.FAILED]),
             len(by[OutcomeStatus.STOPPED]),
+            split=self._split,
         )
         parts = [report.started_at.strftime(DATE_FORMAT), f"ClearMD {self._version}", totals]
         if report.cancelled:
@@ -148,7 +158,9 @@ class SummaryBuilder:
         return Entry(Mark.STOPPED, *_converted_place(outcome, markdown), message)
 
     def _noted(self, outcome: ConversionOutcome, markdown: Path) -> Entry:
-        message = self._catalog.text("summary.converted_but")
+        message = self._catalog.text(
+            "summary.split_but" if self._split else "summary.converted_but"
+        )
         return Entry(
             Mark.ATTENTION, *_converted_place(outcome, markdown), message, notes=outcome.notes
         )
@@ -170,7 +182,10 @@ class SummaryBuilder:
         if detection.by_content:
             fmt = self._catalog.text("summary.by_content", format=fmt)
         name, folder = _converted_place(outcome, markdown)
-        return Row(name, folder, outcome.item.target.name, fmt, self.time(outcome.seconds))
+        result = outcome.item.target.name
+        if outcome.item.split is not None:  # the parts' folder, and how many (feature 023)
+            result = self.plural("summary.parts", outcome.parts, folder=f"{result}/")
+        return Row(name, folder, result, fmt, self.time(outcome.seconds))
 
     def time(self, seconds: float) -> str:
         if seconds < 1:

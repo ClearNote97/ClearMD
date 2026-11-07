@@ -15,7 +15,7 @@ import tempfile
 from collections.abc import Sequence
 from pathlib import Path
 
-from clearmd.backend.schemas.formats import RESULTS_DIR_NAME, TEMP_SUFFIX
+from clearmd.backend.schemas.formats import RESULTS_DIR_NAME, SPLIT_DIR_NAME, TEMP_SUFFIX
 from clearmd.backend.schemas.models import ExtractedImage
 
 # The process umask, read once at import (single-threaded then): results get normal permissions.
@@ -44,11 +44,12 @@ def _real_folder(path: Path) -> None:
         raise UnsafeOutput(f"not a real folder: {path}")
 
 
-def prepare_root(root: Path) -> None:
-    """``ClearMD_Output`` and its ``OutputMD``, as real folders (the parent may be created)."""
+def prepare_root(root: Path, results: str = RESULTS_DIR_NAME) -> None:
+    """``ClearMD_Output`` and its results folder (``OutputMD``, or ``OutputSep`` for Split), as
+    real folders (the parent may be created)."""
     root.parent.mkdir(parents=True, exist_ok=True)
     _real_folder(root)
-    _real_folder(root / RESULTS_DIR_NAME)
+    _real_folder(root / results)
 
 
 def _real_folders_down_to(folder: Path, inside: Path) -> None:
@@ -134,7 +135,7 @@ def sweep_temporary_files(root: Path) -> None:
                 if _is_link(status):
                     continue
                 if stat.S_ISDIR(status.st_mode):
-                    if folder != root or entry.name == RESULTS_DIR_NAME:
+                    if folder != root or entry.name in {RESULTS_DIR_NAME, SPLIT_DIR_NAME}:
                         pending.append(Path(entry.path))
                 elif stat.S_ISREG(status.st_mode) and entry.name.endswith(TEMP_SUFFIX):
                     Path(entry.path).unlink(missing_ok=True)

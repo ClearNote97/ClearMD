@@ -21,6 +21,7 @@ def print_summary(catalog: Catalog, report: BatchReport) -> None:
         skipped,
         count[OutcomeStatus.FAILED],
         count[OutcomeStatus.STOPPED],
+        split=any(outcome.item.split is not None for outcome in report.outcomes),
     )
     print(line)
     for root in output_roots(report):
@@ -81,4 +82,6 @@ def print_dry_run(catalog: Catalog, plan: BatchPlan) -> None:
         if item.exists:
             line += catalog.text("cli.dry_run_exists")
         print(line)
-    print(catalog.text("cli.dry_run_done", count=len(plan.conversions)))
+    split = any(item.split is not None for item in plan.conversions)
+    done = "cli.dry_run_split" if split else "cli.dry_run_done"
+    print(catalog.text(done, count=len(plan.conversions)))

@@ -4,7 +4,16 @@ import argparse
 import sys
 from collections.abc import Sequence
 
-from clearmd.backend.api import Strategy, load_settings, open_folder, plan_batch
+from clearmd.backend.api import (
+    Cut,
+    Keep,
+    SplitSpec,
+    Strategy,
+    load_settings,
+    open_folder,
+    plan_batch,
+)
+from clearmd.backend.schemas.settings import Settings
 from clearmd.frontend.cli.batch import (
     EXIT_CANCELLED,
     EXIT_DECISION_REQUIRED,
@@ -30,7 +39,11 @@ from clearmd.i18n import load_catalog, resolve_language
 def run(argv: Sequence[str] | None) -> int:
     settings, settings_warnings = load_settings()
     catalog = load_catalog(resolve_language(requested_language(argv), settings.language))
-    args = build_parser(catalog).parse_args(argv)
+    parser = build_parser(catalog)
+    args = parser.parse_args(argv)
+    if args.keep and not (args.split_parts or args.split_pages):
+        parser.error(catalog.text("cli.keep_needs_split"))
+    split = split_spec(args, settings)
     err = sys.stderr
     print_settings_warnings(catalog, settings_warnings, err)
 
@@ -45,6 +58,7 @@ def run(argv: Sequence[str] | None) -> int:
             recursive=recursive,
             output_root=args.output_root,
             html_strategy=Strategy(args.html or settings.html_strategy),
+            split=split,
         )
     except KeyboardInterrupt:
         print(catalog.text("cli.cancelled_before_start"), file=err)
@@ -54,7 +68,7 @@ def run(argv: Sequence[str] | None) -> int:
         if plan.input_errors and not plan.skipped:
             print(catalog.text("cli.no_valid_input"), file=err)
             return EXIT_USAGE
-        print(catalog.text("cli.nothing_to_convert"))
+        print(catalog.text("cli.nothing_to_split" if split else "cli.nothing_to_convert"))
         return EXIT_OK
     if args.dry_run:
         print_dry_run(catalog, plan)
@@ -88,6 +102,17 @@ def run(argv: Sequence[str] | None) -> int:
             except (OSError, ValueError):  # a root refused as a link, no file browser…
                 print(catalog.text("cli.cannot_open", path=p(root)), file=err)
     return exit_code(report)
+
+
+def split_spec(args: argparse.Namespace, settings: Settings) -> SplitSpec | None:
+    """Split, when asked for (feature 023): the cut from the flag, what to keep from --keep or
+    the setting."""
+    keep = Keep(args.keep or settings.split_keep)
+    if args.split_parts:
+        return SplitSpec(Cut.PARTS, args.split_parts, keep)
+    if args.split_pages:
+        return SplitSpec(Cut.PAGES, args.split_pages, keep)
+    return None
 
 
 def summary_files(args: argparse.Namespace, setting: str) -> tuple[bool, bool]:

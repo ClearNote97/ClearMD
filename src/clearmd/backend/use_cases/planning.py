@@ -21,6 +21,7 @@ from clearmd.backend.schemas.models import (
     PlanWarning,
     SkippedItem,
 )
+from clearmd.backend.schemas.split import SplitSpec
 from clearmd.backend.use_cases.archive import inspect_archive, unsafe_reason
 from clearmd.backend.use_cases.cancel import CancelToken
 from clearmd.backend.use_cases.paths import (
@@ -28,11 +29,13 @@ from clearmd.backend.use_cases.paths import (
     keeps_output_inside,
     output_root_for,
     resolve_names,
+    split_target_for,
     target_for,
 )
 from clearmd.backend.use_cases.ports import FormatDetector
 from clearmd.backend.use_cases.scanning import Candidate, scan
 from clearmd.backend.use_cases.scheduling import order_by_cost
+from clearmd.backend.use_cases.splitting import split_cost
 
 
 def _relative_dir(candidate: Candidate) -> Path:
@@ -64,7 +67,10 @@ def build_plan(
     on_event: Callable[[BatchEvent], None] | None = None,
     html_strategy: Strategy = Strategy.FULL,
     cancel: CancelToken | None = None,
+    split: SplitSpec | None = None,
 ) -> BatchPlan:
+    """The plan; with ``split``, of the PDFs to split (feature 023): any other file is left out,
+    and the parts' folder in OutputSep is the target."""
     unique_inputs = list(dict.fromkeys(inputs))  # "a.pdf a.pdf" is one file, converted once
     scanned = scan(
         unique_inputs, recursive=recursive, limits=limits, on_progress=on_event, cancel=cancel
@@ -94,6 +100,22 @@ def build_plan(
                     **_found(candidate),
                 )
             )
+            continue
+        if split is not None:
+            if detection.format is not FormatId.PDF:
+                skipped.append(
+                    SkippedItem(
+                        candidate.path,
+                        SkipReason.NOT_SPLITTABLE,
+                        output_root=root,
+                        **_found(candidate),
+                    )
+                )
+                continue
+            cost = split_cost(limits, candidate.size, split)
+            target = split_target_for(candidate.path, root, _relative_dir(candidate))
+            drafts.append((candidate, detection, root, cost, Strategy.FULL))
+            requests.append(NameRequest(candidate.path, target, _label(candidate, detection)))
             continue
         size = memory_size = candidate.size
         if detection.format in ZIP_BASED:
@@ -149,16 +171,17 @@ def build_plan(
             exists=target.exists(),
             cost=cost,
             strategy=strategy,
+            split=split,
         )
         for (candidate, detection, root, cost, strategy), target in zip(
             drafts, resolve_names(requests), strict=True
         )
     ]
     ordered = order_by_cost(conversions)
-    warnings = tuple(
+    warnings = tuple(  # a split file is converted part by part: no file-wide warning
         PlanWarning(item, item.cost, limits.time_per_file)
         for item in ordered
-        if item.cost > limits.time_per_file
+        if item.cost > limits.time_per_file and item.split is None
     )
     plan = BatchPlan(ordered, tuple(skipped), scanned.input_errors, warnings)
     if on_event is not None:

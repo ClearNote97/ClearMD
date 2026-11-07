@@ -12,6 +12,7 @@ from pathlib import Path
 
 from clearmd.backend.schemas.errors import Cancelled, ConversionError, ErrorCode
 from clearmd.backend.schemas.events import BatchEvent, ConversionFinished, ConversionStarted
+from clearmd.backend.schemas.formats import SPLIT_DIR_NAME
 from clearmd.backend.schemas.models import (
     BatchPlan,
     BatchReport,
@@ -28,7 +29,8 @@ from clearmd.backend.use_cases.output_files import (
     sweep_temporary_files,
     write_images,
 )
-from clearmd.backend.use_cases.ports import Clock, ConversionRunner
+from clearmd.backend.use_cases.ports import Clock, ConversionRunner, PageCutter
+from clearmd.backend.use_cases.splitting import split_one
 
 STOPPING_CODES = frozenset({ErrorCode.TIMED_OUT, ErrorCode.OUT_OF_MEMORY})
 # Errors that mean "this folder cannot be written at all" rather than "this file failed".
@@ -39,10 +41,10 @@ def _describe(error: BaseException) -> str:
     return f"{type(error).__name__}: {error}"
 
 
-def _root_problem(output_root: Path) -> tuple[ErrorCode, str] | None:
+def _root_problem(output_root: Path, split: bool = False) -> tuple[ErrorCode, str] | None:
     """``None`` if the output root is ready; else why its files cannot be written."""
     try:
-        prepare_root(output_root)
+        prepare_root(output_root, SPLIT_DIR_NAME) if split else prepare_root(output_root)
         sweep_temporary_files(output_root)
     except UnsafeOutput as error:
         return ErrorCode.WRITE_FAILED, _describe(error)
@@ -54,8 +56,15 @@ def _root_problem(output_root: Path) -> tuple[ErrorCode, str] | None:
 
 
 def _convert_one(
-    item: PlannedConversion, runner: ConversionRunner, cancel: CancelToken
+    item: PlannedConversion,
+    runner: ConversionRunner,
+    cancel: CancelToken,
+    cutter: PageCutter | None = None,
 ) -> ConversionOutcome:
+    if item.split is not None:  # Split (feature 023): its parts, by whole pages
+        if cutter is None:
+            raise TypeError("a split plan needs a PageCutter")
+        return split_one(item, runner, cutter, cancel)
     try:
         result = runner.convert(item, cancel)
     except ConversionError as error:
@@ -81,6 +90,7 @@ def execute_plan(
     cancel: CancelToken,
     clock: Clock,
     startup_seconds: float = 0.0,
+    cutter: PageCutter | None = None,
 ) -> BatchReport:
     started_at = clock.now()
     outcomes: list[ConversionOutcome] = []
@@ -93,7 +103,7 @@ def execute_plan(
             outcomes.append(ConversionOutcome(item, OutcomeStatus.CANCELLED))
             continue
         if item.output_root not in root_problems:
-            root_problems[item.output_root] = _root_problem(item.output_root)
+            root_problems[item.output_root] = _root_problem(item.output_root, bool(item.split))
         problem = root_problems[item.output_root]
         if problem is not None:
             outcome = ConversionOutcome(item, OutcomeStatus.FAILED, *problem)
@@ -106,8 +116,9 @@ def execute_plan(
             )
         else:
             outcome = _timed_conversion(
-                item, runner, cancel, clock, estimate, plan, index, total, on_event, bool(outcomes)
-            )
+                item, runner, cancel, clock, estimate, plan, index, total, on_event, bool(outcomes),
+                cutter,
+            )  # fmt: skip
             if outcome.error is ErrorCode.WORKER_CRASHED and "not ready" in outcome.detail:
                 startup_failure = ConversionError(outcome.error, outcome.detail)
         outcomes.append(outcome)
@@ -133,6 +144,7 @@ def _timed_conversion(
     total: int,
     on_event: Callable[[BatchEvent], None],
     has_previous: bool,
+    cutter: PageCutter | None = None,
 ) -> ConversionOutcome:
     """Convert one file; its time never includes starting a (new) worker (AC-41)."""
     try:
@@ -146,7 +158,7 @@ def _timed_conversion(
     on_event(ConversionStarted(index, total, item, seconds_left))
     began = clock.now()
     try:
-        outcome = _convert_one(item, runner, cancel)
+        outcome = _convert_one(item, runner, cancel, cutter)
     except Cancelled:
         outcome = ConversionOutcome(item, OutcomeStatus.CANCELLED)
     seconds = (clock.now() - began).total_seconds()

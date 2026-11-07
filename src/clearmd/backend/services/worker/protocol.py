@@ -27,6 +27,32 @@ class DetectRequest:
 
 
 @dataclass(frozen=True)
+class CountPagesRequest:
+    """How many pages a PDF has (Split, feature 023)."""
+
+    source: str
+
+
+@dataclass(frozen=True)
+class CutRequest:
+    """A new PDF with the pages ``first``..``last`` (1-based) of ``source`` (feature 023)."""
+
+    source: str
+    first: int
+    last: int
+
+
+@dataclass(frozen=True)
+class Counted:
+    pages: int
+
+
+@dataclass(frozen=True)
+class CutDone:
+    data: bytes
+
+
+@dataclass(frozen=True)
 class Detected:
     format: str | None
 
@@ -44,5 +70,6 @@ class Failed:
     detail: str
 
 
-type Request = ConvertRequest | DetectRequest | None  # None asks the worker to exit
-type Response = Converted | Detected | Failed
+type Job = ConvertRequest | DetectRequest | CountPagesRequest | CutRequest
+type Request = Job | None  # None asks the worker to exit
+type Response = Converted | Detected | Counted | CutDone | Failed

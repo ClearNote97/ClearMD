@@ -60,6 +60,7 @@ ZIP_EXTENSIONS: frozenset[str] = frozenset({".zip"})
 
 OUTPUT_DIR_NAME = "ClearMD_Output"
 RESULTS_DIR_NAME = "OutputMD"
+SPLIT_DIR_NAME = "OutputSep"  # the parts of split files (ADR-0019, feature 023)
 SUMMARY_NAME = "Resumen_ClearMD.md"
 PDF_SUMMARY_NAME = "Resumen_ClearMD.pdf"  # with the summary format "Markdown + PDF" (ADR-0031)
 TEMP_SUFFIX = ".clearmd-tmp"

@@ -92,10 +92,13 @@ class Catalog:
         form = "one" if number == 1 else "other"
         return self.text(f"{key}.{form}", count=self.count(number), **values)
 
-    def totals(self, converted: int, skipped: int, failed: int, stopped: int = 0) -> str:
-        """ "2 converted · 1 skipped · 0 failed", singular and plural; stopped only when any."""
+    def totals(
+        self, converted: int, skipped: int, failed: int, stopped: int = 0, *, split: bool = False
+    ) -> str:
+        """ "2 converted · 1 skipped · 0 failed", singular and plural; stopped only when any.
+        A Split batch counts what was split (feature 023)."""
         parts = [
-            self.plural("summary.count.converted", converted),
+            self.plural("summary.count.split" if split else "summary.count.converted", converted),
             self.plural("summary.count.skipped", skipped),
             self.plural("summary.count.failed", failed),
         ]

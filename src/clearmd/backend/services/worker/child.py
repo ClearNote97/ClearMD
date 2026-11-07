@@ -13,13 +13,16 @@ from clearmd.backend.schemas.models import Detection, DetectionMethod
 from clearmd.backend.schemas.notes import ConversionNote, NoteItem, NoteKind
 from clearmd.backend.services.conversion.images import ImageSink
 from clearmd.backend.services.conversion.registry import DocumentConverter
+from clearmd.backend.services.worker.pages import handle_pages
 from clearmd.backend.services.worker.power import keep_full_speed
 from clearmd.backend.services.worker.protocol import (
     Converted,
-    ConvertRequest,
+    CountPagesRequest,
+    CutRequest,
     Detected,
     DetectRequest,
     Failed,
+    Job,
     Ready,
     Request,
     Response,
@@ -59,9 +62,9 @@ def apply_memory_cap(limit: int) -> None:
     resource.setrlimit(resource.RLIMIT_AS, (limit, limit))
 
 
-def handle(
-    registry: _Registry, request: ConvertRequest | DetectRequest, max_result_chars: int
-) -> Response:
+def handle(registry: _Registry, request: Job, max_result_chars: int) -> Response:
+    if isinstance(request, CountPagesRequest | CutRequest):  # Split (feature 023)
+        return handle_pages(request, max_result_chars)
     if isinstance(request, DetectRequest):
         try:
             detection = registry.detect_content(Path(request.source))

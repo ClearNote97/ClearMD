@@ -57,6 +57,7 @@ unreadable = "no se puede leer"
 too_deep = "carpetas demasiado profundas ({measured} niveles; límite {limit})"
 too_much_memory = "requiere unos {measured} de memoria; límite {limit}"
 too_much_memory_for_article = "en modo artículo requiere unos {measured} de memoria; límite {limit}"
+not_splittable = "no es un PDF (Dividir recibe archivos PDF)"
 
 [skip_action]
 output_folder = "ClearMD no convierte sus propios resultados."
@@ -75,6 +76,7 @@ unreadable = "Verifica que exista y que puedas abrirlo."
 too_deep = "Muévelo a una carpeta menos profunda."
 too_much_memory = "Divídelo en archivos más pequeños."
 too_much_memory_for_article = "Conviértelo con --html full (la página completa de markitdown, sin la garantía de este modo)."
+not_splittable = "Conviértelo, o guárdalo primero como PDF."
 
 [stop]
 timed_out = "Superó el límite de tiempo ({limit})."
@@ -95,6 +97,9 @@ lang = "idioma de esta ejecución (por defecto: el ajuste language, inglés)"
 summary_pdf = "escribe también el resumen en PDF, Resumen_ClearMD.pdf (por defecto: el ajuste summary_format)"
 summary_pdf_only = "escribe el resumen solo en PDF, Resumen_ClearMD.pdf, sin el resumen en Markdown"
 images = "guarda las imágenes de cada documento en una carpeta junto a su Markdown (por defecto: el ajuste images, apagado)"
+split_parts = "divide cada PDF en N partes de páginas enteras (N ≥ 2), en ClearMD_Output/OutputSep, en vez de convertir"
+split_pages = "divide cada PDF cada N páginas (N ≥ 1), en ClearMD_Output/OutputSep, en vez de convertir"
+keep = "al dividir: conserva las partes en PDF, su Markdown, o ambas (por defecto: el ajuste split_keep, ambas)"
 
 [cli]
 progress = "[{index}/{total}] {name}"
@@ -122,6 +127,9 @@ time_left = "faltan {duration}"
 warning_slow = "⚠ {name} — podría tardar más de {limit} ({estimate}) y detenerse"
 cannot_open = "ClearMD no pudo abrir {path}. Ábrela desde tu explorador de archivos."
 pdf_not_written = "⚠ No se pudo escribir el resumen en PDF en {path}; el resumen en Markdown sí está."
+nothing_to_split = "Nada que dividir."
+dry_run_split = "Simulación: no se escribió nada. Se dividirían {count} archivo(s)."
+keep_needs_split = "--keep va con --split-parts o --split-pages."
 
 [time]
 under_a_minute = "menos de un minuto"
@@ -185,6 +193,25 @@ count.failed.one = "{count} con error"
 count.failed.other = "{count} con error"
 count.stopped.one = "{count} detenido"
 count.stopped.other = "{count} detenidos"
+split_done = "Divididos"
+where_split = "Las partes están en la carpeta {folder}, junto a este resumen: una carpeta por documento."
+split_but = "se dividió, pero:"
+parts.one = "{folder} (1 parte)"
+parts.other = "{folder} ({count} partes)"
+split_headline.all.one = "El documento se dividió."
+split_headline.all.other = "Los {count} documentos se dividieron."
+split_headline.none.one = "El documento no se pudo dividir."
+split_headline.none.other = "Ninguno de los {count} documentos se pudo dividir."
+split_headline.some.one = "Se dividió {count} de {total} documentos."
+split_headline.some.other = "Se dividieron {count} de {total} documentos."
+split_headline.cancelled.one = "El lote se canceló: se dividió {count} de {total} documentos."
+split_headline.cancelled.other = "El lote se canceló: se dividieron {count} de {total} documentos."
+split_headline.nothing_new.one = "No se dividió nada nuevo: las partes ya existían."
+split_headline.nothing_new.other = "No se dividió nada nuevo: las partes ya existían."
+split_headline.nothing.one = "No se dividió nada: revisa lo que quedó fuera."
+split_headline.nothing.other = "No se dividió nada: revisa lo que quedó fuera."
+count.split.one = "{count} dividido"
+count.split.other = "{count} divididos"
 
 [note]
 unknown_commands = "se dejaron tal cual comandos que ClearMD no conoce: {items}"
@@ -440,3 +467,7 @@ images_folder = "En una carpeta"
 
 [images]
 suffix = "_imagenes"
+
+[split]
+# A part of a split file, without extension (feature 023): the index is padded to the total.
+part_name = "{name} - parte {index} de {total}"

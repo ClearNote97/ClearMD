@@ -8,6 +8,7 @@ from pathlib import Path
 from clearmd.backend.schemas.errors import ErrorCode, SkipReason
 from clearmd.backend.schemas.formats import FormatId, Strategy
 from clearmd.backend.schemas.notes import ConversionNote
+from clearmd.backend.schemas.split import SplitSpec
 
 
 class DetectionMethod(StrEnum):
@@ -39,6 +40,8 @@ class PlannedConversion:
     # The images folder's name next to the Markdown ("report_images"); empty: images left out
     # (feature 012, ADR-0033).
     images: str = ""
+    # Split, not convert (feature 023): ``target`` is then the parts' folder in OutputSep.
+    split: SplitSpec | None = None
 
 
 @dataclass(frozen=True)
@@ -132,6 +135,7 @@ class ConversionOutcome:
     seconds: float = 0.0
     notes: tuple[ConversionNote, ...] = ()
     limit: float | None = None  # for a stop: the limit it reached (seconds or bytes)
+    parts: int = 0  # a split file: how many parts were written (feature 023)
 
     @property
     def share_done(self) -> int:

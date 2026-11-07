@@ -6,6 +6,7 @@ from dataclasses import fields, replace
 from clearmd.backend.schemas.settings import (
     CHOICES,
     PATH_SETTINGS,
+    RANGES,
     Settings,
     SettingsProblem,
     SettingsWarning,
@@ -18,6 +19,9 @@ FILE_KEY = "settings.toml"
 def _valid(name: str, value: object, default: object) -> bool:
     if isinstance(default, bool):
         return isinstance(value, bool)
+    if name in RANGES:  # a whole number within its bounds; never a boolean
+        low, high = RANGES[name]
+        return isinstance(value, int) and not isinstance(value, bool) and low <= value <= high
     if name in PATH_SETTINGS:  # a path: plain text, a sane length
         return isinstance(value, str) and valid_path_setting(value)
     return isinstance(value, str) and value in CHOICES[name]
@@ -56,6 +60,11 @@ def serialize_settings(settings: Settings) -> str:
         value = getattr(settings, field.name)
         if not _valid(field.name, value, getattr(defaults, field.name)):
             raise ValueError(f"invalid value for {field.name}: {value!r}")
-        shown = ("true" if value else "false") if isinstance(value, bool) else _toml_string(value)
+        if isinstance(value, bool):
+            shown = "true" if value else "false"
+        elif isinstance(value, int):
+            shown = str(value)
+        else:
+            shown = _toml_string(value)
         lines.append(f"{field.name} = {shown}")
     return "\n".join(lines) + "\n"

@@ -7,11 +7,13 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from clearmd.backend.schemas.formats import OUTPUT_DIR_NAME, RESULTS_DIR_NAME
+from clearmd.backend.schemas.formats import OUTPUT_DIR_NAME, RESULTS_DIR_NAME, SPLIT_DIR_NAME
 
 # Bytes of an output file name, collision suffix included: well under the 255 of every file system,
 # with room for the temporary name used while writing.
 MAX_NAME_BYTES = 200
+# A split file's folder name: its parts add " - part 01 of 10.pdf" to it (feature 023).
+PART_ROOM = 40
 
 
 def _fit(stem: str, ending: str) -> str:
@@ -42,6 +44,12 @@ def output_root_for(source: Path, *, is_dir: bool, override: Path | None = None)
 def target_for(source: Path, output_root: Path, relative_dir: Path = Path()) -> Path:
     """Where the Markdown of ``source`` goes: ``OutputMD/<relative_dir>/<full stem>.md``."""
     return output_root / RESULTS_DIR_NAME / relative_dir / _fit(source.stem, ".md")
+
+
+def split_target_for(source: Path, output_root: Path, relative_dir: Path = Path()) -> Path:
+    """The folder of a split file's parts: ``OutputSep/<relative_dir>/<stem>`` (feature 023)."""
+    folder = _fit(source.stem, " " * PART_ROOM).rstrip()
+    return output_root / SPLIT_DIR_NAME / relative_dir / folder
 
 
 @dataclass(frozen=True)

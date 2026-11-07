@@ -57,6 +57,7 @@ unreadable = "cannot be read"
 too_deep = "folders nested too deeply ({measured} levels; limit {limit})"
 too_much_memory = "needs about {measured} of memory; limit {limit}"
 too_much_memory_for_article = "needs about {measured} of memory in article mode; limit {limit}"
+not_splittable = "not a PDF (Split takes PDF files)"
 
 [skip_action]
 output_folder = "ClearMD does not convert its own results."
@@ -75,6 +76,7 @@ unreadable = "Check that it exists and that you can open it."
 too_deep = "Move it to a shallower folder."
 too_much_memory = "Split it into smaller files."
 too_much_memory_for_article = "Convert it with --html full (markitdown's whole page, without this mode's guarantee)."
+not_splittable = "Convert it instead, or save it as PDF first."
 
 [stop]
 timed_out = "Exceeded the time limit ({limit})."
@@ -95,6 +97,9 @@ lang = "language for this run (default: the language setting, English)"
 summary_pdf = "also write the summary as a PDF, Resumen_ClearMD.pdf (default: the summary_format setting)"
 summary_pdf_only = "write the summary only as a PDF, Resumen_ClearMD.pdf, with no Markdown summary"
 images = "keep each document's images in a folder next to its Markdown (default: the images setting, off)"
+split_parts = "split each PDF into N parts of whole pages (N ≥ 2), into ClearMD_Output/OutputSep, instead of converting"
+split_pages = "split each PDF every N pages (N ≥ 1), into ClearMD_Output/OutputSep, instead of converting"
+keep = "with a split: keep the PDF parts, their Markdown, or both (default: the split_keep setting, both)"
 
 [cli]
 progress = "[{index}/{total}] {name}"
@@ -122,6 +127,9 @@ time_left = "{duration} left"
 warning_slow = "⚠ {name} — may take more than {limit} ({estimate}) and be stopped"
 cannot_open = "ClearMD could not open {path}. Open it from your file browser."
 pdf_not_written = "⚠ The PDF summary in {path} could not be written; the Markdown summary is there."
+nothing_to_split = "Nothing to split."
+dry_run_split = "Dry run: nothing was written. {count} file(s) would be split."
+keep_needs_split = "--keep goes with --split-parts or --split-pages."
 
 [time]
 under_a_minute = "less than a minute"
@@ -185,6 +193,25 @@ count.failed.one = "{count} failed"
 count.failed.other = "{count} failed"
 count.stopped.one = "{count} stopped"
 count.stopped.other = "{count} stopped"
+split_done = "Split"
+where_split = "The parts are in the {folder} folder, next to this summary: one folder per document."
+split_but = "split, but:"
+parts.one = "{folder} (1 part)"
+parts.other = "{folder} ({count} parts)"
+split_headline.all.one = "The document was split."
+split_headline.all.other = "All {count} documents were split."
+split_headline.none.one = "The document could not be split."
+split_headline.none.other = "None of the {count} documents could be split."
+split_headline.some.one = "{count} of {total} documents was split."
+split_headline.some.other = "{count} of {total} documents were split."
+split_headline.cancelled.one = "The batch was cancelled: {count} of {total} documents was split."
+split_headline.cancelled.other = "The batch was cancelled: {count} of {total} documents were split."
+split_headline.nothing_new.one = "Nothing new was split: the parts already existed."
+split_headline.nothing_new.other = "Nothing new was split: the parts already existed."
+split_headline.nothing.one = "Nothing was split: see what was left out."
+split_headline.nothing.other = "Nothing was split: see what was left out."
+count.split.one = "{count} split"
+count.split.other = "{count} split"
 
 [note]
 unknown_commands = "commands ClearMD does not know were left as written: {items}"
@@ -440,3 +467,7 @@ images_folder = "In a folder"
 
 [images]
 suffix = "_images"
+
+[split]
+# A part of a split file, without extension (feature 023): the index is padded to the total.
+part_name = "{name} - part {index} of {total}"

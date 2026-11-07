@@ -29,5 +29,16 @@ class ConversionRunner(Protocol):
     def close(self) -> None: ...
 
 
+class PageCutter(Protocol):
+    """A PDF's pages, counted and copied whole into a new PDF (Split, feature 023)."""
+
+    def count_pages(self, item: PlannedConversion, cancel: CancelToken) -> int: ...
+
+    def cut(self, item: PlannedConversion, first: int, last: int, cancel: CancelToken) -> bytes:
+        """Raises ``ConversionError`` for a known failure and ``Cancelled`` when ``cancel`` is
+        set."""
+        ...
+
+
 class Clock(Protocol):
     def now(self) -> datetime: ...

@@ -13,7 +13,7 @@ from clearmd.backend.schemas.formats import SUMMARY_NAME
 from clearmd.backend.schemas.models import OutputRootReport
 from clearmd.backend.schemas.notes import ConversionNote
 from clearmd.backend.services.summary.content import SummaryBuilder
-from clearmd.backend.services.summary.model import MARKDOWN_FOLDER, Entry, Mark, SummaryContent
+from clearmd.backend.services.summary.model import Entry, Mark, SummaryContent
 from clearmd.backend.use_cases.output_files import UnsafeOutput, atomic_write, read_regular_file
 from clearmd.i18n import Catalog, printable
 
@@ -89,13 +89,13 @@ class MarkdownSummaryWriter:
         lines = [f"# {text('summary.title')}", "", headline, "", content.batch_line, ""]
         lines += [
             f"## {text('summary.where_title')}",
-            text("summary.where", folder=_code(MARKDOWN_FOLDER + "/")),
+            text(content.where_key, folder=_code(content.folder + "/")),
             "",
         ]
         lines += self._section("summary.attention", self._attention(content.attention))
         if content.converted:
             lines += [
-                f"## {text('summary.converted')}",
+                f"## {text(content.done_key)}",
                 f"| {text('summary.col_document')} | {text('summary.col_folder')} "
                 f"| {text('summary.col_result')} | {text('summary.col_format')} "
                 f"| {text('summary.col_time')} |",
