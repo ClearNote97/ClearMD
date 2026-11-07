@@ -1,5 +1,7 @@
 **ClearMD — documents to Markdown, 100 % local.** / **Documentos a Markdown, 100 % local.**
 
+Each file can be checked against `SHA256SUMS.txt` ([how](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)). / Cada archivo se puede comprobar con `SHA256SUMS.txt` ([cómo](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)).
+
 **New in 1.2.0 / Novedades de la 1.2.0**
 - flet: before anything is chosen, the list shows two large tiles, **Add Files** and **Add Folder**,
   each with what it takes. / flet: antes de elegir nada, la lista muestra dos tarjetas grandes,

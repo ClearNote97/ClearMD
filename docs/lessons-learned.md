@@ -139,7 +139,7 @@ refactor playbook:
   the repository public.
 - **Commits**: stage by path, never `git add -A`, so ignored and private files can never slip in.
 
-## 11. Interface text
+## 11. Interface text and public files
 
 - **Fix the capitalisation rule on day one, and test it.** ClearMD moved to Title Case at 1.2.0. That meant
   rewriting most of the catalog's titles and buttons across three windows and the summary. A test now checks
@@ -154,3 +154,11 @@ refactor playbook:
 - **When a toolkit lacks a feature, redesign the space it leaves.** flet 1.0 cannot receive files dropped from
   the system. An empty list that says "use the buttons" was dead space. Two large tiles (an icon, a title and
   what each one takes) became the way in and turned the gap into the first step.
+- **Ship the community files with the first public commit.** `SECURITY.md` (private reporting, never
+  a public issue), `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, the issue forms, `CHANGELOG.md` and
+  `CITATION.cff` are cheap to write and are what visitors and signing programmes look for. ClearMD
+  added them only at 1.2.0. A template should carry them, with a test that keeps `CITATION.cff` on
+  the project's version.
+- **Publish checksums with every release.** One `SHA256SUMS.txt` written by the Release workflow lets
+  anyone check a download while the executables are still unsigned. Write it outside the folder
+  being hashed, or it lists itself.

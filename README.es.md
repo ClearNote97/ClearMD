@@ -152,6 +152,7 @@ anteriores._
 | **019** El instalador con el aspecto de ClearMD (claro y oscuro) | ✅ lista | v0.13.2 · [capturas](./docs/screenshots/019/) |
 | **020** El resumen solo en PDF | ✅ lista | v1.1.0 |
 | **021** La lista vacía de flet como dos tarjetas grandes; títulos en Title Case | ✅ lista | v1.2.0 · [capturas](./docs/screenshots/018/) |
+| **022** Política de seguridad, guía para contribuir, formularios de issues; huellas SHA-256 en cada versión | ✅ lista | próxima versión |
 
 El plan completo está en el [roadmap](./spec/roadmap.md). ClearMD tiene **línea de comandos** y la misma **app de
 escritorio** en tres toolkits, ttkbootstrap (`clearmd-ttk`), PySide6 (`clearmd-pyside`,
@@ -169,7 +170,7 @@ comandos, o todas; luego abre ClearMD desde el menú Inicio.
 **O descarga la app** (nada que instalar): `ClearMD-…-windows.exe` para Windows o `ClearMD-…-linux.tar.gz` para
 Linux, y ábrela con doble clic.
 Windows puede advertir que la app no es reconocida, porque aún no está firmada: *Más información → Ejecutar de todas
-formas*. La firma está en camino: [Code signing policy](./CODE_SIGNING.md) (política de firma). El primer inicio tarda unos segundos mientras la app se descomprime.
+formas*. La firma está en camino: [Code signing policy](./CODE_SIGNING.md) (política de firma). Cada archivo se puede comprobar con el `SHA256SUMS.txt` de la versión ([cómo](./SECURITY.md#checking-a-download)). El primer inicio tarda unos segundos mientras la app se descomprime.
 La misma app dibujada con Qt es `ClearMD-Qt-…-windows.zip`: descomprímela y abre `ClearMD-Qt.exe` dentro de la carpeta
 (una carpeta y no un solo archivo: las librerías de Qt quedan reemplazables, como pide su licencia LGPL; en Linux viene
 en el archivo).

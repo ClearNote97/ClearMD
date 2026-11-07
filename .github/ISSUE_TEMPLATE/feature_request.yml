@@ -1,0 +1,20 @@
+name: Feature request
+description: An idea to make ClearMD more useful.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: Check the [roadmap](https://github.com/ClearNote97/ClearMD/blob/main/spec/roadmap.md) first; it may already be planned. ClearMD stays 100 % local, so ideas that need the internet are out of scope.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What you are trying to do
+      description: The task, and what gets in the way today.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help
+    validations:
+      required: true

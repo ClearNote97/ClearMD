@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use ClearMD, please cite it as below."
+title: "ClearMD"
+abstract: "Turn documents into Markdown. 100% local: ClearMD never uses the internet."
+type: software
+authors:
+  - given-names: "Nicolás Enrique"
+    family-names: "Valencia Santiago"
+version: "1.2.0"
+date-released: "2026-11-07"
+license: MIT
+repository-code: "https://github.com/ClearNote97/ClearMD"
+keywords:
+  - markdown
+  - document-converter
+  - local-first

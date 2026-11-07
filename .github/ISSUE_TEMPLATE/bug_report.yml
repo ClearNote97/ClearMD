@@ -1,0 +1,48 @@
+name: Bug report
+description: Something does not work as it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thank you for reporting it. Never attach a document with private content; make a small sample instead.
+  - type: input
+    id: version
+    attributes:
+      label: ClearMD version
+      description: In the Help window, or `clearmd --version`.
+      placeholder: "1.2.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: app
+    attributes:
+      label: Which app
+      options: ["Classic (ttk)", "Modern (Qt)", "flet", "Command line", "Installer"]
+    validations:
+      required: true
+  - type: dropdown
+    id: system
+    attributes:
+      label: System
+      options: ["Windows 11", "Windows 10", "Linux"]
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. Add the file …\n2. Press Convert …"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Technical detail
+      description: If there was a summary, paste its "Technical Detail" section.
+      render: text

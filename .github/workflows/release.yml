@@ -184,6 +184,8 @@ jobs:
         run: |
           stage=()
           if [[ "$GITHUB_REF_NAME" == v0.* ]]; then stage=(--prerelease); fi
+          # Feature 022: one SHA-256 line per file, so a download can be checked (SECURITY.md).
+          (cd release && sha256sum -- * > ../SHA256SUMS.txt) && mv SHA256SUMS.txt release/ && cat release/SHA256SUMS.txt
           gh release create "$GITHUB_REF_NAME" release/* \
             --title "ClearMD $GITHUB_REF_NAME" \
             --notes-file packaging/RELEASE_NOTES.md "${stage[@]}"
