@@ -49,7 +49,8 @@ class Conversion:
         generation = self._background.next_generation()
         s.cancel = token = CancelToken()
         language = s.catalog.language  # read here: the worker never touches the presenter
-        summary_pdf = s.settings.summary_format == "markdown_pdf"
+        summary_pdf = s.settings.summary_format in {"markdown_pdf", "pdf"}
+        summary_markdown = s.settings.summary_format != "pdf"  # "pdf": the PDF alone (020)
         images = s.settings.images == "folder"
         s.done = 0
         s.current = None
@@ -76,6 +77,7 @@ class Conversion:
                     cancel=token,
                     language=language,
                     summary_pdf=summary_pdf,
+                    summary_markdown=summary_markdown,
                     images=images,
                 )
             except Exception as error:  # noqa: BLE001 -- told to the user, the app goes on

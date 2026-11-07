@@ -1,5 +1,6 @@
 """The flow of one run: settings, plan, decision, batch, summary, open."""
 
+import argparse
 import sys
 from collections.abc import Sequence
 
@@ -67,13 +68,17 @@ def run(argv: Sequence[str] | None) -> int:
     if decision is None:
         return EXIT_DECISION_REQUIRED
     progress = Progress(catalog, quiet=args.quiet, stream=err)
-    # A flag decides for this run only (--summary-pdf, --no-summary-pdf); without one, the setting.
-    summary_pdf = (
-        settings.summary_format == "markdown_pdf" if args.summary_pdf is None else args.summary_pdf
-    )
+    summary_pdf, summary_markdown = summary_files(args, settings.summary_format)
     images = settings.images == "folder" if args.images is None else args.images
     report = run_cancellable(
-        catalog, plan, decision, progress, err, summary_pdf=summary_pdf, images=images
+        catalog,
+        plan,
+        decision,
+        progress,
+        err,
+        summary_pdf=summary_pdf,
+        summary_markdown=summary_markdown,
+        images=images,
     )
     print_summary(catalog, report)
     if args.open:
@@ -83,3 +88,13 @@ def run(argv: Sequence[str] | None) -> int:
             except (OSError, ValueError):  # a root refused as a link, no file browser…
                 print(catalog.text("cli.cannot_open", path=p(root)), file=err)
     return exit_code(report)
+
+
+def summary_files(args: argparse.Namespace, setting: str) -> tuple[bool, bool]:
+    """(the PDF summary, the Markdown summary) for this run. A flag decides for this run only
+    (--summary-pdf, --no-summary-pdf, --summary-pdf-only); without one, the setting (020)."""
+    if args.summary_pdf_only:
+        return True, False
+    if args.summary_pdf is not None:
+        return args.summary_pdf, True
+    return setting in {"markdown_pdf", "pdf"}, setting != "pdf"

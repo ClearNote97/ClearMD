@@ -49,7 +49,7 @@ class SettingsDialog(Dialog):
             },
             "html_strategy": {v: text(f"gui.settings.html_{v}") for v in ("full", "article")},
             "summary_format": {
-                v: text(f"gui.settings.summary_{v}") for v in ("markdown", "markdown_pdf")
+                v: text(f"gui.settings.summary_{v}") for v in ("markdown", "markdown_pdf", "pdf")
             },
             "images": {v: text(f"gui.settings.images_{v}") for v in ("omit", "folder")},
         }

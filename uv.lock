@@ -241,7 +241,7 @@ wheels = [
 
 [[package]]
 name = "clearmd"
-version = "1.0.1"
+version = "1.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "charset-normalizer" },

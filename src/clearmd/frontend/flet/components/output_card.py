@@ -46,9 +46,10 @@ class OutputCard:
         choices = ft.Row([self.mode.control, self.pick], spacing=SPACE)
         self.output_label = label("muted")
 
-        self.summary = Choice(("markdown", "markdown_pdf"), on_summary)
+        self.summary = Choice(("markdown", "markdown_pdf", "pdf"), on_summary)
         wording.add(self.summary.radios["markdown"], "gui.main.summary_md")
         wording.add(self.summary.radios["markdown_pdf"], "gui.main.summary_pdf")
+        wording.add(self.summary.radios["pdf"], "gui.main.summary_pdf_only")
         summary = ft.Row([summary_title, self.summary.control], spacing=GAP)
         self.control = card([heading, choices, self.output_label, summary])
         self.choices = (self.images, self.mode, self.summary)

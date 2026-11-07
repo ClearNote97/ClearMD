@@ -35,6 +35,12 @@ def build_parser(catalog: Catalog) -> argparse.ArgumentParser:
         help=help_("cli.help.summary_pdf"),
     )
     parser.add_argument(
+        "--summary-pdf-only",
+        action="store_true",
+        default=False,
+        help=help_("cli.help.summary_pdf_only"),
+    )
+    parser.add_argument(
         "--images",
         action=argparse.BooleanOptionalAction,
         default=None,

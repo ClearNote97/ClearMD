@@ -67,6 +67,7 @@ class ChooseView(QWidget):
         self.output_label = output.output_label
         self.summary_md = output.summary_md
         self.summary_pdf = output.summary_pdf
+        self.summary_pdf_only = output.summary_pdf_only
         self.images_omit = output.images_omit
         self.images_folder = output.images_folder
         self.choice_buttons = output.choice_buttons
@@ -83,8 +84,8 @@ class ChooseView(QWidget):
     def show_output_choice(self, choice: OutputChoice) -> None:
         (self.next_to if choice.mode is OutputMode.NEXT_TO else self.in_folder).setChecked(True)
         self.output_label.setText(choice.label)
-        md = choice.summary_format == "markdown"
-        (self.summary_md if md else self.summary_pdf).setChecked(True)
+        radios = {"markdown_pdf": self.summary_pdf, "pdf": self.summary_pdf_only}
+        radios.get(choice.summary_format, self.summary_md).setChecked(True)
         (self.images_omit if choice.images == "omit" else self.images_folder).setChecked(True)
 
     def output_mode(self) -> str:

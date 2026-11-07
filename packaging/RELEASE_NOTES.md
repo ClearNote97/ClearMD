@@ -1,5 +1,11 @@
 **ClearMD — documents to Markdown, 100 % local.** / **Documentos a Markdown, 100 % local.**
 
+**New in 1.1.0 / Novedades de la 1.1.0**
+- A third summary format, **PDF only**: just `Resumen_ClearMD.pdf`, no Markdown summary. Choose it
+  on step 1 or in Settings, or use `--summary-pdf-only`. / Un tercer formato de resumen, **Solo
+  PDF**: únicamente `Resumen_ClearMD.pdf`, sin el resumen en Markdown. Elígelo en el paso 1 o en
+  Ajustes, o usa `--summary-pdf-only`.
+
 **New in 1.0.1 / Novedades de la 1.0.1**
 - The flet app converts at full speed: Windows could slow ClearMD's converter down as background
   work while flet's window was in front (a PDF took 19 s instead of 5). The converter now asks

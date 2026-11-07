@@ -72,3 +72,10 @@ relative paths, sections in a fixed order whatever happened. The author asked fo
 - The PDF adds a few KB per output folder and nothing to the executable.
 - The summary's tests change. Its guarantees (escaping, history, the planted-link checks) stay,
   with their tests.
+
+## Amendment (feature 020, v1.1.0, 2026-11-07)
+
+A third format, **PDF only** (`summary_format = "pdf"`, `--summary-pdf-only`): the output folder gets
+`Resumen_ClearMD.pdf` and no Markdown summary; an earlier Markdown one is removed. If the PDF cannot be
+written, the Markdown summary is written instead (a batch always leaves a summary). The history of
+earlier batches lives in the Markdown summary: with the PDF alone it starts again.

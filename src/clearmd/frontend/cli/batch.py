@@ -24,6 +24,7 @@ def run_cancellable(
     stream: TextIO,
     *,
     summary_pdf: bool = False,
+    summary_markdown: bool = True,
     images: bool = False,
 ) -> BatchReport:
     """Run the batch in a thread; Ctrl+C cancels it at once and its summary is still written."""
@@ -43,6 +44,7 @@ def run_cancellable(
                 cancel=cancel,
                 language=catalog.language,
                 summary_pdf=summary_pdf,
+                summary_markdown=summary_markdown,
                 images=images,
             )
         except BaseException as error:  # re-raised in the main thread

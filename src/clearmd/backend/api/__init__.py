@@ -8,7 +8,7 @@ from pathlib import Path
 from clearmd.backend.api import composition
 from clearmd.backend.schemas.errors import ErrorCode
 from clearmd.backend.schemas.events import BatchEvent
-from clearmd.backend.schemas.formats import PDF_SUMMARY_NAME, Strategy
+from clearmd.backend.schemas.formats import PDF_SUMMARY_NAME, SUMMARY_NAME, Strategy
 from clearmd.backend.schemas.models import (
     BatchPlan,
     BatchReport,
@@ -111,11 +111,13 @@ def run_batch(
     cancel: CancelToken | None = None,
     language: str = "en",
     summary_pdf: bool = False,
+    summary_markdown: bool = True,
     images: bool = False,
 ) -> BatchReport:
     """Convert every planned file in the worker process, write the results and, in each
     ClearMD_Output folder, its Resumen_ClearMD.md (also when the batch was cancelled), and its
-    Resumen_ClearMD.pdf when ``summary_pdf`` (ADR-0031)."""
+    Resumen_ClearMD.pdf when ``summary_pdf`` (ADR-0031). ``summary_markdown=False`` (with
+    ``summary_pdf``): the PDF alone (feature 020); if it cannot be written, the Markdown is."""
     if images:  # each document's images in "<name>_images" next to it, in the user's language
         suffix = load_catalog(language).text("images.suffix")
         plan = replace(
@@ -138,10 +140,19 @@ def run_batch(
     finally:
         runner.close()
     writer = composition.build_summary_writer(language)
-    reporter = composition.build_pdf_report(language) if summary_pdf else None
+    pdf_only = not summary_markdown
+    reporter = composition.build_pdf_report(language) if summary_pdf or pdf_only else None
     unwritten: list[Path] = []
     unwritten_pdfs: list[Path] = []
     for root_report in by_output_root(report):
+        if pdf_only and reporter is not None:
+            try:
+                reporter.write(root_report)
+            except Exception:  # noqa: BLE001 -- told; the Markdown summary is written instead
+                unwritten_pdfs.append(root_report.root)
+            else:
+                _remove_old(root_report.root, SUMMARY_NAME)  # never a stale Markdown beside it
+                continue
         try:
             writer.write(root_report)
         except (OSError, ValueError):  # ValueError: e.g. text that cannot be encoded
@@ -150,13 +161,13 @@ def run_batch(
             _remove_old_pdf(root_report.root)
             continue
         written = False
-        if reporter is not None:
+        if reporter is not None and not pdf_only:
             try:
                 reporter.write(root_report)
                 written = True
             except Exception:  # noqa: BLE001 -- the Markdown is written: the batch goes on, told
                 unwritten_pdfs.append(root_report.root)
-        if not written:
+        if not written and not pdf_only:
             _remove_old_pdf(root_report.root)
     return replace(
         report, unwritten_summaries=tuple(unwritten), unwritten_pdfs=tuple(unwritten_pdfs)
@@ -165,9 +176,15 @@ def run_batch(
 
 def _remove_old_pdf(root: Path) -> None:
     """A PDF summary from an earlier batch never stays next to a newer Markdown one (code review
-    of 009). Only a regular file is removed, never through a link."""
+    of 009)."""
+    _remove_old(root, PDF_SUMMARY_NAME)
+
+
+def _remove_old(root: Path, name: str) -> None:
+    """An earlier batch's summary that the new one replaces (a PDF beside a newer Markdown, a
+    Markdown beside a newer PDF alone, 020). Only a regular file is removed, never a link."""
     try:
-        remove_regular_file(root / PDF_SUMMARY_NAME, inside=root)
+        remove_regular_file(root / name, inside=root)
     except OSError:  # none, or it cannot be removed: nothing more to do
         pass
 

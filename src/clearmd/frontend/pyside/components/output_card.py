@@ -76,9 +76,11 @@ class OutputCard:
         self._summary = QButtonGroup(parent)
         self.summary_md = radio_button(self._summary, lambda: on_summary("markdown"))
         self.summary_pdf = radio_button(self._summary, lambda: on_summary("markdown_pdf"))
+        self.summary_pdf_only = radio_button(self._summary, lambda: on_summary("pdf"))
         text(self.summary_md, "gui.main.summary_md")
         text(self.summary_pdf, "gui.main.summary_pdf")
-        for radio in (self.summary_md, self.summary_pdf):
+        text(self.summary_pdf_only, "gui.main.summary_pdf_only")
+        for radio in (self.summary_md, self.summary_pdf, self.summary_pdf_only):
             summary.addSpacing(GAP)
             summary.addWidget(radio)
         summary.addStretch(1)
@@ -90,6 +92,7 @@ class OutputCard:
             self.pick,
             self.summary_md,
             self.summary_pdf,
+            self.summary_pdf_only,
             self.images_omit,
             self.images_folder,
         )

@@ -70,6 +70,7 @@ class OutputCard:
         for value, key in (
             ("markdown", "gui.main.summary_md"),
             ("markdown_pdf", "gui.main.summary_pdf"),
+            ("pdf", "gui.main.summary_pdf_only"),
         ):
             button = ttk.Radiobutton(
                 summary,
