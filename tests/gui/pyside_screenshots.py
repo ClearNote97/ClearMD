@@ -1,6 +1,6 @@
 """Screenshots of the PySide6 GUI for docs/ (feature 016, AC-10): every screen, light and dark,
 English and Spanish, drawn offscreen with the presenter's fake backend (the same demo as ttk's);
-the start screen and Split's step 1 since feature 023.
+the start screen and Split's step 1 since feature 023; Review's offer to split since 025.
 
     uv run python tests/gui/pyside_screenshots.py --out docs/screenshots/016
 """
@@ -8,6 +8,7 @@ the start screen and Split's step 1 since feature 023.
 import argparse
 import sys
 import threading
+from dataclasses import replace
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # tests/: support.*, gui.*
@@ -16,6 +17,7 @@ import gui.screenshots as demo  # noqa: E402
 from support.gui_fakes import FakeBackend  # noqa: E402
 from support.pyside_acceptance import open_window, pump, shut  # noqa: E402 -- sets offscreen
 
+from clearmd.backend.schemas.models import PlanWarning  # noqa: E402
 from clearmd.backend.schemas.settings import Settings  # noqa: E402
 from clearmd.frontend.presenter.state import Tool  # noqa: E402
 from clearmd.frontend.pyside import PySideApp  # noqa: E402
@@ -85,6 +87,24 @@ def screens(out: Path, theme: str, language: str) -> None:
     shut(app)
 
 
+def offer_shot(out: Path, theme: str, language: str) -> None:
+    """Review with "Split the Large PDFs" (feature 025): the demo's PDF over the time limit."""
+    first, *rest = demo.PLAN.conversions
+    big = PlanWarning(replace(first, cost=2400.0), 2400.0, 600.0)
+    plan = replace(demo.PLAN, conversions=(big.item, *rest), warnings=(big,))
+    settings = Settings(
+        show_welcome=False, open_output_when_done=False, theme=theme, language=language
+    )
+    app = open_window(FakeBackend(settings=settings, plan=plan))
+    app.window.resize(demo.WIDTH, demo.HEIGHT)
+    app.presenter.choose_tool(Tool.CONVERT)
+    app.presenter.add_paths(demo.INPUTS)
+    app.presenter.press_primary()
+    pump(app, until=lambda: app.presenter.page == 2, seconds=5)
+    shot(app, out / f"2-review-split-offer-{theme}-{language}.png")
+    shut(app)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", type=Path, required=True)
@@ -94,6 +114,7 @@ def main() -> int:
     for theme in ("light", "dark"):
         for language in ("en", "es"):
             screens(out, theme, language)
+            offer_shot(out, theme, language)
     print(f"{len(list(out.glob('*.png')))} screenshots in {out}")
     return 0
 

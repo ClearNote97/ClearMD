@@ -18,7 +18,7 @@ from clearmd.frontend.presenter.models import (
 )
 from clearmd.frontend.presenter.state import HOME, WORKING
 from clearmd.frontend.ttk.visuals.look import Look
-from clearmd.frontend.ttk.window import controls, home_chrome
+from clearmd.frontend.ttk.window import controls, home_chrome, offer
 from clearmd.frontend.ttk.window.dialog_host import DialogHost
 from clearmd.frontend.ttk.window.frame import Frame
 from clearmd.frontend.ttk.window.primary_button import PrimaryButton
@@ -83,6 +83,7 @@ class TtkView:
         if previous is not None and previous.page != state.page:
             self._primary_button.pause()
         self._show_secondary(state)
+        offer.show_offer(self._actions, self._shown, self._presenter)
         self._header()
         controls.apply_enabled(state.enabled, self._main, self._rail)
 
@@ -120,6 +121,7 @@ class TtkView:
     def show_plan(self, plan: PlanView) -> None:
         self._shown.last_plan = plan
         self._review.show(plan)
+        offer.show_offer(self._actions, self._shown, self._presenter)
 
     def show_progress(self, progress: ProgressView) -> None:
         self._shown.last_progress = progress
@@ -128,6 +130,7 @@ class TtkView:
     def show_result(self, result: ResultView) -> None:
         self._shown.last_result = result
         self._results.show(result)
+        offer.show_offer(self._actions, self._shown, self._presenter)
 
     def show_page(self, page: ttk.Frame) -> None:
         if page is self._shown.page:
@@ -143,6 +146,7 @@ class TtkView:
         self._review.forget()
         self._converting.forget(str(self._main.output_label.cget("text")))
         self._results.forget()
+        offer.show_offer(self._actions, self._shown, self._presenter)
 
     def show_message(self, text: str) -> None:
         self._message.configure(text=text)

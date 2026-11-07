@@ -79,7 +79,7 @@ def build_frame(
     inside.addWidget(stack, 1)
     message = label("message", wrap=True)
     inside.addWidget(message)
-    actions = ActionBar(on_primary=on_primary)
+    actions = ActionBar(on_primary=on_primary, on_offer=lambda: presenter.split_large())
     inside.addWidget(actions)
 
     main = ChooseView(

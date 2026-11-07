@@ -14,6 +14,7 @@ uv run python tests/gui/flow.py --out docs/screenshots/007 --language es   # a r
 | `1-choose-*` | Step 1: what to convert, where the results go |
 | `1-choose-split-*` | Step 1 of Split: How to Split and Keep in place of the images (023) |
 | `2-review-*` | Step 2: the plan, before anything is written |
+| `2-review-split-offer-*` | Step 2 with a PDF too large to convert: Split the Large PDFs, left of Back (025) |
 | `3-convert-ready-*` | Step 3 before the batch: what is ready and where it goes |
 | `3-convert-*` | Step 3: the progress (a batch held mid-way) |
 | `4-results-*` | Step 4: the figures and what needs attention |

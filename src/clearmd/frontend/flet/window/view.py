@@ -72,6 +72,7 @@ class FletView:
         if page_changed:
             self._primary_button.pause()
         self._show_secondary(state)
+        self._show_offer()
         self._header()
         controls.apply_enabled(state.enabled, self._main, self._rail)
 
@@ -87,6 +88,18 @@ class FletView:
         }
         command = commands.get(second.kind)
         self._actions.show_secondary(second.text or None, command, strong=second.strong)
+
+    def _show_offer(self) -> None:
+        """ "Split the Large PDFs" in the action bar, left of Back on Review and of Convert More on
+        Results (feature 025): the plan's or the result's offer, outside the work."""
+        state, shown = self._shown.state, self._shown
+        offer = ""
+        if state is not None and state.state not in WORKING:
+            if state.page == 2 and shown.last_plan is not None:
+                offer = shown.last_plan.split_offer
+            elif state.page == 4 and shown.last_result is not None:
+                offer = shown.last_result.split_offer
+        self._actions.show_offer(offer)
 
     def _show_ready(self) -> None:
         count = ready_line(self._shown.catalog, self._shown.last_plan)
@@ -109,6 +122,7 @@ class FletView:
     def show_plan(self, plan: PlanView) -> None:
         self._shown.last_plan = plan
         self._review.show(plan)
+        self._show_offer()
 
     def show_progress(self, progress: ProgressView) -> None:
         self._shown.last_progress = progress
@@ -117,6 +131,7 @@ class FletView:
     def show_result(self, result: ResultView) -> None:
         self._shown.last_result = result
         self._results.show(result)
+        self._show_offer()
 
     def forget_work(self) -> None:
         self._shown.last_plan = None
@@ -124,6 +139,7 @@ class FletView:
         self._review.forget()
         self._converting.forget(str(self._main.output_label.value or ""))
         self._results.forget()
+        self._show_offer()
 
     def show_message(self, text: str) -> None:
         self._show_message(text)

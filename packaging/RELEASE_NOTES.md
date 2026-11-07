@@ -2,6 +2,13 @@
 
 Each file can be checked against `SHA256SUMS.txt` ([how](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)). / Cada archivo se puede comprobar con `SHA256SUMS.txt` ([cómo](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)).
 
+**New in 2.2.0 / Novedades de la 2.2.0**
+- When Convert meets a PDF too large for its limits, Review and Results offer **Split the Large
+  PDFs**: it opens Split with them, into the recommended number of parts, keeping their
+  Markdown. / Cuando Convertir encuentra un PDF demasiado grande para sus límites, Revisar y
+  Resultados ofrecen **Dividir los PDF Muy Grandes**: abre Dividir con ellos, en el número de
+  partes recomendado, conservando su Markdown.
+
 **New in 2.1.0 / Novedades de la 2.1.0**
 - Split into **parts of about N words**, to fit an AI (30,000 by default; always approximate):
   whole pages, in order. A PDF without text says so instead of guessing. Command line:

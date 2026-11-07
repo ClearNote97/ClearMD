@@ -106,7 +106,7 @@ follows Choose → Review → Results in the three windows; the command line get
       and keeps the PDF parts, their Markdown, or both (`OutputSep/`).
 - [x] **024 — Split into parts that fit an AI** (ADR-0045): v2.1.0: the cut by estimated context size (approximate,
       no tokenizer downloaded), for PDF and Markdown (Markdown by headings).
-- [ ] **025 — "Split It" from Convert** (v2.2.0): a file marked too big or too slow (AC-42/43 of feature
+- [x] **025 — "Split It" from Convert**: v2.2.0: a file marked too big or too slow (AC-42/43 of feature
       001) offers to split it, with the recommended cut; the parts come back to the batch.
 - [ ] **026 — Merge** (v2.3.0): several `.md` into one, PDFs into one PDF, and mixed documents converted
       and joined (`OutputUnif/`); the order chosen by the user.

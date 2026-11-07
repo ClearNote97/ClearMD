@@ -13,6 +13,7 @@ import asyncio
 import sys
 import threading
 from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # tests/: support.*, gui.*
@@ -21,6 +22,7 @@ import flet as ft  # noqa: E402
 import gui.screenshots as demo  # noqa: E402
 from support.gui_fakes import FakeBackend  # noqa: E402
 
+from clearmd.backend.schemas.models import BatchPlan, PlanWarning  # noqa: E402
 from clearmd.backend.schemas.settings import Settings  # noqa: E402
 from clearmd.frontend.flet.layout.units import FRAME_HEIGHT, FRAME_WIDTH  # noqa: E402
 from clearmd.frontend.flet.visuals.images import ASSETS  # noqa: E402
@@ -56,6 +58,13 @@ async def close_dialog(app: FletApp) -> None:
     if dialog is not None:
         dialog.close_dialog()
         await asyncio.sleep(0.5)
+
+
+def large_pdf_plan() -> BatchPlan:
+    """The demo's plan with its PDF over the time limit: Review offers to split it (025)."""
+    pdf = demo.PLAN.conversions[0]
+    slow = PlanWarning(replace(pdf, cost=2400.0), 2400.0, 600.0)
+    return replace(demo.PLAN, warnings=(slow,))
 
 
 async def screens(page: ft.Page, out: Path, theme: str, language: str) -> None:
@@ -105,6 +114,11 @@ async def screens(page: ft.Page, out: Path, theme: str, language: str) -> None:
     await shooter.shot("1-choose-split")
     app.presenter.choose_tool(Tool.CONVERT)
     app.presenter.add_paths(demo.INPUTS)
+    fake.plan = large_pdf_plan()  # Review offers to split the large PDF (025)
+    app.presenter.press_primary()
+    await shooter.until(lambda: app.presenter.page == 2)
+    await shooter.shot("2-review-split-offer")
+    fake.plan = demo.PLAN
     page.window.width, page.window.height = COMPACT[0] + FRAME_WIDTH, COMPACT[1] + FRAME_HEIGHT
     app.presenter.go_to(1)
     await shooter.shot("1-choose-compact")

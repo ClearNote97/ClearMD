@@ -20,6 +20,7 @@ from clearmd.frontend.pyside.visuals.stylesheet import stylesheet
 from clearmd.frontend.pyside.window import controls
 from clearmd.frontend.pyside.window.dialog_host import DialogHost
 from clearmd.frontend.pyside.window.frame import Frame
+from clearmd.frontend.pyside.window.offer import offer_of
 from clearmd.frontend.pyside.window.primary_button import PrimaryButton
 from clearmd.frontend.pyside.window.shown import Shown
 from clearmd.i18n import Catalog
@@ -73,6 +74,7 @@ class PySideView:
             self._primary_button.pause()
             self._focus(previous.page if previous is not None else None, state.page)
         self._show_secondary(state)
+        self._show_offer()
         self._header()
         controls.apply_enabled(
             state.enabled, self._main, self._rail, working=state.state in WORKING
@@ -99,6 +101,9 @@ class PySideView:
         command = commands.get(second.kind)
         self._actions.show_secondary(second.text or None, command, strong=second.strong)
 
+    def _show_offer(self) -> None:
+        self._actions.show_offer(offer_of(self._shown))
+
     def _show_ready(self) -> None:
         count = ready_line(self._shown.catalog, self._shown.last_plan)
         if count is not None:
@@ -119,6 +124,7 @@ class PySideView:
     def show_plan(self, plan: PlanView) -> None:
         self._shown.last_plan = plan
         self._review.show(plan)
+        self._show_offer()
 
     def show_progress(self, progress: ProgressView) -> None:
         self._shown.last_progress = progress
@@ -127,6 +133,7 @@ class PySideView:
     def show_result(self, result: ResultView) -> None:
         self._shown.last_result = result
         self._results.show(result)
+        self._show_offer()
 
     def forget_work(self) -> None:
         self._shown.last_plan = None
@@ -134,6 +141,7 @@ class PySideView:
         self._review.forget()
         self._converting.forget(self._main.output_label.text())
         self._results.forget()
+        self._show_offer()
 
     def show_message(self, text: str) -> None:
         self._message.setText(text)

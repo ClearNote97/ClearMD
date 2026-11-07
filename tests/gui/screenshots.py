@@ -1,12 +1,10 @@
 """Screenshots of the ttk GUI for docs/ (feature 005, AC-21): every screen, light and dark, EN/ES.
-
 Run in the dev container (a virtual display is started when there is none):
 
-    uv run python tests/gui/screenshots.py --out docs/screenshots/005
+    uv run python tests/gui/screenshots.py --out docs/screenshots/007
 
 The window is driven through the presenter with a fake backend: no document is converted, but
-the flow is the real one (the worker thread, the steps, the views).
-"""
+the flow is the real one (the worker thread, the steps, the views)."""
 
 import argparse
 import os
@@ -26,6 +24,7 @@ from support.gui_fakes import FakeBackend, planned  # noqa: E402
 
 from clearmd.backend.schemas.errors import SkipReason  # noqa: E402
 from clearmd.backend.schemas.models import BatchPlan, OutcomeStatus, SkippedItem  # noqa: E402
+from clearmd.backend.schemas.models import PlanWarning as Warn  # noqa: E402
 from clearmd.backend.schemas.settings import Settings  # noqa: E402
 from clearmd.frontend.presenter import AppState  # noqa: E402
 from clearmd.frontend.presenter.state import Tool  # noqa: E402
@@ -60,6 +59,8 @@ PLAN = BatchPlan(
     (),
 )
 FAILED = {"Contrato de arriendo.docx": OutcomeStatus.FAILED}
+# A PDF too slow for the time limit: Review offers to split it (feature 025).
+OFFER = BatchPlan(PLAN.conversions, PLAN.skipped, (), (Warn(PLAN.conversions[0], 2400, 600),))
 
 
 def demo_files() -> None:
@@ -177,7 +178,6 @@ def converting(app: TtkApp, held: Held) -> None:
 
 
 def _go(page: int) -> Callable[[TtkApp], None]:
-    """A page shown with nothing chosen."""
     return lambda app: app.presenter.go_to(page)
 
 
@@ -200,6 +200,7 @@ def main() -> int:
                     ("1-choose-split", FakeBackend(plan=PLAN), choose_split),
                     ("1-choose", FakeBackend(plan=PLAN), choose),
                     ("2-review", FakeBackend(plan=PLAN), to_review),
+                    ("2-review-split-offer", FakeBackend(plan=OFFER), to_review),
                     ("4-results", FakeBackend(plan=PLAN, statuses=FAILED), to_results),
                     ("4-results-all-good", FakeBackend(plan=BatchPlan(PLAN.conversions, (), ())),
                      to_results),

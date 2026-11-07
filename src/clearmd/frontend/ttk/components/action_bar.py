@@ -1,5 +1,5 @@
 """The bar at the foot of every page (ADR-0029): the page's primary action, why it is disabled,
-and one secondary action (Back, Cancel or Convert more)."""
+one secondary action (Back, Cancel or Convert more), and Results' "Split the Large PDFs" (025)."""
 
 import tkinter as tk
 from collections.abc import Callable
@@ -25,10 +25,27 @@ class ActionBar(ttk.Frame):
             "<Configure>", lambda event: self.hint.configure(wraplength=max(event.width, 120))
         )
         self._secondary_command: Callable[[], None] | None = None
+        self.offer = ttk.Button(self, style=SOFT, command=self._offer)  # feature 025
+        self._offer_command: Callable[[], None] | None = None
 
     def _secondary(self) -> None:
         if self._secondary_command is not None:
             self._secondary_command()
+
+    def _offer(self) -> None:
+        if self._offer_command is not None:
+            self._offer_command()
+
+    def show_offer(self, text: str | None, command: Callable[[], None] | None = None) -> None:
+        """Results' offer, left of the secondary action, or none (``text`` is None)."""
+        if text is None or command is None:
+            self.offer.pack_forget()
+            return
+        self._offer_command = command
+        self.offer.configure(text=text)
+        if not self.offer.winfo_manager():
+            beside = self.secondary if self.secondary.winfo_manager() else self.primary
+            self.offer.pack(side="right", padx=(0, SPACE), after=beside)
 
     def show(self, primary: Primary) -> None:
         self.primary.configure(text=primary.label)

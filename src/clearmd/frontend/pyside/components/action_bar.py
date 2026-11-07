@@ -1,5 +1,5 @@
-"""The bar at the foot of every page (ADR-0029): why the primary action is disabled, one secondary
-action and the page's primary action."""
+"""The bar at the foot of every page (ADR-0029): why the primary action is disabled, the offer to
+split large PDFs (feature 025), one secondary action and the page's primary action."""
 
 from collections.abc import Callable
 
@@ -15,7 +15,9 @@ class ActionBar(QWidget):
     """The bar at the foot of every page (ADR-0029): why the primary action is disabled, one
     secondary action (Back, Cancel or Convert more), and the page's primary action."""
 
-    def __init__(self, *, on_primary: Callable[[], None]) -> None:
+    def __init__(
+        self, *, on_primary: Callable[[], None], on_offer: Callable[[], None] = lambda: None
+    ) -> None:
         super().__init__()
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -23,6 +25,9 @@ class ActionBar(QWidget):
         self.hint = label("hint", wrap=True)
         self.hint.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         layout.addWidget(self.hint, 1)
+        self.offer = button("", on_offer)  # Review's and Results' "Split the Large PDFs (N)"
+        self.offer.hide()
+        layout.addWidget(self.offer)
         self.secondary = button("", self._secondary)
         self.secondary.hide()
         layout.addWidget(self.secondary)
@@ -49,6 +54,12 @@ class ActionBar(QWidget):
         self.secondary.setObjectName("strong" if strong else "")
         restyle(self.secondary, "strong", strong)
         self.secondary.show()
+
+    def show_offer(self, text: str) -> None:
+        """The offer with its label, or hidden when there is nothing to offer ("")."""
+        self.offer.setText(text)
+        self.offer.setAccessibleName(text)
+        self.offer.setVisible(bool(text))
 
     def _secondary(self) -> None:
         if self._command is not None:

@@ -71,7 +71,7 @@ def build_frame(
     pages = tuple(view.control for view in (main, review, converting, results))
     message = label("message")
     message.visible = False  # until there is one
-    actions = ActionBar(on_primary=on_primary)
+    actions = ActionBar(on_primary=on_primary, on_offer=lambda: presenter.split_large())
     panel = ft.Container(
         content=ft.Column(
             [ft.Column([home.control, *pages], spacing=0, expand=True), message, actions.control],
