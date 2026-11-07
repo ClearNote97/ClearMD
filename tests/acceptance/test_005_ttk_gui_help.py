@@ -79,6 +79,7 @@ def test_ac_15_the_settings_window_saves_settings_toml_and_applies_it(
     app = window(ApiBackend())
     if app.dialog is not None:  # the welcome of a first run
         app.dialog.close()
+    app.presenter.go_to(1)  # the window opens on Home (feature 023)
     app.rail.settings.invoke()
     dialog = app.dialog
     assert isinstance(dialog, dialogs.settings.SettingsDialog)

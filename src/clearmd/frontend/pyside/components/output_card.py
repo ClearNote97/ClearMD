@@ -1,5 +1,6 @@
 """The Choose step's output half: where the results go, the summary's format and the images'
-choice. It adds its card to the step's own layout, so the arrangement stays the step's."""
+choice; for Split, How to Split in place of the images (feature 023). It adds its card to the
+step's own layout, so the arrangement stays the step's."""
 
 from collections.abc import Callable
 
@@ -14,7 +15,10 @@ from PySide6.QtWidgets import (
 )
 
 from clearmd.frontend.design.metrics import GAP, SPACE
+from clearmd.frontend.presenter.models import OutputChoice
+from clearmd.frontend.presenter.state import Tool
 from clearmd.frontend.pyside.components.primitives import button, card, label, radio_button
+from clearmd.frontend.pyside.components.split_choice import SplitChoice
 
 
 class OutputCard:
@@ -30,16 +34,20 @@ class OutputCard:
         on_pick_folder: Callable[[], None],
         on_summary: Callable[[str], None],
         on_images: Callable[[str], None],
+        on_split: Callable[..., None],
     ) -> None:
         output, output_layout = card()
+        self.split = SplitChoice(parent, text=text, on_split=on_split)
+        self.split.widget.hide()
+        output_layout.addWidget(self.split.widget)
         heading = QHBoxLayout()
         title = label("strong")
         text(title, "gui.main.output_title")
         heading.addWidget(title)
         heading.addStretch(1)
-        images_title = label("strong")
-        text(images_title, "gui.main.images_title")
-        heading.addWidget(images_title)
+        self.images_title = label("strong")
+        text(self.images_title, "gui.main.images_title")
+        heading.addWidget(self.images_title)
         self._images = QButtonGroup(parent)
         self.images_omit = radio_button(self._images, lambda: on_images("omit"))
         self.images_folder = radio_button(self._images, lambda: on_images("folder"))
@@ -95,4 +103,13 @@ class OutputCard:
             self.summary_pdf_only,
             self.images_omit,
             self.images_folder,
+            *self.split.controls,
         )
+
+    def show_tool(self, choice: OutputChoice) -> None:
+        """Split's block in place of the images, with what the presenter keeps."""
+        split = choice.tool is Tool.SPLIT
+        for widget in (self.images_title, self.images_omit, self.images_folder):
+            widget.setVisible(not split)
+        self.split.widget.setVisible(split)
+        self.split.show(choice)

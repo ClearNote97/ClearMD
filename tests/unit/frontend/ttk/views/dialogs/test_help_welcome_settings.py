@@ -41,6 +41,7 @@ def test_the_welcome_appears_once_and_can_be_dismissed_for_good(display: str) ->
 
 
 def test_settings_save_applies_the_language_and_theme(app: TtkApp) -> None:
+    app.presenter.go_to(1)  # the window opens on Home (feature 023)
     app.rail.settings.invoke()
     pump(app, seconds=0.2)
     dialog = app.dialog

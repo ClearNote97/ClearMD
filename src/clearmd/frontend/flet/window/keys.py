@@ -1,4 +1,5 @@
-"""What the user does without a pointer: Enter, Esc, Ctrl+1..4, Delete and Ctrl+A on the list.
+"""What the user does without a pointer: Enter, Esc, Ctrl+0 (Home) and Ctrl+1..4, Delete and Ctrl+A
+on the list.
 
 flet gives every key to the page, not to a control: the window decides here what each does — a
 dialog's keys first (Esc closes it, Enter runs its default action), then the window's. Enter is
@@ -11,10 +12,10 @@ from clearmd.frontend.flet.window.dialog_host import DialogHost
 from clearmd.frontend.flet.window.focus import Focus
 from clearmd.frontend.flet.window.page_port import KeyPress
 from clearmd.frontend.presenter import Presenter
-from clearmd.frontend.presenter.state import STEPS
+from clearmd.frontend.presenter.state import HOME, STEPS
 
 ENTER = frozenset({"Enter", "Numpad Enter"})  # the main keyboard's and the keypad's
-STEP_KEYS = {str(number): number for number in range(1, len(STEPS) + 1)}
+STEP_KEYS = {str(number): number for number in range(HOME, len(STEPS) + 1)}  # 0: Home (023)
 
 
 class Keys:

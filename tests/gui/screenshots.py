@@ -28,6 +28,7 @@ from clearmd.backend.schemas.errors import SkipReason  # noqa: E402
 from clearmd.backend.schemas.models import BatchPlan, OutcomeStatus, SkippedItem  # noqa: E402
 from clearmd.backend.schemas.settings import Settings  # noqa: E402
 from clearmd.frontend.presenter import AppState  # noqa: E402
+from clearmd.frontend.presenter.state import Tool  # noqa: E402
 from clearmd.frontend.ttk import TtkApp  # noqa: E402
 
 WIDTH, HEIGHT = 1080, 720
@@ -105,7 +106,7 @@ def choose(app: TtkApp) -> None:
 
 
 def to_review(app: TtkApp) -> None:
-    app.presenter.add_paths(INPUTS)
+    choose(app)
     app.presenter.analyze()
     settle(app, until=lambda: app.presenter.state is AppState.WAITING_DECISION)
 
@@ -117,12 +118,19 @@ def to_results(app: TtkApp) -> None:
 
 
 def help_window(app: TtkApp) -> None:
-    app.presenter.add_paths(INPUTS)
+    choose(app)
     app.dialogs.show_help()
 
 
 def settings_window(app: TtkApp) -> None:
+    app.presenter.go_to(1)  # over step 1, as before Home (feature 023)
     app.dialogs.show_settings()
+
+
+def choose_split(app: TtkApp) -> None:
+    """Split's step 1 (feature 023) with a PDF listed: How to Split in place of the images."""
+    app.presenter.choose_tool(Tool.SPLIT)
+    app.presenter.add_paths([INPUTS[0]])
 
 
 def convert_ready(app: TtkApp) -> None:
@@ -137,7 +145,7 @@ def convert_more(app: TtkApp) -> None:
 
 def compact(app: TtkApp) -> None:
     app.root.geometry(f"{COMPACT_WIDTH}x{HEIGHT}+0+0")
-    app.presenter.add_paths(INPUTS)
+    choose(app)
     settle(app, seconds=0.4)
 
 
@@ -187,7 +195,9 @@ def main() -> int:
         for language in ("en", "es"):
             for theme in ("light", "dark"):
                 shots: list[tuple[str, FakeBackend, Callable[[TtkApp], None]]] = [
-                    ("1-choose-empty", FakeBackend(plan=PLAN), lambda app: None),
+                    ("0-home", FakeBackend(plan=PLAN), lambda app: None),  # as it opens (023)
+                    ("1-choose-empty", FakeBackend(plan=PLAN), _go(1)),
+                    ("1-choose-split", FakeBackend(plan=PLAN), choose_split),
                     ("1-choose", FakeBackend(plan=PLAN), choose),
                     ("2-review", FakeBackend(plan=PLAN), to_review),
                     ("4-results", FakeBackend(plan=PLAN, statuses=FAILED), to_results),

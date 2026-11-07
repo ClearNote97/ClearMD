@@ -1,4 +1,4 @@
-"""What the rail draws on its canvas (ADR-0027, ADR-0029): ground, logo, steps and foot.
+"""What the rail draws on its canvas (ADR-0027, ADR-0029): ground, logo, Home, steps and foot.
 
 The canvas keeps the state; these functions receive what they draw from (``Scene``) and a ``keep``
 callable that holds each picture, because Tk forgets an image Python does not hold.
@@ -16,13 +16,15 @@ from PIL import ImageTk
 from clearmd.frontend.design.colors import blend
 from clearmd.frontend.design.metrics import COMPACT_RAIL_WIDTH, GAP, HALF, RADIUS, RAIL_WIDTH, SPACE
 from clearmd.frontend.design.palette import Palette
-from clearmd.frontend.ttk.visuals import marks, shapes
+from clearmd.frontend.ttk.visuals import marks, shapes, tool_marks
 
 _STEP_HEIGHT = 44
 _TOP = 3 * SPACE  # the logo's distance from the rail's top edge
 STEPS_TOP = 12 * SPACE  # where the first step starts
 _BADGE = 24  # a step's circle
 _DIM = 0.55  # how strong the steps not on screen are drawn (ADR-0029)
+_OFF = 0.3  # and Home while the work runs: it cannot be opened (feature 023)
+_HOUSE = 14  # Home's mark, in its circle
 
 Keep = Callable[[object], ImageTk.PhotoImage]
 
@@ -37,6 +39,8 @@ class Scene:
     labels: list[str]
     local: str
     version: str
+    home: str = ""  # Home's word (feature 023), above the steps
+    home_enabled: bool = True
 
 
 def draw_rail(
@@ -68,6 +72,8 @@ def draw_rail(
             text_x += wordmark.measure(part)
 
     y = top + STEPS_TOP
+    draw_step(canvas, keep, scene, p, 0, scene.home, left, y, width)  # Home (feature 023)
+    y += _STEP_HEIGHT + HALF
     for index, label in enumerate(scene.labels, start=1):
         draw_step(canvas, keep, scene, p, index, label, left, y, width)
         y += _STEP_HEIGHT + HALF
@@ -86,7 +92,8 @@ def draw_step(
     y: int,
     width: int,
 ) -> None:
-    """One step: its highlight or click target, its numbered circle and its word."""
+    """One step: its highlight or click target, its numbered circle and its word. Step 0 is Home:
+    a house in its circle, fainter while it cannot be opened."""
     on_screen = index == scene.page
     tag = f"step{index}"
     if on_screen:
@@ -97,14 +104,20 @@ def draw_step(
             left + SPACE, y, left + width - SPACE, y + _STEP_HEIGHT,
             fill=p.rail, outline="", tags=tag,
         )  # fmt: skip
-    colour = p.on_accent if on_screen else blend(p.rail_text, p.rail, _DIM)
+    reachable = index != 0 or scene.home_enabled
+    strength = _DIM if reachable else _OFF
+    colour = p.on_accent if on_screen else blend(p.rail_text, p.rail, strength)
     middle = y + _STEP_HEIGHT // 2
     badge_x = left + width // 2 if scene.compact else left + GAP + SPACE + _BADGE // 2
     circle = shapes.circle(_BADGE, outline=colour, fill=p.accent if on_screen else p.rail)
     canvas.create_image(badge_x, middle, image=keep(circle), tags=tag)
-    canvas.create_text(
-        badge_x, middle, text=str(index), fill=colour, font=scene.fonts["strong"], tags=tag
-    )
+    if index == 0:
+        house = keep(tool_marks.house(colour, _HOUSE))
+        canvas.create_image(badge_x, middle, image=house, tags=tag)
+    else:
+        canvas.create_text(
+            badge_x, middle, text=str(index), fill=colour, font=scene.fonts["strong"], tags=tag
+        )
     if not scene.compact:
         canvas.create_text(
             badge_x + _BADGE // 2 + SPACE + HALF, middle, text=label, fill=colour,

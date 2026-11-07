@@ -103,6 +103,9 @@ def test_ac_04_convert_more_asks_every_time(
 def test_ac_04_enter_runs_the_primary_action(flet_window: Window, tmp_path: Path) -> None:
     app = flet_window(FakeBackend(settings=QUIET))
     page = page_of(app)
+    page.press("Enter")  # Home has no primary action (feature 023)
+    assert app.presenter.page == 0
+    app.presenter.go_to(1)
     page.press("Enter")  # nothing chosen: the action is disabled and does nothing
     assert app.presenter.page == 1 and app.presenter.state is AppState.READY
     app.presenter.add_paths([tmp_path])

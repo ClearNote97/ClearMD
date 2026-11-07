@@ -131,6 +131,7 @@ def test_ac_05_the_settings_window_saves_settings_toml_and_applies_it(flet_windo
     pump(app, seconds=0.05)
     if app.dialogs.current is not None:  # the welcome of a first run
         app.dialogs.current.close_dialog()
+    app.presenter.go_to(1)  # from Home (feature 023): its primary action shows the language
     click(app.rail.settings)
     dialog = app.dialogs.current
     assert isinstance(dialog, SettingsDialog)

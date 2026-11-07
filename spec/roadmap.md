@@ -93,7 +93,7 @@ already tested (ADR-0001).
 - [x] **019 — The installer looks like ClearMD** (pictures, light and dark, the apps' palette, ADR-0041): v0.13.2.
 - [x] **020 — The summary as a PDF alone** (ADR-0031 amended): v1.1.0.
 - [x] **021 — flet's empty list as two large tiles; titles in Title Case** (ADR-0042 amended): v1.2.0.
-- [x] **022 — The files a public project carries; checksums with every release**: next release.
+- [x] **022 — The files a public project carries; checksums with every release**: v2.0.0.
 
 ## Version 2 — a local toolkit that prepares documents for AI (ADR-0043)
 
@@ -101,7 +101,7 @@ Convert, Split and Merge as three tools of the same rank, on a start screen with
 follows Choose → Review → Results in the three windows; the command line gets `clearmd split` and
 `clearmd merge`. The tools act on files, never on their content.
 
-- [ ] **023 — Start screen and Split PDF** (v2.0.0): the tiles Convert and Split (Merge's tile arrives with
+- [x] **023 — Start screen and Split PDF** (ADR-0044): v2.0.0: the tiles Convert and Split (Merge's tile arrives with
       026: never a tile without its action); Split cuts a PDF into a number of parts or every N pages,
       and keeps the PDF parts, their Markdown, or both (`OutputSep/`).
 - [ ] **024 — Split into parts that fit an AI** (v2.1.0): the cut by estimated context size (approximate,

@@ -7,12 +7,12 @@ it, the view and the dialogs tell it what to watch.
 """
 
 import dataclasses
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from functools import partial
 
 import flet as ft
 
-FOCUSABLE = (ft.Button, ft.Checkbox, ft.Radio, ft.Dropdown)
+FOCUSABLE = (ft.Button, ft.Checkbox, ft.Radio, ft.Dropdown, ft.TextField)
 
 
 def controls_in(control: ft.BaseControl) -> Iterator[ft.BaseControl]:
@@ -27,6 +27,18 @@ def controls_in(control: ft.BaseControl) -> Iterator[ft.BaseControl]:
                 yield from controls_in(child)
 
 
+class _Watched:
+    """A focus handler of the watcher, then the control's own one, if it had one."""
+
+    def __init__(self, own: Callable[[], None], then: object = None) -> None:
+        self._own, self._then = own, then
+
+    def __call__(self) -> None:
+        self._own()
+        if callable(self._then):  # the window's own handlers take no event
+            self._then()
+
+
 class Focus:
     def __init__(self) -> None:
         self.holder: ft.BaseControl | None = None
@@ -37,11 +49,12 @@ class Focus:
         return self.holder is not None
 
     def watch(self, root: ft.BaseControl) -> None:
-        """Follow the focus of every control under ``root`` that can take it."""
+        """Follow the focus of every control under ``root`` that can take it; a control's own
+        blur (a number committed when it is left, feature 023) still runs, after it."""
         for control in controls_in(root):
-            if isinstance(control, FOCUSABLE):
-                control.on_focus = partial(self._gained, control)
-                control.on_blur = partial(self._lost, control)
+            if isinstance(control, FOCUSABLE) and not isinstance(control.on_focus, _Watched):
+                control.on_focus = _Watched(partial(self._gained, control))
+                control.on_blur = _Watched(partial(self._lost, control), control.on_blur)
 
     def forget(self) -> None:
         """The controls that had it are gone (a closed dialog)."""

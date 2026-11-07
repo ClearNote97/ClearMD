@@ -71,6 +71,7 @@ class TtkApp:
             on_pick_folder=lambda: self.pickers.pick_output_folder(),
         )
         self.rail, self.surface, self.actions = frame.rail, frame.surface, frame.actions
+        self.home = frame.home  # the start screen (feature 023)
         self.main, self.review, self.message = frame.main, frame.review, frame.message
         self.converting, self.results = frame.converting, frame.results
         self.pickers = Pickers(self.root, self.presenter, self.shown, self.main.output_mode)

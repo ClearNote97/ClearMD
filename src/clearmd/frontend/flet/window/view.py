@@ -21,6 +21,7 @@ from clearmd.frontend.presenter.models import (
     ResultView,
     StateView,
 )
+from clearmd.frontend.presenter.state import HOME, WORKING
 from clearmd.i18n import Catalog
 
 
@@ -60,10 +61,14 @@ class FletView:
             self._converting.clear()
         elif state.state is AppState.WAITING_DECISION:
             self._show_ready()
+        home = state.page == HOME  # the start screen: its tiles, no action bar (feature 023)
+        self._frame.home.control.visible = home
         for number, page in enumerate(self._frame.pages, start=1):
             page.visible = number == state.page
         self._rail.show_page(state.page)
+        self._rail.home.disabled = state.state in WORKING
         self._actions.show(state.primary)
+        self._actions.control.visible = not home
         if page_changed:
             self._primary_button.pause()
         self._show_secondary(state)
@@ -132,7 +137,7 @@ class FletView:
         self._shown.catalog = catalog
         self._page.set_title(catalog.text("gui.app.title"))
         self._rail.apply_language(catalog)
-        for view in (self._main, self._review, self._converting, self._results):
+        for view in (self._frame.home, self._main, self._review, self._converting, self._results):
             view.apply_language(catalog)
         self._header()
 

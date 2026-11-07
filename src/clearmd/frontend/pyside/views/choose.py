@@ -28,6 +28,7 @@ class ChooseView(QWidget):
         on_pick_folder: Callable[[], None],
         on_summary: Callable[[str], None],
         on_images: Callable[[str], None],
+        on_split: Callable[..., None],
     ) -> None:
         super().__init__()
         self._texts: list[tuple[QLabel | QPushButton | QRadioButton, str]] = []
@@ -60,7 +61,10 @@ class ChooseView(QWidget):
             on_pick_folder=on_pick_folder,
             on_summary=on_summary,
             on_images=on_images,
+            on_split=on_split,
         )
+        self._output_card = output
+        self.split = output.split
         self.next_to = output.next_to
         self.in_folder = output.in_folder
         self.pick = output.pick
@@ -87,6 +91,7 @@ class ChooseView(QWidget):
         radios = {"markdown_pdf": self.summary_pdf, "pdf": self.summary_pdf_only}
         radios.get(choice.summary_format, self.summary_md).setChecked(True)
         (self.images_omit if choice.images == "omit" else self.images_folder).setChecked(True)
+        self._output_card.show_tool(choice)
 
     def output_mode(self) -> str:
         return OutputMode.FOLDER.value if self.in_folder.isChecked() else OutputMode.NEXT_TO.value

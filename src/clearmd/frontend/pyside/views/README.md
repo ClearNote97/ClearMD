@@ -2,6 +2,7 @@
 
 | Module | Role |
 |---|---|
+| `home.py` | The start screen (`HomeView`, feature 023): Convert or Split, two tiles. |
 | `choose.py` | Step 1, Choose (`ChooseView`): inputs card and output card. |
 | `review.py` | Step 2, Review (`ReviewView`): the plan. |
 | `convert.py` | Step 3, Convert (`ConvertView`): progress. |

@@ -41,7 +41,7 @@ class Inputs:
         # Space on the focused primary button: held, it is one press too (F-1).
         self._primary.bind("<KeyPress-space>", self.space)
         self._primary.bind("<KeyRelease-space>", self._presses.released)
-        for number in range(1, 5):  # the rail by keyboard (AC-01)
+        for number in range(5):  # the rail by keyboard (AC-01); Ctrl+0: Home (feature 023)
             self._root.bind(
                 f"<Control-Key-{number}>", lambda _event, n=number: self._presenter.go_to(n)
             )

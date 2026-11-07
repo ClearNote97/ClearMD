@@ -18,6 +18,8 @@ def test_the_window_builds_draws_and_closes() -> None:
     gui.start()
     app.processEvents()
     assert not gui.window.grab().isNull()
+    assert gui.rail.home.property("current") == "true"  # it opens on the start screen (023)
+    gui.presenter.go_to(1)
     assert gui.rail.step_texts()[0].startswith("> ")
     gui.close()
     app.processEvents()

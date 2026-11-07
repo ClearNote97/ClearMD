@@ -10,10 +10,12 @@ from clearmd.backend.schemas.settings import Settings
 from clearmd.frontend.design.metrics import GAP, SPACE
 from clearmd.frontend.pyside.components.dialog import Dialog
 from clearmd.frontend.pyside.components.primitives import button, label
+from clearmd.frontend.pyside.views.dialogs.split_settings import SplitSettings
 from clearmd.i18n import Catalog
 
 CONTROL_WIDTH = 28 * SPACE  # the combo boxes' column (their style sheet makes them 24 * 8 wide)
 _LANGUAGES = {"en": "English", "es": "Español"}  # each in its own language
+SPLIT_BEFORE = "show_welcome"  # the Split a PDF group goes after the conversion's settings
 
 
 class SettingsDialog(Dialog):
@@ -63,6 +65,8 @@ class SettingsDialog(Dialog):
         rows = QVBoxLayout()
         rows.setSpacing(GAP)
         for setting, key in self.ROWS:
+            if setting == SPLIT_BEFORE:
+                self.split = SplitSettings(rows, catalog, CONTROL_WIDTH)
             row = QHBoxLayout()  # a box, not a grid: its wrapped lines get their height
             row.setSpacing(GAP)
             cell = QWidget()
@@ -107,6 +111,7 @@ class SettingsDialog(Dialog):
         self.foot.addWidget(save)
 
     def _load(self, settings: Settings) -> None:
+        self.split.load(settings)
         for setting, control in self.controls.items():
             value = getattr(settings, setting)
             if isinstance(control, QComboBox):
@@ -116,7 +121,7 @@ class SettingsDialog(Dialog):
 
     def chosen(self) -> Settings:
         """The settings as the controls show them (the remembered folder is kept)."""
-        changes: dict[str, object] = {}
+        changes: dict[str, object] = self.split.chosen()
         for setting, control in self.controls.items():
             if isinstance(control, QComboBox):
                 shown = control.currentText()

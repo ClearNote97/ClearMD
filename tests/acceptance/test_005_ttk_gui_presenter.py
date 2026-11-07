@@ -91,6 +91,8 @@ def test_ac_03_every_text_comes_from_the_catalogs_in_the_chosen_language(
     )
     app = window(FakeBackend(plan=plan, settings=replace_settings(QUIET, language="es")))
     es = load_catalog("es")
+    assert app.surface.header()["title"] == es.text("gui.home.title")  # it opens on Home (023)
+    app.presenter.go_to(1)
     assert app.actions.primary.cget("text") == es.text("gui.nav.next")
     assert app.surface.header()["title"] == es.text("gui.page.choose_title")
     to_review(app, tmp_path)

@@ -75,7 +75,8 @@ class PySideApp:
             on_pick_folder=lambda: self.pickers.pick_output_folder(),
         )
         self.rail, self.surface, self.actions = frame.rail, frame.surface, frame.actions
-        self.main, self.review, self.message = frame.main, frame.review, frame.message
+        self.home, self.main = frame.home, frame.main
+        self.review, self.message = frame.review, frame.message
         self.converting, self.results = frame.converting, frame.results
         self.pickers = Pickers(
             self.window, self.presenter, self.shown, self.main.next_to, self.main.in_folder
@@ -144,4 +145,4 @@ class PySideApp:
     def start(self) -> None:
         self.presenter.start()
         self.window.show()
-        self.main.add_files.setFocus()  # the first thing to do; not a step of the rail
+        self.home.convert.button.setFocus()  # the first thing to do; not a step of the rail

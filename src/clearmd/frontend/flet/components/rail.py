@@ -1,5 +1,5 @@
-"""The dark rail (ADR-0027, ADR-0029): the logo, the steps, Settings, Help, the promise and the
-version."""
+"""The dark rail (ADR-0027, ADR-0029): the logo, Home (feature 023), the steps, Settings, Help, the
+promise and the version."""
 
 from collections.abc import Callable
 from functools import partial
@@ -9,11 +9,12 @@ import flet as ft
 from clearmd.frontend.design.metrics import COMPACT_RAIL_WIDTH, GAP, HALF, RADIUS, RAIL_WIDTH, SPACE
 from clearmd.frontend.flet.components.primitives import gap, label
 from clearmd.frontend.flet.components.rail_art import badge, paint_badge, rail_style
+from clearmd.frontend.flet.components.rail_home import RailHome
 from clearmd.frontend.flet.layout.units import STEP_HEIGHT
 from clearmd.frontend.flet.visuals.images import logo_src
 from clearmd.frontend.flet.visuals.look import paint
 from clearmd.frontend.flet.visuals.theme import role
-from clearmd.frontend.presenter.state import STEPS
+from clearmd.frontend.presenter.state import HOME, STEPS
 from clearmd.i18n import Catalog
 
 COMPACT_VERSION_CHARS = 6  # what fits the compact rail at 14 px
@@ -21,21 +22,22 @@ LOGO = 40  # the mark's size on the rail
 
 
 class Rail:
-    """The dark rail: the logo, Clear·MD, the four steps — each one can be opened, the one on
-    screen highlighted — Settings, Help, the promise and the version. Below 1000 px of window
+    """The dark rail: the logo, Clear·MD, Home and the four steps — each one can be opened, the one
+    on screen highlighted — Settings, Help, the promise and the version. Below 1000 px of window
     width it is compact: the mark and the numbers only."""
 
     def __init__(
         self,
         *,
         on_step: Callable[[int], None],
+        on_home: Callable[[], None],
         on_settings: Callable[[], None],
         on_help: Callable[[], None],
     ) -> None:
         self._compact = False
-        self._page = 1
+        self._page = HOME
         self._labels = [""] * len(STEPS)
-        self._words = {"settings": "", "help": ""}
+        self._words = {"settings": "", "help": "", "home": ""}
         self._version = ""
         self._local = ""
         self.mark = ft.Image(src=logo_src("clearmd-mark-dark-40"), width=LOGO, height=LOGO)
@@ -49,6 +51,8 @@ class Rail:
             content=ft.Row([self.mark, self.wordmark], spacing=SPACE),
             padding=ft.Padding.only(left=SPACE),
         )
+        self._home = RailHome(on_home)
+        self.home = self._home.button
         self.steps: list[ft.Button] = []
         self._badges: list[tuple[ft.Container, ft.Text]] = []
         self._names: list[ft.Text] = []
@@ -75,8 +79,8 @@ class Rail:
         self._foot_frame = foot
         self.control = ft.Container(
             content=ft.Column(
-                [top, gap(4 * SPACE), *self.steps, ft.Container(expand=True), self.settings,
-                 self.help, foot],
+                [top, gap(4 * SPACE), self.home, *self.steps, ft.Container(expand=True),
+                 self.settings, self.help, foot],
                 spacing=HALF,
                 horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
             ),
@@ -92,6 +96,7 @@ class Rail:
         self._words = {
             "settings": catalog.text("gui.main.settings"),
             "help": catalog.text("gui.main.help_word"),
+            "home": catalog.text("gui.home.step"),
         }
         self._local = catalog.text("gui.app.local")
         self._draw()
@@ -126,7 +131,12 @@ class Rail:
             for index, text in enumerate(self._labels)
         ]
 
+    def home_text(self) -> str:
+        """Home as shown, marked with ``>`` while on screen (for tests)."""
+        return ("> " if self._page == HOME else "") + self._words["home"]
+
     def _draw(self) -> None:
+        self._home.draw(self._words["home"], current=self._page == HOME, compact=self._compact)
         for index, step in enumerate(self.steps, start=1):
             current = index == self._page
             text = self._labels[index - 1]

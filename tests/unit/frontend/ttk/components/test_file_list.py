@@ -72,7 +72,9 @@ def test_review_says_ready_to_convert_for_a_file_without_problems(
 def test_f1_a_held_or_doubled_enter_never_skips_a_page(
     app: TtkApp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    app.presenter.go_to(1)  # the window opens on Home (feature 023)
     monkeypatch.setattr("clearmd.frontend.presenter.chrome.primary_gate.PRIMARY_PAUSE_SECONDS", 0.5)
+    time.sleep(0.6)  # step 1's own pause is over
     app.presenter.add_paths([tmp_path])
     app.primary_button.press()
     pump(app, until=lambda: app.presenter.page == 2)

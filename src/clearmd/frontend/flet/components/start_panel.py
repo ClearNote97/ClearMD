@@ -25,8 +25,11 @@ class Tile:
         title: str,
         body: str,
         on_click: Callable[[], None],
+        *,
+        height: int = TILE_HEIGHT,
+        icon_size: int = ICON_SIZE,
     ) -> None:
-        self.icon = ft.Icon(icon, size=ICON_SIZE, color=role("accent_text"))
+        self.icon = ft.Icon(icon, size=icon_size, color=role("accent_text"))
         self.title = label("strong")
         self.body = label("muted")
         self.body.text_align = ft.TextAlign.CENTER
@@ -42,7 +45,7 @@ class Tile:
         self.control = ft.Button(
             content=column,
             style=tile_style(),
-            height=TILE_HEIGHT,
+            height=height,
             expand=True,
             on_click=on_click,
         )

@@ -21,6 +21,8 @@ def _picture(name: str, p: Palette) -> str:
 
 DIM_STRENGTH = 0.45  # a faded card: this much of the card's colour on the ground's (as ttk, 014)
 DIM_TEXT = 0.8  # its text: this much of the muted colour on the faded card
+TILE_HEIGHT = 25 * SPACE  # a start tile (023): its icon, title and two lines, with room
+SELECTED = 0.18  # a selected row, a tile under the pointer: this much of the accent on the card
 
 
 def stylesheet(p: Palette) -> str:
@@ -28,6 +30,7 @@ def stylesheet(p: Palette) -> str:
     dim_text = blend(p.muted, dim_card, DIM_TEXT)
     disabled = blend(p.muted, p.card, 0.5)
     rail_dim = blend(p.rail_text, p.rail, 0.55)
+    selected = blend(p.accent, p.card, SELECTED)
     return f"""
 QWidget {{ font-size: {BODY}px; color: {p.text}; }}
 QWidget#window, QWidget#ground {{ background: {p.ground}; }}
@@ -50,7 +53,9 @@ QPushButton#step[current="true"] {{
     color: {p.on_accent}; background: {p.accent}; font-weight: bold;
 }}
 QPushButton#step:focus, QPushButton#railButton:focus {{ border: 2px solid {p.clear}; }}
-QPushButton#railButton:disabled {{ color: {rail_dim}; }}
+QPushButton#railButton:disabled, QPushButton#step:disabled {{
+    color: {blend(p.rail_text, p.rail, 0.3)};
+}}
 
 QLabel#eyebrow {{ color: {p.accent_text}; font-weight: bold; background: transparent; }}
 QLabel#title {{ font-size: {TITLE}px; font-weight: bold; background: transparent; }}
@@ -89,6 +94,13 @@ QPushButton#primary:hover {{ background: {p.accent_hover}; }}
 QPushButton#primary:focus {{ border: 2px solid {p.text}; }}
 QPushButton#primary:disabled {{ background: {p.border}; color: {disabled}; }}
 QPushButton#strong {{ border: 2px solid {p.accent}; color: {p.accent_text}; }}
+QPushButton#tile {{
+    background: {p.ground}; border: 1px solid {p.border}; border-radius: {RADIUS}px; padding: 0;
+    min-height: {TILE_HEIGHT}px;
+}}
+QPushButton#tile:hover {{ background: {selected}; border: 2px solid {p.accent}; }}
+QPushButton#tile:focus {{ border: 2px solid {p.accent}; }}
+QPushButton#tile QLabel {{ background: transparent; }}
 QPushButton#link {{
     background: transparent; border: none; color: {p.accent_text}; padding: 0 {SPACE}px;
 }}
@@ -119,6 +131,13 @@ QComboBox {{
     background: {p.card}; border: 1px solid {p.border}; border-radius: {RADIUS - 4}px;
     padding: {SPACE // 2}px {SPACE}px; min-height: {3 * SPACE}px; min-width: {24 * SPACE}px;
 }}
+QSpinBox {{
+    background: {p.card}; border: 1px solid {p.border}; border-radius: {RADIUS - 4}px;
+    padding: 2px {SPACE}px; min-width: {6 * SPACE}px;
+}}
+QSpinBox:focus {{ border: 2px solid {p.accent}; }}
+QSpinBox::up-button, QSpinBox::down-button {{ width: 0; border: none; }}
+QSpinBox:disabled {{ color: {disabled}; }}
 QComboBox:focus {{ border: 2px solid {p.accent}; }}
 QComboBox::drop-down {{ border: none; width: {3 * SPACE}px; }}
 QComboBox::down-arrow {{ image: url({_picture("arrow", p)}); width: 12px; height: 12px; }}
@@ -138,7 +157,7 @@ QTreeWidget {{
     background: {p.card}; border: 1px solid {p.border}; border-radius: {RADIUS}px;
     padding: {SPACE}px; alternate-background-color: {p.card};
     outline: 0;
-    selection-background-color: {blend(p.accent, p.card, 0.18)}; selection-color: {p.text};
+    selection-background-color: {selected}; selection-color: {p.text};
 }}
 QTreeWidget::item {{ min-height: {4 * SPACE + 4}px; }}
 QHeaderView::section {{

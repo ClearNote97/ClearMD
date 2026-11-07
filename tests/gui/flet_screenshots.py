@@ -26,6 +26,7 @@ from clearmd.frontend.flet.layout.units import FRAME_HEIGHT, FRAME_WIDTH  # noqa
 from clearmd.frontend.flet.visuals.images import ASSETS  # noqa: E402
 from clearmd.frontend.flet.window.flet_page import FletPage  # noqa: E402
 from clearmd.frontend.flet.window.window import FletApp  # noqa: E402
+from clearmd.frontend.presenter.state import Tool  # noqa: E402
 from clearmd.i18n import load_catalog  # noqa: E402
 
 COMPACT = (900, 640)  # below 1000 px the rail is compact (feature 007)
@@ -68,6 +69,8 @@ async def screens(page: ft.Page, out: Path, theme: str, language: str) -> None:
     page.window.width, page.window.height = demo.WIDTH + FRAME_WIDTH, demo.HEIGHT + FRAME_HEIGHT
     app = FletApp(FletPage(page), fake)
     app.start()
+    await shooter.shot("0-home")  # the window opens on Home (feature 023)
+    app.presenter.choose_tool(Tool.CONVERT)
     await shooter.shot("1-choose-empty")
     app.presenter.add_paths(demo.INPUTS)
     await shooter.shot("1-choose")
@@ -96,6 +99,12 @@ async def screens(page: ft.Page, out: Path, theme: str, language: str) -> None:
     app.dialogs.welcome(tuple(catalog.text(f"gui.welcome.step{n}") for n in (1, 2, 3)))
     await shooter.shot("0-welcome")
     await close_dialog(app)
+    app.presenter.choose_tool(Tool.SPLIT)  # Split's step 1, a PDF listed: How to Split (023)
+    app.presenter.clear_inputs()
+    app.presenter.add_paths([demo.INPUTS[0]])
+    await shooter.shot("1-choose-split")
+    app.presenter.choose_tool(Tool.CONVERT)
+    app.presenter.add_paths(demo.INPUTS)
     page.window.width, page.window.height = COMPACT[0] + FRAME_WIDTH, COMPACT[1] + FRAME_HEIGHT
     app.presenter.go_to(1)
     await shooter.shot("1-choose-compact")

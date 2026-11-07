@@ -79,3 +79,9 @@ def test_closing_waits_only_for_a_batch() -> None:
 
 def test_the_enabled_actions_are_the_presenters() -> None:
     assert Action.BACK in view(AppState.FINISHED, 4).enabled
+
+
+def test_home_has_its_own_title_and_no_step_counter() -> None:
+    home = header_of(EN, view(AppState.READY, 0), None)
+    assert (home.eyebrow, home.title) == ("", "What Do You Want to Do?")
+    assert home.subtitle.startswith("Everything happens on your computer")

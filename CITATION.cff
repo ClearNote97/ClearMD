@@ -6,8 +6,8 @@ type: software
 authors:
   - given-names: "Nicolás Enrique"
     family-names: "Valencia Santiago"
-version: "1.2.0"
-date-released: "2026-11-07"
+version: "2.0.0"
+date-released: "2026-11-08"
 license: MIT
 repository-code: "https://github.com/ClearNote97/ClearMD"
 keywords:

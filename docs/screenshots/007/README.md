@@ -9,8 +9,10 @@ uv run python tests/gui/flow.py --out docs/screenshots/007 --language es   # a r
 
 | File | What |
 |---|---|
-| `0-welcome-*` | The welcome on first run |
+| `0-home-*` | Home, the start screen: Convert to Markdown or Split a PDF (feature 023) |
+| `0-welcome-*` | The welcome on first run, over Home |
 | `1-choose-*` | Step 1: what to convert, where the results go |
+| `1-choose-split-*` | Step 1 of Split: How to Split and Keep in place of the images (023) |
 | `2-review-*` | Step 2: the plan, before anything is written |
 | `3-convert-ready-*` | Step 3 before the batch: what is ready and where it goes |
 | `3-convert-*` | Step 3: the progress (a batch held mid-way) |

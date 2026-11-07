@@ -73,6 +73,8 @@ def test_ac_21_screenshots_of_every_screen_light_and_dark_english_and_spanish() 
 def test_ac_22_the_window_wears_clearmds_identity(window: Callable[..., TtkApp]) -> None:
     app = window(FakeBackend(settings=replace_settings(QUIET, theme="dark")))
     assert app.style.theme_use() == "clearmd-dark"
+    assert app.rail.home_text() == "> Home"  # the window opens on Home (feature 023)
+    app.presenter.go_to(1)
     assert app.rail.step_texts() == ["> Choose", "Review", "Convert", "Results"]
     assert {"Primary.ClearMD.TButton.face", "Card.ClearMD.face"} <= set(app.style.element_names())
     assert [icon.width() for icon in app.icons] == [16, 32, 48, 64, 128, 256]

@@ -152,7 +152,8 @@ anteriores._
 | **019** El instalador con el aspecto de ClearMD (claro y oscuro) | ✅ lista | v0.13.2 · [capturas](./docs/screenshots/019/) |
 | **020** El resumen solo en PDF | ✅ lista | v1.1.0 |
 | **021** La lista vacía de flet como dos tarjetas grandes; títulos en Title Case | ✅ lista | v1.2.0 · [capturas](./docs/screenshots/018/) |
-| **022** Política de seguridad, guía para contribuir, formularios de issues; huellas SHA-256 en cada versión | ✅ lista | próxima versión |
+| **022** Política de seguridad, guía para contribuir, formularios de issues; huellas SHA-256 en cada versión | ✅ lista | v2.0.0 |
+| **023** Pantalla de inicio y Dividir un PDF — ClearMD 2.0 | ✅ lista | v2.0.0 · [capturas](./docs/screenshots/016/) |
 
 El plan completo está en el [roadmap](./spec/roadmap.md). ClearMD tiene **línea de comandos** y la misma **app de
 escritorio** en tres toolkits, ttkbootstrap (`clearmd-ttk`), PySide6 (`clearmd-pyside`,

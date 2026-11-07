@@ -18,6 +18,7 @@ def test_both_clearmd_themes_apply(app: TtkApp) -> None:
 
 
 def test_the_language_changes_every_label(app: TtkApp) -> None:
+    app.presenter.go_to(1)  # the window opens on Home (feature 023)
     app.presenter.save_settings(Settings(language="es", show_welcome=False))
     pump(app, seconds=0.1)
     assert app.actions.primary.cget("text") == "Siguiente"

@@ -1,5 +1,6 @@
 """Held keys and bursts (feature 007, F-1, A7-*)."""
 
+import time
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -43,7 +44,9 @@ def test_f1_a_held_enter_runs_one_action_whatever_the_pages(app: TtkApp, tmp_pat
 def test_f1_the_pause_after_a_page_change_is_shown_on_the_button(
     app: TtkApp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    app.presenter.go_to(1)  # the window opens on Home (feature 023)
     monkeypatch.setattr("clearmd.frontend.presenter.chrome.primary_gate.PRIMARY_PAUSE_SECONDS", 0.3)
+    time.sleep(0.4)  # step 1's own pause is over
     app.presenter.add_paths([tmp_path])
     app.primary_button.press()
     pump(app, until=lambda: app.presenter.page == 2)

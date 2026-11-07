@@ -17,13 +17,13 @@ from clearmd.frontend.presenter.display import Display
 from clearmd.frontend.presenter.intents.analysis import Analysis
 from clearmd.frontend.presenter.intents.conversion import Conversion
 from clearmd.frontend.presenter.intents.inputs import Inputs
+from clearmd.frontend.presenter.intents.navigation import Navigation
 from clearmd.frontend.presenter.intents.preferences import Preferences
-from clearmd.frontend.presenter.intents.reset import editable
 from clearmd.frontend.presenter.intents.results import Results
 from clearmd.frontend.presenter.intents.tools import Tools
 from clearmd.frontend.presenter.ports import ApiBackend, Backend, View
 from clearmd.frontend.presenter.session import Session
-from clearmd.frontend.presenter.state import HOME, AppState, Tool
+from clearmd.frontend.presenter.state import AppState, Tool
 from clearmd.frontend.presenter.system_theme import detect_system_theme
 from clearmd.i18n import Catalog
 
@@ -52,6 +52,9 @@ class Presenter:
             session, display, self._backend, detect_theme or detect_system_theme
         )
         self._tools = Tools(session, display, self._backend)
+        self._navigation = Navigation(
+            session, display, self._tools, self._analysis, self._conversion, self._results
+        )
 
     @property
     def state(self) -> AppState:
@@ -125,28 +128,11 @@ class Presenter:
 
     def go_to(self, page: int) -> None:
         """Show a step (0: Home, the start screen); only what is on screen changes."""
-        if page == HOME:
-            self._tools.go_home()
-        elif 1 <= page <= 4:
-            self._session.page = page
-            self._display.set_state(self._session.state)
+        self._navigation.go_to(page)
 
     def press_primary(self, overwrite: bool | None = None) -> None:
         """The page's primary action: Next, Next, Convert, Open results folder."""
-        if not self._display.primary().enabled:
-            return
-        if self.page == 1:
-            if self.state is AppState.WAITING_DECISION:
-                self.go_to(2)
-            else:
-                editable(self._session, self._display)  # after a batch: a new plan (007, N-1)
-                self.analyze()
-        elif self.page == 2:
-            self.go_to(3)
-        elif self.page == 3:
-            self.confirm(overwrite)
-        else:
-            self.open_results()
+        self._navigation.press_primary(overwrite)
 
     def convert_more(self, *, keep: bool) -> None:
         self._results.convert_more(keep=keep)

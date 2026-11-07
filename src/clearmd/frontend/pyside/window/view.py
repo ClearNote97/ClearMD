@@ -1,5 +1,5 @@
 """What the presenter's ``View`` calls do to the widgets: show the state, the plan, the progress and
-the result, switch the page, apply the theme and the language."""
+the result, switch the page (the start screen is page 0), apply the theme and the language."""
 
 from PySide6.QtWidgets import QWidget
 
@@ -15,6 +15,7 @@ from clearmd.frontend.presenter.models import (
     ResultView,
     StateView,
 )
+from clearmd.frontend.presenter.state import HOME, WORKING
 from clearmd.frontend.pyside.visuals.stylesheet import stylesheet
 from clearmd.frontend.pyside.window import controls
 from clearmd.frontend.pyside.window.dialog_host import DialogHost
@@ -44,6 +45,7 @@ class PySideView:
         self._stack = frame.stack
         self._actions = frame.actions
         self._message = frame.message
+        self._home = frame.home
         self._main = frame.main
         self._review = frame.review
         self._converting = frame.converting
@@ -63,14 +65,26 @@ class PySideView:
             self._converting.clear()
         elif state.state is AppState.WAITING_DECISION:
             self._show_ready()
-        self._stack.setCurrentIndex(state.page - 1)
+        self._stack.setCurrentIndex(state.page)
         self._rail.show_page(state.page)
         self._actions.show(state.primary)
+        self._actions.setVisible(state.page != HOME)  # the start screen has no primary action
         if page_changed:
             self._primary_button.pause()
+            self._focus(previous.page if previous is not None else None, state.page)
         self._show_secondary(state)
         self._header()
-        controls.apply_enabled(state.enabled, self._main, self._rail)
+        controls.apply_enabled(
+            state.enabled, self._main, self._rail, working=state.state in WORKING
+        )
+
+    def _focus(self, before: int | None, page: int) -> None:
+        """The keyboard where the page starts: the first tile on the start screen, Add files on
+        step 1 when a tile opened it (the tile itself is hidden)."""
+        if page == HOME:
+            self._home.convert.button.setFocus()
+        elif page == 1 and before == HOME:
+            self._main.add_files.setFocus()
 
     def _show_secondary(self, state: StateView) -> None:
         """Back on Review and Convert, Cancel while working, Convert more on Results."""
@@ -129,14 +143,14 @@ class PySideView:
         self._window.setStyleSheet(stylesheet(self._shown.palette))
         self._rail.apply_palette(self._shown.palette)
         self._surface.apply_palette(self._shown.palette)
-        for view in (self._main, self._review, self._results):
+        for view in (self._home, self._main, self._review, self._results):
             view.apply_palette(self._shown.palette)
 
     def apply_language(self, catalog: Catalog) -> None:
         self._shown.catalog = catalog
         self._window.setWindowTitle(catalog.text("gui.app.title"))
         self._rail.apply_language(catalog)
-        for view in (self._main, self._review, self._converting, self._results):
+        for view in (self._home, self._main, self._review, self._converting, self._results):
             view.apply_language(catalog)
         self._header()
 

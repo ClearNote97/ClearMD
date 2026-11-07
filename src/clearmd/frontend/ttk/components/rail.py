@@ -1,5 +1,6 @@
-"""The dark rail on the left (ADR-0027, ADR-0029): the logo, Clear·MD, the four steps — each one
-can be opened, the one on screen highlighted, the others dimmed — Settings, Help, the version.
+"""The dark rail on the left (ADR-0027, ADR-0029): the logo, Clear·MD, Home (feature 023) and the
+four steps — each one can be opened, the one on screen highlighted, the others dimmed — Settings,
+Help, the version.
 
 Below 1000 px of window width the rail is compact: the mark and the numbers only.
 """
@@ -23,7 +24,7 @@ from clearmd.i18n import Catalog
 
 class Rail(tk.Canvas):
     """A canvas: the rail is a picture, the steps are drawn and clickable, Settings and Help are
-    buttons. ``on_step(n)`` opens step ``n``."""
+    buttons. ``on_step(n)`` opens step ``n`` (0: Home)."""
 
     def __init__(
         self,
@@ -41,6 +42,8 @@ class Rail(tk.Canvas):
         self._page = 1
         self._compact = False
         self._labels = [""] * len(STEPS)
+        self._home = ""
+        self._home_enabled = True
         self._local = ""
         self._version = ""
         self._texts = {"settings": "", "help": ""}
@@ -50,7 +53,7 @@ class Rail(tk.Canvas):
         self.help = ttk.Button(self, style=RAIL, command=on_help, takefocus=True)
         self.bind("<Configure>", lambda _event: self.redraw_soon())
         self.bind("<Destroy>", lambda _event: self._cancel_pending(), add="+")
-        for index in range(1, len(STEPS) + 1):  # once: the items come and go, the tags stay
+        for index in range(len(STEPS) + 1):  # once: the items come and go, the tags stay
             tag = f"step{index}"
             self.tag_bind(tag, "<Button-1>", partial(self._clicked, index))
             self.tag_bind(tag, "<Enter>", lambda _event: self.configure(cursor="hand2"))
@@ -62,6 +65,12 @@ class Rail(tk.Canvas):
     def show_page(self, page: int) -> None:
         if page != self._page:  # every state change calls this: draw only what changes
             self._page = page
+            self._draw()
+
+    def set_home_enabled(self, enabled: bool) -> None:
+        """Home cannot be opened while the work runs (feature 023)."""
+        if enabled != self._home_enabled:
+            self._home_enabled = enabled
             self._draw()
 
     def set_compact(self, compact: bool) -> None:
@@ -82,6 +91,7 @@ class Rail(tk.Canvas):
 
     def apply_language(self, catalog: Catalog) -> None:
         self._labels = [catalog.text(f"gui.steps.{name}") for name in STEPS]
+        self._home = catalog.text("gui.home.step")
         self._local = catalog.text("gui.app.local")
         self._texts = {
             "settings": catalog.text("gui.main.settings"),
@@ -95,6 +105,11 @@ class Rail(tk.Canvas):
         return [
             ("> " if i + 1 == self._page else "") + label for i, label in enumerate(self._labels)
         ]
+
+    def home_text(self) -> str:
+        """Home as drawn: ``>`` while on screen, ``-`` while it cannot be opened (for tests)."""
+        mark = "> " if self._page == 0 else ("" if self._home_enabled else "- ")
+        return mark + self._home
 
     def redraw_soon(self) -> None:
         """Draw once the size settles: a resize sends a burst of events (AC-09)."""
@@ -141,9 +156,11 @@ class Rail(tk.Canvas):
         self.delete("all")
         self._pictures.clear()
         scene = Scene(
-            self._fonts, self._page, self._compact, self._labels, self._local, self._version
-        )
+            self._fonts, self._page, self._compact, self._labels, self._local, self._version,
+            home=self._home, home_enabled=self._home_enabled,
+        )  # fmt: skip
         draw_rail(self, self._picture, p, scene, height, (self.settings, self.help))
 
     def _clicked(self, index: int, _event: object) -> None:
-        self._on_step(index)
+        if index != 0 or self._home_enabled:
+            self._on_step(index)

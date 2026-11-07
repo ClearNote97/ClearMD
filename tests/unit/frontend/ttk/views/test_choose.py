@@ -9,7 +9,8 @@ from clearmd.frontend.presenter import AppState
 from clearmd.frontend.ttk import TtkApp
 
 
-def test_the_window_shows_the_first_step_with_convert_disabled(app: TtkApp) -> None:
+def test_the_first_step_shows_with_convert_disabled(app: TtkApp) -> None:
+    app.presenter.go_to(1)  # the window opens on Home (feature 023: tests/.../test_home.py)
     assert app.root.title() == "ClearMD"
     assert app.surface.header()["eyebrow"] == "Step 1 of 4"
     assert app.surface.header()["title"] == "Choose What to Convert"

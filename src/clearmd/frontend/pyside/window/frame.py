@@ -1,6 +1,6 @@
 """The arrangement of the window: the rail on the left; on the right the surface with a panel that
-holds the four step views, the message and the action bar. A module of its own: it builds the
-widgets and nothing else, the window wires them."""
+holds the start screen and the four step views, the message and the action bar. A module of its
+own: it builds the widgets and nothing else, the window wires them."""
 
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -16,12 +16,14 @@ from PySide6.QtWidgets import (
 
 from clearmd.frontend.design.metrics import GAP, SPACE
 from clearmd.frontend.presenter import Presenter
+from clearmd.frontend.presenter.state import Tool
 from clearmd.frontend.pyside.components.action_bar import ActionBar
 from clearmd.frontend.pyside.components.primitives import label
 from clearmd.frontend.pyside.components.rail import Rail
 from clearmd.frontend.pyside.components.surface import Surface
 from clearmd.frontend.pyside.views.choose import ChooseView
 from clearmd.frontend.pyside.views.convert import ConvertView
+from clearmd.frontend.pyside.views.home import HomeView
 from clearmd.frontend.pyside.views.results import ResultsView
 from clearmd.frontend.pyside.views.review import ReviewView
 from clearmd.frontend.pyside.window.dialog_host import DialogHost
@@ -34,6 +36,7 @@ class Frame:
     stack: QStackedWidget
     actions: ActionBar
     message: QLabel
+    home: HomeView
     main: ChooseView
     review: ReviewView
     converting: ConvertView
@@ -87,10 +90,15 @@ def build_frame(
         on_pick_folder=on_pick_folder,
         on_summary=lambda value: presenter.choose_summary_format(value),
         on_images=lambda value: presenter.choose_images(value),
+        on_split=lambda **choice: presenter.choose_split(**choice),
+    )
+    home = HomeView(
+        on_convert=lambda: presenter.choose_tool(Tool.CONVERT),
+        on_split=lambda: presenter.choose_tool(Tool.SPLIT),
     )
     review = ReviewView()
     converting = ConvertView()
     results = ResultsView()
-    for page in (main, review, converting, results):
+    for page in (home, main, review, converting, results):  # their index is the page's number
         stack.addWidget(page)
-    return Frame(rail, surface, stack, actions, message, main, review, converting, results)
+    return Frame(rail, surface, stack, actions, message, home, main, review, converting, results)

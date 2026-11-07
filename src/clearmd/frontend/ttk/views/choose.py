@@ -9,9 +9,11 @@ from typing import Any
 
 from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.presenter.models import InputRow, OutputChoice
+from clearmd.frontend.presenter.state import Tool
 from clearmd.frontend.ttk.components.file_list import ListRow
 from clearmd.frontend.ttk.components.inputs_card import InputsCard
 from clearmd.frontend.ttk.components.output_card import OutputCard
+from clearmd.frontend.ttk.components.split_choice import OnSplit
 from clearmd.frontend.ttk.visuals.style_names import PAGE
 from clearmd.i18n import Catalog
 
@@ -32,9 +34,12 @@ class ChooseView(ttk.Frame):
         on_pick_folder: Callable[[], None],
         on_summary: Callable[[str], None] = lambda _format: None,
         on_images: Callable[[str], None] = lambda _images: None,
+        on_split: OnSplit = lambda **_choice: None,
     ) -> None:
         super().__init__(parent, style=PAGE)
         self._texts: list[tuple[Any, str]] = []  # a widget with a text, and its catalog key
+        self._short = False  # a short window (review of 011)
+        self._splitting = False  # Split's choices shown (feature 023)
 
         inputs = InputsCard(
             self,
@@ -62,6 +67,7 @@ class ChooseView(ttk.Frame):
             on_pick_folder=on_pick_folder,
             on_summary=on_summary,
             on_images=on_images,
+            on_split=on_split,
             label=self._label,
         )
         self.output_mode = output.output_mode
@@ -72,6 +78,9 @@ class ChooseView(ttk.Frame):
         self.summary_format = output.summary_format
         self.summary_buttons = output.summary_buttons
         self.images = output.images
+        self._output = output
+        self.split = output.split
+        self.pictures = output.pictures
 
     # --- What the presenter shows ------------------------------------------------------------
 
@@ -87,13 +96,15 @@ class ChooseView(ttk.Frame):
     def set_short(self, short: bool) -> None:
         """A short window: the add buttons side by side and a lower drop zone, so the list keeps
         its rows (review of 011: at 800 x 560 it had none)."""
-        self._inputs_card.set_short(short)
+        self._short = short
+        self._inputs_card.set_short(short or self._splitting)
 
     def show_output_choice(self, choice: OutputChoice) -> None:
-        self.output_mode.set(choice.mode.value)
-        self.output_label.configure(text=choice.label)
-        self.summary_format.set(choice.summary_format)
-        self.images.set(choice.images)
+        self._output.show(choice)
+        splitting = choice.tool is Tool.SPLIT
+        if splitting != self._splitting:  # Split's taller card: the short entry keeps the list
+            self._splitting = splitting
+            self._inputs_card.set_short(self._short or splitting)
 
     def apply_language(self, catalog: Catalog) -> None:
         for widget, key in self._texts:

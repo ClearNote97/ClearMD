@@ -70,7 +70,7 @@ class FletApp:
         self.rail, self.surface, self.actions = frame.rail, frame.surface, frame.actions
         self.main, self.review, self.message = frame.main, frame.review, frame.message
         self.converting, self.results, self.panel = frame.converting, frame.results, frame.panel
-        self.pages = frame.pages
+        self.pages, self.home = frame.pages, frame.home
         self.pickers = Pickers(self.page, self.presenter, self.shown, self.main.mode)
         self.primary_button = PrimaryButton(
             self.actions, self.review, self.presenter, self.dialogs, self.shown, self.scheduler

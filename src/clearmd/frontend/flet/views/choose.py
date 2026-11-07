@@ -29,6 +29,7 @@ class ChooseView:
         on_pick_folder: Callable[[], None],
         on_summary: Callable[[str], None],
         on_images: Callable[[str], None],
+        on_split: Callable[..., None],
     ) -> None:
         self._wording = Wording()
         self._on_next_to = on_next_to
@@ -53,9 +54,11 @@ class ChooseView:
             on_pick_folder=on_pick_folder,
             on_summary=on_summary,
             on_images=on_images,
+            on_split=on_split,
         )
+        self._output = output
         self.mode, self.pick, self.output_label = output.mode, output.pick, output.output_label
-        self.summary, self.images = output.summary, output.images
+        self.summary, self.images, self.split = output.summary, output.images, output.split
         self.choices = output.choices
         # Stretched: every card spans the page's width, as in Qt (flet's column hugs by default).
         self.control = ft.Column(
@@ -76,10 +79,7 @@ class ChooseView:
         )  # fmt: skip
 
     def show_output_choice(self, choice: OutputChoice) -> None:
-        self.mode.set(choice.mode.value)
-        self.output_label.value = choice.label
-        self.summary.set(choice.summary_format)
-        self.images.set(choice.images)
+        self._output.show(choice)
 
     def output_mode(self) -> str:
         return self.mode.value

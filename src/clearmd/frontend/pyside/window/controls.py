@@ -10,7 +10,10 @@ from clearmd.frontend.pyside.components.rail import Rail
 from clearmd.frontend.pyside.views.choose import ChooseView
 
 
-def apply_enabled(enabled: Collection[Action], main: ChooseView, rail: Rail) -> None:
+def apply_enabled(
+    enabled: Collection[Action], main: ChooseView, rail: Rail, *, working: bool
+) -> None:
+    rail.home.setEnabled(not working)  # the start screen, outside the work (feature 023)
     for widget, action in (
         (main.add_files, Action.ADD),
         (main.add_folder, Action.ADD),

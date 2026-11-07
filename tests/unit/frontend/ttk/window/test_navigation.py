@@ -33,6 +33,7 @@ def test_every_step_opens_from_the_rail_and_the_keyboard(app: TtkApp) -> None:
 
 
 def test_a_disabled_primary_says_why(app: TtkApp) -> None:
+    app.presenter.go_to(1)  # the window opens on Home (feature 023)
     assert app.actions.primary.instate(["disabled"])
     assert app.actions.primary.cget("text") == "Next"
     assert app.actions.hint.cget("text") == "Add at least one file or folder."

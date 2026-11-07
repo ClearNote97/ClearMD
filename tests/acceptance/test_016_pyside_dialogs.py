@@ -105,6 +105,7 @@ def test_ac_05_the_settings_window_saves_settings_toml_and_applies_it(qt_window:
     app = qt_window(ApiBackend())
     if app.dialogs.current is not None:  # the welcome of a first run
         app.dialogs.current.close_dialog()
+    app.presenter.go_to(1)  # past the start screen (023): step 1 has the primary action
     app.rail.settings.click()
     dialog = app.dialogs.current
     assert isinstance(dialog, SettingsDialog)

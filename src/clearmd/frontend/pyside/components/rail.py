@@ -1,18 +1,18 @@
-"""The dark rail (ADR-0027, ADR-0029): the logo, the steps, Settings, Help, the promise and the
-version."""
+"""The dark rail (ADR-0027, ADR-0029): the logo, Home, the steps, Settings, Help, the promise and
+the version."""
 
 from collections.abc import Callable
 from functools import partial
 
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
 
 from clearmd.frontend.design.metrics import COMPACT_RAIL_WIDTH, GAP, HALF, RAIL_WIDTH, SPACE
 from clearmd.frontend.design.palette import Palette
-from clearmd.frontend.presenter.state import STEPS
+from clearmd.frontend.presenter.state import HOME, STEPS
 from clearmd.frontend.pyside.components.primitives import button, label, restyle
-from clearmd.frontend.pyside.components.rail_art import badge, rail_dim
+from clearmd.frontend.pyside.components.rail_art import badge, home_badge, rail_dim
 from clearmd.frontend.pyside.layout.units import BADGE, STEP_HEIGHT
 from clearmd.frontend.pyside.visuals.images import logo
 from clearmd.i18n import Catalog
@@ -21,9 +21,9 @@ COMPACT_VERSION_CHARS = 6  # what fits the compact rail at 14 px
 
 
 class Rail(QFrame):
-    """The dark rail (ADR-0027, ADR-0029): the logo, Clear·MD, the four steps — each one can be
-    opened, the one on screen highlighted — Settings, Help, the promise and the version. Below
-    1000 px of window width it is compact: the mark and the numbers only."""
+    """The dark rail (ADR-0027, ADR-0029): the logo, Clear·MD, Home (feature 023) and the four
+    steps — each one can be opened, the one on screen highlighted — Settings, Help, the promise
+    and the version. Below 1000 px of window width it is compact: the mark and the numbers only."""
 
     def __init__(
         self,
@@ -36,9 +36,9 @@ class Rail(QFrame):
         self.setObjectName("rail")
         self.setFixedWidth(RAIL_WIDTH)
         self._compact = False
-        self._page = 1
+        self._page = HOME
         self._labels = [""] * len(STEPS)
-        self._words = {"settings": "", "help": ""}
+        self._words = {"home": "", "settings": "", "help": ""}
         self._version = ""
         self._local = ""
         layout = QVBoxLayout(self)
@@ -58,12 +58,13 @@ class Rail(QFrame):
         layout.addSpacing(4 * SPACE)
 
         self.steps: list[QPushButton] = []
-        for index in range(1, len(STEPS) + 1):
+        for index in range(HOME, len(STEPS) + 1):
             step = button("step", partial(on_step, index))
             step.setFixedHeight(STEP_HEIGHT)
             step.setIconSize(QSize(BADGE, BADGE))
             layout.addWidget(step)
             self.steps.append(step)
+        self.home = self.steps.pop(0)  # above step 1: the start screen
         layout.addStretch(1)
         self.settings = button("railButton", on_settings)
         self.help = button("railButton", on_help)
@@ -78,6 +79,7 @@ class Rail(QFrame):
     def apply_language(self, catalog: Catalog) -> None:
         self._labels = [catalog.text(f"gui.steps.{name}") for name in STEPS]
         self._words = {
+            "home": catalog.text("gui.home.step"),
             "settings": catalog.text("gui.main.settings"),
             "help": catalog.text("gui.main.help_word"),
         }
@@ -128,18 +130,9 @@ class Rail(QFrame):
         ]
 
     def _draw(self) -> None:
-        palette = self._palette
+        self._draw_entry(self.home, self._words["home"], HOME, home_badge)
         for index, step in enumerate(self.steps, start=1):
-            current = index == self._page
-            text = self._labels[index - 1]
-            step.setText("" if self._compact else f" {text}")
-            step.setToolTip(text)
-            step.setAccessibleName(text)
-            if palette is not None:
-                colour = palette.on_accent if current else rail_dim(palette)
-                fill = palette.accent if current else palette.rail
-                step.setIcon(QIcon(badge(index, colour, fill)))
-            restyle(step, "current", "true" if current else "false")
+            self._draw_entry(step, self._labels[index - 1], index, partial(badge, index))
         self.settings.setText("⚙" if self._compact else self._words["settings"])
         self.help.setText("?" if self._compact else self._words["help"])
         for widget, word in ((self.settings, "settings"), (self.help, "help")):
@@ -150,6 +143,21 @@ class Rail(QFrame):
             if self._compact
             else "\n".join(filter(None, (self._local, self._version)))
         )
+
+    def _draw_entry(
+        self, entry: QPushButton, text: str, page: int, art: Callable[[str, str], QPixmap]
+    ) -> None:
+        """Home or a step: its text (none when compact), its badge, highlighted when on screen."""
+        current = page == self._page
+        entry.setText("" if self._compact else f" {text}")
+        entry.setToolTip(text)
+        entry.setAccessibleName(text)
+        palette = self._palette
+        if palette is not None:
+            colour = palette.on_accent if current else rail_dim(palette)
+            fill = palette.accent if current else palette.rail
+            entry.setIcon(QIcon(art(colour, fill)))
+        restyle(entry, "current", "true" if current else "false")
 
     def _compact_version(self) -> str:
         """The version in the narrow rail: without its "v" when it would not fit (0.10.1)."""

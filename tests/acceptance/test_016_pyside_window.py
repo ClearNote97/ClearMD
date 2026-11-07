@@ -18,7 +18,7 @@ import clearmd.frontend.presenter.presenter as presenter_module
 from clearmd.frontend.design.metrics import GUTTER, on_grid
 from clearmd.frontend.design.palette import DARK, LIGHT
 from clearmd.frontend.design.typography import BODY
-from clearmd.frontend.presenter.state import STEPS
+from clearmd.frontend.presenter.state import HOME, STEPS
 from clearmd.frontend.pyside import PySideApp
 from clearmd.frontend.pyside.visuals.stylesheet import stylesheet
 from clearmd.i18n import load_catalog
@@ -35,8 +35,12 @@ def test_ac_01_clearmd_pyside_is_a_script_and_opens_the_window_on_the_presenter(
     assert app.window.isVisible() and not app.window.grab().isNull()
     assert not app.rail.mark.pixmap().isNull()  # the logo
     assert app.rail.wordmark.text().startswith("Clear")
+    assert app.presenter.page == HOME and app.rail.home.property("current") == "true"  # 023
+    assert app.rail.step_texts() == ["Choose", "Review", "Convert", "Results"]
+    assert app.presenter.version in app.rail.foot.text()
+    app.home.convert.button.click()
     assert app.rail.step_texts() == ["> Choose", "Review", "Convert", "Results"]
-    assert app.presenter.page == 1 and app.presenter.version in app.rail.foot.text()
+    assert app.presenter.page == 1
 
 
 def test_ac_01_every_step_opens_by_click_and_by_ctrl_1_to_4(qt_window: Window) -> None:
@@ -44,7 +48,7 @@ def test_ac_01_every_step_opens_by_click_and_by_ctrl_1_to_4(qt_window: Window) -
     for step in (4, 2, 3, 1):
         app.rail.steps[step - 1].click()
         assert app.presenter.page == step
-        assert app.view._stack.currentIndex() == step - 1  # noqa: SLF001 -- the page on screen
+        assert app.view._stack.currentIndex() == step  # noqa: SLF001 -- 0 is the start screen
     for number, key in enumerate((Qt.Key.Key_3, Qt.Key.Key_4, Qt.Key.Key_2, Qt.Key.Key_1), 1):
         press(app, key, Qt.KeyboardModifier.ControlModifier)
         expected = {Qt.Key.Key_1: 1, Qt.Key.Key_2: 2, Qt.Key.Key_3: 3, Qt.Key.Key_4: 4}[key]
@@ -58,6 +62,8 @@ def test_ac_01_the_texts_come_from_the_catalogs(qt_window: Window, language: str
     app = qt_window(FakeBackend(settings=replace(QUIET, language=language)))
     catalog = load_catalog(language)
     assert app.window.windowTitle() == catalog.text("gui.app.title")
+    assert app.surface.title.text() == catalog.text("gui.home.title")  # the start screen (023)
+    app.presenter.go_to(1)
     assert app.surface.title.text() == catalog.text("gui.page.choose_title")
     assert app.surface.eyebrow.text()
     assert app.actions.primary.text() == catalog.text("gui.nav.next")

@@ -20,7 +20,7 @@ from clearmd.frontend.flet import FletApp
 from clearmd.frontend.flet.visuals.images import asset_file
 from clearmd.frontend.flet.visuals.look import button_style
 from clearmd.frontend.flet.visuals.theme import ROLES
-from clearmd.frontend.presenter.state import STEPS
+from clearmd.frontend.presenter.state import HOME, STEPS
 from clearmd.i18n import load_catalog
 
 
@@ -38,8 +38,11 @@ def test_ac_01_clearmd_flet_is_a_script_and_opens_the_window_on_the_presenter(
     assert page_of(app).root is app.root  # on the page
     assert asset_file(str(app.rail.mark.src)).is_file()  # the logo
     assert [span.text for span in app.rail.wordmark.spans or []] == ["Clear", "·", "MD"]
+    assert app.rail.home_text() == "> Home"  # it opens on Home (feature 023)
+    assert app.rail.step_texts() == ["Choose", "Review", "Convert", "Results"]
+    assert app.presenter.page == HOME and app.presenter.version in str(app.rail.foot.value)
+    app.presenter.go_to(1)
     assert app.rail.step_texts() == ["> Choose", "Review", "Convert", "Results"]
-    assert app.presenter.page == 1 and app.presenter.version in str(app.rail.foot.value)
 
 
 def test_ac_01_every_step_opens_by_click_and_by_ctrl_1_to_4(flet_window: Window) -> None:
@@ -60,6 +63,7 @@ def test_ac_01_every_step_opens_by_click_and_by_ctrl_1_to_4(flet_window: Window)
 def test_ac_01_the_texts_come_from_the_catalogs(flet_window: Window, language: str) -> None:
     app = flet_window(FakeBackend(settings=replace(QUIET, language=language)))
     catalog = load_catalog(language)
+    app.presenter.go_to(1)  # from Home (feature 023)
     assert page_of(app).title == catalog.text("gui.app.title")
     assert app.surface.title.value == catalog.text("gui.page.choose_title")
     assert app.surface.eyebrow.value == catalog.text("gui.steps.counter", step=1, total=4).upper()

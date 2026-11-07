@@ -1,6 +1,6 @@
-"""The arrangement of the window: the rail on the left; on the right the surface with the four
-step views, the message and the action bar. A module of its own: it builds the widgets and nothing
-else, the window wires them."""
+"""The arrangement of the window: the rail on the left; on the right the surface with Home and
+the four step views, the message and the action bar. A module of its own: it builds the widgets
+and nothing else, the window wires them."""
 
 import tkinter as tk
 from collections.abc import Callable
@@ -15,6 +15,7 @@ from clearmd.frontend.ttk.components.rail import Rail
 from clearmd.frontend.ttk.components.surface import Surface
 from clearmd.frontend.ttk.views.choose import ChooseView
 from clearmd.frontend.ttk.views.convert import ConvertView
+from clearmd.frontend.ttk.views.home import HomeView
 from clearmd.frontend.ttk.views.results import ResultsView
 from clearmd.frontend.ttk.views.review import ReviewView
 from clearmd.frontend.ttk.visuals.style_names import WARNING
@@ -27,6 +28,7 @@ class Frame:
     surface: Surface
     actions: ActionBar
     message: ttk.Label
+    home: HomeView
     main: ChooseView
     review: ReviewView
     converting: ConvertView
@@ -73,8 +75,10 @@ def build_frame(
         on_pick_folder=on_pick_folder,
         on_summary=lambda value: presenter.choose_summary_format(value),
         on_images=lambda value: presenter.choose_images(value),
+        on_split=lambda **choice: presenter.choose_split(**choice),
     )
+    home = HomeView(page, fonts=fonts, on_tool=lambda tool: presenter.choose_tool(tool))
     review = ReviewView(page, fonts=fonts)
     converting = ConvertView(page, fonts=fonts)
     results = ResultsView(page, fonts=fonts)
-    return Frame(rail, surface, actions, message, main, review, converting, results)
+    return Frame(rail, surface, actions, message, home, main, review, converting, results)

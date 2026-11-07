@@ -44,6 +44,7 @@ def test_c7_5_enter_in_the_keep_dialog_runs_the_focused_button(app: TtkApp) -> N
 
 
 def test_c7_6_the_rail_is_drawn_again_only_when_the_page_changes(app: TtkApp) -> None:
+    app.presenter.go_to(1)  # the window opens on Home (feature 023)
     calls: list[int] = []
     real = app.rail._draw
 

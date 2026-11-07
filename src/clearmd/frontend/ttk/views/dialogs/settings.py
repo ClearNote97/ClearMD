@@ -1,4 +1,4 @@
-"""The settings dialog: exactly the settings of ADR-0012 (UX §7; AC-15)."""
+"""The settings dialog: exactly the settings of ADR-0012 (UX §7; AC-15), and Split's (023)."""
 
 import tkinter as tk
 import tkinter.font as tkfont
@@ -7,9 +7,11 @@ from dataclasses import replace
 from tkinter import ttk
 
 from clearmd.backend.schemas.settings import Settings
-from clearmd.frontend.design.metrics import GAP, SPACE
+from clearmd.frontend.design.metrics import GAP, MIN_HEIGHT, SPACE
 from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.ttk.components.dialog import Dialog
+from clearmd.frontend.ttk.components.scroll_area import ScrollArea
+from clearmd.frontend.ttk.views.dialogs.split_settings import SplitSettings
 from clearmd.frontend.ttk.visuals.style_names import MUTED, PRIMARY, SOFT
 from clearmd.i18n import Catalog
 
@@ -66,9 +68,14 @@ class SettingsDialog(Dialog):
             ("images", "images"),
             ("show_welcome", "welcome"),
         )
-        self.body.columnconfigure(0, weight=1)
+        # The rows scroll when the dialog would be taller than the window (feature 023).
+        self._area = ScrollArea(self.body, ground=palette.card)
+        self._area.pack(fill="both", expand=True)
+        self._rows = self._area.inner
+        self._rows.columnconfigure(0, weight=1)
         for row, (setting, key) in enumerate(rows):
             self._row(row, setting, text(f"gui.settings.{key}"), text(f"gui.settings.{key}_help"))
+        self.split = SplitSettings(self._rows, len(rows), catalog, fonts)
         self._load(settings)
 
         save = ttk.Button(
@@ -84,16 +91,25 @@ class SettingsDialog(Dialog):
         )
         restore.pack(side="left")
         self.bind("<Return>", lambda _event: self.save())
+        self._fit(parent)
+
+    def _fit(self, parent: tk.Misc) -> None:
+        """The rows at most as tall as the window leaves them (the screen, before it shows)."""
+        self.update_idletasks()
+        window = parent.winfo_toplevel().winfo_height()
+        room = window if window > MIN_HEIGHT // 2 else self.winfo_screenheight()
+        chrome = self.winfo_reqheight() - self._area.winfo_reqheight()
+        self._area.fit(max(room - chrome - 2 * GAP, 12 * GAP))
 
     def _row(self, row: int, setting: str, label: str, explanation: str) -> None:
-        cell = ttk.Frame(self.body, style="TFrame")
+        cell = ttk.Frame(self._rows, style="TFrame")
         cell.grid(row=row, column=0, sticky="w", pady=(0 if row == 0 else GAP, 0))
         ttk.Label(cell, text=label, font=self._fonts["strong"]).pack(anchor="w")
         ttk.Label(cell, text=explanation, style=MUTED, wraplength=400).pack(anchor="w")
         if setting in self._choices:
             variable: tk.Variable = tk.StringVar(master=self)
             control: ttk.Widget = ttk.Combobox(
-                self.body,
+                self._rows,
                 textvariable=variable,
                 values=list(self._choices[setting].values()),
                 state="readonly",
@@ -101,7 +117,7 @@ class SettingsDialog(Dialog):
             )
         else:
             variable = tk.BooleanVar(master=self)
-            control = ttk.Checkbutton(self.body, variable=variable)
+            control = ttk.Checkbutton(self._rows, variable=variable)
         control.grid(row=row, column=1, sticky="e", padx=(GAP, 0), pady=(0 if row == 0 else GAP, 0))
         self.values[setting] = variable
 
@@ -109,6 +125,7 @@ class SettingsDialog(Dialog):
         for setting, variable in self.values.items():
             value = getattr(settings, setting)
             variable.set(self._choices[setting][value] if setting in self._choices else value)
+        self.split.load(settings)
 
     def chosen(self) -> Settings:
         """The settings as the controls show them (the remembered folder is kept)."""
@@ -119,10 +136,15 @@ class SettingsDialog(Dialog):
                 changes[setting] = next(k for k, v in self._choices[setting].items() if v == shown)
             else:
                 changes[setting] = bool(variable.get())
+        changes.update(self.split.chosen())
         return replace(self._settings, **changes)  # type: ignore[arg-type]
 
     def restore(self) -> None:
         self._load(Settings(last_output_folder=self._settings.last_output_folder))
+
+    def close(self) -> None:
+        self.split.release()
+        super().close()
 
     def save(self) -> None:
         chosen = self.chosen()

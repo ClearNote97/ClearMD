@@ -38,6 +38,7 @@ class Surface(QWidget):
 
     def show_header(self, *, eyebrow: str, title: str, subtitle: str) -> None:
         self.eyebrow.setText(eyebrow)
+        self.eyebrow.setVisible(bool(eyebrow))  # none on the start screen (feature 023)
         self.title.setText(title)
         self.subtitle.setText(subtitle)
 

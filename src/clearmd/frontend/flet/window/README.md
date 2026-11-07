@@ -16,7 +16,7 @@ forwards every `View` call to the one that does it. None of them receives the wh
 | `dialog_host.py` | One dialog at a time: help, settings, welcome, Convert more. |
 | `primary_button.py` | The primary press and its pause after a page change. |
 | `keys.py` | Enter, Esc, Ctrl+1..4, Delete and Ctrl+A. |
-| `focus.py` | Which control has the keyboard focus: Enter is its own then. |
+| `focus.py` | Which control has the keyboard focus (a number field too): Enter is its own then. |
 | `pickers.py` | The system's pickers: Add files, Add folder, output folder. |
 | `closing.py` | Closing, and waiting for a batch to end. |
 | `scheduler.py` | `View.after` for flet: queued to the page's loop, safe from any thread. |

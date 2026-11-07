@@ -1,5 +1,5 @@
 """What the presenter's ``View`` calls do to the widgets: show the state, the plan, the progress and
-the result, switch the page, apply the theme and the language."""
+the result, switch the page (Home or a step), apply the theme and the language."""
 
 from tkinter import ttk
 from typing import Any
@@ -16,8 +16,9 @@ from clearmd.frontend.presenter.models import (
     ResultView,
     StateView,
 )
+from clearmd.frontend.presenter.state import HOME, WORKING
 from clearmd.frontend.ttk.visuals.look import Look
-from clearmd.frontend.ttk.window import controls
+from clearmd.frontend.ttk.window import controls, home_chrome
 from clearmd.frontend.ttk.window.dialog_host import DialogHost
 from clearmd.frontend.ttk.window.frame import Frame
 from clearmd.frontend.ttk.window.primary_button import PrimaryButton
@@ -50,6 +51,7 @@ class TtkView:
         self._review = frame.review
         self._converting = frame.converting
         self._results = frame.results
+        self._home = frame.home  # the start screen, page 0 (feature 023)
         # One page per step (ADR-0027): Choose (also while analyzing), Review, Convert, Results.
         self.pages: tuple[ttk.Frame, ...] = (
             self._main,
@@ -71,8 +73,12 @@ class TtkView:
             self._converting.clear()
         elif state.state is AppState.WAITING_DECISION:
             self._show_ready()
-        self.show_page(self.pages[state.page - 1])
+        home = state.page == HOME
+        self.show_page(self._home if home else self.pages[state.page - 1])
         self._rail.show_page(state.page)
+        self._rail.set_home_enabled(state.state not in WORKING)
+        page = self._shown.page or self._main
+        home_chrome.show_bar(self._actions, self._message, page, shown=not home)
         self._actions.show(state.primary)
         if previous is not None and previous.page != state.page:
             self._primary_button.pause()
@@ -147,14 +153,14 @@ class TtkView:
         self._root.configure(background=self._shown.palette.ground)
         self._rail.apply_palette(self._shown.palette)
         self._surface.apply_palette(self._shown.palette)
-        for view in (self._main, self._review, self._results):
+        for view in (self._home, self._main, self._review, self._results):
             view.apply_palette(self._shown.palette)
 
     def apply_language(self, catalog: Catalog) -> None:
         self._shown.catalog = catalog
         self._root.title(catalog.text("gui.app.title"))
         self._rail.apply_language(catalog)
-        for view in (self._main, self._review, self._converting, self._results):
+        for view in (self._home, self._main, self._review, self._converting, self._results):
             view.apply_language(catalog)
         self._header()
 

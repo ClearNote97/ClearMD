@@ -1,5 +1,6 @@
 """Screenshots of the PySide6 GUI for docs/ (feature 016, AC-10): every screen, light and dark,
-English and Spanish, drawn offscreen with the presenter's fake backend (the same demo as ttk's).
+English and Spanish, drawn offscreen with the presenter's fake backend (the same demo as ttk's);
+the start screen and Split's step 1 since feature 023.
 
     uv run python tests/gui/pyside_screenshots.py --out docs/screenshots/016
 """
@@ -16,6 +17,7 @@ from support.gui_fakes import FakeBackend  # noqa: E402
 from support.pyside_acceptance import open_window, pump, shut  # noqa: E402 -- sets offscreen
 
 from clearmd.backend.schemas.settings import Settings  # noqa: E402
+from clearmd.frontend.presenter.state import Tool  # noqa: E402
 from clearmd.frontend.pyside import PySideApp  # noqa: E402
 from clearmd.i18n import load_catalog  # noqa: E402
 
@@ -44,6 +46,8 @@ def screens(out: Path, theme: str, language: str) -> None:
     fake = FakeBackend(settings=settings, plan=demo.PLAN, statuses=demo.FAILED)
     app = open_window(fake)
     app.window.resize(demo.WIDTH, demo.HEIGHT)
+    shot(app, out / f"0-home-{tag}.png")
+    app.presenter.choose_tool(Tool.CONVERT)
     shot(app, out / f"1-choose-empty-{tag}.png")
     app.presenter.add_paths(demo.INPUTS)
     shot(app, out / f"1-choose-{tag}.png")
@@ -73,6 +77,11 @@ def screens(out: Path, theme: str, language: str) -> None:
     app.window.resize(*COMPACT)
     app.presenter.go_to(1)
     shot(app, out / f"1-choose-compact-{tag}.png")
+    app.window.resize(demo.WIDTH, demo.HEIGHT)
+    app.presenter.choose_tool(Tool.SPLIT)
+    app.presenter.clear_inputs()
+    app.presenter.add_paths([path for path in demo.INPUTS if path.suffix == ".pdf"])
+    shot(app, out / f"1-choose-split-{tag}.png")
     shut(app)
 
 

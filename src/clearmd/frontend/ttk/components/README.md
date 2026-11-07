@@ -2,9 +2,12 @@
 
 | Module | Role |
 |---|---|
-| `rail.py`, `rail_art.py` | The dark rail (state, events) and what it draws. |
+| `rail.py`, `rail_art.py` | The dark rail (state, events) and what it draws: Home, then the steps. |
 | `file_list.py`, `file_list_keys.py` | The numbered file list and its keyboard and mouse. |
 | `inputs_card.py`, `output_card.py` | The two halves of the Choose step. |
+| `split_choice.py` | Split's choices in the output card: the cut, its number, what to keep (023). |
+| `tool_tile.py` | A large tile of the start screen: icon, title, what the tool does (023). |
+| `scroll_area.py` | A frame that scrolls when taller than its room (the settings' rows). |
 | `drop_zone.py`, `action_bar.py`, `stats.py`, `surface.py` | Drop zone, bottom bar, figures, page ground. |
 | `dialog.py` | The base of every dialog. |
 

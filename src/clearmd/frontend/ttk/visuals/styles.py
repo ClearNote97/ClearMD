@@ -132,3 +132,16 @@ def install(
     # A soft tint for the selection: the row's number, icon and text stay readable on it.
     style.map("Treeview", background=[("selected", p.shape)], foreground=[("selected", p.text)])
     style.configure("Horizontal.TProgressbar", thickness=8)
+    # A number field (Split's sizes, feature 023): ttkbootstrap leaves the spin box to clam's
+    # white field, unreadable in the dark theme.
+    style.configure(
+        "TSpinbox", fieldbackground=p.card, background=p.card, foreground=p.text,
+        insertcolor=p.text, arrowcolor=p.text, bordercolor=p.border, lightcolor=p.card,
+        darkcolor=p.card,
+    )  # fmt: skip
+    style.map(
+        "TSpinbox",
+        fieldbackground=[("disabled", p.ground)],
+        foreground=[("disabled", p.muted)],
+        bordercolor=[("focus", p.accent)],
+    )

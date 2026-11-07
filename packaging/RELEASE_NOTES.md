@@ -2,6 +2,22 @@
 
 Each file can be checked against `SHA256SUMS.txt` ([how](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)). / Cada archivo se puede comprobar con `SHA256SUMS.txt` ([cómo](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)).
 
+**ClearMD 2.0 — a local toolkit that prepares documents for AI / una caja de herramientas local que prepara documentos para IA**
+- A start screen with two tools: **Convert to Markdown** and **Split a PDF**. / Una pantalla de
+  inicio con dos herramientas: **Convertir a Markdown** y **Dividir un PDF**.
+- **Split a PDF** into a number of parts or every N pages, by whole pages and in order. Keep the
+  parts as PDF, their Markdown, or both, in `ClearMD_Output/OutputSep/`. A PDF too big to convert
+  in one go can now be converted part by part. Command line: `--split-parts N`,
+  `--split-pages N`, `--keep`. / **Dividir un PDF** en un número de partes o cada N páginas,
+  por páginas enteras y en orden. Guarda las partes en PDF, su Markdown, o ambas, en
+  `ClearMD_Output/OutputSep/`. Un PDF demasiado grande para convertirlo de una vez ahora se puede
+  convertir parte por parte. Línea de comandos: `--split-parts N`, `--split-pages N`, `--keep`.
+- The tools change files, never what is inside them. / Las herramientas cambian archivos, nunca
+  lo que hay dentro.
+- The repository gains a security policy, a contributing guide and issue forms; every release
+  carries `SHA256SUMS.txt`. / El repositorio suma una política de seguridad, una guía para
+  contribuir y formularios de issues; cada versión trae `SHA256SUMS.txt`.
+
 **New in 1.2.0 / Novedades de la 1.2.0**
 - flet: before anything is chosen, the list shows two large tiles, **Add Files** and **Add Folder**,
   each with what it takes. / flet: antes de elegir nada, la lista muestra dos tarjetas grandes,

@@ -10,6 +10,7 @@ from clearmd.frontend.design.metrics import GAP
 from clearmd.frontend.flet.components.dialog import Dialog
 from clearmd.frontend.flet.components.primitives import button, label, stretch
 from clearmd.frontend.flet.layout.units import CONTROL_WIDTH, SETTINGS_WIDTH
+from clearmd.frontend.flet.views.dialogs.split_settings import SplitSettings
 from clearmd.frontend.flet.visuals.look import text_style
 from clearmd.frontend.flet.visuals.theme import role
 from clearmd.i18n import Catalog
@@ -19,7 +20,8 @@ _LANGUAGES = {"en": "English", "es": "Español"}  # each in its own language
 
 class SettingsDialog(Dialog):
     """Exactly the settings of ADR-0012, each with one line of explanation; Restore defaults puts
-    the controls back to the defaults; Save applies and writes them (UX §7)."""
+    the controls back to the defaults; Save applies and writes them (UX §7). Split a PDF's group
+    follows the images (feature 023)."""
 
     ROWS = (
         ("language", "language"),
@@ -63,6 +65,7 @@ class SettingsDialog(Dialog):
             "images": {v: text(f"gui.settings.images_{v}") for v in ("omit", "folder")},
         }
         self.controls: dict[str, ft.Dropdown | ft.Checkbox] = {}
+        self.split = SplitSettings(catalog)
         rows = ft.Column(spacing=GAP, tight=True)
         for setting, key in self.ROWS:
             name = label("strong", text(f"gui.settings.{key}"))
@@ -90,6 +93,8 @@ class SettingsDialog(Dialog):
                 ft.Row([cell, holder], spacing=GAP, vertical_alignment=ft.CrossAxisAlignment.CENTER)
             )
             self.controls[setting] = control
+            if setting == "images":
+                rows.controls.extend(self.split.controls)
         self.body.controls.append(rows)
         self._load(settings)
         restore = button("", self.restore, text("gui.settings.restore"))
@@ -99,6 +104,7 @@ class SettingsDialog(Dialog):
         self.foot.controls.extend([restore, stretch(), cancel, save])
 
     def _load(self, settings: Settings) -> None:
+        self.split.load(settings)
         for setting, control in self.controls.items():
             value = getattr(settings, setting)
             if isinstance(control, ft.Dropdown):
@@ -114,7 +120,8 @@ class SettingsDialog(Dialog):
                 changes[setting] = control.value
             else:
                 changes[setting] = bool(control.value)
-        return replace(self._settings, **changes)  # type: ignore[arg-type]
+        chosen = replace(self._settings, **changes)  # type: ignore[arg-type]
+        return self.split.chosen(chosen)
 
     def restore(self) -> None:
         self._load(Settings(last_output_folder=self._settings.last_output_folder))

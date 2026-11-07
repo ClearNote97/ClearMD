@@ -50,5 +50,6 @@ class Surface:
 
     def show_header(self, *, eyebrow: str, title: str, subtitle: str) -> None:
         self.eyebrow.value = eyebrow
+        self.eyebrow.visible = bool(eyebrow)  # Home has no step counter (feature 023)
         self.title.value = title
         self.subtitle.value = subtitle
