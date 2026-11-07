@@ -1,4 +1,4 @@
-"""Feature 016 — The actions: primary, Back, Cancel, Convert more, Enter and the F-1 pause (AC-04);
+"""Feature 016 — The actions: primary, Back, Cancel, Convert More, Enter and the F-1 pause (AC-04);
 spec/features/016_*/spec.md. The PySide6 window runs offscreen, on the presenter's fake backend.
 """
 
@@ -35,7 +35,7 @@ def test_ac_04_next_next_convert_open_and_a_reason_when_disabled(qt_window: Wind
         labels.append(app.actions.primary.text())
         assert not app.actions.primary.isEnabled()  # nothing chosen yet
         assert app.actions.hint.text()  # and it says why
-    assert labels == ["Next", "Next", "Convert", "Open results folder"]
+    assert labels == ["Next", "Next", "Convert", "Open Results Folder"]
 
 
 def test_ac_04_back_goes_one_page_back_and_only_where_it_makes_sense(

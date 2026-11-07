@@ -111,7 +111,7 @@ def test_ac_02_the_output_next_to_the_originals_or_in_a_folder_is_remembered(
     assert backend.settings.last_output_folder == str(out)
     app.main.next_to.click()
     assert app.presenter.output_folder is None and app.main.next_to.isChecked()
-    app.main.pick.click()  # "Choose folder…"
+    app.main.pick.click()  # "Choose Folder…"
     assert app.presenter.output_folder == out and app.main.in_folder.isChecked()
     monkeypatch.setattr(QFileDialog, "getExistingDirectory", staticmethod(lambda *_a, **_k: ""))
     app.main.next_to.click()

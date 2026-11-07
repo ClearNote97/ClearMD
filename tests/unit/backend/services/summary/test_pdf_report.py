@@ -32,16 +32,16 @@ def text_of(path: Path) -> str:
 def test_the_pdf_says_what_the_markdown_says(tmp_path: Path) -> None:
     text = text_of(write(_report(tmp_path)))
     for expected in (
-        "ClearMD summary",
+        "ClearMD Summary",
         "2 of 4 documents were converted. 2 things need your attention.",
         "2026-10-25 15:30 · ClearMD 0.4.0 · 2 converted · 2 skipped · 1 failed · 1 stopped",
-        "Where your files are",
-        "Needs your attention",
+        "Where Your Files Are",
+        "Needs Your Attention",
         "contract.pdf in project — This file is password-protected.",
-        "Technical detail: PDFPasswordIncorrect",
+        "Technical Detail: PDFPasswordIncorrect",
         "Converted",
         "notes.pdf project notes.md PDF 28 s",
-        "Left out",
+        "Left Out",
         ".cache/ in project — Hidden file.",
     ):
         assert expected in text, expected
@@ -104,7 +104,7 @@ def test_a_long_batch_goes_on_over_pages_with_their_numbers(tmp_path: Path) -> N
     text = text_of(path)
     assert pages >= 3
     assert all(f"document-{n:03d}.pdf" in text for n in range(150))
-    assert re.search(rf"ClearMD summary · {pages}\b", text)  # the last page's footer
+    assert re.search(rf"ClearMD Summary · {pages}\b", text)  # the last page's footer
 
 
 def test_a_name_too_long_for_a_line_is_cut_never_lost_off_the_page(tmp_path: Path) -> None:

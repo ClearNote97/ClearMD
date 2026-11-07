@@ -123,7 +123,7 @@ def test_ac_02_the_output_next_to_the_originals_or_in_a_folder_is_remembered(
     assert backend.settings.last_output_folder == str(out)
     app.main.mode.choose("next_to")
     assert app.presenter.output_folder is None and app.main.output_mode() == "next_to"
-    click(app.main.pick)  # "Choose folder…", offering the folder of last time
+    click(app.main.pick)  # "Choose Folder…", offering the folder of last time
     assert app.presenter.output_folder == out and app.main.output_mode() == "folder"
     assert page.asked[-1][2] == str(out)
     page.folder = None

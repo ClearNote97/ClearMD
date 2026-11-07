@@ -21,7 +21,7 @@ def test_ac_22_and_ac_28_each_output_root_gets_its_summary(workdir: Path) -> Non
     assert "| `notes.txt` | — | `notes.md` | TXT |" in one
     assert "| `scan` | — | `scan.md` | DOCX, detected by content |" in one
     assert "- ❌ `broken.docx` — This file seems to be damaged." in one
-    assert "<details><summary>Technical detail</summary>BadZipFile" in one
+    assert "<details><summary>Technical Detail</summary>BadZipFile" in one
     assert "- `old.md` — Already Markdown" in one
     assert "other.txt" not in one
     assert "`other.txt`" in _summary(workdir / "two")

@@ -71,15 +71,15 @@ def test_ac_02_where_the_files_are(workdir: Path) -> None:
     mixed(workdir)
     main([str(workdir / "docs"), "--quiet"])
     text = summary(workdir)
-    assert "## Where your files are\nYour Markdown files are in the `OutputMD/` folder" in text
+    assert "## Where Your Files Are\nYour Markdown files are in the `OutputMD/` folder" in text
 
 
 def test_ac_03_what_needs_attention_comes_before_the_rest(workdir: Path) -> None:
     mixed(workdir)
     main([str(workdir / "docs"), "--quiet"])
     text = summary(workdir)
-    attention = text.index("## Needs your attention")
-    assert attention < text.index("## Converted") < text.index("## Left out")
+    attention = text.index("## Needs Your Attention")
+    assert attention < text.index("## Converted") < text.index("## Left Out")
     assert "- ❌ `broken.docx` in `docs` — This file seems to be damaged. " in text
 
 
@@ -132,7 +132,7 @@ def test_ac_08_the_pdf_report_next_to_the_markdown(workdir: Path) -> None:
     text = pdf_text(workdir)
     assert "2 of 3 documents were converted. One thing needs your attention." in text
     assert (
-        "Where your files are" in text
+        "Where Your Files Are" in text
         and "broken.docx in docs — This file seems to be damaged." in text
     )
     assert "chapter.docx docs/thesis chapter.md DOCX" in text
@@ -150,7 +150,7 @@ def test_ac_09_a_pdf_that_cannot_be_written_leaves_the_markdown_and_is_told(
     monkeypatch.setattr(composition, "build_pdf_report", lambda language: Broken())
     put(workdir, "sample.txt", "a.txt")
     assert main([str(workdir / "docs"), "--summary-pdf"]) == 0
-    assert summary(workdir).startswith("# ClearMD summary")
+    assert summary(workdir).startswith("# ClearMD Summary")
     assert "The PDF summary in" in capsys.readouterr().err
 
 

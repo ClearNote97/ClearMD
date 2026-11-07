@@ -52,7 +52,7 @@ def test_convert_runs_on_its_page_and_results_open_at_the_end() -> None:
     pages = [value.page for call, value in view.calls if call == "state"]
     view.drain()
     assert 3 in pages and state(view).page == 4
-    assert state(view).primary.label == "Open results folder"
+    assert state(view).primary.label == "Open Results Folder"
     assert fake.run_calls
 
 

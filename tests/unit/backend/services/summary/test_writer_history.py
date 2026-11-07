@@ -44,7 +44,7 @@ def test_the_history_is_capped(tmp_path: Path) -> None:
         for n in range(HISTORY_LIMIT + 50)
     )
     (root / "Resumen_ClearMD.md").write_text(
-        f"# ClearMD summary\nheader\n\n<!-- clearmd:history -->\n## History\n{lines}\n"
+        f"# ClearMD Summary\nheader\n\n<!-- clearmd:history -->\n## History\n{lines}\n"
         "<!-- /clearmd:history -->\n",
         encoding="utf-8",
     )
@@ -83,7 +83,7 @@ def test_only_well_formed_history_lines_are_carried_over(tmp_path: Path) -> None
     root = tmp_path / "ClearMD_Output"
     root.mkdir()
     (root / "Resumen_ClearMD.md").write_text(
-        "# ClearMD summary\n<script>header</script>\n\n<!-- clearmd:history -->\n## History\n"
+        "# ClearMD Summary\n<script>header</script>\n\n<!-- clearmd:history -->\n## History\n"
         "- 2026-10-01 10:00 · ClearMD 0.1.0 · 3 converted · 0 skipped · 0 failed\n"
         "- [click me](http://example.com)\n"
         "<!-- /clearmd:history -->\n",

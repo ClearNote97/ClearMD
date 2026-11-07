@@ -179,7 +179,7 @@ def test_ac_15_notes_follow_the_language(workdir: Path) -> None:
     (revisions,) = copy_odt(workdir, "revisions.odt")
     assert main([str(revisions), "--lang", "es", "--quiet"]) == 0
     text = summary(workdir)
-    assert "## Necesita tu atención" in text
+    assert "## Necesita Tu Atención" in text
     assert "`1` (comentarios), `1` (cambios rastreados)" in text
 
 

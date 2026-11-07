@@ -1,4 +1,4 @@
-"""Feature 018 — The actions: primary, Back, Cancel, Convert more, Enter and the F-1 pause (AC-04);
+"""Feature 018 — The actions: primary, Back, Cancel, Convert More, Enter and the F-1 pause (AC-04);
 spec/features/018_*/spec.md. The flet window is built on a page that is not flet's (no screen).
 """
 
@@ -41,7 +41,7 @@ def test_ac_04_next_next_convert_open_and_a_reason_when_disabled(flet_window: Wi
         labels.append(app.actions.primary.content)
         assert app.actions.primary.disabled  # nothing chosen yet
         assert app.actions.hint.value  # and it says why
-    assert labels == ["Next", "Next", "Convert", "Open results folder"]
+    assert labels == ["Next", "Next", "Convert", "Open Results Folder"]
 
 
 def test_ac_04_back_goes_one_page_back_and_only_where_it_makes_sense(

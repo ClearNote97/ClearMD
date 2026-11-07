@@ -21,7 +21,7 @@ def test_the_language_changes_every_label(app: TtkApp) -> None:
     app.presenter.save_settings(Settings(language="es", show_welcome=False))
     pump(app, seconds=0.1)
     assert app.actions.primary.cget("text") == "Siguiente"
-    assert app.main.add_folder.cget("text") == "Agregar carpeta"
+    assert app.main.add_folder.cget("text") == "Agregar Carpeta"
     assert app.rail.step_texts()[0] == "> Elegir"
     assert app.surface.header()["eyebrow"] == "Paso 1 de 4"
     assert app.main.drop_zone.text() == "o suelta aquí archivos y carpetas"

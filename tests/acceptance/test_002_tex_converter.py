@@ -141,14 +141,14 @@ def test_ac_18_unknown_commands_are_kept_and_reported(
     assert main([str(source)]) == 0
     assert "\\customcommand{x}" in output(workdir, "unknown.md")
     assert "unknown.tex — converted with notes" in capsys.readouterr().err
-    notes = summary(workdir).split("## Needs your attention\n", 1)[1]
+    notes = summary(workdir).split("## Needs Your Attention\n", 1)[1]
     assert "`\\customcommand`, `\\otherthing`, `\\begin{weirdenv}`" in notes
 
 
 def test_ac_19_notes_follow_the_language(workdir: Path) -> None:
     (source,) = copy_tex(workdir, "unknown.tex")
     assert main([str(source), "--lang", "es", "--quiet"]) == 0
-    assert "## Necesita tu atención" in summary(workdir)
+    assert "## Necesita Tu Atención" in summary(workdir)
     assert "se dejaron tal cual comandos que ClearMD no conoce" in summary(workdir)
 
 
@@ -157,7 +157,7 @@ def test_ac_20_latin1_documents_keep_their_accents(workdir: Path) -> None:
     assert main([str(declared), str(undeclared), "--quiet"]) == 0
     assert "Cañón, acción y ñandú" in output(workdir, "latin1.md")
     assert "Cañón, acción y ñandú" in output(workdir, "latin1_undeclared.md")
-    notes = summary(workdir).split("## Needs your attention\n", 1)[1].split("\n\n", 1)[0]
+    notes = summary(workdir).split("## Needs Your Attention\n", 1)[1].split("\n\n", 1)[0]
     assert "`latin1_undeclared.tex`" in notes and "`latin1.tex`" not in notes
 
 

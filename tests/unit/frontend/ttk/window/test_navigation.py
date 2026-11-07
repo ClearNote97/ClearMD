@@ -37,7 +37,7 @@ def test_a_disabled_primary_says_why(app: TtkApp) -> None:
     assert app.actions.primary.cget("text") == "Next"
     assert app.actions.hint.cget("text") == "Add at least one file or folder."
     app.presenter.go_to(4)
-    assert app.actions.primary.cget("text") == "Open results folder"
+    assert app.actions.primary.cget("text") == "Open Results Folder"
     assert "Nothing chosen yet" in app.actions.hint.cget("text")  # what is missing first (011)
     app.presenter.add_paths([Path("/docs/a.pdf")])
     assert "Convert something first" in app.actions.hint.cget("text")
@@ -68,7 +68,7 @@ def test_convert_more_asks_whether_to_keep_the_files(display: str, tmp_path: Pat
             pump(app, until=partial(on_page, app, 2))
             confirm(app)
             pump(app, until=partial(on_page, app, 4))
-            assert app.actions.secondary.cget("text") == "Convert more"
+            assert app.actions.secondary.cget("text") == "Convert More"
             assert str(app.actions.secondary.cget("style")).startswith("Strong")
             convert_more(app, keep=keep)
             assert shown(app) is app.main and app.main.inputs.names() == expected

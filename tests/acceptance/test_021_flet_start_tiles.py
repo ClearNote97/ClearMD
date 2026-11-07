@@ -96,41 +96,100 @@ def test_ac_05_their_texts_in_both_languages() -> None:
 
 
 # The windows' titles (the owner's Title Case rule): pages, cards, dialogs, columns, figures,
-# settings, the tiles. Body text and buttons keep sentence case.
+# settings, the tiles, the buttons, and the summary's headings. Body text keeps sentence case.
 TITLES = {
-    "gui.welcome": ("title",),
-    "gui.plan": ("stat_convert", "stat_skipped", "stat_existing", "column_what"),
-    "gui.progress": ("current",),
+    "summary": (
+        "title",
+        "where_title",
+        "attention",
+        "converted",
+        "left_out",
+        "kept",
+        "cancelled",
+        "history",
+        "technical_detail",
+        "col_document",
+        "col_folder",
+        "col_result",
+        "col_format",
+        "col_time",
+        "col_source",
+        "col_output",
+    ),
+    "gui.nav": ("next",),
+    "gui.welcome": ("title", "start"),
+    "gui.plan": ("back", "confirm", "stat_convert", "stat_skipped", "stat_existing", "column_what"),
+    "gui.progress": ("cancel", "current"),
     "gui.result": (
-        "stat_converted", "stat_skipped", "stat_failed", "stat_stopped", "problems", "column_what",
+        "open",
+        "again",
+        "stat_converted",
+        "stat_skipped",
+        "stat_failed",
+        "stat_stopped",
+        "problems",
+        "column_what",
     ),
     "gui.settings": (
-        "title", "language", "theme", "open_when_done", "existing", "recursive", "html", "welcome",
-        "summary", "images",
+        "restore",
+        "save",
+        "cancel",
+        "title",
+        "language",
+        "theme",
+        "open_when_done",
+        "existing",
+        "recursive",
+        "html",
+        "welcome",
+        "summary",
+        "images",
     ),
     "gui.help": (
-        "title", "how_title", "formats_title", "where_title", "privacy_title", "language_title",
+        "close",
+        "title",
+        "how_title",
+        "formats_title",
+        "where_title",
+        "privacy_title",
+        "language_title",
         "keyboard_title",
     ),
-    "gui.more": ("title",),
+    "gui.more": ("title", "keep", "clear"),
     "gui.page": ("choose_title", "review_title", "convert_title", "results_title"),
     "gui.main": (
-        "column_name", "column_location", "output_title", "pick_files_title", "pick_folder_title",
-        "pick_output_title", "summary_title", "images_title", "tile_files", "tile_folder",
+        "add_files",
+        "add_folder",
+        "remove",
+        "clear",
+        "pick_folder",
+        "convert",
+        "help",
+        "settings",
+        "deselect",
+        "column_name",
+        "column_location",
+        "output_title",
+        "pick_files_title",
+        "pick_folder_title",
+        "pick_output_title",
+        "summary_title",
+        "images_title",
+        "tile_files",
+        "tile_folder",
     ),
-}  # fmt: skip
-SMALL = CONNECTORS | {"que", "se", "as", "at"}
+}
+SMALL = CONNECTORS | {"que", "se", "lo", "as", "at"}
 
 
 @pytest.mark.parametrize("language", ["en", "es"])
 def test_ac_06_every_title_in_title_case(language: str) -> None:
     catalog = load_catalog(language)
-    checked = 0
     for section, keys in TITLES.items():
         for key in keys:
             title = catalog.text(f"{section}.{key}")
             for part in title.split(" · "):
-                words = [w.lstrip("¿¡") for w in part.split()]
+                words = [w.lstrip("¿¡(") for w in part.split()]
                 for position, word in enumerate(words):
                     if not word[:1].isalpha() or word.startswith("ClearMD"):
                         continue
@@ -138,5 +197,3 @@ def test_ac_06_every_title_in_title_case(language: str) -> None:
                         assert word == word.lower(), (title, word)
                     else:
                         assert word[0].isupper(), (title, word)
-            checked += 1
-    assert checked == sum(len(keys) for keys in TITLES.values())

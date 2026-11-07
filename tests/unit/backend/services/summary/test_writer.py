@@ -21,18 +21,18 @@ from clearmd.i18n import load_catalog
 
 EXPECTED_EN = "\n".join(
     [
-        "# ClearMD summary",
+        "# ClearMD Summary",
         "",
         "⚠️ **2 of 4 documents were converted.** 2 things need your attention.",
         "",
         "2026-10-25 15:30 · ClearMD 0.1.0 · 2 converted · 2 skipped · 1 failed · 1 stopped",
         "",
-        "## Where your files are",
+        "## Where Your Files Are",
         "Your Markdown files are in the `OutputMD/` folder, next to this summary.",
         "",
-        "## Needs your attention",
+        "## Needs Your Attention",
         "- ❌ `contract.pdf` in `project` — This file is password-protected. Remove the password and try again.",  # noqa: E501 (the summary as written)
-        "  <details><summary>Technical detail</summary>PDFPasswordIncorrect</details>",
+        "  <details><summary>Technical Detail</summary>PDFPasswordIncorrect</details>",
         "- ⏹️ `manual.pdf` in `project` — Exceeded the time limit (10 min). Estimated progress: 67% after 10:00. Try splitting it into smaller files.",  # noqa: E501 (the summary as written)
         "",
         "## Converted",
@@ -41,7 +41,7 @@ EXPECTED_EN = "\n".join(
         "| `notes.pdf` | `project` | `notes.md` | PDF | 28 s |",
         "| `scan` | `project` | `scan.md` | DOCX, detected by content | <1 s |",
         "",
-        "## Left out",
+        "## Left Out",
         "- `.cache/` in `project` — Hidden file. Make it visible to convert it.",
         "- `old.md` in `project` — Already Markdown. It needs no conversion.",
         "",
@@ -67,10 +67,10 @@ def test_the_summary_in_spanish(tmp_path: Path) -> None:
     assert text.startswith("# Resumen de ClearMD\n\n⚠️ **Se convirtieron 2 de 4 documentos.**")
     assert "\n2026-10-25 15:30 · ClearMD 0.1.0 · 2 convertidos" in text
     for heading in (
-        "## Dónde están tus archivos",
-        "## Necesita tu atención",
+        "## Dónde Están Tus Archivos",
+        "## Necesita Tu Atención",
         "## Convertidos",
-        "## No incluidos",
+        "## No Incluidos",
         "<summary>Historial</summary>",
     ):
         assert heading in text
@@ -89,7 +89,7 @@ def test_kept_and_cancelled_items_have_their_sections(tmp_path: Path) -> None:
     report.root.mkdir()
     writer.write(report)
     text = (report.root / "Resumen_ClearMD.md").read_text(encoding="utf-8")
-    assert "## Kept (the output already existed)\n- `a.pdf` → `a.md`" in text
+    assert "## Kept (the Output Already Existed)\n- `a.pdf` → `a.md`" in text
     assert "## Cancelled\n- ⏹️ `b.pdf`" in text
     assert text.splitlines()[4].endswith(" · cancelled")  # the batch line
 

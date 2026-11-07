@@ -2,16 +2,16 @@
 
 ⚠️ **Se convirtieron 4 de 6 documentos.** 2 cosas necesitan tu atención.
 
-2026-10-29 22:03 · ClearMD 0.4.0 · 4 convertidos · 1 omitido · 2 con error
+2026-11-07 16:19 · ClearMD 1.1.0 · 4 convertidos · 1 omitido · 2 con error
 
-## Dónde están tus archivos
+## Dónde Están Tus Archivos
 Tus archivos Markdown están en la carpeta `OutputMD/`, junto a este resumen.
 
-## Necesita tu atención
+## Necesita Tu Atención
 - ❌ `broken.docx` en `Documents` — Este archivo parece estar dañado. Ábrelo en su programa original; si abre, guarda una copia nueva e inténtalo otra vez.
-  <details><summary>Detalle técnico</summary>BadZipFile: File is not a zip file</details>
+  <details><summary>Detalle Técnico</summary>BadZipFile: File is not a zip file</details>
 - ❌ `locked.pdf` en `Documents/thesis` — Este archivo está protegido con contraseña. Quítale la contraseña e inténtalo de nuevo.
-  <details><summary>Detalle técnico</summary>PDFium could not open it (error 4)</details>
+  <details><summary>Detalle Técnico</summary>PDFium could not open it (error 4)</details>
 
 ## Convertidos
 | Documento | Carpeta | Resultado | Formato | Tiempo |
@@ -21,7 +21,7 @@ Tus archivos Markdown están en la carpeta `OutputMD/`, junto a este resumen.
 | `chapter.pdf` | `Documents/thesis` | `chapter.md` | PDF | <1 s |
 | `slides.pptx` | `Documents` | `slides.md` | PPTX | <1 s |
 
-## No incluidos
+## No Incluidos
 - `readme.md` en `Documents` — Ya es Markdown. No necesita conversión.
 
 <details>

@@ -15,13 +15,13 @@ from clearmd.i18n import load_catalog
     [
         (
             "en",
-            "## Needs your attention",
+            "## Needs Your Attention",
             "commands ClearMD does not know were left as written: `\\foo`, `\\bar`",
             "includes not followed: `../secret.tex` (outside the document folder)",
         ),
         (
             "es",
-            "## Necesita tu atención",
+            "## Necesita Tu Atención",
             "se dejaron tal cual comandos que ClearMD no conoce: `\\foo`, `\\bar`",
             "no se siguieron estas inclusiones: `../secret.tex`"
             " (fuera de la carpeta del documento)",

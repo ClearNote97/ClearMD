@@ -75,7 +75,7 @@ def test_ac_02_next_next_convert_open_and_a_reason_when_disabled(app: TtkApp) ->
         labels.append(app.actions.primary.cget("text"))
         assert app.actions.primary.instate(["disabled"])  # nothing chosen yet
         assert app.actions.hint.cget("text")  # and it says why
-    assert labels == ["Next", "Next", "Convert", "Open results folder"]
+    assert labels == ["Next", "Next", "Convert", "Open Results Folder"]
 
 
 def test_ac_03_next_plans_next_opens_convert_convert_runs_there_and_results_open(

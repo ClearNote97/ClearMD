@@ -28,5 +28,6 @@ Each criterion has an acceptance test (`tests/acceptance/test_021_*.py`).
 - [x] **AC-05** Their texts in English and Spanish; the sentence that sent people to the two buttons
   is gone from the catalogs.
 - [x] **AC-06** Every title of the three windows (pages, cards, dialogs, columns, figures, settings,
-  the tiles) is in Title Case in both languages: each word capitalised but the connectors, the first
+  the tiles), every button, and the headings of the summary (Markdown and PDF) are in Title Case
+  in both languages: each word capitalised but the connectors, the first
   word always; brands keep their own form.

@@ -40,7 +40,7 @@ def test_c7_5_enter_in_the_keep_dialog_runs_the_focused_button(app: TtkApp) -> N
     dialog.update()
     dialog.event_generate("<Return>", when="tail")
     pump(app, until=lambda: app.dialog is None, seconds=1)
-    assert app.main.inputs.names() == []  # "Start empty" had the focus
+    assert app.main.inputs.names() == []  # "Start Empty" had the focus
 
 
 def test_c7_6_the_rail_is_drawn_again_only_when_the_page_changes(app: TtkApp) -> None:
