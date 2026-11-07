@@ -16,6 +16,10 @@
 - **Convert LaTeX (`.tex`)** keeping the math, over a subset defined in its spec (ADR-0006).
 - **Convert OpenDocument (`.odt`)** with no external dependency (ADR-0006).
 - **Extract only the article** from an HTML file, as an alternative strategy to the full page (ADR-0006).
+- **Split and merge files** (version 2, ADR-0043): cut one file into parts, or join several into one.
+  The user chooses the cut (a number of parts, every N pages or rows, or parts that fit an AI's context,
+  estimated) and what to keep (the original format, Markdown, or both). These tools act on **files, never
+  on their content**: every part keeps its pages or rows whole and in order, and nothing is rewritten.
 - **Convert in batches:** several files and/or whole folders, recursively (ADR-0010).
 - **Detect the format** of each file even when the extension is missing (ADR-0010).
 - **Write the results into `ClearMD_Output/OutputMD/`** next to the input or in a folder the user chooses, with a
@@ -38,7 +42,10 @@
 - **ZIP archives:** a ZIP can hide a zip bomb, and its contents are better converted as a folder. markitdown's
   ZIP converter is not used.
 - **Extracting embedded images** from documents: v1 converts text and structure.
-- **Reverse conversion** (Markdown → docx/pdf): a different product.
+- **Reverse conversion** (Markdown → docx/pdf): a different product. Split and Merge write PDFs only by
+  copying whole pages from PDFs (ADR-0043).
+- **Editing documents' content** (rewriting, summarising, redacting, reordering text): the tools change
+  files, never what is inside them (ADR-0043).
 - **Editing the resulting Markdown inside the app:** editors already do that.
 - **A database or a searchable history** (ADR-0002).
 - **A macOS executable:** notarization requires a paid Apple Developer account (ADR-0008).

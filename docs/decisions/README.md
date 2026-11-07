@@ -36,7 +36,7 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 | [0016](./0016-output-layout-and-summary.md) | Output layout, chosen output folder and `Resumen_ClearMD.md` | accepted; folder renamed by 0019 |
 | [0017](./0017-english-default-language.md) | English by default, no OS language detection | accepted |
 | [0018](./0018-python-range-and-installation.md) | Python 3.12–3.14 and ways to install | accepted |
-| [0019](./0019-outputmd-and-v2-tools.md) | `OutputMD/` for results; room for the v2 tools (merge, split) | accepted |
+| [0019](./0019-outputmd-and-v2-tools.md) | `OutputMD/` for results; room for the v2 tools (merge, split) | accepted; Tools window superseded by 0043 |
 | [0020](./0020-non-root-dev-container.md) | The dev container runs as a non-root user with the host's UID | accepted |
 | [0021](./0021-content-detection-only-without-extension.md) | Content detection only for files without an extension | accepted |
 | [0022](./0022-latex-includes-macros-and-notes.md) | LaTeX: includes, the author's macros and conversion notes | accepted; refined by 0023 |
@@ -58,3 +58,6 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 | [0038](./0038-pyside-gui-delivery.md) | The PySide6 GUI, delivered as a folder next to the ttk app | accepted |
 | [0039](./0039-modular-layout-and-file-size.md) | Modular layout and file size: ≤ 200 lines (250 at most), one layout for every GUI | accepted |
 | [0040](./0040-windows-installer.md) | A Windows installer and uninstaller, with Inno Setup | accepted |
+| [0041](./0041-installer-look.md) | The installer looks like ClearMD | accepted |
+| [0042](./0042-flet-gui-delivery.md) | The flet GUI, delivered as a folder with its own window program | accepted |
+| [0043](./0043-local-toolkit-for-ai.md) | A local toolkit that prepares documents for AI: Convert, Split, Merge | accepted |

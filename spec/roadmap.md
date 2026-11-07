@@ -94,21 +94,28 @@ already tested (ADR-0001).
 - [x] **020 — The summary as a PDF alone** (ADR-0031 amended): v1.1.0.
 - [x] **021 — flet's empty list as two large tiles; titles in Title Case** (ADR-0042 amended): v1.2.0.
 - [x] **022 — The files a public project carries; checksums with every release**: next release.
-- [ ] Incremental mode: skip files unchanged since the last run.
-- [ ] Minor formats: `.eml`, `.rtf`, subtitles.
-- [ ] A second queue lane for heavy files, or parallel workers — only if the benchmark shows blocking
-      (ADR-0015).
-- [ ] **Publish on PyPI** (`pip install clearmd` / `uv tool install clearmd`), at the end (ADR-0018).
 
-## Version 2
+## Version 2 — a local toolkit that prepares documents for AI (ADR-0043)
 
-- [ ] **Tools window — Merge | Split** (ADR-0019):
-      **Merge** `.md` files into one (`OutputUnif/`; the last batch by default, or any `.md` the user picks);
-      **Split** a large source document into N similar parts in its own format (`OutputSep/`; PDF by pages
-      first, then csv/txt and xlsx).
-      From the plan review, a file marked too big or too slow (AC-42/43 of feature 001) offers **"Split it"**:
-      Tools opens with a recommended number of parts (from the estimates, so each part fits the limits), and
-      the parts replace the file in the batch when the user comes back.
+Convert, Split and Merge as three tools of the same rank, on a start screen with three tiles. Each tool
+follows Choose → Review → Results in the three windows; the command line gets `clearmd split` and
+`clearmd merge`. The tools act on files, never on their content.
+
+- [ ] **023 — Start screen and Split PDF** (v2.0.0): the tiles Convert and Split (Merge's tile arrives with
+      026: never a tile without its action); Split cuts a PDF into a number of parts or every N pages,
+      and keeps the PDF parts, their Markdown, or both (`OutputSep/`).
+- [ ] **024 — Split into parts that fit an AI** (v2.1.0): the cut by estimated context size (approximate,
+      no tokenizer downloaded), for PDF and Markdown (Markdown by headings).
+- [ ] **025 — "Split It" from Convert** (v2.2.0): a file marked too big or too slow (AC-42/43 of feature
+      001) offers to split it, with the recommended cut; the parts come back to the batch.
+- [ ] **026 — Merge** (v2.3.0): several `.md` into one, PDFs into one PDF, and mixed documents converted
+      and joined (`OutputUnif/`); the order chosen by the user.
+- [ ] **027 — Split more formats** (v2.4.0): text and CSV by lines, Excel by rows or sheets.
+- [ ] **028 — Incremental mode** (v2.5.0): skip files unchanged since the last run.
+- [ ] **029 — Minor formats** (v2.6.0): `.eml`, `.rtf`, subtitles.
+- [ ] **030 — Measure the queue** (only if blocking shows): a second lane for heavy files, or parallel
+      workers (ADR-0015).
+- [ ] **031 — Publish on PyPI** (`pip install clearmd` / `uv tool install clearmd`), at the end (ADR-0018).
 
 ## Out for now
 

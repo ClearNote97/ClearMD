@@ -11,8 +11,9 @@
 
 ## Mission
 
-Anyone can turn their documents into clean Markdown **without uploading them anywhere**, with a desktop app
-they download and simply use.
+Anyone can prepare their documents for AI **without uploading them anywhere**, with a desktop app they
+download and simply use. It **converts** them to clean Markdown, **splits** a large file into parts that fit,
+and **merges** several files into one (ADR-0043, from version 2).
 
 ## Problem
 

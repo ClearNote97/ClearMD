@@ -1,6 +1,6 @@
 # ADR-0019: `OutputMD/` for converted files, and room for the v2 tools (merge and split)
 
-- **Status:** accepted
+- **Status:** accepted; the "Tools" window superseded by ADR-0043 (a start screen with three tools)
 - **Date:** 2026-10-25
 - **Supersedes:** the name of the results folder in ADR-0016 (`Output/` → `OutputMD/`).
 
