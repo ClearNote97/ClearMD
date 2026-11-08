@@ -162,3 +162,29 @@ refactor playbook:
 - **Publish checksums with every release.** One `SHA256SUMS.txt` written by the Release workflow lets
   anyone check a download while the executables are still unsigned. Write it outside the folder
   being hashed, or it lists itself.
+
+## 12. Growing a converter into a toolkit (2.0 – 2.7)
+
+- **Add a tool as a mode of the same batch, not as a new pipeline.** Split and Merge are a field
+  on the plan (`SplitSpec`, `MergeSpec`). Planning, the queue, cancelling, the "already exists"
+  rule, the summary and the history stayed one piece of code. Each tool cost a few small
+  modules, not a second app.
+- **Let the words follow the tool through the catalog.** `Catalog.for_tool("split")` lays
+  Split's texts over Convert's keys (`[tool.split]`). Every view kept its keys, and the three
+  windows changed their words with no code of their own.
+- **One presenter contract, three toolkit agents, one lead.** The lead owned the backend, the
+  presenter and the catalogs. One agent per toolkit owned its folder and its tests, and nothing
+  else. Symmetry still needs a referee: when two windows disagreed on a layout, the lead picked
+  the one that kept the file list visible at 1080×720 and sent it to all three.
+- **Look at every screenshot, not only the tests.** A CI shot showed Split's page under the name
+  "Merge". The cause was a flet page that does not resend itself when the page number stays the
+  same, and the tests could not see it.
+- **Ask a council when the user is the unknown.** "How big is a part that fits an AI?" had no
+  technical answer. Seven roles turned it into one radio and one number, in words labelled
+  approximate, and recorded the dissent.
+- **Measure before building the "maybe".** The roadmap's second queue lane was dropped after
+  one real run showed light files never wait (ADR-0050).
+- **Keep the version a test can read.** The installed package's metadata in the dev container
+  went stale, and the screenshots showed an old version. Refresh it (`uv sync`) after every bump.
+- **Give a new enum value a sweep.** Adding `FormatId.MARKDOWN` (split-only) broke every test
+  that assumed "every format converts". A named set (`CONVERTIBLE`) says what the code means.

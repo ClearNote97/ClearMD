@@ -161,6 +161,7 @@ anteriores._
 | **028** Modo incremental: reemplazar un resultado solo si su original cambió | ✅ lista | v2.5.0 |
 | **029** Correos, texto enriquecido y subtítulos | ✅ lista | v2.6.0 |
 | **030** La cola medida: se queda un solo conversor en orden de costo (ADR-0050) | ✅ lista | — |
+| **031** Listo para PyPI: metadatos, compilación verificada, Trusted Publishing (apagado hasta activarlo) | ✅ lista | v2.7.0 |
 
 El plan completo está en el [roadmap](./spec/roadmap.md). ClearMD tiene **línea de comandos** y la misma **app de
 escritorio** en tres toolkits, ttkbootstrap (`clearmd-ttk`), PySide6 (`clearmd-pyside`,

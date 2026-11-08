@@ -114,7 +114,7 @@ follows Choose → Review → Results in the three windows; the command line get
 - [x] **028 — Incremental mode** (ADR-0048): v2.5.0: "Replace it if the original changed".
 - [x] **029 — Minor formats** (ADR-0049): v2.6.0: `.eml`, `.rtf`, `.srt` and `.vtt`.
 - [x] **030 — Measure the queue** (ADR-0050): measured, no blocking — one worker in cost order stays.
-- [ ] **031 — Publish on PyPI** (`pip install clearmd` / `uv tool install clearmd`), at the end (ADR-0018).
+- [x] **031 — Ready for PyPI** (ADR-0051): v2.7.0: metadata, PyPI's page, the build checked on every tag, Trusted Publishing off until the owner turns it on.
 
 ## Out for now
 

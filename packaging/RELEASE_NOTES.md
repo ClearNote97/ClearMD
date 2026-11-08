@@ -2,6 +2,15 @@
 
 Each file can be checked against `SHA256SUMS.txt` ([how](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)). / Cada archivo se puede comprobar con `SHA256SUMS.txt` ([cómo](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)).
 
+**New in 2.7.0 / Novedades de la 2.7.0**
+- Ready for **PyPI**: the package describes the toolkit, has its own page, and every version's
+  build is installed and checked before it is published. / Listo para **PyPI**: el paquete
+  describe la caja de herramientas, tiene su propia página, y cada versión se instala y se
+  comprueba antes de publicarse.
+- The queue was measured: light files never wait for a heavy one, so one converter in cost order
+  stays (ADR-0050). / Se midió la cola: los archivos livianos nunca esperan a uno pesado, así que
+  se queda un solo conversor en orden de costo (ADR-0050).
+
 **New in 2.6.0 / Novedades de la 2.6.0**
 - Convert **e-mails** (`.eml`: subject, sender, date, text and the names of the attachments),
   **Rich Text** (`.rtf`) and **subtitles** (`.srt`, `.vtt`: one line per cue with its time). /

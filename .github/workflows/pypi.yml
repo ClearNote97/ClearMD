@@ -1,0 +1,52 @@
+name: PyPI
+
+# Feature 031 (ADR-0051): the package built and checked on every version tag (and by hand);
+# published to PyPI with Trusted Publishing only once the owner turns it on, by setting the
+# repository variable PYPI_PUBLISH to "true" after adding this workflow as a trusted publisher.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and check
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.13"
+      - name: Build the sdist and the wheel
+        run: uv build --out-dir dist
+      - name: Install the wheel alone and run it
+        run: |
+          uv venv /tmp/fresh
+          uv pip install --python /tmp/fresh/bin/python dist/*.whl
+          /tmp/fresh/bin/clearmd --version
+          printf 'hello\n' > /tmp/note.txt
+          /tmp/fresh/bin/clearmd /tmp/note.txt --quiet
+          test -f /tmp/ClearMD_Output/OutputMD/note.md
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: python-package
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    name: Publish to PyPI
+    if: startsWith(github.ref, 'refs/tags/v') && vars.PYPI_PUBLISH == 'true'
+    needs: build
+    runs-on: ubuntu-24.04
+    environment: pypi
+    permissions:
+      id-token: write # Trusted Publishing: no token is stored anywhere
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: python-package
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3

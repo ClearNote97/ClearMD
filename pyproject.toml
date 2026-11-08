@@ -1,11 +1,29 @@
 [project]
 name = "clearmd"
-version = "2.6.0"
-description = "Turn documents into Markdown. 100% local: your files never leave your machine."
-readme = "README.md"
+version = "2.7.0"
+description = "Prepare documents for AI: convert to Markdown, split and merge. 100% local."
+# PyPI's own page (feature 031): absolute links, as PyPI shows no relative ones.
+readme = "packaging/pypi-readme.md"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Nicolás Enrique Valencia Santiago" }]
+keywords = ["markdown", "pdf", "document-converter", "split", "merge", "local-first", "llm"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Environment :: X11 Applications",
+    "Environment :: Win32 (MS Windows)",
+    "Intended Audience :: End Users/Desktop",
+    "Natural Language :: English",
+    "Natural Language :: Spanish",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Text Processing :: Markup :: Markdown",
+    "Topic :: Office/Business",
+]
 # 3.12 floor for developers; the ceiling comes from markitdown (ADR-0004, ADR-0018).
 requires-python = ">=3.12,<3.15"
 dependencies = [
@@ -31,6 +49,12 @@ dependencies = [
     # The window's rounded shapes and the file icons (ADR-0027); ttkbootstrap requires it already.
     "pillow>=12.3,<13",
 ]
+
+[project.urls]
+Homepage = "https://github.com/ClearNote97/ClearMD"
+Source = "https://github.com/ClearNote97/ClearMD"
+Issues = "https://github.com/ClearNote97/ClearMD/issues"
+Changelog = "https://github.com/ClearNote97/ClearMD/blob/main/packaging/RELEASE_NOTES.md"
 
 [project.optional-dependencies]
 # The Qt GUI (feature 016, ADR-0003, ADR-0038): only for whoever wants it (~80 MB), so

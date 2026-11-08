@@ -2,7 +2,7 @@
 
 ⚠️ **4 of 6 documents were converted.** 2 things need your attention.
 
-2026-11-08 02:06 · ClearMD 2.6.0 · 4 converted · 1 skipped · 2 failed
+2026-11-08 02:35 · ClearMD 2.7.0 · 4 converted · 1 skipped · 2 failed
 
 ## Where Your Files Are
 Your Markdown files are in the `OutputMD/` folder, next to this summary.
