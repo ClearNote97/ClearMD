@@ -8,6 +8,7 @@
 | `split_choice.py` | Split's choices in the output card: the cut, its number, what to keep (023). |
 | `merge_choice.py` | Merge's choice in the output card: one Markdown or one PDF (026). |
 | `tool_tile.py` | A large tile of the start screen: icon, title, what the tool does (023). |
+| `flow_row.py` | A row of controls that wraps when too narrow (Review's answers, 028). |
 | `scroll_area.py` | A frame that scrolls when taller than its room (the settings' rows). |
 | `drop_zone.py`, `action_bar.py`, `stats.py`, `surface.py` | Drop zone, bottom bar, figures, page ground. |
 | `dialog.py` | The base of every dialog. |

@@ -158,6 +158,7 @@ anteriores._
 | **025** "Dividir los PDF Muy Grandes" desde Convertir | ✅ lista | v2.2.0 |
 | **026** Unir documentos en un solo Markdown o un solo PDF | ✅ lista | v2.3.0 |
 | **027** Dividir texto, CSV y Excel | ✅ lista | v2.4.0 |
+| **028** Modo incremental: reemplazar un resultado solo si su original cambió | ✅ lista | v2.5.0 |
 
 El plan completo está en el [roadmap](./spec/roadmap.md). ClearMD tiene **línea de comandos** y la misma **app de
 escritorio** en tres toolkits, ttkbootstrap (`clearmd-ttk`), PySide6 (`clearmd-pyside`,

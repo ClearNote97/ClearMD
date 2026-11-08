@@ -9,16 +9,16 @@ needed: an original newer than its result has changed since that result was writ
 
 ## Acceptance criteria (what MUST be true)
 
-- [ ] **AC-01** With "Replace it if the original changed":
+- [x] **AC-01** With "Replace it if the original changed":
   - a result whose original was modified after the result was written is converted again;
   - a result whose original is older is kept and said so ("unchanged since its result");
   - a file without a result is converted as always.
-- [ ] **AC-02** It works the same way for Split: an existing parts folder whose original is
+- [x] **AC-02** It works the same way for Split: an existing parts folder whose original is
   newer is split again, and an older one is kept. Merge always writes a new file, so this does
   not apply to it.
-- [ ] **AC-03** The command line takes `--changed`. It cannot go with `--overwrite` or `--skip`.
+- [x] **AC-03** The command line takes `--changed`. It cannot go with `--overwrite` or `--skip`.
   The setting's value is `changed`.
-- [ ] **AC-04** The three windows offer the choice in Settings, and on Review when results
+- [x] **AC-04** The three windows offer the choice in Settings, and on Review when results
   already exist (next to Replace and Keep). The summary counts the files that were unchanged and
   kept.
-- [ ] **AC-05** Texts in English and Spanish.
+- [x] **AC-05** Texts in English and Spanish.

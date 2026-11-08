@@ -49,7 +49,8 @@ class SettingsDialog(Dialog):
             "language": dict(_LANGUAGES),
             "theme": {v: text(f"gui.settings.theme_{v}") for v in ("system", "light", "dark")},
             "on_existing_output": {
-                v: text(f"gui.settings.existing_{v}") for v in ("ask", "overwrite", "skip")
+                v: text(f"gui.settings.existing_{v}")
+                for v in ("ask", "overwrite", "skip", "changed")  # changed: 028
             },
             "html_strategy": {v: text(f"gui.settings.html_{v}") for v in ("full", "article")},
             "summary_format": {

@@ -25,9 +25,10 @@ class ReviewView:
         self.files = FileList(2, widths=(240, 220))
         question = label("strong")
         self._wording.add(question, "gui.plan.existing_question")
-        self.answer = Choice(("keep", "overwrite"))
+        self.answer = Choice(("keep", "overwrite", "changed"))  # changed: feature 028
         self._wording.add(self.answer.radios["keep"], "gui.plan.keep")
         self._wording.add(self.answer.radios["overwrite"], "gui.plan.overwrite")
+        self._wording.add(self.answer.radios["changed"], "gui.plan.changed")
         self.existing = card([question, self.answer.control])
         self.existing.visible = False
         self.control = ft.Column(
@@ -60,8 +61,12 @@ class ReviewView:
         self._asks = False
         self._plan_id = -1
 
-    def overwrite_answer(self) -> bool | None:
-        return self.answer.value == "overwrite" if self._asks else None
+    def overwrite_answer(self) -> bool | str | None:
+        """Keep: False; Replace: True; only if the original changed: "changed" (028). ``None``:
+        not asked, the setting decides."""
+        if not self._asks:
+            return None
+        return "changed" if self.answer.value == "changed" else self.answer.value == "overwrite"
 
     def _wait(self) -> None:
         names = ("gui.plan.stat_convert", "gui.plan.stat_skipped", "gui.plan.stat_existing")

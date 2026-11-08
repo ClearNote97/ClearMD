@@ -2,6 +2,13 @@
 
 Each file can be checked against `SHA256SUMS.txt` ([how](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)). / Cada archivo se puede comprobar con `SHA256SUMS.txt` ([cómo](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)).
 
+**New in 2.5.0 / Novedades de la 2.5.0**
+- **Only what changed:** "When a Result Already Exists" gains **Replace it if the original
+  changed**, in Settings, on Review and as `--changed`: converting a folder again converts only
+  the new and edited files. / **Solo lo que cambió:** "Si el Resultado Ya Existe" suma
+  **Reemplazarlo si el original cambió**, en Ajustes, en Revisar y como `--changed`: al
+  convertir de nuevo una carpeta solo se convierten los archivos nuevos y editados.
+
 **New in 2.4.0 / Novedades de la 2.4.0**
 - Split takes **text, CSV and Excel** too: text and CSV between whole lines or rows (each CSV
   part keeps the header row), Excel by whole sheets, keeping their formats. / Dividir acepta

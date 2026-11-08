@@ -111,7 +111,7 @@ follows Choose → Review → Results in the three windows; the command line get
 - [x] **026 — Merge** (ADR-0046): v2.3.0: several `.md` into one, PDFs into one PDF, and mixed documents converted
       and joined (`OutputUnif/`); the order chosen by the user.
 - [x] **027 — Split more formats** (ADR-0047): v2.4.0: text and CSV by lines (the CSV header in every part), Excel by whole sheets.
-- [ ] **028 — Incremental mode** (v2.5.0): skip files unchanged since the last run.
+- [x] **028 — Incremental mode** (ADR-0048): v2.5.0: "Replace it if the original changed".
 - [ ] **029 — Minor formats** (v2.6.0): `.eml`, `.rtf`, subtitles.
 - [ ] **030 — Measure the queue** (only if blocking shows): a second lane for heavy files, or parallel
       workers (ADR-0015).

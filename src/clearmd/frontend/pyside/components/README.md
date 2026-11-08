@@ -6,7 +6,8 @@
 | `rail.py`, `rail_art.py` | The dark rail (Home, the steps; state, events) and what it draws. |
 | `tile.py`, `tile_art.py` | A start tile (feature 023) and its icons: the document, the scissors. |
 | `file_list.py` | The numbered file list. |
-| `output_card.py`, `split_choice.py` | Step 1's results card; How to Split, in place of the images for Split. |
+| `fold_row.py` | A row of choices that folds into a column when it does not fit. |
+| `output_card.py`, `split_choice.py`, `merge_choice.py` | Step 1's results card; How to Split or How to Merge in place of the images. |
 | `drop_zone.py`, `action_bar.py`, `stats.py`, `surface.py` | Drop zone, bottom bar, figures, page ground. |
 | `dialog.py` | The base of every dialog. |
 

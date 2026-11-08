@@ -2,7 +2,6 @@
 
 from PySide6.QtWidgets import (
     QButtonGroup,
-    QHBoxLayout,
     QLabel,
     QPushButton,
     QRadioButton,
@@ -14,6 +13,7 @@ from clearmd.frontend.design.metrics import GAP
 from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.presenter.models import PlanView, RowKind
 from clearmd.frontend.pyside.components.file_list import FileList, ListRow
+from clearmd.frontend.pyside.components.fold_row import FoldRow
 from clearmd.frontend.pyside.components.primitives import card, label, radio_button
 from clearmd.frontend.pyside.components.stats import Stats
 from clearmd.i18n import Catalog
@@ -42,17 +42,17 @@ class ReviewView(QWidget):
         question = label("strong")
         self._text(question, "gui.plan.existing_question")
         existing_layout.addWidget(question)
-        answers = QHBoxLayout()
+        self.answers = FoldRow()  # three answers; one under the other if they do not fit
         self._answers = QButtonGroup(self)
         self.keep = radio_button(self._answers)
         self.overwrite = radio_button(self._answers)
+        self.changed = radio_button(self._answers)  # only if the original changed (028)
         self._text(self.keep, "gui.plan.keep")
         self._text(self.overwrite, "gui.plan.overwrite")
-        answers.addWidget(self.keep)
-        answers.addSpacing(GAP)
-        answers.addWidget(self.overwrite)
-        answers.addStretch(1)
-        existing_layout.addLayout(answers)
+        self._text(self.changed, "gui.plan.changed")
+        for radio in (self.keep, self.overwrite, self.changed):
+            self.answers.add(radio)
+        existing_layout.addWidget(self.answers)
         self.keep.setChecked(True)
         self.layout_.addWidget(self.existing)
         self.existing.hide()
@@ -72,6 +72,8 @@ class ReviewView(QWidget):
         self._plan_id = plan.plan_id
         self._asks = plan.asks_about_existing
         self.existing.setVisible(self._asks)
+        if self._asks:
+            self.answers.fit()  # the words may have changed with the language
 
     def forget(self) -> None:
         self._wait()
@@ -80,8 +82,12 @@ class ReviewView(QWidget):
         self._asks = False
         self._plan_id = -1
 
-    def overwrite_answer(self) -> bool | None:
-        return self.overwrite.isChecked() if self._asks else None
+    def overwrite_answer(self) -> bool | str | None:
+        """Keep: False, Replace: True, only if the original changed: "changed"; ``None`` when
+        nothing was asked."""
+        if not self._asks:
+            return None
+        return "changed" if self.changed.isChecked() else self.overwrite.isChecked()
 
     def _wait(self) -> None:
         names = ("gui.plan.stat_convert", "gui.plan.stat_skipped", "gui.plan.stat_existing")

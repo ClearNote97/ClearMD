@@ -8,23 +8,21 @@ from collections.abc import Callable
 from functools import partial
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import (
-    QBoxLayout,
     QButtonGroup,
     QHBoxLayout,
     QLabel,
     QPushButton,
     QRadioButton,
-    QSizePolicy,
     QSpinBox,
     QVBoxLayout,
     QWidget,
 )
 
 from clearmd.backend.schemas.settings import RANGES
-from clearmd.frontend.design.metrics import GAP, SPACE
+from clearmd.frontend.design.metrics import SPACE
 from clearmd.frontend.presenter.models import OutputChoice
+from clearmd.frontend.pyside.components.fold_row import FoldRow
 from clearmd.frontend.pyside.components.primitives import label, radio_button
 
 DIGIT_WIDTH = 9  # a digit at 14 px, with room
@@ -55,50 +53,6 @@ def _send_number(on_split: Callable[..., None], cut: str, value: int) -> None:
     on_split(**{cut: value})  # parts=N, pages=N or words=N
 
 
-class CutRow(QWidget):
-    """The three cuts side by side; one under the other when the card is narrower than they are
-    (a compact window, longer words), so none is cut off."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._layout = QBoxLayout(QBoxLayout.Direction.LeftToRight, self)
-        self._layout.setContentsMargins(0, 0, 0, 0)
-        self._layout.setSpacing(GAP)
-        self._layout.addStretch(1)
-        self._cuts: list[QWidget] = []
-        # As narrow as the card: it folds rather than widening the window.
-        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
-
-    def add(self, *widgets: QWidget) -> None:
-        cut = QWidget()
-        line = QHBoxLayout(cut)
-        line.setContentsMargins(0, 0, 0, 0)
-        line.setSpacing(SPACE)
-        for widget in widgets:
-            line.addWidget(widget)
-        line.addStretch(1)
-        self._layout.insertWidget(len(self._cuts), cut)
-        self._cuts.append(cut)
-
-    @property
-    def folded(self) -> bool:
-        return self._layout.direction() is QBoxLayout.Direction.TopToBottom
-
-    def fit(self, width: int | None = None) -> None:
-        """Side by side if they fit in ``width`` (the row's own by default), else folded."""
-        needed = sum(cut.sizeHint().width() for cut in self._cuts)
-        needed += self._layout.spacing() * (len(self._cuts) - 1)
-        room = self.width() if width is None else width
-        direction = QBoxLayout.Direction
-        wanted = direction.TopToBottom if room < needed else direction.LeftToRight
-        if wanted is not self._layout.direction():
-            self._layout.setDirection(wanted)
-
-    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 -- Qt's name
-        self.fit(event.size().width())
-        super().resizeEvent(event)
-
-
 class SplitChoice:
     """The block (``self.widget``) and its controls: ``cuts`` and ``boxes`` by cut, ``keep``."""
 
@@ -120,7 +74,7 @@ class SplitChoice:
         heading.addStretch(1)
         layout.addLayout(heading)
 
-        self.cut_row = CutRow()
+        self.cut_row = FoldRow()
         self._cut = QButtonGroup(parent)
         self.cuts: dict[str, QRadioButton] = {}
         self.boxes: dict[str, QSpinBox] = {}

@@ -9,11 +9,12 @@ from clearmd.frontend.design.metrics import GAP, SPACE
 from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.presenter.models import PlanView, RowKind
 from clearmd.frontend.ttk.components.file_list import Column, FileList, ListRow
+from clearmd.frontend.ttk.components.flow_row import FlowRow
 from clearmd.frontend.ttk.components.stats import Stats
 from clearmd.frontend.ttk.visuals.style_names import CARD, PAGE
 from clearmd.i18n import Catalog
 
-KEEP, OVERWRITE = "keep", "overwrite"
+KEEP, OVERWRITE, CHANGED = "keep", "overwrite", "changed"  # changed: feature 028
 _ATTENTION = frozenset({RowKind.SKIPPED, RowKind.MISSING})
 
 
@@ -50,14 +51,18 @@ class ReviewView(ttk.Frame):
         question.pack(anchor="w")
         self._label(question, "gui.plan.existing_question")
         self.decision = tk.StringVar(value=KEEP)
-        answers = ttk.Frame(self.existing, style="TFrame")
+        # The answers on one row, or one per row when they do not fit (Spanish, 028).
+        answers = FlowRow(self.existing)
         answers.pack(fill="x", pady=(SPACE, 0))
+        self.answers = answers
         self.keep = ttk.Radiobutton(answers, variable=self.decision, value=KEEP)
-        self.keep.pack(side="left")
         self._label(self.keep, "gui.plan.keep")
         self.overwrite = ttk.Radiobutton(answers, variable=self.decision, value=OVERWRITE)
-        self.overwrite.pack(side="left", padx=(GAP, 0))
         self._label(self.overwrite, "gui.plan.overwrite")
+        self.changed = ttk.Radiobutton(answers, variable=self.decision, value=CHANGED)
+        self._label(self.changed, "gui.plan.changed")
+        for answer in (self.keep, self.overwrite, self.changed):
+            answers.add(answer)
 
     def show(self, plan: PlanView) -> None:
         self.stats.show(plan.stats)
@@ -88,9 +93,13 @@ class ReviewView(ttk.Frame):
         self._asks = False
         self._plan_id = -1
 
-    def overwrite_answer(self) -> bool | None:
-        """The answer about existing results, when the plan asks it (setting "ask")."""
-        return self.decision.get() == OVERWRITE if self._asks else None
+    def overwrite_answer(self) -> bool | str | None:
+        """The answer about existing results, when the plan asks it (setting "ask"): replace
+        them (True), keep them (False), or replace those whose original changed ("changed")."""
+        if not self._asks:
+            return None
+        answer = self.decision.get()
+        return "changed" if answer == CHANGED else answer == OVERWRITE
 
     def _wait(self) -> None:
         names = ("gui.plan.stat_convert", "gui.plan.stat_skipped", "gui.plan.stat_existing")
@@ -103,6 +112,7 @@ class ReviewView(ttk.Frame):
             self._wait()
         for widget, key in self._texts:
             widget.configure(text=catalog.text(key))
+        self.answers.refresh()
         self.files.apply_headings(
             catalog.text("gui.main.column_name"),
             [catalog.text("gui.main.column_location"), catalog.text("gui.plan.column_what")],
