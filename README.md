@@ -153,6 +153,7 @@ _Plus the failed and skipped files with a plain-words reason, and the history of
 | **024** Split into parts that fit an AI (about N words); Split takes Markdown | ✅ done | v2.1.0 |
 | **025** "Split the Large PDFs" from Convert | ✅ done | v2.2.0 |
 | **026** Merge documents into one Markdown or one PDF | ✅ done | v2.3.0 |
+| **027** Split text, CSV and Excel | ✅ done | v2.4.0 |
 
 Full plan in the [roadmap](./spec/roadmap.md). ClearMD has a **command line** and the same **desktop app** in three toolkits,
 ttkbootstrap (`clearmd-ttk`), PySide6 (`clearmd-pyside`, [screenshots](./docs/screenshots/016/)) and flet

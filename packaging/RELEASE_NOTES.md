@@ -2,6 +2,12 @@
 
 Each file can be checked against `SHA256SUMS.txt` ([how](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)). / Cada archivo se puede comprobar con `SHA256SUMS.txt` ([cómo](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)).
 
+**New in 2.4.0 / Novedades de la 2.4.0**
+- Split takes **text, CSV and Excel** too: text and CSV between whole lines or rows (each CSV
+  part keeps the header row), Excel by whole sheets, keeping their formats. / Dividir acepta
+  también **texto, CSV y Excel**: texto y CSV entre líneas o filas enteras (cada parte de un CSV
+  conserva la fila de encabezados), Excel por hojas enteras, conservando sus formatos.
+
 **New in 2.3.0 / Novedades de la 2.3.0**
 - The third tool, **Merge Documents**: several documents into **one Markdown** (each converted,
   Markdown taken as it is) or **one PDF** (PDFs only), in the list's order, in

@@ -8,15 +8,18 @@ from clearmd.backend.services.worker.protocol import (
     CountPagesRequest,
     CutDone,
     CutRequest,
+    FileParts,
     MarkdownCutRequest,
     MarkdownParts,
     MergePdfRequest,
     ReadTextRequest,
     Request,
     Response,
+    TextCutRequest,
     TextRead,
     Words,
     WordsRequest,
+    XlsxCutRequest,
 )
 from clearmd.backend.services.worker.supervisor import WorkerRunner
 from clearmd.backend.use_cases.cancel import CancelToken
@@ -48,6 +51,18 @@ class PageRunner:
     def merge_pdfs(self, items: list[PlannedConversion], cancel: CancelToken) -> bytes:
         request = MergePdfRequest(tuple(str(item.source) for item in items))
         return self._expect(request, CutDone, cancel).data
+
+    def text_parts(
+        self, item: PlannedConversion, kind: str, cut: str, size: int, cancel: CancelToken
+    ) -> tuple[tuple[str, ...], tuple[int, ...]]:
+        request = TextCutRequest(str(item.source), kind, cut, size)
+        found = self._expect(request, MarkdownParts, cancel)
+        return found.parts, found.over
+
+    def xlsx_parts(
+        self, item: PlannedConversion, parts: int, cancel: CancelToken
+    ) -> tuple[bytes, ...]:
+        return self._expect(XlsxCutRequest(str(item.source), parts), FileParts, cancel).data
 
     def _expect[T: Response](self, request: Request, kind: type[T], cancel: CancelToken) -> T:
         response = self._runner.job(request, cancel)

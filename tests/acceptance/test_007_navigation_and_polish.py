@@ -56,6 +56,8 @@ def shown(app: TtkApp) -> Any:
 def test_ac_01_every_step_opens_by_click_and_keyboard_dimmed_when_not_on_screen(
     app: TtkApp,
 ) -> None:
+    # The rail is drawn on its first <Configure>: wait for it (a flake seen in 027's run).
+    pump(app, until=lambda: app.rail.bbox("step4") is not None, seconds=2)
     for step in (4, 2, 3, 1):
         x1, y1, x2, y2 = app.rail.bbox(f"step{step}")
         app.rail.event_generate("<Button-1>", x=(x1 + x2) // 2, y=(y1 + y2) // 2)

@@ -57,6 +57,18 @@ class PageCutter(Protocol):
         """One PDF with every page of ``items``, whole and in order (feature 026)."""
         ...
 
+    def text_parts(
+        self, item: PlannedConversion, kind: str, cut: str, size: int, cancel: CancelToken
+    ) -> tuple[tuple[str, ...], tuple[int, ...]]:
+        """A text or CSV file's parts, and which are over the size (feature 027)."""
+        ...
+
+    def xlsx_parts(
+        self, item: PlannedConversion, parts: int, cancel: CancelToken
+    ) -> tuple[bytes, ...]:
+        """A workbook's parts of whole sheets (feature 027)."""
+        ...
+
 
 class Clock(Protocol):
     def now(self) -> datetime: ...

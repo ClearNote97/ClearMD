@@ -6,21 +6,26 @@ from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.schemas.split import Cut
 from clearmd.backend.services.split.markdown_cut import cut_markdown
 from clearmd.backend.services.split.pdf_pages import count_pages, cut_pages, merge_pdfs
+from clearmd.backend.services.split.text_cut import cut_text
 from clearmd.backend.services.split.words import page_words
+from clearmd.backend.services.split.xlsx_cut import cut_xlsx
 from clearmd.backend.services.worker.protocol import (
     Counted,
     CountPagesRequest,
     CutDone,
     Failed,
+    FileParts,
     MarkdownCutRequest,
     MarkdownParts,
     MergePdfRequest,
     PageJob,
     ReadTextRequest,
     Response,
+    TextCutRequest,
     TextRead,
     Words,
     WordsRequest,
+    XlsxCutRequest,
 )
 
 
@@ -49,6 +54,12 @@ def handle_pages(request: PageJob, max_result_bytes: int) -> Response:
             return Words(page_words(Path(request.source)))
         if isinstance(request, MarkdownCutRequest):
             return _markdown(request, max_result_bytes)
+        if isinstance(request, TextCutRequest):
+            text = _text(request.source, max_result_bytes)
+            parts, over = cut_text(text, request.kind, Cut(request.cut), request.size)
+            return MarkdownParts(parts, over)
+        if isinstance(request, XlsxCutRequest):
+            return FileParts(cut_xlsx(Path(request.source), request.parts))
         if isinstance(request, ReadTextRequest):
             return TextRead(_text(request.source, max_result_bytes))
         if isinstance(request, MergePdfRequest):

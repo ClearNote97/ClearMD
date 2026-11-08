@@ -73,6 +73,29 @@ class MergePdfRequest:
 
 
 @dataclass(frozen=True)
+class TextCutRequest:
+    """A text or CSV file cut between lines or rows (feature 027): ``kind`` "txt" or "csv"."""
+
+    source: str
+    kind: str
+    cut: str
+    size: int
+
+
+@dataclass(frozen=True)
+class XlsxCutRequest:
+    """An Excel workbook cut into ``parts`` of whole sheets (feature 027)."""
+
+    source: str
+    parts: int
+
+
+@dataclass(frozen=True)
+class FileParts:
+    data: tuple[bytes, ...]
+
+
+@dataclass(frozen=True)
 class TextRead:
     text: str
 
@@ -123,7 +146,11 @@ type PageJob = (
     | MarkdownCutRequest
     | ReadTextRequest
     | MergePdfRequest
+    | TextCutRequest
+    | XlsxCutRequest
 )
 type Job = ConvertRequest | DetectRequest | PageJob
 type Request = Job | None  # None asks the worker to exit
-type Response = Converted | Detected | Counted | CutDone | Words | MarkdownParts | TextRead | Failed
+type Response = (
+    Converted | Detected | Counted | CutDone | Words | MarkdownParts | TextRead | FileParts | Failed
+)

@@ -5,8 +5,6 @@ them. A part's Markdown is converted part by part, each within the time limit (A
 Overwriting replaces only the parts of an earlier cut; other files in the folder stay.
 """
 
-import os
-import re
 from dataclasses import replace
 from pathlib import Path
 
@@ -29,6 +27,8 @@ from clearmd.backend.use_cases.output_files import (
     remove_regular_file,
 )
 from clearmd.backend.use_cases.ports import ConversionRunner, PageCutter
+from clearmd.backend.use_cases.split_formats import OWN_FORMAT_PARTS, split_file
+from clearmd.backend.use_cases.split_names import part_name, remove_earlier_parts
 from clearmd.backend.use_cases.split_notes import merged, over_size
 
 STOPPING_CODES = frozenset({ErrorCode.TIMED_OUT, ErrorCode.OUT_OF_MEMORY})
@@ -42,9 +42,14 @@ def split_detection(path: Path) -> Detection | None:
 
 
 def split_skip(detection: Detection, split: SplitSpec) -> SkipReason | None:
-    """Why a file is left out of Split: not a PDF or Markdown; Markdown with "every N pages"."""
+    """Why a file is left out of Split: a format it does not take, or a cut its format has not
+    (features 023, 024, 027)."""
     if detection.format is FormatId.MARKDOWN:
         return SkipReason.CUT_NOT_FOR_MARKDOWN if split.cut is Cut.PAGES else None
+    if detection.format is FormatId.XLSX:  # by whole sheets (feature 027)
+        return None if split.cut is Cut.PARTS else SkipReason.CUT_BY_SHEETS
+    if detection.format in OWN_FORMAT_PARTS:  # text and CSV have no pages (feature 027)
+        return SkipReason.NO_PAGES_TO_CUT if split.cut is Cut.PAGES else None
     return None if detection.format is FormatId.PDF else SkipReason.NOT_SPLITTABLE
 
 
@@ -72,31 +77,6 @@ def page_ranges(pages: int, cut: Cut, size: int) -> tuple[tuple[int, int], ...]:
         ranges.append((first, first + length - 1))
         first += length
     return tuple(ranges)
-
-
-def part_name(spec: SplitSpec, name: str, index: int, total: int) -> str:
-    """A part's name without extension; the index padded to the total's width (sorts right)."""
-    width = len(str(total))
-    return spec.part_name.format(name=name, index=str(index).zfill(width), total=total)
-
-
-def _earlier_part(spec: SplitSpec, name: str) -> re.Pattern[str]:
-    """Any part of an earlier cut of ``name``: ClearMD's own names only."""
-    pattern = re.escape(spec.part_name)
-    for field, value in (("name", re.escape(name)), ("index", r"\d+"), ("total", r"\d+")):
-        pattern = pattern.replace(re.escape("{" + field + "}"), value)
-    return re.compile(pattern + r"\.(?:pdf|md)")
-
-
-def _remove_earlier_parts(item: PlannedConversion, spec: SplitSpec) -> None:
-    folder = item.target
-    if not os.path.isdir(folder) or os.path.islink(folder):
-        return
-    own = _earlier_part(spec, item.target.name)
-    with os.scandir(folder) as entries:
-        old = [Path(entry.path) for entry in entries if own.fullmatch(entry.name)]
-    for path in old:
-        remove_regular_file(path, inside=item.output_root)
 
 
 def word_ranges(
@@ -137,7 +117,7 @@ def _pdf(
         ranges = page_ranges(cutter.count_pages(item, cancel), spec.cut, spec.size)
     if not ranges:
         raise ConversionError(ErrorCode.CORRUPT_FILE, "the PDF has no pages")
-    _remove_earlier_parts(item, spec)
+    remove_earlier_parts(item, spec)
     notes: list[tuple[int, ConversionNote]] = []
     for index, (first, last) in enumerate(ranges, start=1):
         name = part_name(spec, item.target.name, index, len(ranges))
@@ -161,7 +141,7 @@ def _markdown(
     parts, over = cutter.markdown_parts(item, spec.cut.value, spec.size, cancel)
     if not parts:
         raise ConversionError(ErrorCode.NOTHING_TO_MEASURE, "an empty Markdown file")
-    _remove_earlier_parts(item, spec)
+    remove_earlier_parts(item, spec)
     for index, text in enumerate(parts, start=1):
         name = part_name(spec, item.target.name, index, len(parts))
         atomic_write(item.target / f"{name}.md", text, inside=item.output_root)
@@ -178,6 +158,8 @@ def split_one(
     try:
         if item.detection.format is FormatId.MARKDOWN:
             count, notes = _markdown(item, spec, cutter, cancel)
+        elif item.detection.format in OWN_FORMAT_PARTS:  # text, CSV, Excel (feature 027)
+            count, notes = split_file(item, spec, runner, cutter, cancel)
         else:
             count, notes = _pdf(item, spec, runner, cutter, cancel, where)
     except ConversionError as error:

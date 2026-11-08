@@ -54,6 +54,8 @@ class SkipReason(StrEnum):
     TOO_DEEP = "too_deep"
     NOT_SPLITTABLE = "not_splittable"  # Split takes PDF and Markdown (features 023, 024)
     CUT_NOT_FOR_MARKDOWN = "cut_not_for_markdown"  # "every N pages" means nothing for Markdown
+    NO_PAGES_TO_CUT = "no_pages_to_cut"  # text and CSV have no pages (feature 027)
+    CUT_BY_SHEETS = "cut_by_sheets"  # Excel is cut by whole sheets only (feature 027)
     NOT_FOR_PDF_MERGE = "not_for_pdf_merge"  # one PDF can only be made of PDFs (feature 026)
 
     @property
