@@ -113,11 +113,12 @@ def button_style(kind: str) -> ft.ButtonStyle:
     )
 
 
-def tile_style(top: int = GAP, *, current: bool = False) -> ft.ButtonStyle:
+def tile_style(top: int = GAP, *, current: bool = False, centred: bool = False) -> ft.ButtonStyle:
     """A start tile (feature 021): the page's ground in the card, its border turning to the accent
     and its ground to the selection under the pointer; its content from the top, ``top`` below
     the edge (feature 024: two tiles' icons at the same height). ``current``: the accent border
-    at rest too ("What Next?"'s tool just used, feature 033)."""
+    at rest too ("What Next?"'s tool just used, feature 033); ``centred``: the content in the
+    middle (a tile without a body, as Qt and ttk draw it)."""
     border = ft.BorderSide(2, role("accent")) if current else ft.BorderSide(1, role("border"))
     return ft.ButtonStyle(
         color=_states("text", disabled="disabled"),
@@ -126,7 +127,8 @@ def tile_style(top: int = GAP, *, current: bool = False) -> ft.ButtonStyle:
         shadow_color=ft.Colors.TRANSPARENT,
         side={DEFAULT: border, HOVERED: ft.BorderSide(2, role("accent"))},
         shape=ft.RoundedRectangleBorder(radius=RADIUS),
-        padding=ft.Padding.only(left=GAP, top=top, right=GAP, bottom=GAP),
-        alignment=ft.Alignment.TOP_CENTER,  # icons and titles in line, whatever the text below
+        padding=ft.Padding.only(left=GAP, top=GAP if centred else top, right=GAP, bottom=GAP),
+        # icons and titles in line, whatever the text below; a lone title: in the middle
+        alignment=ft.Alignment.CENTER if centred else ft.Alignment.TOP_CENTER,
         elevation=0,
     )

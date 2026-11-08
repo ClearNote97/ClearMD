@@ -67,7 +67,9 @@ class WhatNextDialog(Dialog):
         )
         tile = ft.Button(
             content=column,
-            style=tile_style(GAP, current=choice.current),  # the one just used: accent border
+            style=tile_style(
+                GAP, current=choice.current, centred=True
+            ),  # the one just used: accent border
             height=TILE_HEIGHT,
             expand=True,
             on_click=lambda: self.choose(choice.tool),

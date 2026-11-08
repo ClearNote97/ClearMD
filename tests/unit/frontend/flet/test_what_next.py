@@ -65,7 +65,7 @@ def test_the_tool_just_used_comes_first_with_the_accent(flet_window: Window, use
     tools = list(dialog.tiles)
     assert tools[0] is used and sorted(tools) == sorted(Tool)
     for tool, tile in dialog.tiles.items():
-        assert tile.style == tile_style(GAP, current=tool is used)
+        assert tile.style == tile_style(GAP, current=tool is used, centred=True)
     column = dialog.tiles[used].content
     assert isinstance(column, ft.Column)
     icon = column.controls[0]
