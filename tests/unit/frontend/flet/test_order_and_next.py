@@ -59,6 +59,8 @@ def test_merge_rows_have_their_arrows_and_the_hint(flet_window: Window, language
         (True, True),
         (True, False),
     ]
+    first_up, last_down = pairs[0][0], pairs[2][1]  # a disabled arrow looks disabled (CI shot)
+    assert first_up.icon_color == last_down.icon_color != pairs[1][0].icon_color
     up, down = pairs[1]
     assert up.tooltip == catalog.text("gui.main.move_up")
     assert down.tooltip == catalog.text("gui.main.move_down")

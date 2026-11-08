@@ -18,7 +18,8 @@ def arrow(
     return ft.IconButton(
         icon=icon,
         icon_size=ARROW_ICON,
-        icon_color=role("accent_text"),
+        # the colour follows the state: flet keeps an explicit icon_color when disabled
+        icon_color=role("accent_text") if enabled else role("disabled"),
         disabled_color=role("disabled"),
         tooltip=tooltip,
         disabled=not enabled,
