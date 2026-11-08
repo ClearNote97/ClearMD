@@ -101,6 +101,11 @@ QPushButton#tile {{
 QPushButton#tile:hover {{ background: {selected}; border: 2px solid {p.accent}; }}
 QPushButton#tile:focus {{ border: 2px solid {p.accent}; }}
 QPushButton#tile QLabel {{ background: transparent; }}
+QPushButton#order {{  /* Merge's arrows on the list's rows (032) */
+    padding: 0; min-height: 0; border-radius: {RADIUS // 2}px; font-weight: normal;
+    color: {p.accent_text};
+}}
+QPushButton#order:disabled {{ color: {disabled}; background: transparent; }}
 QPushButton#link {{
     background: transparent; border: none; color: {p.accent_text}; padding: 0 {SPACE}px;
 }}

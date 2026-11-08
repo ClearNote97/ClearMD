@@ -33,6 +33,7 @@ class InputsCard:
     ) -> None:
         self._on_remove = on_remove
         entry = ttk.Frame(parent, style=PAGE)
+        self.entry = entry
         entry.pack(fill="x")
         buttons = ttk.Frame(entry, style=PAGE)
         buttons.pack(side="left", fill="y")

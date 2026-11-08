@@ -76,6 +76,7 @@ def build_frame(
         on_summary=lambda value: presenter.choose_summary_format(value),
         on_images=lambda value: presenter.choose_images(value),
         on_split=lambda **choice: presenter.choose_split(**choice),
+        on_move=lambda path, offset: presenter.move_input(path, offset),
     )
     home = HomeView(page, fonts=fonts, on_tool=lambda tool: presenter.choose_tool(tool))
     review = ReviewView(page, fonts=fonts)

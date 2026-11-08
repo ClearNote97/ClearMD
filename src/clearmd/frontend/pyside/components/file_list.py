@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
 from clearmd.frontend.design.metrics import SPACE
 from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.pyside.components.primitives import card, label
-from clearmd.frontend.pyside.layout.units import ICON
+from clearmd.frontend.pyside.layout.units import ICON, LIST_HEADER, ROW_HEIGHT
 from clearmd.frontend.pyside.visuals.images import icon
 
 
@@ -30,6 +30,21 @@ class ListRow:
     values: tuple[str, ...]  # one per extra column
     warning: bool = False  # drawn in the warning colour
     payload: Any = None  # what the row stands for (a path), returned by ``selected``
+
+
+class _Tree(QTreeWidget):
+    """A tree that can ask for a number of rows only (``rows``): its preferred height."""
+
+    rows = 0
+
+    def sizeHint(self) -> QSize:  # noqa: N802 -- Qt's name
+        hint = super().sizeHint()
+        if self.rows:
+            hint.setHeight(LIST_HEADER + self.rows * ROW_HEIGHT + 2 * SPACE)
+        return hint
+
+    def minimumSizeHint(self) -> QSize:  # noqa: N802 -- Qt's name
+        return self.sizeHint() if self.rows else super().minimumSizeHint()
 
 
 class FileList(QFrame):
@@ -46,7 +61,7 @@ class FileList(QFrame):
         self._warning = QColor("#B45309")
         self._stack = QStackedLayout(self)
         self._stack.setContentsMargins(0, 0, 0, 0)  # Qt's default is off the grid
-        self.tree = QTreeWidget()
+        self.tree = _Tree()
         self.tree.setColumnCount(2 + columns)
         self.tree.setRootIsDecorated(False)
         self.tree.setUniformRowHeights(True)
@@ -103,6 +118,12 @@ class FileList(QFrame):
             self.tree.addTopLevelItem(item)
         self._syncing = False
         self._stack.setCurrentIndex(0 if self._rows or not self.empty.text() else 1)
+
+    def ask_rows(self, rows: int) -> None:
+        """Ask for ``rows`` rows under the header, at the least and no more: the list takes the
+        room left over (feature 032: step 1 at 800 x 600)."""
+        self.tree.rows = rows
+        self.tree.updateGeometry()
 
     def rows(self) -> tuple[ListRow, ...]:
         return self._rows

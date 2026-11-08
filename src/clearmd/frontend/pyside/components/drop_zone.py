@@ -22,7 +22,7 @@ class DropZone(QFrame):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(GAP, SPACE, GAP, SPACE)
         layout.setSpacing(SPACE)
-        self.text = label("dropText")
+        self.text = label("dropText", wrap=True)  # two lines rather than squeezing the buttons
         self.text.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.text)
 

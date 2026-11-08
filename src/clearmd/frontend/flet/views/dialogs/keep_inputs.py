@@ -1,4 +1,5 @@
-"""The "Convert more" dialog: keep the chosen files, or start empty (asked every time, 007)."""
+"""The "What Next?" dialog on Results (features 007, 032): keep the chosen files, start empty, or
+go back Home to choose another tool (asked every time)."""
 
 from collections.abc import Callable
 
@@ -8,15 +9,18 @@ from clearmd.frontend.flet.components.primitives import button, gap, label, stre
 from clearmd.frontend.flet.layout.units import QUESTION_WIDTH
 from clearmd.i18n import Catalog
 
+ANSWERS = ("keep", "clear", "home")  # Presenter.what_next's
+
 
 class KeepInputsDialog(Dialog):
-    """ "Convert more": keep the chosen files, or start empty (asked every time, feature 007)."""
+    """ "What Next?": Go Back Home on the left, Start Empty and Keep Them (the default) on the
+    right; each answer goes to ``on_answer`` as ``"home"``, ``"clear"`` or ``"keep"``."""
 
     def __init__(
         self,
         catalog: Catalog,
         *,
-        on_answer: Callable[[bool], None],
+        on_answer: Callable[[str], None],
         on_close: Callable[[], None],
     ) -> None:
         super().__init__(
@@ -30,11 +34,12 @@ class KeepInputsDialog(Dialog):
                 label("muted", catalog.text("gui.more.explain")),
             ]
         )
-        self.clear = button("", lambda: self.answer(False), catalog.text("gui.more.clear"))
-        self.keep = button("primary", lambda: self.answer(True), catalog.text("gui.more.keep"))
-        self.default(lambda: self.answer(True))
-        self.foot.controls.extend([stretch(), self.clear, self.keep])
+        self.home = button("", lambda: self.answer("home"), catalog.text("gui.more.home"))
+        self.clear = button("", lambda: self.answer("clear"), catalog.text("gui.more.clear"))
+        self.keep = button("primary", lambda: self.answer("keep"), catalog.text("gui.more.keep"))
+        self.default(lambda: self.answer("keep"))
+        self.foot.controls.extend([self.home, stretch(), self.clear, self.keep])
 
-    def answer(self, keep: bool) -> None:
+    def answer(self, choice: str) -> None:
         self.close_dialog()
-        self._on_answer(keep)
+        self._on_answer(choice)

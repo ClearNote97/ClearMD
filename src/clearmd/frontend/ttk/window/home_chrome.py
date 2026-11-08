@@ -1,7 +1,9 @@
-"""What Home (feature 023) changes around the page: no action bar nor message at its foot (its
-header, without a step counter, is the presenter's ``header_of``). A module of its own: the view
-stays within its size."""
+"""What changes around a page as it opens: Home (feature 023) has no action bar nor message at its
+foot (its header, without a step counter, is the presenter's ``header_of``), and no button keeps
+the look of the press that opened the page (032). A module of its own: the view stays within its
+size."""
 
+import tkinter as tk
 from tkinter import ttk
 
 from clearmd.frontend.design.metrics import SPACE
@@ -16,3 +18,11 @@ def show_bar(actions: ttk.Frame, message: ttk.Label, page: ttk.Frame, *, shown: 
     elif not actions.winfo_manager():
         actions.pack(side="bottom", fill="x", pady=(SPACE, 0), before=page)
         message.pack(side="bottom", fill="x", pady=(SPACE, 0), after=actions)
+
+
+def calm_focus(root: tk.Misc) -> None:
+    """A page has just opened: a button (or a tile) that kept the focus of the press that opened
+    it would show its focus ring there; the window takes the focus back (Enter still works)."""
+    focused = root.focus_get()
+    if isinstance(focused, ttk.Button) or getattr(focused, "lit", None) is not None:
+        root.focus_set()

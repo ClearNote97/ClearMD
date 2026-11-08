@@ -10,6 +10,7 @@ screen: the "flet screenshots" workflow on Windows, with the pinned program fetc
 
 import argparse
 import asyncio
+import ctypes
 import sys
 import threading
 from collections.abc import Callable
@@ -19,11 +20,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # tests/: support.*, gui.*
 
 import flet as ft  # noqa: E402
-import gui.screenshots as demo  # noqa: E402
+import support.ttk_demo as demo  # noqa: E402
 from support.gui_fakes import FakeBackend  # noqa: E402
 
 from clearmd.backend.schemas.models import BatchPlan, PlanWarning  # noqa: E402
 from clearmd.backend.schemas.settings import Settings  # noqa: E402
+from clearmd.frontend.design.metrics import START_HEIGHT, START_WIDTH  # noqa: E402
 from clearmd.frontend.flet.layout.units import FRAME_HEIGHT, FRAME_WIDTH  # noqa: E402
 from clearmd.frontend.flet.visuals.images import ASSETS  # noqa: E402
 from clearmd.frontend.flet.window.flet_page import FletPage  # noqa: E402
@@ -43,6 +45,7 @@ class Shooter:
         # until a window callback runs (FletPage.post). A change that stays on the same page posts
         # none (Split's step 1 to Merge's, 026), so the page is sent here, before every shot.
         self.page.update()
+        park_pointer()
         # Past the primary action's pause after a page change (F-1), and flet's own drawing.
         await asyncio.sleep(settle)
         picture = await self.page.take_screenshot()
@@ -54,6 +57,14 @@ class Shooter:
             if done():
                 return
             await asyncio.sleep(0.1)
+
+
+def park_pointer() -> None:
+    """The CI's pointer rests in the middle of the screen, over the page, and flet draws the control
+    under it hovered: "Clear All" looked pressed in Merge's shot (032). It goes to the screen's
+    corner, over no control."""
+    if sys.platform == "win32":
+        ctypes.windll.user32.SetCursorPos(0, 0)
 
 
 async def close_dialog(app: FletApp) -> None:
@@ -79,7 +90,7 @@ async def screens(page: ft.Page, out: Path, theme: str, language: str) -> None:
     )
     fake = FakeBackend(settings=settings, plan=demo.PLAN, statuses=demo.FAILED)
     page.enable_screenshots = True
-    page.window.width, page.window.height = demo.WIDTH + FRAME_WIDTH, demo.HEIGHT + FRAME_HEIGHT
+    page.window.width, page.window.height = START_WIDTH + FRAME_WIDTH, START_HEIGHT + FRAME_HEIGHT
     app = FletApp(FletPage(page), fake)
     app.start()
     await shooter.shot("0-home")  # the window opens on Home (feature 023)
@@ -103,6 +114,9 @@ async def screens(page: ft.Page, out: Path, theme: str, language: str) -> None:
     held.set()
     await shooter.until(lambda: app.presenter.page == 4)
     await shooter.shot("4-results")
+    app.dialogs.convert_more()  # Results' "What Next?": keep, start empty, or Home (032)
+    await shooter.shot("4-what-next")
+    await close_dialog(app)
     dialogs = (("5-help", app.dialogs.show_help), ("6-settings", app.dialogs.show_settings))
     for name, show in dialogs:
         show()
@@ -116,7 +130,8 @@ async def screens(page: ft.Page, out: Path, theme: str, language: str) -> None:
     app.presenter.clear_inputs()
     app.presenter.add_paths([demo.INPUTS[0]])
     await shooter.shot("1-choose-split")
-    app.presenter.choose_tool(Tool.MERGE)  # Merge's step 1, three files in their order (026)
+    # Merge's step 1, three files in their order, each with its ▲ ▼ (026, 032)
+    app.presenter.choose_tool(Tool.MERGE)
     app.presenter.clear_inputs()
     app.presenter.add_paths([demo.INPUTS[0], demo.INPUTS[2], demo.INPUTS[4]])
     await shooter.shot("1-choose-merge")

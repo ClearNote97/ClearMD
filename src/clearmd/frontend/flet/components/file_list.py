@@ -22,6 +22,16 @@ class ListRow:
     values: tuple[str, ...]  # one per extra column
     warning: bool = False  # drawn in the warning colour
     payload: Any = None  # what the row stands for (a path), returned by ``selected``
+    extra: ft.LayoutControl | None = None  # a last cell of its own (Merge's ▲ ▼, feature 032)
+
+
+def size(cell: ft.LayoutControl, column: int, widths: Sequence[int | None]) -> None:
+    """A column's width; the last one takes what is left."""
+    width = widths[column] if column < len(widths) else None
+    if width is None or column == len(widths) - 1:
+        cell.expand = True
+    else:
+        cell.width = width
 
 
 @dataclass(frozen=True)
@@ -157,6 +167,8 @@ class FileList:
         cells: list[ft.LayoutControl] = [number, name, *texts[1:]]
         for column, cell in enumerate(cells[1:]):
             self._size(cell, column)
+        if row.extra is not None:
+            cells.append(row.extra)
         box = None
         if self.checks:
             box = ft.Checkbox(value=False, on_change=partial(self.toggle, index))
@@ -173,12 +185,7 @@ class FileList:
         return Line(frame, box, tuple(texts), picture)
 
     def _size(self, cell: ft.LayoutControl, column: int) -> None:
-        """A column's width; the last one takes what is left."""
-        width = self._widths[column] if column < len(self._widths) else None
-        if width is None or column == len(self._widths) - 1:
-            cell.expand = True
-        else:
-            cell.width = width
+        size(cell, column, self._widths)
 
     def _show_which(self) -> None:
         empty = not self._rows and bool(self.empty.value)

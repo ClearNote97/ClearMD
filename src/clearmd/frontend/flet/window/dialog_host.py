@@ -1,4 +1,4 @@
-"""One dialog at a time: help, settings, welcome, and the question after Convert more."""
+"""One dialog at a time: help, settings, welcome, and Results' "What Next?"."""
 
 from collections.abc import Callable
 from typing import Any
@@ -23,12 +23,13 @@ class DialogHost:
         self.current: Dialog | None = None  # the open dialog: one at a time
 
     def convert_more(self) -> None:
-        """Asked every time: keep the chosen files, or start empty (feature 007)."""
+        """Results' "What Next?", asked every time: keep the chosen files, start empty, or go
+        back Home (features 007, 032)."""
         if self.current is None:
             self._open(
                 KeepInputsDialog(
                     self._shown.need_catalog(),
-                    on_answer=lambda keep: self._sent(self._presenter.convert_more, keep=keep),
+                    on_answer=lambda answer: self._sent(self._presenter.what_next, answer),
                     on_close=self._closed,
                 )
             )

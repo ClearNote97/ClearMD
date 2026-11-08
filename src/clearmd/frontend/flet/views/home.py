@@ -10,6 +10,7 @@ import flet as ft
 from clearmd.frontend.design.metrics import GAP, SPACE
 from clearmd.frontend.flet.components.primitives import Wording, label
 from clearmd.frontend.flet.components.start_panel import Tile
+from clearmd.frontend.flet.components.tool_icon import tool_icon
 from clearmd.frontend.presenter.state import Tool
 from clearmd.i18n import Catalog
 
@@ -25,7 +26,7 @@ class HomeView:
         self._wording = Wording()
         self.convert = Tile(
             self._wording,
-            ft.Icons.DESCRIPTION_OUTLINED,
+            tool_icon(Tool.CONVERT, HOME_ICON_SIZE),
             "gui.home.convert",
             "gui.home.convert_body",
             lambda: on_tool(Tool.CONVERT),
@@ -35,7 +36,7 @@ class HomeView:
         )
         self.split = Tile(
             self._wording,
-            ft.Icons.CONTENT_CUT,
+            tool_icon(Tool.SPLIT, HOME_ICON_SIZE),
             "gui.home.split",
             "gui.home.split_body",
             lambda: on_tool(Tool.SPLIT),
@@ -45,7 +46,7 @@ class HomeView:
         )
         self.merge = Tile(
             self._wording,
-            ft.Icons.MERGE,
+            tool_icon(Tool.MERGE, HOME_ICON_SIZE),
             "gui.home.merge",
             "gui.home.merge_body",
             lambda: on_tool(Tool.MERGE),
@@ -58,10 +59,12 @@ class HomeView:
         self.note.text_align = ft.TextAlign.CENTER
         self._wording.add(self.note, "gui.home.files_note")
         row = ft.Row([tile.control for tile in self.tiles], spacing=GAP)  # equal widths
+        # Centred in the page, the note just under the tiles, as Qt's and ttk's (feature 032).
         self.control = ft.Column(
             [row, self.note],
             spacing=GAP,
             expand=True,
+            alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         )
 

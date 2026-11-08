@@ -1,6 +1,7 @@
 """What the presenter's ``View`` calls do to the widgets: show the state, the plan, the progress and
 the result, switch the page (the start screen is page 0), apply the theme and the language."""
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget
 
 from clearmd.frontend.design.palette import LIGHT, PALETTES
@@ -47,6 +48,7 @@ class PySideView:
         self._actions = frame.actions
         self._message = frame.message
         self._home = frame.home
+        self._panel = frame.panel
         self._main = frame.main
         self._review = frame.review
         self._converting = frame.converting
@@ -72,7 +74,7 @@ class PySideView:
         self._actions.setVisible(state.page != HOME)  # the start screen has no primary action
         if page_changed:
             self._primary_button.pause()
-            self._focus(previous.page if previous is not None else None, state.page)
+            self.rest_focus()
         self._show_secondary(state)
         self._show_offer()
         self._header()
@@ -80,13 +82,10 @@ class PySideView:
             state.enabled, self._main, self._rail, working=state.state in WORKING
         )
 
-    def _focus(self, before: int | None, page: int) -> None:
-        """The keyboard where the page starts: the first tile on the start screen, Add files on
-        step 1 when a tile opened it (the tile itself is hidden)."""
-        if page == HOME:
-            self._home.convert.button.setFocus()
-        elif page == 1 and before == HOME:
-            self._main.add_files.setFocus()
+    def rest_focus(self) -> None:
+        """A page opens with no button looking pressed or focused (032): the keyboard rests on
+        the page's panel; Tab goes on to its first control."""
+        self._panel.setFocus(Qt.FocusReason.OtherFocusReason)
 
     def _show_secondary(self, state: StateView) -> None:
         """Back on Review and Convert, Cancel while working, Convert more on Results."""

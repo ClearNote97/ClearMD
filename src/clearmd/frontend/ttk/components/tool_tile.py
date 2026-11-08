@@ -50,7 +50,7 @@ class ToolTile(tk.Canvas):
             parent, height=TILE_HEIGHT, highlightthickness=0, borderwidth=0, takefocus=True
         )
         self._fonts = fonts
-        self._icon = icon
+        self.icon = icon
         self._on_choose = on_choose
         self._palette: Palette | None = None
         self._texts = ("", "")
@@ -136,7 +136,7 @@ class ToolTile(tk.Canvas):
         self._image(ground(width, height, fill, line, thickness, p.card), 0, 0, "nw")
         title, body = self._texts
         strong, text = self._fonts["strong"], self._fonts["body"]
-        icon = self._icon(p.accent_text)
+        icon = self.icon(p.accent_text)
         # Room for three lines of body in every tile: the icons and titles of the tiles line up.
         lines = max(3, text.measure(body) // max(width - 2 * GAP, 1) + 1)
         block = icon.height + HALF + strong.metrics("linespace") + HALF

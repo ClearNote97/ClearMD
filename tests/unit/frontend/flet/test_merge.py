@@ -10,8 +10,11 @@ import pytest
 from support.flet_acceptance import QUIET, Window, click, texts, windows
 from support.gui_fakes import FakeBackend
 
+from clearmd.frontend.design.tool_art import svg
 from clearmd.frontend.flet import FletApp
+from clearmd.frontend.flet.components.tool_icon import INK
 from clearmd.frontend.flet.views.dialogs.settings import SettingsDialog
+from clearmd.frontend.flet.views.home import HOME_ICON_SIZE
 from clearmd.frontend.presenter.state import Tool
 from clearmd.i18n import load_catalog
 
@@ -34,7 +37,8 @@ def test_home_has_three_tiles_of_equal_width(flet_window: Window, language: str)
     catalog = load_catalog(language)
     assert app.home.tiles == (app.home.convert, app.home.split, app.home.merge)
     merge = app.home.merge
-    assert merge.icon.icon == ft.Icons.MERGE
+    assert isinstance(merge.icon, ft.Image)  # tool_art's merge (032)
+    assert merge.icon.src == svg("merge", INK, HOME_ICON_SIZE).encode()
     assert merge.title.value == catalog.text("gui.home.merge")
     assert merge.body.value == catalog.text("gui.home.merge_body")
     assert {tile.control.expand for tile in app.home.tiles} == {True}  # one row, equal shares

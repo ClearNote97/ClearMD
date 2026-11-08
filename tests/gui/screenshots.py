@@ -9,7 +9,6 @@ the flow is the real one (the worker thread, the steps, the views)."""
 import argparse
 import os
 import sys
-import tempfile
 import threading
 import time
 from collections.abc import Callable
@@ -20,11 +19,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # tests/: support.
 
 from PIL import ImageGrab  # noqa: E402
 from support.display import virtual_display  # noqa: E402
-from support.gui_fakes import FakeBackend, planned  # noqa: E402
+from support.gui_fakes import FakeBackend  # noqa: E402
+from support.ttk_demo import FAILED, INPUTS, OFFER, PLAN, demo_files  # noqa: E402
 
-from clearmd.backend.schemas.errors import SkipReason  # noqa: E402
-from clearmd.backend.schemas.models import BatchPlan, OutcomeStatus, SkippedItem  # noqa: E402
-from clearmd.backend.schemas.models import PlanWarning as Warn  # noqa: E402
+from clearmd.backend.schemas.models import BatchPlan  # noqa: E402
 from clearmd.backend.schemas.settings import Settings  # noqa: E402
 from clearmd.frontend.presenter import AppState  # noqa: E402
 from clearmd.frontend.presenter.state import Tool  # noqa: E402
@@ -32,44 +30,6 @@ from clearmd.frontend.ttk import TtkApp  # noqa: E402
 
 WIDTH, HEIGHT = 1080, 720
 COMPACT_WIDTH = 900  # below 1000 px the rail is compact (feature 007)
-# Real files and folders (a folder must exist to be shown as one), under a temporary home.
-DEMO = Path(tempfile.gettempdir()) / "Usuarios" / "ana"
-DOCUMENTS, DOWNLOADS = DEMO / "Documentos", DEMO / "Descargas"
-INPUTS = [
-    DOCUMENTS / "Informe anual 2026.pdf",
-    DOCUMENTS / "Tesis",
-    DOWNLOADS / "Contrato de arriendo.docx",
-    DOCUMENTS / "Finanzas" / "Ventas 2026.xlsx",
-    DOWNLOADS / "Notas de clase.odt",
-    DOCUMENTS / "Tesis" / "Artículo.tex",
-]
-PLAN = BatchPlan(
-    (
-        planned("Informe anual 2026.pdf", folder=DOCUMENTS),
-        planned("Capítulo 1.docx", folder=DOCUMENTS / "Tesis"),
-        planned("Artículo.tex", folder=DOCUMENTS / "Tesis", exists=True),
-        planned("Contrato de arriendo.docx", folder=DOWNLOADS),
-        planned("Ventas 2026.xlsx", folder=DOCUMENTS / "Finanzas"),
-        planned("Notas de clase.odt", folder=DOWNLOADS),
-    ),
-    (
-        SkippedItem(DOCUMENTS / "Tesis" / "borrador.md", SkipReason.ALREADY_MARKDOWN),
-        SkippedItem(DOCUMENTS / "Tesis" / "figuras.zip", SkipReason.ZIP_ARCHIVE),
-    ),
-    (),
-)
-FAILED = {"Contrato de arriendo.docx": OutcomeStatus.FAILED}
-# A PDF too slow for the time limit: Review offers to split it (feature 025).
-OFFER = BatchPlan(PLAN.conversions, PLAN.skipped, (), (Warn(PLAN.conversions[0], 2400, 600),))
-
-
-def demo_files() -> None:
-    for path in INPUTS:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        if path.suffix:
-            path.write_bytes(b"")
-        else:
-            path.mkdir(exist_ok=True)
 
 
 def settle(app: TtkApp, seconds: float = 0.3, until: Callable[[], bool] | None = None) -> None:
@@ -83,7 +43,9 @@ def settle(app: TtkApp, seconds: float = 0.3, until: Callable[[], bool] | None =
 
 
 def capture(app: TtkApp, target: Path) -> None:
-    settle(app)
+    # The pointer off the window: a button under it would be drawn lit (032: nothing looks pressed).
+    app.root.event_generate("<Motion>", warp=True, x=app.root.winfo_width() + 20, y=8)
+    settle(app, seconds=0.6)  # past the primary's pause after a page change (F-1)
     x, y = app.root.winfo_rootx(), app.root.winfo_rooty()
     width, height = app.root.winfo_width(), app.root.winfo_height()
     image = ImageGrab.grab(bbox=(x, y, x + width, y + height), xdisplay=os.environ["DISPLAY"])
@@ -128,12 +90,16 @@ def settings_window(app: TtkApp) -> None:
     app.dialogs.show_settings()
 
 
-def _tool(tool: Tool, paths: list[Path]) -> Callable[[TtkApp], None]:
-    """Step 1 of Split or Merge (023, 026) with ``paths``: its block in place of the images."""
+def _tool(tool: Tool, paths: list[Path], size: str = "") -> Callable[[TtkApp], None]:
+    """Step 1 of Split or Merge (023, 026) with ``paths``: its block in place of the images. A
+    ``size`` ("800x600") shoots it in a smaller window (032)."""
 
     def prepare(app: TtkApp) -> None:
+        if size:
+            app.root.geometry(f"{size}+0+0")
         app.presenter.choose_tool(tool)
         app.presenter.add_paths(paths)
+        settle(app, seconds=0.4)
 
     return prepare
 
@@ -198,7 +164,9 @@ def main() -> int:
                     ("0-home", FakeBackend(plan=PLAN), lambda app: None),  # as it opens (023)
                     ("1-choose-empty", FakeBackend(plan=PLAN), _go(1)),
                     ("1-choose-split", FakeBackend(plan=PLAN), _tool(Tool.SPLIT, INPUTS[:1])),
-                    ("1-choose-merge", FakeBackend(plan=PLAN), _tool(Tool.MERGE, INPUTS[2:4])),
+                    ("1-choose-merge", FakeBackend(plan=PLAN), _tool(Tool.MERGE, INPUTS[2:5])),
+                    ("1-choose-split-800", FakeBackend(plan=PLAN),
+                     _tool(Tool.SPLIT, INPUTS[:3], "800x600")),  # the smallest window (032)
                     ("1-choose", FakeBackend(plan=PLAN), choose),
                     ("2-review", FakeBackend(plan=PLAN), to_review),
                     ("2-review-split-offer", FakeBackend(plan=OFFER), to_review),

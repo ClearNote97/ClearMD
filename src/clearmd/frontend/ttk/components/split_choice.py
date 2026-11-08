@@ -127,7 +127,8 @@ class SplitChoice(ttk.Frame):
             row, column = (index // 2, index % 2) if wrapped else (0, index)
             padx = (0 if column == 0 else GAP, 0)
             pady = (0 if row == 0 else SPACE, 0)
-            group.grid(row=row, column=column, sticky="w", padx=padx, pady=pady)
+            span = 2 if wrapped and index == 2 else 1  # the third alone: its own width, no gap
+            group.grid(row=row, column=column, columnspan=span, sticky="w", padx=padx, pady=pady)
 
     def _wrap_texts(self, event: Any) -> None:
         if event.widget is self:

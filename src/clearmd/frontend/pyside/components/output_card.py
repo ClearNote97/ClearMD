@@ -102,6 +102,7 @@ class OutputCard:
         self._summary_line.addWidget(self._summary_row)
         self._summary_line.addStretch(1)
         output_layout.addLayout(self._summary_line)
+        self.frame = output
         layout.addWidget(output)
         self.choice_buttons = (
             self.next_to,
@@ -125,6 +126,13 @@ class OutputCard:
             block.widget.setVisible(choice.tool is tool)
             block.show(choice)
         self._place_summary(on_heading=not convert)
+
+    def hold(self, width: int) -> None:
+        """Never shorter than its wrapped lines need at ``width``: Qt's box layout would squeeze
+        it to its one-line minimum to grow the list (032, 800 px)."""
+        layout = self.frame.layout()
+        if layout is not None:
+            self.frame.setMinimumHeight(layout.totalHeightForWidth(width))
 
     def _place_summary(self, *, on_heading: bool) -> None:
         """For Split and Merge the summary goes up to the heading, where the images are for

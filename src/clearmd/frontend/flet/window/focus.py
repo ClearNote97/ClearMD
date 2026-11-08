@@ -12,7 +12,7 @@ from functools import partial
 
 import flet as ft
 
-FOCUSABLE = (ft.Button, ft.Checkbox, ft.Radio, ft.Dropdown, ft.TextField)
+FOCUSABLE = (ft.Button, ft.IconButton, ft.Checkbox, ft.Radio, ft.Dropdown, ft.TextField)
 
 
 def controls_in(control: ft.BaseControl) -> Iterator[ft.BaseControl]:

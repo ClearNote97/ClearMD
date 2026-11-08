@@ -8,3 +8,4 @@ What every GUI (ttk, PySide6, later flet) draws with, as plain data (ADR-0027, A
 | `metrics.py` | The 8 px grid, the window's sizes, radii, the rail's widths |
 | `typography.py` | Text sizes in pixels (each toolkit converts them to its own units) |
 | `colors.py` | `blend`: one colour laid over another |
+| `tool_art.py` | The three tools' icons as shapes on a 24-unit grid; `svg()` builds their SVG text |

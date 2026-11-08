@@ -1,6 +1,7 @@
 """The Choose step's output half: where the results go, the summary's format and the images'
-choice, or for Split its own choices in place of the images' (feature 023). It builds its widgets
-on the step's own frame, so the layout stays the step's."""
+choice, or Split's and Merge's own choices in place of the images' (features 023, 026). It builds
+its widgets on the step's own frame, so the layout stays the step's. In a small window the card
+scrolls, so the list above keeps its rows (feature 032)."""
 
 import tkinter as tk
 import tkinter.font as tkfont
@@ -8,10 +9,11 @@ from collections.abc import Callable
 from tkinter import ttk
 from typing import Any
 
-from clearmd.frontend.design.metrics import GAP, SPACE
+from clearmd.frontend.design.metrics import GAP, HALF, SPACE
 from clearmd.frontend.presenter.models import OutputChoice, OutputMode
 from clearmd.frontend.presenter.state import Tool
 from clearmd.frontend.ttk.components.merge_choice import MergeChoice
+from clearmd.frontend.ttk.components.scroll_area import ScrollArea
 from clearmd.frontend.ttk.components.split_choice import OnSplit, SplitChoice
 from clearmd.frontend.ttk.visuals.style_names import CARD, MUTED, PAGE, SOFT_ON_CARD
 
@@ -34,8 +36,13 @@ class OutputCard:
     ) -> None:
         bottom = ttk.Frame(parent, style=PAGE)
         bottom.pack(side="bottom", fill="x", pady=(SPACE, 0), before=before)
-        output = ttk.Frame(bottom, style=CARD, padding=GAP)
-        output.pack(side="left", fill="x", expand=True)
+        card = ttk.Frame(bottom, style=CARD, padding=GAP)
+        card.pack(side="left", fill="x", expand=True)
+        self.area = ScrollArea(card, ground="#FFFFFF", fixed_width=False)  # 032
+        self.area.pack(fill="both", expand=True)
+        output = self.area.inner
+        output.bind("<Configure>", lambda _event: self._place_summary(), add="+")
+        self._narrow: bool | None = None  # the summary under the title (a narrow card)
         heading = ttk.Frame(
             output, style="TFrame"
         )  # the title, and the images' choice at its right
@@ -48,6 +55,7 @@ class OutputCard:
         title = ttk.Label(heading, font=fonts["strong"])
         title.pack(side="left")
         label(title, "gui.main.output_title")
+        self._title = title
         choices = ttk.Frame(output, style="TFrame")
         choices.pack(fill="x", pady=(SPACE, 0))
         self.output_mode = tk.StringVar(value=OutputMode.NEXT_TO.value)
@@ -112,6 +120,7 @@ class OutputCard:
             button.pack(side="left", padx=(GAP, 0))
             label(button, key)
             self.summary_buttons.append(button)  # enabled and disabled with the output's
+        self.area.follow_focus()
 
     def show(self, choice: OutputChoice) -> None:
         """The choice as the presenter has it; Split's or Merge's block in place of the images."""
@@ -129,9 +138,27 @@ class OutputCard:
         for widget in (self.pictures, self._summary, self.split, self.merge):
             widget.pack_forget()
         block = {Tool.SPLIT: self.split, Tool.MERGE: self.merge}.get(choice.tool)
+        self._narrow = None
         if block is not None:
-            block.pack(fill="x", pady=(0, SPACE), before=self._heading)
-            self._summary.pack(in_=self._heading, side="right")
+            block.pack(fill="x", pady=(0, HALF), before=self._heading)
+            self._place_summary()
         else:
             self.pictures.pack(side="right")
             self._summary.pack(in_=self._output, fill="x", pady=(GAP, 0))
+
+    def _place_summary(self) -> None:
+        """For Split and Merge, the summary at the title's right, or under it when the card is
+        too narrow for both (an 800 px window, feature 032)."""
+        if self._tool is Tool.CONVERT:
+            return
+        width = self._output.winfo_width()
+        needed = self._title.winfo_reqwidth() + GAP + self._summary.winfo_reqwidth()
+        narrow = width > 1 and needed > width
+        if narrow == self._narrow:
+            return
+        self._narrow = narrow
+        self._summary.pack_forget()
+        if narrow:
+            self._summary.pack(in_=self._output, fill="x", pady=(SPACE, 0), after=self._heading)
+        else:
+            self._summary.pack(in_=self._heading, side="right")

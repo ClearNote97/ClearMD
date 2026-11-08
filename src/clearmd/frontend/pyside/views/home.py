@@ -11,7 +11,7 @@ from clearmd.frontend.design.metrics import GAP
 from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.pyside.components.primitives import card, label
 from clearmd.frontend.pyside.components.tile import ICON_SIZE, Tile
-from clearmd.frontend.pyside.components.tile_art import document_art, merge_art, scissors_art
+from clearmd.frontend.pyside.components.tile_art import tool_art
 from clearmd.i18n import Catalog
 
 
@@ -55,6 +55,5 @@ class HomeView(QWidget):
         self.note.setText(text("gui.home.files_note"))
 
     def apply_palette(self, palette: Palette) -> None:
-        self.convert.show_icon(document_art(ICON_SIZE, palette.accent_text))
-        self.split.show_icon(scissors_art(ICON_SIZE, palette.accent_text))
-        self.merge.show_icon(merge_art(ICON_SIZE, palette.accent_text))
+        for tool, tile in (("convert", self.convert), ("split", self.split), ("merge", self.merge)):
+            tile.show_icon(tool_art(tool, ICON_SIZE, palette.accent_text))

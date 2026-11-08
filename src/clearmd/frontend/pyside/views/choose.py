@@ -3,6 +3,7 @@
 from collections.abc import Callable
 from pathlib import Path
 
+from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import QLabel, QPushButton, QRadioButton, QVBoxLayout, QWidget
 
 from clearmd.frontend.design.metrics import GAP, SPACE
@@ -30,10 +31,13 @@ class ChooseView(QWidget):
         on_summary: Callable[[str], None],
         on_images: Callable[[str], None],
         on_split: Callable[..., None],
+        on_move: Callable[[Path, int], None],
     ) -> None:
         super().__init__()
         self._texts: list[tuple[QLabel | QPushButton | QRadioButton, str]] = []
         self._short = self._split = False
+        self._tool = Tool.CONVERT
+        self._rows: tuple[InputRow, ...] = ()
         self.layout_ = QVBoxLayout(self)
         self.layout_.setContentsMargins(0, 0, 0, 0)
         self.layout_.setSpacing(GAP)
@@ -44,6 +48,7 @@ class ChooseView(QWidget):
             on_add_folder=on_add_folder,
             on_remove=on_remove,
             on_clear=on_clear,
+            on_move=on_move,
         )
         self._inputs_card = inputs
         self.add_files = inputs.add_files
@@ -53,6 +58,7 @@ class ChooseView(QWidget):
         self.remove = inputs.remove
         self.clear = inputs.clear
         self.deselect = inputs.deselect
+        self.order, self.order_hint = inputs.order, inputs.order_hint
         self.layout_.setSpacing(SPACE)
 
         output = OutputCard(
@@ -87,6 +93,8 @@ class ChooseView(QWidget):
                 for row in rows
             ]
         )  # fmt: skip
+        self._rows = rows
+        self._inputs_card.show_order(rows, merge=self._tool is Tool.MERGE)
 
     def show_output_choice(self, choice: OutputChoice) -> None:
         (self.next_to if choice.mode is OutputMode.NEXT_TO else self.in_folder).setChecked(True)
@@ -95,11 +103,19 @@ class ChooseView(QWidget):
         radios.get(choice.summary_format, self.summary_md).setChecked(True)
         (self.images_omit if choice.images == "omit" else self.images_folder).setChecked(True)
         self._output_card.show_tool(choice)
+        self._output_card.hold(self.width())
         self._split = choice.tool is not Tool.CONVERT  # Split's or Merge's block
+        if choice.tool is not self._tool:  # Merge's arrows come and go with the tool
+            self._tool = choice.tool
+            self._inputs_card.show_order(self._rows, merge=self._tool is Tool.MERGE)
         self._fit()
 
     def output_mode(self) -> str:
         return OutputMode.FOLDER.value if self.in_folder.isChecked() else OutputMode.NEXT_TO.value
+
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 -- Qt's name
+        self._output_card.hold(event.size().width())
+        super().resizeEvent(event)
 
     def set_short(self, short: bool) -> None:
         """A short window: the add buttons side by side, so the list keeps its rows (011)."""
@@ -115,6 +131,7 @@ class ChooseView(QWidget):
         for widget, key in self._texts:
             widget.setText(catalog.text(key))
         self.drop_zone.show_text(catalog.text("gui.main.drop"))
+        self._inputs_card.apply_language(catalog)
         self.inputs.apply_headings(
             [catalog.text("gui.main.column_name"), catalog.text("gui.main.column_location")],
             catalog.text("gui.main.empty"),

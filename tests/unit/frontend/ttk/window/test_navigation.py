@@ -69,7 +69,7 @@ def test_convert_more_asks_whether_to_keep_the_files(display: str, tmp_path: Pat
             pump(app, until=partial(on_page, app, 2))
             confirm(app)
             pump(app, until=partial(on_page, app, 4))
-            assert app.actions.secondary.cget("text") == "Convert More"
+            assert app.actions.secondary.cget("text") == "What Next?"  # 032
             assert str(app.actions.secondary.cget("style")).startswith("Strong")
             convert_more(app, keep=keep)
             assert shown(app) is app.main and app.main.inputs.names() == expected

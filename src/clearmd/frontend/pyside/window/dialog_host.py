@@ -19,13 +19,14 @@ class DialogHost:
         self.current: Dialog | None = None  # the open dialog: one at a time
 
     def convert_more(self) -> None:
-        """Asked every time: keep the chosen files, or start empty (feature 007)."""
+        """Results' "What Next?", asked every time: keep the files, start empty or go back Home
+        (features 007, 032)."""
         if self.current is None:
             self._open(
                 KeepInputsDialog(
                     self._parent,
                     self._shown.need_catalog(),
-                    on_answer=lambda keep: self._presenter.convert_more(keep=keep),
+                    on_answer=self._presenter.what_next,
                     on_close=self._closed,
                 )
             )

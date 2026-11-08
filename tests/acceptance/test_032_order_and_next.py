@@ -72,7 +72,7 @@ def test_ac_02_what_next(answer: str, page: int, kept: bool) -> None:
 
 
 @pytest.mark.parametrize("language", ["en", "es"])
-def test_ac_02_and_03_texts(language: str) -> None:
+def test_ac_02_texts(language: str) -> None:
     base = load_catalog(language)
     expected = {"en": "What Next?", "es": "¿Qué Sigue?"}[language]
     for tool in Tool:
@@ -80,6 +80,11 @@ def test_ac_02_and_03_texts(language: str) -> None:
         assert catalog.text("gui.result.again") == expected == catalog.text("gui.more.title")
         assert catalog.text("gui.more.home") and catalog.text("gui.main.move_up")
         assert catalog.text("gui.main.move_down") and catalog.text("gui.main.order_hint")
+
+
+@pytest.mark.parametrize("language", ["en", "es"])
+def test_ac_03_the_welcome_speaks_of_the_three_tools(language: str) -> None:
+    base = load_catalog(language)
     intro = base.text("gui.welcome.intro").lower()
     words = {"en": ("convert", "split", "merge"), "es": ("convierte", "divide", "une")}[language]
     assert all(word in intro for word in words)

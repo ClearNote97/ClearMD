@@ -1,4 +1,5 @@
-"""The "Convert more" dialog: keep the chosen files or start empty (feature 007)."""
+"""The "What Next?" dialog (features 007, 032): keep the chosen files, start empty, or go back
+Home to choose another tool (the files are kept)."""
 
 import tkinter as tk
 import tkinter.font as tkfont
@@ -13,7 +14,8 @@ from clearmd.i18n import Catalog
 
 
 class KeepInputsDialog(Dialog):
-    """ "Convert more": keep the chosen files, or start empty (asked every time, feature 007)."""
+    """ "What Next?": Keep Them, Start Empty or Go Back Home (asked every time; 007, 032).
+    ``on_answer`` receives "keep", "clear" or "home"."""
 
     def __init__(
         self,
@@ -21,7 +23,7 @@ class KeepInputsDialog(Dialog):
         catalog: Catalog,
         palette: Palette,
         fonts: dict[str, tkfont.Font],
-        on_answer: Callable[[bool], None],
+        on_answer: Callable[[str], None],
         on_close: Callable[[], None],
     ) -> None:
         super().__init__(
@@ -42,21 +44,30 @@ class KeepInputsDialog(Dialog):
         explanation.pack(anchor="w", pady=(SPACE, 0))
         self.keep = ttk.Button(
             self.actions, text=catalog.text("gui.more.keep"), style=PRIMARY,
-            command=lambda: self.answer(True),
+            command=lambda: self.answer("keep"),
         )  # fmt: skip
         self.keep.pack(side="right")
         self.clear = ttk.Button(
             self.actions, text=catalog.text("gui.more.clear"), style=SOFT,
-            command=lambda: self.answer(False),
+            command=lambda: self.answer("clear"),
         )  # fmt: skip
         self.clear.pack(side="right", padx=(0, SPACE))
+        self.home = ttk.Button(
+            self.actions, text=catalog.text("gui.more.home"), style=SOFT,
+            command=lambda: self.answer("home"),
+        )  # fmt: skip
+        self.home.pack(side="left")  # apart, as Settings' Restore Defaults: another way out
         self.bind("<Return>", lambda _event: self._enter())
 
     def _enter(self) -> None:
         """Enter runs the button with the focus; elsewhere, the default (keep them)."""
         focused = self.focus_get()
-        self.answer(focused is not self.clear)
+        choice = "clear" if focused is self.clear else "home" if focused is self.home else "keep"
+        self.answer(choice)
 
-    def answer(self, keep: bool) -> None:
+    def answer(self, choice: str | bool) -> None:
+        """The answer: "keep", "clear" or "home" (True and False: keep or clear, as before)."""
+        if isinstance(choice, bool):
+            choice = "keep" if choice else "clear"
         self.close()
-        self._on_answer(keep)
+        self._on_answer(choice)

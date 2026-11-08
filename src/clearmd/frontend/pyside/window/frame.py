@@ -5,6 +5,7 @@ own: it builds the widgets and nothing else, the window wires them."""
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -32,6 +33,7 @@ from clearmd.frontend.pyside.window.dialog_host import DialogHost
 
 @dataclass(frozen=True)
 class Frame:
+    panel: QFrame
     rail: Rail
     surface: Surface
     stack: QStackedWidget
@@ -68,6 +70,7 @@ def build_frame(
 
     panel = QFrame()
     panel.setObjectName("panel")
+    panel.setFocusPolicy(Qt.FocusPolicy.ClickFocus)  # where the keyboard rests when a page opens
     surface.body.addWidget(panel, 1)
     inside = QVBoxLayout(panel)
     inside.setContentsMargins(GAP, GAP, GAP, GAP)
@@ -92,6 +95,7 @@ def build_frame(
         on_summary=lambda value: presenter.choose_summary_format(value),
         on_images=lambda value: presenter.choose_images(value),
         on_split=lambda **choice: presenter.choose_split(**choice),
+        on_move=lambda path, step: presenter.move_input(path, step),
     )
     home = HomeView(
         on_convert=lambda: presenter.choose_tool(Tool.CONVERT),
@@ -103,4 +107,6 @@ def build_frame(
     results = ResultsView()
     for page in (home, ScrollPage(main), review, converting, results):  # index: the page number
         stack.addWidget(page)
-    return Frame(rail, surface, stack, actions, message, home, main, review, converting, results)
+    return Frame(
+        panel, rail, surface, stack, actions, message, home, main, review, converting, results
+    )

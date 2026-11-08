@@ -104,7 +104,6 @@ class SplitChoice:
             line = label("muted", wrap=True)
             text(line, key)
             layout.addWidget(line)
-        layout.addSpacing(SPACE)  # apart from the results' heading under it
         self.by_parts, self.by_pages = self.cuts["parts"], self.cuts["pages"]
         self.parts, self.pages = self.boxes["parts"], self.boxes["pages"]
         self.by_words, self.words = self.cuts["words"], self.boxes["words"]

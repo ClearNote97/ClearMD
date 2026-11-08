@@ -10,7 +10,10 @@ import pytest
 from support.flet_acceptance import QUIET, Window, click, page_of, windows
 from support.gui_fakes import FakeBackend
 
+from clearmd.frontend.design.tool_art import svg
 from clearmd.frontend.flet import FletApp
+from clearmd.frontend.flet.components.tool_icon import INK
+from clearmd.frontend.flet.views.home import HOME_ICON_SIZE
 from clearmd.frontend.presenter import AppState
 from clearmd.frontend.presenter.state import HOME, Tool
 from clearmd.i18n import load_catalog
@@ -30,11 +33,9 @@ def test_the_window_opens_on_home_with_the_two_tiles(flet_window: Window, langua
     app = flet_window(FakeBackend(settings=replace(QUIET, language=language)))
     catalog = load_catalog(language)
     assert app.presenter.page == HOME and on_home(app)
-    for tile, icon, name in (
-        (app.home.convert, ft.Icons.DESCRIPTION_OUTLINED, "convert"),
-        (app.home.split, ft.Icons.CONTENT_CUT, "split"),
-    ):
-        assert tile.icon.icon == icon
+    for tile, name in ((app.home.convert, "convert"), (app.home.split, "split")):
+        assert isinstance(tile.icon, ft.Image)  # the app's own picture (032)
+        assert tile.icon.src == svg(name, INK, HOME_ICON_SIZE).encode()
         assert tile.title.value == catalog.text(f"gui.home.{name}")
         assert tile.body.value == catalog.text(f"gui.home.{name}_body")
         assert isinstance(tile.control, ft.Button) and not tile.control.disabled

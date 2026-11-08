@@ -1,9 +1,10 @@
-"""Pillow marks of the tools (features 023, 026): a document for Convert, scissors for Split, two
-paths joining into one for Merge, and the house of the rail's Home. Drawn in one colour, larger
+"""Pillow marks of the tools: the start screen's icons from ``design.tool_art`` (the same shapes
+in the three windows, feature 032) and the house of the rail's Home. Drawn in one colour, larger
 and reduced, like the rail's art."""
 
 from PIL import Image, ImageDraw
 
+from clearmd.frontend.design import tool_art
 from clearmd.frontend.ttk.visuals.shapes import SUPERSAMPLE, rgba
 
 TOOL_ICON = 40  # a tile's icon (as flet's: 5 x SPACE)
@@ -19,56 +20,50 @@ def _small(big: Image.Image, size: int) -> Image.Image:
     return big.resize((size, size), Image.Resampling.LANCZOS)
 
 
-def document(colour: str, size: int = TOOL_ICON) -> Image.Image:
-    """An outlined page with a folded corner and three lines of text (Convert to Markdown)."""
+def tool_icon(tool: str, colour: str, size: int = TOOL_ICON) -> Image.Image:
+    """The start screen's icon of ``tool`` (feature 032, AC-04): the shapes of
+    ``design.tool_art``, the same in the three windows, drawn with Pillow in one colour, with
+    round caps and joins."""
     big, draw, s = _canvas(size)
-    u = size * s / 40  # one unit of a 40 x 40 drawing
+    scale = size * s / tool_art.GRID
     ink = rgba(colour)
-    width = round(2.6 * u)
-    left, top, right, bottom, fold = 9 * u, 5 * u, 31 * u, 35 * u, 8 * u
-    outline = [
-        (left, top), (right - fold, top), (right, top + fold), (right, bottom),
-        (left, bottom), (left, top),
-    ]  # fmt: skip
-    draw.line(outline, fill=ink, width=width, joint="curve")
-    draw.line([(right - fold, top), (right - fold, top + fold), (right, top + fold)],
-              fill=ink, width=width, joint="curve")  # fmt: skip
-    for y, end in ((19 * u, 26 * u), (24.5 * u, 26 * u), (30 * u, 21 * u)):
-        draw.line([(14 * u, y), (end, y)], fill=ink, width=round(2.2 * u))
+    width = max(1, round(tool_art.STROKE * scale))
+    cap = width / 2
+
+    def at(point: tool_art.Point) -> tuple[float, float]:
+        return point[0] * scale, point[1] * scale
+
+    for shape in tool_art.shapes(tool):
+        if isinstance(shape, tool_art.Circle):
+            (x, y), r = at(shape.centre), shape.radius * scale
+            draw.ellipse((x - r - cap, y - r - cap, x + r + cap, y + r + cap), outline=ink,
+                         width=width)  # fmt: skip
+            continue
+        if isinstance(shape, tool_art.Cubic):
+            points = [at(point) for point in tool_art.flatten(shape)]
+        else:
+            points = [at(point) for point in shape.points]
+            if shape.closed:
+                points.append(points[0])
+        draw.line(points, fill=ink, width=width, joint="curve")
+        for x, y in points:  # round caps (Pillow draws square ends)
+            draw.ellipse((x - cap, y - cap, x + cap, y + cap), fill=ink)
     return _small(big, size)
+
+
+def document(colour: str, size: int = TOOL_ICON) -> Image.Image:
+    """Convert to Markdown: a page with its corner folded and Markdown's mark."""
+    return tool_icon("convert", colour, size)
 
 
 def scissors(colour: str, size: int = TOOL_ICON) -> Image.Image:
-    """Open scissors: two round handles below, the blades crossing above them (Split a PDF)."""
-    big, draw, s = _canvas(size)
-    u = size * s / 40
-    ink = rgba(colour)
-    width = round(2.6 * u)
-    radius = 5 * u
-    for cx in (12 * u, 28 * u):
-        cy = 29 * u
-        draw.ellipse((cx - radius, cy - radius, cx + radius, cy + radius), outline=ink,
-                     width=width)  # fmt: skip
-    # Each blade leaves its handle and crosses the other at the pivot.
-    draw.line([(15.5 * u, 25 * u), (29 * u, 5 * u)], fill=ink, width=width)
-    draw.line([(24.5 * u, 25 * u), (11 * u, 5 * u)], fill=ink, width=width)
-    pivot = 1.6 * u
-    draw.ellipse((20 * u - pivot, 18.3 * u - pivot, 20 * u + pivot, 18.3 * u + pivot), fill=ink)
-    return _small(big, size)
+    """Split a Document: a pair of scissors."""
+    return tool_icon("split", colour, size)
 
 
 def merge(colour: str, size: int = TOOL_ICON) -> Image.Image:
-    """Two paths joining into one, an arrow down (Merge Documents)."""
-    big, draw, s = _canvas(size)
-    u = size * s / 40
-    ink = rgba(colour)
-    width = round(2.6 * u)
-    for x in (9 * u, 31 * u):
-        draw.line([(x, 5 * u), (x, 9 * u), (20 * u, 20 * u)], fill=ink, width=width, joint="curve")
-    draw.line([(20 * u, 19 * u), (20 * u, 34 * u)], fill=ink, width=width)
-    draw.line([(13.5 * u, 27.5 * u), (20 * u, 34 * u), (26.5 * u, 27.5 * u)], fill=ink,
-              width=width, joint="curve")  # fmt: skip
-    return _small(big, size)
+    """Merge Documents: two paths joining into one."""
+    return tool_icon("merge", colour, size)
 
 
 def house(colour: str, size: int) -> Image.Image:

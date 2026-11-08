@@ -55,6 +55,7 @@ class FletView:
         page_changed = previous is not None and previous.page != state.page
         if page_changed:
             self._show_message("")  # a message belongs to the page it was given on
+            self._focus.forget()  # the focused control left with its page: none is taken (032)
             self._primary_button.page_shown()
         converting = state.state is AppState.CONVERTING
         if converting and (previous is None or previous.state is not AppState.CONVERTING):
@@ -160,6 +161,7 @@ class FletView:
         self._rail.apply_language(catalog)
         for view in (self._frame.home, self._main, self._review, self._converting, self._results):
             view.apply_language(catalog)
+        self._focus.watch(self._main.inputs.list)  # the rows are new: their arrows (032)
         self._header()
 
     def _header(self) -> None:

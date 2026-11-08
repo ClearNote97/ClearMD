@@ -1,6 +1,16 @@
-**ClearMD — documents to Markdown, 100 % local.** / **Documentos a Markdown, 100 % local.**
+**ClearMD — prepare your documents for AI, 100 % local: Convert, Split, Merge.** / **Prepara tus documentos para la IA, 100 % local: Convertir, Dividir, Unir.**
 
 Each file can be checked against `SHA256SUMS.txt` ([how](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)). / Cada archivo se puede comprobar con `SHA256SUMS.txt` ([cómo](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)).
+
+**New in 2.8.0 / Novedades de la 2.8.0**
+- **Merge in your order:** in Merge, each document of the list moves up or down with its arrows. /
+  **Une en tu orden:** en Unir, cada documento de la lista sube o baja con sus flechas.
+- **What Next?** Results asks once: keep the files, start empty, or **go back Home** to choose
+  another tool. / **¿Qué Sigue?** Resultados pregunta una vez: conservar los archivos, empezar
+  vacío, o **volver al Inicio** para elegir otra herramienta.
+- The three windows draw the start screen alike (the tiles centred, the same icons), and the
+  Welcome speaks of the three tools. / Las tres ventanas dibujan igual la pantalla de inicio
+  (tarjetas centradas, los mismos íconos), y la Bienvenida habla de las tres herramientas.
 
 **New in 2.7.0 / Novedades de la 2.7.0**
 - Ready for **PyPI**: the package describes the toolkit, has its own page, and every version's

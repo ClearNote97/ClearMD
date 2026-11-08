@@ -6,6 +6,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QApplication, QPushButton
 from support.gui_fakes import FakeBackend
 from support.pyside_acceptance import QUIET, drop, press, pump
 
@@ -31,7 +32,7 @@ def test_the_window_opens_on_the_start_screen_with_its_two_tiles(window: Window)
     assert app.actions.isHidden()  # nor a primary action
     assert app.rail.home.property("current") == "true"
     assert all(not text.startswith("> ") for text in app.rail.step_texts())
-    assert app.home.convert.button.hasFocus()  # the keyboard starts on the first tile
+    assert not isinstance(QApplication.focusWidget(), QPushButton)  # none looks focused (032)
 
 
 def test_the_convert_tile_opens_step_1_of_convert(window: Window) -> None:
@@ -59,7 +60,7 @@ def test_enter_on_a_focused_tile_opens_it(window: Window) -> None:
     pump(app, seconds=0.05)
     press(app, Qt.Key.Key_Return)
     assert app.presenter.page == 1 and app.presenter.tool is Tool.SPLIT
-    assert app.main.add_files.hasFocus()  # the keyboard where step 1 starts
+    assert not isinstance(QApplication.focusWidget(), QPushButton)  # step 1 opens unfocused
 
 
 def test_home_in_the_rail_brings_the_start_screen_back(window: Window) -> None:

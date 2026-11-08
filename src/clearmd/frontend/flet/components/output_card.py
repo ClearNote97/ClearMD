@@ -42,7 +42,12 @@ class OutputCard:
         wording.add(self.images.radios["omit"], "gui.main.images_omit")
         wording.add(self.images.radios["folder"], "gui.main.images_folder")
         self._images_title = images_title
-        heading = ft.Row([title, stretch(), images_title, self.images.control], spacing=SPACE)
+        self._beside = ft.Row(spacing=GAP)  # Split's and Merge's summary, in the images' place
+        heading = ft.Row(
+            [title, stretch(), images_title, self.images.control, self._beside],
+            spacing=SPACE,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        )
         self.split = SplitBlock(wording, on_split=on_split)
         self.split.control.visible = False
         self.merge = MergeBlock(wording, on_split=on_split)
@@ -59,10 +64,12 @@ class OutputCard:
         wording.add(self.summary.radios["markdown"], "gui.main.summary_md")
         wording.add(self.summary.radios["markdown_pdf"], "gui.main.summary_pdf")
         wording.add(self.summary.radios["pdf"], "gui.main.summary_pdf_only")
-        summary = ft.Row([summary_title, self.summary.control], spacing=GAP)
+        self._summary_title = summary_title
+        self._below = ft.Row([summary_title, self.summary.control], spacing=GAP)  # Convert's
         self.control = card(
-            [self.split.control, self.merge.control, heading, choices, self.output_label, summary]
-        )
+            [self.split.control, self.merge.control, heading, choices, self.output_label,
+             self._below]
+        )  # fmt: skip
         self.choices = (self.images, self.mode, self.summary)
 
     def show(self, choice: OutputChoice) -> None:
@@ -74,6 +81,12 @@ class OutputCard:
         self.images.set(choice.images)
         self.split.control.visible = choice.tool is Tool.SPLIT
         self.merge.control.visible = choice.tool is Tool.MERGE
-        self._images_title.visible = self.images.control.visible = choice.tool is Tool.CONVERT
+        converting = choice.tool is Tool.CONVERT
+        self._images_title.visible = self.images.control.visible = converting
+        # Split and Merge have their own block above: the summary goes up, on the heading's line,
+        # so the list keeps its rows at 1080 x 720 (as Qt's; feature 032).
+        summary = [self._summary_title, self.summary.control]
+        self._below.controls, self._beside.controls = (summary, []) if converting else ([], summary)
+        self._below.visible = converting
         self.split.show(choice)
         self.merge.show(choice)

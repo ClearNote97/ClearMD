@@ -21,7 +21,7 @@ class Tile:
     def __init__(
         self,
         wording: Wording,
-        icon: ft.IconData,
+        icon: ft.IconData | ft.Image,
         title: str,
         body: str,
         on_click: Callable[[], None],
@@ -30,7 +30,12 @@ class Tile:
         icon_size: int = ICON_SIZE,
         top: int = GAP,
     ) -> None:
-        self.icon = ft.Icon(icon, size=icon_size, color=role("accent_text"))
+        # A Material icon (step 1's tiles), or the app's own picture (Home's, feature 032).
+        self.icon: ft.Icon | ft.Image = (
+            icon
+            if isinstance(icon, ft.Image)
+            else ft.Icon(icon, size=icon_size, color=role("accent_text"))
+        )
         self.title = label("strong")
         self.body = label("muted")
         self.body.text_align = ft.TextAlign.CENTER

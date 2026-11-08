@@ -21,6 +21,7 @@ from support.pyside_acceptance import (
 
 from clearmd.backend.schemas.models import BatchPlan
 from clearmd.frontend.presenter import AppState
+from clearmd.frontend.presenter.state import HOME
 from clearmd.frontend.pyside import PySideApp
 from clearmd.frontend.pyside.views.dialogs.keep_inputs import KeepInputsDialog
 
@@ -77,7 +78,7 @@ def test_ac_04_convert_more_asks_every_time(qt_window: Window, tmp_path: Path, k
         assert app.actions.secondary.objectName() == "strong"  # prominent
         app.actions.secondary.click()
         assert isinstance(app.dialogs.current, KeepInputsDialog)
-        app.dialogs.current.answer(keep)
+        app.dialogs.current.answer("keep" if keep else "clear")  # What Next? since 032
         assert app.dialogs.current is None and app.presenter.page == 1
         names = [row.name for row in app.main.inputs.rows()]
         assert names == ([f"{tmp_path.name}/"] if keep else [])
@@ -87,6 +88,9 @@ def test_ac_04_convert_more_asks_every_time(qt_window: Window, tmp_path: Path, k
 
 def test_ac_04_enter_runs_the_primary_action(qt_window: Window, tmp_path: Path) -> None:
     app = qt_window(FakeBackend(settings=QUIET))
+    press(app, Qt.Key.Key_Return)  # the start screen has no primary action (023, 032)
+    assert app.presenter.page == HOME
+    app.presenter.go_to(1)
     press(app, Qt.Key.Key_Return)  # nothing chosen: the action is disabled and does nothing
     assert app.presenter.page == 1 and app.presenter.state is AppState.READY
     app.presenter.add_paths([tmp_path])

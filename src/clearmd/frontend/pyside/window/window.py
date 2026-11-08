@@ -145,4 +145,4 @@ class PySideApp:
     def start(self) -> None:
         self.presenter.start()
         self.window.show()
-        self.home.convert.button.setFocus()  # the first thing to do; not a step of the rail
+        self.view.rest_focus()  # no button looks focused when the window opens (032)

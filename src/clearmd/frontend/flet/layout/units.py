@@ -15,7 +15,7 @@ DIALOG_WIDTH = 560  # a dialog's width, as Qt's default
 HELP_WIDTH = 720 + 64  # wide and short: it fits a 1366 × 768 screen with its taskbar
 HELP_HEIGHT = 420  # the help's scrolled sections
 SETTINGS_WIDTH = 720
-QUESTION_WIDTH = 480  # "Convert more"
+QUESTION_WIDTH = 560  # "What Next?": three buttons in its foot (032)
 CONTROL_WIDTH = 28 * SPACE  # the settings' controls column
 # flet sizes the window from its outer edge (Windows' invisible resize borders and the title bar
 # included); Qt sizes the inside. Measured on Windows (CI, 2026-11-06): a 952 x 679 flet window

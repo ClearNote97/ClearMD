@@ -8,6 +8,7 @@ import flet as ft
 from clearmd.frontend.design.metrics import SPACE
 from clearmd.frontend.flet.components.file_list import ListRow
 from clearmd.frontend.flet.components.inputs_card import InputsCard
+from clearmd.frontend.flet.components.order_buttons import order_cell
 from clearmd.frontend.flet.components.output_card import OutputCard
 from clearmd.frontend.flet.components.primitives import Wording
 from clearmd.frontend.presenter.models import InputRow, OutputChoice, OutputMode
@@ -30,8 +31,12 @@ class ChooseView:
         on_summary: Callable[[str], None],
         on_images: Callable[[str], None],
         on_split: Callable[..., None],
+        on_move: Callable[[Path, int], None],
     ) -> None:
         self._wording = Wording()
+        self._on_move = on_move
+        self._rows: tuple[InputRow, ...] = ()
+        self._tooltips = ("", "")
         self._on_next_to = on_next_to
         self._on_pick_folder = on_pick_folder
         inputs = InputsCard(
@@ -70,14 +75,27 @@ class ChooseView:
         )
 
     def show_inputs(self, rows: tuple[InputRow, ...]) -> None:
+        """The rows; in Merge (the presenter says which can move) each with its ▲ ▼ (032)."""
+        self._rows = rows
         self._inputs_card.show_start(not rows)
+        ordered = any(row.up or row.down for row in rows)
+        self._inputs_card.order_hint.visible = ordered
         self.inputs.show_rows(
             [
                 ListRow(row.icon, f"{row.name}/" if row.is_folder else row.name, (row.location,),
-                        payload=row.path)
+                        payload=row.path, extra=self._order(row) if ordered else None)
                 for row in rows
             ]
         )  # fmt: skip
+
+    def _order(self, row: InputRow) -> ft.Row:
+        path = row.path
+        return order_cell(
+            up=row.up,
+            down=row.down,
+            on_move=lambda offset: self._on_move(path, offset),
+            tooltips=self._tooltips,
+        )
 
     def show_output_choice(self, choice: OutputChoice) -> None:
         self._output.show(choice)
@@ -87,6 +105,9 @@ class ChooseView:
 
     def apply_language(self, catalog: Catalog) -> None:
         self._wording.apply(catalog)
+        self._tooltips = (catalog.text("gui.main.move_up"), catalog.text("gui.main.move_down"))
+        if self._rows:
+            self.show_inputs(self._rows)  # the arrows' tooltips in the new language
         self.inputs.apply_headings(
             [catalog.text("gui.main.column_name"), catalog.text("gui.main.column_location")],
             "",  # never shown: the start tiles stand in for an empty list

@@ -12,14 +12,14 @@ What the owner found testing 2.7.0:
 
 ## Acceptance criteria (what MUST be true)
 
-- [ ] **AC-01** In Merge, each document of step 1's list can be moved one place up or down; the
+- [x] **AC-01** In Merge, each document of step 1's list can be moved one place up or down; the
   merge follows the new order. The first cannot go up and the last cannot go down; Convert and
   Split do not offer it (their order does not change the result). Moving a document drops a plan
   made with the earlier order.
-- [ ] **AC-02** On Results, the second button is "What Next?" in the three tools. It asks once:
+- [x] **AC-02** On Results, the second button is "What Next?" in the three tools. It asks once:
   keep the files, start empty, or go back Home to choose another tool. Going Home keeps the files.
-- [ ] **AC-03** The Welcome speaks of the three tools, in English and Spanish.
-- [ ] **AC-04** The three windows draw the start screen alike: the three tiles centred in the page,
+- [x] **AC-03** The Welcome speaks of the three tools, in English and Spanish.
+- [x] **AC-04** The three windows draw the start screen alike: the three tiles centred in the page,
   with the same icons (the app's own pictures, not each toolkit's).
-- [ ] **AC-05** The three windows show the order buttons (AC-01) and "What Next?" (AC-02); no
+- [x] **AC-05** The three windows show the order buttons (AC-01) and "What Next?" (AC-02); no
   button looks pressed or focused when a page opens.

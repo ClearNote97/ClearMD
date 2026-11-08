@@ -6,7 +6,7 @@ from collections.abc import Callable
 
 from PIL import ImageTk
 
-from clearmd.frontend.design.metrics import RADIUS, SPACE
+from clearmd.frontend.design.metrics import GAP, RADIUS, SPACE
 from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.ttk.layout.units import REDRAW_MS
 from clearmd.frontend.ttk.visuals import shapes
@@ -68,10 +68,13 @@ class DropZone(tk.Canvas):
         middle = height / 2
         body = self._fonts["body"]
         arrow = self._fonts["title"]
-        text_width = body.measure(self._text)
-        left = (width - text_width - arrow.measure("↓") - SPACE) / 2
+        mark = arrow.measure("↓") + SPACE
+        # The words wrap when the zone is narrow (Spanish at 800 px, feature 032), as in Qt.
+        room = max(width - 2 * GAP - mark, 4 * SPACE)
+        text_width = min(body.measure(self._text), room)
+        left = (width - text_width - mark) / 2
         self.create_text(left, middle, text="↓", fill=p.accent_text, font=arrow, anchor="w")
         self.create_text(
-            left + arrow.measure("↓") + SPACE, middle, text=self._text, fill=p.muted, font=body,
-            anchor="w",
+            left + mark, middle, text=self._text, fill=p.muted, font=body, anchor="w",
+            width=room, justify="center",
         )  # fmt: skip

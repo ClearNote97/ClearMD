@@ -11,7 +11,7 @@ import flet as ft
 
 from clearmd.frontend.design.metrics import SPACE
 from clearmd.frontend.flet.components.file_list import FileList
-from clearmd.frontend.flet.components.primitives import Wording, button
+from clearmd.frontend.flet.components.primitives import Wording, button, label
 from clearmd.frontend.flet.components.start_panel import StartPanel
 
 
@@ -45,7 +45,15 @@ class InputsCard:
             (self.deselect, "gui.main.deselect"),
         ):
             wording.add(widget, key)
-        self.editing = ft.Row([self.remove, self.clear, self.deselect], spacing=SPACE)
+        # Merge's order (032): under the list, after its links, while there is an order to change.
+        self.order_hint = label("muted")
+        self.order_hint.visible = False
+        wording.add(self.order_hint, "gui.main.order_hint")
+        self.editing = ft.Row(
+            [self.remove, self.clear, self.deselect, self.order_hint],
+            spacing=SPACE,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        )
         self.controls: list[ft.Control] = [
             self.entry,
             self.start.control,

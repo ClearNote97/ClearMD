@@ -68,6 +68,7 @@ class TtkView:
         if previous is not None and previous.page != state.page:
             self._message.configure(text="")  # a message belongs to the page it was given on
             self._primary_button.page_shown()
+            home_chrome.calm_focus(self._root)
         converting = state.state is AppState.CONVERTING
         if converting and (previous is None or previous.state is not AppState.CONVERTING):
             self._converting.clear()

@@ -31,8 +31,8 @@ class ScrollPage(QScrollArea):
     def fit(self) -> None:
         room = self.viewport().size()
         layout = self.page.layout()
-        needed = (  # its wrapped lines in full: their height at this width
-            layout.totalMinimumHeightForWidth(room.width())
+        needed = (  # its wrapped lines in full, at this width; the lists ask only their minimum
+            layout.totalHeightForWidth(room.width())
             if layout is not None and layout.hasHeightForWidth()
             else self.page.minimumSizeHint().height()
         )

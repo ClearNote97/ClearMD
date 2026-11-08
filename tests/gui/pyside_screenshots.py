@@ -1,7 +1,7 @@
 """Screenshots of the PySide6 GUI for docs/ (feature 016, AC-10): every screen, light and dark,
 English and Spanish, drawn offscreen with the presenter's fake backend (the same demo as ttk's);
 the start screen and Split's step 1 since feature 023; Review's offer to split since 025;
-Merge's step 1 since 026.
+Merge's step 1 since 026; What Next? and Split at 800 px since 032.
 
     uv run python tests/gui/pyside_screenshots.py --out docs/screenshots/016
 """
@@ -14,17 +14,19 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # tests/: support.*, gui.*
 
-import gui.screenshots as demo  # noqa: E402
+import support.ttk_demo as demo  # noqa: E402
 from support.gui_fakes import FakeBackend  # noqa: E402
 from support.pyside_acceptance import open_window, pump, shut  # noqa: E402 -- sets offscreen
 
 from clearmd.backend.schemas.models import PlanWarning  # noqa: E402
 from clearmd.backend.schemas.settings import Settings  # noqa: E402
+from clearmd.frontend.design.metrics import START_HEIGHT, START_WIDTH  # noqa: E402
 from clearmd.frontend.presenter.state import Tool  # noqa: E402
 from clearmd.frontend.pyside import PySideApp  # noqa: E402
 from clearmd.i18n import load_catalog  # noqa: E402
 
 COMPACT = (900, 640)  # below 1000 px the rail is compact (feature 007)
+NARROWEST = (800, 600)  # the window's least width (032): Split's cuts and the list stay usable
 
 
 def shot(app: PySideApp, target: Path) -> None:
@@ -48,7 +50,7 @@ def screens(out: Path, theme: str, language: str) -> None:
     )
     fake = FakeBackend(settings=settings, plan=demo.PLAN, statuses=demo.FAILED)
     app = open_window(fake)
-    app.window.resize(demo.WIDTH, demo.HEIGHT)
+    app.window.resize(START_WIDTH, START_HEIGHT)
     shot(app, out / f"0-home-{tag}.png")
     app.presenter.choose_tool(Tool.CONVERT)
     shot(app, out / f"1-choose-empty-{tag}.png")
@@ -70,6 +72,8 @@ def screens(out: Path, theme: str, language: str) -> None:
     held.set()
     pump(app, until=lambda: app.presenter.page == 4, seconds=10)
     shot(app, out / f"4-results-{tag}.png")
+    app.dialogs.convert_more()  # "What Next?" (032)
+    dialog_shot(app, out / f"4-what-next-{tag}.png")
     app.dialogs.show_help()
     dialog_shot(app, out / f"5-help-{tag}.png")
     app.dialogs.show_settings()
@@ -80,11 +84,15 @@ def screens(out: Path, theme: str, language: str) -> None:
     app.window.resize(*COMPACT)
     app.presenter.go_to(1)
     shot(app, out / f"1-choose-compact-{tag}.png")
-    app.window.resize(demo.WIDTH, demo.HEIGHT)
+    app.window.resize(START_WIDTH, START_HEIGHT)
     app.presenter.choose_tool(Tool.SPLIT)
     app.presenter.clear_inputs()
     app.presenter.add_paths([path for path in demo.INPUTS if path.suffix == ".pdf"])
     shot(app, out / f"1-choose-split-{tag}.png")
+    app.presenter.add_paths([path for path in demo.INPUTS if path.suffix == ".xlsx"])
+    app.window.resize(*NARROWEST)
+    shot(app, out / f"1-choose-split-800-{tag}.png")
+    app.window.resize(START_WIDTH, START_HEIGHT)
     app.presenter.choose_tool(Tool.MERGE)
     app.presenter.clear_inputs()
     app.presenter.add_paths([path for path in demo.INPUTS if path.suffix][:3])
@@ -101,7 +109,7 @@ def offer_shot(out: Path, theme: str, language: str) -> None:
         show_welcome=False, open_output_when_done=False, theme=theme, language=language
     )
     app = open_window(FakeBackend(settings=settings, plan=plan))
-    app.window.resize(demo.WIDTH, demo.HEIGHT)
+    app.window.resize(START_WIDTH, START_HEIGHT)
     app.presenter.choose_tool(Tool.CONVERT)
     app.presenter.add_paths(demo.INPUTS)
     app.presenter.press_primary()

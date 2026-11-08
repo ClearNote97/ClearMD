@@ -1,15 +1,19 @@
-"""The Choose step's input half: Add files / Add folder, the drop zone, the numbered list and the
-editing links. It adds its widgets to the step's own layout, so the arrangement stays the step's."""
+"""The Choose step's input half: Add files / Add folder, the drop zone, the numbered list (with
+Merge's order, feature 032) and the editing links. It adds its widgets to the step's own layout,
+so the arrangement stays the step's."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QRadioButton, QVBoxLayout
 
 from clearmd.frontend.design.metrics import GAP, SPACE
+from clearmd.frontend.presenter.models import InputRow
 from clearmd.frontend.pyside.components.drop_zone import DropZone
 from clearmd.frontend.pyside.components.file_list import FileList
-from clearmd.frontend.pyside.components.primitives import button
+from clearmd.frontend.pyside.components.order_column import OrderColumn
+from clearmd.frontend.pyside.components.primitives import button, label
+from clearmd.i18n import Catalog
 
 
 class InputsCard:
@@ -24,6 +28,7 @@ class InputsCard:
         on_add_folder: Callable[[], None],
         on_remove: Callable[[list[Path]], None],
         on_clear: Callable[[], None],
+        on_move: Callable[[Path, int], None],
     ) -> None:
         self._on_remove = on_remove
         entry = QHBoxLayout()
@@ -44,7 +49,15 @@ class InputsCard:
 
         self.inputs = FileList(1, checks=True, widths=(320,))
         self.inputs.tree.setAccessibleName("inputs")
+        # Two rows under the header, at the least and as its wish: the list takes the room left,
+        # and below that the step scrolls (032, 800 px).
+        self.inputs.ask_rows(2)
         layout.addWidget(self.inputs, 1)
+        self.order = OrderColumn(self.inputs.tree, on_move)
+        self.order_hint = label("muted", wrap=True)  # Merge's, with two documents or more
+        text(self.order_hint, "gui.main.order_hint")
+        self.order_hint.hide()
+        layout.addWidget(self.order_hint)
 
         editing = QHBoxLayout()
         editing.setSpacing(SPACE)
@@ -68,6 +81,16 @@ class InputsCard:
         self._short = short
         self._buttons.setDirection(
             QVBoxLayout.Direction.LeftToRight if short else QVBoxLayout.Direction.TopToBottom
+        )
+
+    def show_order(self, rows: Sequence[InputRow], *, merge: bool) -> None:
+        """Merge's arrows on the list's rows and its hint; neither for Convert or Split."""
+        self.order.show(rows, merge=merge)
+        self.order_hint.setVisible(merge and len(rows) >= 2)
+
+    def apply_language(self, catalog: Catalog) -> None:
+        self.order.apply_language(
+            catalog.text("gui.main.move_up"), catalog.text("gui.main.move_down")
         )
 
     def _remove_selected(self) -> None:
