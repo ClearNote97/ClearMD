@@ -28,6 +28,7 @@ from clearmd.backend.services.rejections import (
     stopped_message,
 )
 from clearmd.backend.use_cases.cancel import CancelToken
+from clearmd.backend.use_cases.changes import changed_since_result
 from clearmd.backend.use_cases.execution import execute_plan
 from clearmd.backend.use_cases.merging import execute_merge
 from clearmd.backend.use_cases.planning import build_plan
@@ -41,6 +42,7 @@ __all__ = [
     "Keep",
     "SplitSpec",
     "Strategy",
+    "changed_since_result",
     "failed_line",
     "large_in_plan",
     "large_in_report",

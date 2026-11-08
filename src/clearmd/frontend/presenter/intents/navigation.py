@@ -35,7 +35,7 @@ class Navigation:
             self._session.page = page
             self._display.set_state(self._session.state)
 
-    def press_primary(self, overwrite: bool | None = None) -> None:
+    def press_primary(self, overwrite: bool | str | None = None) -> None:
         """The page's primary action: Next, Next, Convert, Open results folder."""
         s = self._session
         if not self._display.primary().enabled:

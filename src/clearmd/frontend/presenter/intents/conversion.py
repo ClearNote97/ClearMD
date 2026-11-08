@@ -3,9 +3,9 @@
 from collections.abc import Callable
 from functools import partial
 
-from clearmd.backend.api import CancelToken
+from clearmd.backend.api import CancelToken, changed_since_result
 from clearmd.backend.schemas.events import BatchEvent, ConversionFinished, ConversionStarted
-from clearmd.backend.schemas.models import BatchReport, OutcomeStatus
+from clearmd.backend.schemas.models import BatchReport, OutcomeStatus, PlannedConversion
 from clearmd.frontend.presenter.background import Background
 from clearmd.frontend.presenter.display import Display
 from clearmd.frontend.presenter.icons import icon_of_format
@@ -17,6 +17,17 @@ from clearmd.frontend.presenter.state import AppState, Tool
 from clearmd.i18n import printable
 
 TICK_MILLISECONDS = 1000
+
+
+def existing_decision(
+    setting: str, answer: bool | str | None
+) -> Callable[[PlannedConversion], bool]:
+    """Whether to replace an existing result: the setting, or the user's answer when it asks."""
+    choice = setting if setting != "ask" else answer
+    if choice == "changed":
+        return changed_since_result
+    replace = choice is True or choice == "overwrite"
+    return lambda item: replace
 
 
 class Conversion:
@@ -36,16 +47,16 @@ class Conversion:
         self._clock = clock
         self._open_results = open_results
 
-    def confirm(self, overwrite: bool | None = None) -> None:
-        """Convert the plan. ``overwrite`` answers the question about existing outputs."""
+    def confirm(self, overwrite: bool | str | None = None) -> None:
+        """Convert the plan. ``overwrite`` answers the question about existing outputs: True,
+        False, or "changed" (only those whose original changed, feature 028)."""
         s = self._session
         if s.state is not AppState.WAITING_DECISION or not s.plan:
             return
         plan = s.plan
         if not plan.conversions:
             return
-        choice = s.settings.on_existing_output
-        overwrites = choice == "overwrite" if choice != "ask" else bool(overwrite)
+        decide = existing_decision(s.settings.on_existing_output, overwrite)
         generation = self._background.next_generation()
         s.cancel = token = CancelToken()
         language = s.catalog.language  # read here: the worker never touches the presenter
@@ -72,7 +83,7 @@ class Conversion:
             try:
                 report = self._backend.run_batch(
                     plan,
-                    overwrite=lambda item: overwrites,
+                    overwrite=decide,
                     on_event=on_event,
                     cancel=token,
                     language=language,

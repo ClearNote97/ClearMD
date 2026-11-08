@@ -35,7 +35,7 @@ CHOICES: Mapping[str, frozenset[str]] = MappingProxyType(
     {
         "language": frozenset({"en", "es"}),
         "theme": frozenset({"system", "light", "dark"}),
-        "on_existing_output": frozenset({"ask", "overwrite", "skip"}),
+        "on_existing_output": frozenset({"ask", "overwrite", "skip", "changed"}),  # changed: 028
         "html_strategy": frozenset({"full", "article"}),
         "summary_format": frozenset({"markdown", "markdown_pdf", "pdf"}),
         "images": frozenset({"omit", "folder"}),

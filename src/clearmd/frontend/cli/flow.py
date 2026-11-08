@@ -54,7 +54,13 @@ def run(argv: Sequence[str] | None) -> int:
     # A flag decides for this run only; without one, the shared settings do (AC-34).
     recursive = settings.recursive if args.recursive is None else args.recursive
     on_existing = (
-        "overwrite" if args.overwrite else "skip" if args.skip else settings.on_existing_output
+        "overwrite"
+        if args.overwrite
+        else "skip"
+        if args.skip
+        else "changed"
+        if args.changed
+        else settings.on_existing_output
     )
     try:
         plan = plan_batch(

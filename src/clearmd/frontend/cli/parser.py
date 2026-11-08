@@ -16,6 +16,7 @@ def build_parser(catalog: Catalog) -> argparse.ArgumentParser:
     existing = parser.add_mutually_exclusive_group()
     existing.add_argument("--overwrite", action="store_true", help=help_("cli.help.overwrite"))
     existing.add_argument("--skip", action="store_true", help=help_("cli.help.skip"))
+    existing.add_argument("--changed", action="store_true", help=help_("cli.help.changed"))
     parser.add_argument(
         "--recursive",
         action=argparse.BooleanOptionalAction,

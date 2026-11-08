@@ -139,7 +139,7 @@ class Presenter:
         """Show a step (0: Home, the start screen); only what is on screen changes."""
         self._navigation.go_to(page)
 
-    def press_primary(self, overwrite: bool | None = None) -> None:
+    def press_primary(self, overwrite: bool | str | None = None) -> None:
         """The page's primary action: Next, Next, Convert, Open results folder."""
         self._navigation.press_primary(overwrite)
 
@@ -149,7 +149,7 @@ class Presenter:
     def analyze(self) -> None:
         self._analysis.analyze()
 
-    def confirm(self, overwrite: bool | None = None) -> None:
+    def confirm(self, overwrite: bool | str | None = None) -> None:
         self._conversion.confirm(overwrite)
 
     def cancel(self) -> None:

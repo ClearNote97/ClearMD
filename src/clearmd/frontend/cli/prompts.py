@@ -4,6 +4,7 @@ import sys
 from collections.abc import Callable
 from typing import TextIO
 
+from clearmd.backend.api import changed_since_result
 from clearmd.backend.schemas.models import BatchPlan, PlannedConversion
 from clearmd.frontend.cli.report import p
 from clearmd.i18n import Catalog
@@ -59,6 +60,8 @@ def decision(
     """``None`` when a decision is required but nobody can answer (exit 3, AC-18)."""
     if on_existing == "overwrite":
         return lambda item: True
+    if on_existing == "changed":  # only what changed since its result (feature 028)
+        return changed_since_result
     if on_existing == "skip" or not plan.existing:
         return lambda item: False
     if not is_interactive():
