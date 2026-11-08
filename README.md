@@ -156,6 +156,7 @@ _Plus the failed and skipped files with a plain-words reason, and the history of
 | **027** Split text, CSV and Excel | ✅ done | v2.4.0 |
 | **028** Incremental mode: replace a result only if its original changed | ✅ done | v2.5.0 |
 | **029** E-mails, Rich Text and subtitles | ✅ done | v2.6.0 |
+| **030** The queue measured: one worker in cost order stays (ADR-0050) | ✅ done | — |
 
 Full plan in the [roadmap](./spec/roadmap.md). ClearMD has a **command line** and the same **desktop app** in three toolkits,
 ttkbootstrap (`clearmd-ttk`), PySide6 (`clearmd-pyside`, [screenshots](./docs/screenshots/016/)) and flet
