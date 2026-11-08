@@ -45,10 +45,11 @@ class ToolTile(tk.Canvas):
         fonts: dict[str, tkfont.Font],
         icon: Icon,
         on_choose: Callable[[], None],
+        height: int = TILE_HEIGHT,
+        current: bool = False,
     ) -> None:
-        super().__init__(
-            parent, height=TILE_HEIGHT, highlightthickness=0, borderwidth=0, takefocus=True
-        )
+        super().__init__(parent, height=height, highlightthickness=0, borderwidth=0, takefocus=True)
+        self.current = current  # "What Next?"'s tool just used: the accent's border (033)
         self._fonts = fonts
         self.icon = icon
         self._on_choose = on_choose
@@ -131,6 +132,8 @@ class ToolTile(tk.Canvas):
         self._pictures.clear()
         if self.lit:
             fill, line, thickness = blend(p.accent, p.card, SELECTED), p.accent, 2
+        elif self.current:
+            fill, line, thickness = p.ground, p.accent, 2
         else:
             fill, line, thickness = p.ground, p.border, 1
         self._image(ground(width, height, fill, line, thickness, p.card), 0, 0, "nw")
@@ -138,13 +141,23 @@ class ToolTile(tk.Canvas):
         strong, text = self._fonts["strong"], self._fonts["body"]
         icon = self.icon(p.accent_text)
         # Room for three lines of body in every tile: the icons and titles of the tiles line up.
-        lines = max(3, text.measure(body) // max(width - 2 * GAP, 1) + 1)
-        block = icon.height + HALF + strong.metrics("linespace") + HALF
-        block += lines * text.metrics("linespace")
-        y = max(GAP, (height - block) // 2)
+        # A tile without a body ("What Next?", 033) centres its icon and title alone.
+        lines = max(3, text.measure(body) // max(width - 2 * GAP, 1) + 1) if body else 0
+        block = icon.height + HALF + strong.metrics("linespace")
+        block += (HALF + lines * text.metrics("linespace")) if lines else 0
+        y = max(GAP if body else SPACE, (height - block) // 2)
         self._image(icon, width // 2, y, "n")
         y += icon.height + HALF
-        self.create_text(width // 2, y, text=title, fill=p.text, font=strong, anchor="n")
+        self.create_text(
+            width // 2,
+            y,
+            text=title,
+            fill=p.text,
+            font=strong,
+            anchor="n",
+            justify="center",
+            width=width - 2 * SPACE,
+        )  # fmt: skip  (a long title wraps rather than touching the edges)
         y += strong.metrics("linespace") + HALF
         self.create_text(
             width // 2, y, text=body, fill=p.muted, font=text, anchor="n", justify="center",

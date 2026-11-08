@@ -14,7 +14,7 @@ from support.gui_fakes import FakeBackend
 from clearmd.frontend.design.tool_art import svg
 from clearmd.frontend.flet import FletApp
 from clearmd.frontend.flet.components.tool_icon import INK
-from clearmd.frontend.flet.views.dialogs.keep_inputs import KeepInputsDialog
+from clearmd.frontend.flet.views.dialogs.what_next import WhatNextDialog
 from clearmd.frontend.flet.views.home import HOME_ICON_SIZE
 from clearmd.frontend.presenter import AppState
 from clearmd.frontend.presenter.state import HOME, Tool
@@ -63,7 +63,9 @@ def test_ac_05_merge_orders_its_list_with_the_arrows(flet_window: Window, tmp_pa
     assert fake.plan_calls[-1]["inputs"] == [paths[0], paths[2], paths[1]]  # the merge's order
 
 
-def test_ac_05_what_next_goes_back_home_with_the_files(flet_window: Window, tmp_path: Path) -> None:
+def test_ac_05_what_next_opens_another_tool_with_the_files(
+    flet_window: Window, tmp_path: Path
+) -> None:
     app = flet_window(FakeBackend(settings=QUIET))
     click(app.home.convert.control)
     app.presenter.add_paths([tmp_path])
@@ -74,9 +76,9 @@ def test_ac_05_what_next_goes_back_home_with_the_files(flet_window: Window, tmp_
     assert app.actions.secondary.visible and app.actions.secondary.content == "What Next?"
     click(app.actions.secondary)
     dialog = app.dialogs.current
-    assert isinstance(dialog, KeepInputsDialog) and dialog.home.content == "Go Back Home"
-    click(dialog.home)
-    assert app.presenter.page == HOME and app.home.control.visible
+    assert isinstance(dialog, WhatNextDialog)  # 032's three answers became 033's tiles
+    click(dialog.tiles[Tool.MERGE])  # the box ticked: the files stay
+    assert (app.presenter.page, app.presenter.tool) == (1, Tool.MERGE)
     assert order(app) == [f"{tmp_path.name}/"]  # the files are kept
 
 

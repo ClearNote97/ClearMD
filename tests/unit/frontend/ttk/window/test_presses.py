@@ -5,7 +5,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from support.ttk_unit import confirm, convert_more, pump
+from support.ttk_unit import confirm, pump, what_next
 
 from clearmd.frontend.presenter import AppState
 from clearmd.frontend.ttk import TtkApp
@@ -61,7 +61,7 @@ def test_a7_1_convert_more_leaves_nothing_of_the_last_batch(app: TtkApp, tmp_pat
     pump(app, until=lambda: app.presenter.page == 2)
     confirm(app)
     pump(app, until=lambda: app.presenter.page == 4)
-    convert_more(app, keep=True)
+    what_next(app, keep=True)
     assert app.review.files.names() == [] and app.results.stats.dimmed  # waiting, faded (014)
     assert {value for _, value in app.results.stats.figures()} == {"—"}
     assert not app.converting.progress_card.winfo_ismapped()

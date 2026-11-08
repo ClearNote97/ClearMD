@@ -1,4 +1,5 @@
-"""A start tile (feature 023): a large button with an icon, a title and what it does. The look of
+"""A start tile (feature 023): a large button with an icon, a title and what it does; ``small``,
+the same in "What Next?" (033), with no body and less room. The look of
 flet's tiles of feature 021: the page's ground, a 1 px border turning to the accent, and the
 selection's ground under the pointer, its height: the style sheet's ``QPushButton#tile``."""
 
@@ -12,18 +13,20 @@ from clearmd.frontend.design.metrics import GAP, HALF, SPACE
 from clearmd.frontend.pyside.components.primitives import button, label
 
 ICON_SIZE = 6 * SPACE  # 48
+SMALL_ICON = 4 * SPACE  # 32: "What Next?"'s tiles
 
 
 class Tile:
     """The button (``self.button``: Enter or Space presses it) and the texts drawn on it."""
 
-    def __init__(self, on_click: Callable[[], None]) -> None:
-        self.button: QPushButton = button("tile", on_click)
+    def __init__(self, on_click: Callable[[], None], *, small: bool = False) -> None:
+        self.button: QPushButton = button("smallTile" if small else "tile", on_click)
         self.button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         layout = QVBoxLayout(self.button)
         # From the top, not centred: the two tiles' icons and titles line up whatever the length
         # of their texts.
-        layout.setContentsMargins(GAP, 5 * SPACE, GAP, GAP)
+        top = 3 * SPACE if small else 5 * SPACE
+        layout.setContentsMargins(GAP, top, GAP, GAP)
         layout.setSpacing(HALF)
         self.icon = QLabel()
         self.title = label("strong")
@@ -33,8 +36,10 @@ class Tile:
             # The pointer and the clicks go to the button under them.
             widget.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
             layout.addWidget(widget)
+        self.body.setVisible(not small)
         layout.insertSpacing(1, SPACE)  # the icon a little apart from the words
         layout.addStretch(1)
+        self.title.setWordWrap(small)  # a small tile's title may take two lines ("Otra Vez")
 
     def show_text(self, title: str, body: str) -> None:
         self.title.setText(title)

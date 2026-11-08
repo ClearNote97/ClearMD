@@ -21,6 +21,7 @@ def _picture(name: str, p: Palette) -> str:
 
 DIM_STRENGTH = 0.45  # a faded card: this much of the card's colour on the ground's (as ttk, 014)
 DIM_TEXT = 0.8  # its text: this much of the muted colour on the faded card
+SMALL_TILE_HEIGHT = 13 * SPACE  # a "What Next?" tile (033): its icon and title
 TILE_HEIGHT = 25 * SPACE  # a start tile (023): its icon, title and two lines, with room
 SELECTED = 0.18  # a selected row, a tile under the pointer: this much of the accent on the card
 
@@ -100,7 +101,14 @@ QPushButton#tile {{
 }}
 QPushButton#tile:hover {{ background: {selected}; border: 2px solid {p.accent}; }}
 QPushButton#tile:focus {{ border: 2px solid {p.accent}; }}
-QPushButton#tile QLabel {{ background: transparent; }}
+QPushButton#tile QLabel, QPushButton#smallTile QLabel {{ background: transparent; }}
+QPushButton#smallTile {{  /* "What Next?"'s tools (033); the one just used in the accent */
+    background: {p.ground}; border: 1px solid {p.border}; border-radius: {RADIUS}px; padding: 0;
+    min-height: {SMALL_TILE_HEIGHT}px;
+}}
+QPushButton#smallTile[current="true"] {{ border: 2px solid {p.accent}; }}
+QPushButton#smallTile:hover {{ background: {selected}; border: 2px solid {p.accent}; }}
+QPushButton#smallTile:focus {{ border: 2px solid {p.accent}; }}
 QPushButton#order {{  /* Merge's arrows on the list's rows (032) */
     padding: 0; min-height: 0; border-radius: {RADIUS // 2}px; font-weight: normal;
     color: {p.accent_text};

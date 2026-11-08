@@ -1,6 +1,6 @@
 """Feature 032 in the PySide6 window (spec/features/032_*/spec.md): the start screen's icons from
 the shared ``design.tool_art`` and its tiles centred (AC-04); Merge's order buttons, "What Next?"
-with Go Back Home, and no button looking focused when a page opens (AC-05)."""
+(its tiles since 033), and no button looking focused when a page opens (AC-05)."""
 
 from collections.abc import Callable
 from pathlib import Path
@@ -14,7 +14,7 @@ from clearmd.frontend.presenter.state import HOME, Tool
 from clearmd.frontend.pyside import PySideApp
 from clearmd.frontend.pyside.components.tile import ICON_SIZE
 from clearmd.frontend.pyside.components.tile_art import tool_art
-from clearmd.frontend.pyside.views.dialogs.keep_inputs import KeepInputsDialog
+from clearmd.frontend.pyside.views.dialogs.what_next import WhatNextDialog
 
 Window = Callable[..., PySideApp]
 SMOOTH = Qt.TransformationMode.SmoothTransformation
@@ -82,7 +82,7 @@ def test_ac_05_merge_moves_a_document_with_its_arrows(qt_window: Window, tmp_pat
     assert not app.main.order_hint.isVisible() and app.main.order.arrows == []
 
 
-def test_ac_05_what_next_goes_back_home_keeping_the_files(
+def test_ac_05_what_next_opens_another_tool_keeping_the_files(
     qt_window: Window, tmp_path: Path
 ) -> None:
     app = qt_window(FakeBackend(settings=QUIET))
@@ -93,14 +93,10 @@ def test_ac_05_what_next_goes_back_home_keeping_the_files(
     assert app.actions.secondary.text() == "What Next?"
     app.actions.secondary.click()
     dialog = app.dialogs.current
-    assert isinstance(dialog, KeepInputsDialog)
-    assert [dialog.home.text(), dialog.clear.text(), dialog.keep.text()] == [
-        "Go Back Home",
-        "Start Empty",
-        "Keep Them",
-    ]
-    dialog.home.click()
-    assert app.dialogs.current is None and app.presenter.page == HOME
+    assert isinstance(dialog, WhatNextDialog)  # its three tiles since 033
+    dialog.tiles[1].button.click()  # Split, keeping the files
+    assert app.dialogs.current is None and app.presenter.page == 1
+    assert app.presenter.tool is Tool.SPLIT
     assert [row.name for row in app.main.inputs.rows()] == [f"{tmp_path.name}/"]
     assert no_button_focused()
 

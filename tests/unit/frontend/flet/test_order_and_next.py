@@ -1,6 +1,6 @@
 """Feature 032 in the flet window: Merge's ▲ ▼ on each row of step 1's list and the hint under it;
-Results' "What Next?" with Go Back Home; the focus forgotten when a page opens; Summary on the
-heading's line for Split and Merge."""
+the focus forgotten when a page opens; Summary on the heading's line for Split and Merge. (Its
+"What Next?" became feature 033's: test_what_next.py.)"""
 
 from collections.abc import Callable, Iterator
 from dataclasses import replace
@@ -13,7 +13,6 @@ from support.flet_acceptance import QUIET, Window, click, walk, windows
 from support.gui_fakes import FakeBackend
 
 from clearmd.frontend.flet import FletApp
-from clearmd.frontend.flet.views.dialogs.keep_inputs import KeepInputsDialog
 from clearmd.frontend.presenter.state import HOME, Tool
 from clearmd.i18n import load_catalog
 
@@ -91,48 +90,6 @@ def test_a_language_change_redraws_the_arrows(flet_window: Window) -> None:
     app.presenter.save_settings(replace(app.presenter.settings, language="es"))
     up, _down = arrows(app)[1]
     assert up.tooltip == load_catalog("es").text("gui.main.move_up")
-
-
-def what_next(app: FletApp) -> KeepInputsDialog:
-    app.dialogs.convert_more()  # as Results' "What Next?" opens it
-    dialog = app.dialogs.current
-    assert isinstance(dialog, KeepInputsDialog)
-    return dialog
-
-
-@pytest.mark.parametrize("language", ["en", "es"])
-def test_what_next_has_three_answers(flet_window: Window, language: str) -> None:
-    app = opened(flet_window, Tool.CONVERT, language)
-    catalog = load_catalog(language)
-    dialog = what_next(app)
-    assert dialog.title.value == catalog.text("gui.more.title")
-    assert [dialog.home.content, dialog.clear.content, dialog.keep.content] == [
-        catalog.text("gui.more.home"),
-        catalog.text("gui.more.clear"),
-        catalog.text("gui.more.keep"),
-    ]
-    assert dialog.foot.controls.index(dialog.home) == 0  # on the left, the others on the right
-
-
-@pytest.mark.parametrize(
-    ("answer", "page", "kept"), [("keep", 1, True), ("clear", 1, False), ("home", HOME, True)]
-)
-def test_each_answer_reaches_the_presenter(
-    flet_window: Window, monkeypatch: pytest.MonkeyPatch, answer: str, page: int, kept: bool
-) -> None:
-    app = opened(flet_window, Tool.CONVERT)
-    seen: list[str] = []
-    real = app.presenter.what_next
-
-    def spied(given: str) -> None:
-        seen.append(given)
-        real(given)
-
-    monkeypatch.setattr(app.presenter, "what_next", spied)
-    dialog = what_next(app)
-    click({"keep": dialog.keep, "clear": dialog.clear, "home": dialog.home}[answer])
-    assert seen == [answer] and app.dialogs.current is None
-    assert app.presenter.page == page and bool(names(app)) is kept
 
 
 def test_a_page_change_forgets_the_focus(flet_window: Window) -> None:

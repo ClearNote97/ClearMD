@@ -114,7 +114,7 @@ async def screens(page: ft.Page, out: Path, theme: str, language: str) -> None:
     held.set()
     await shooter.until(lambda: app.presenter.page == 4)
     await shooter.shot("4-results")
-    app.dialogs.convert_more()  # Results' "What Next?": keep, start empty, or Home (032)
+    app.dialogs.what_next()  # Results' "What Next?": the three tools and the box (033)
     await shooter.shot("4-what-next")
     await close_dialog(app)
     dialogs = (("5-help", app.dialogs.show_help), ("6-settings", app.dialogs.show_settings))

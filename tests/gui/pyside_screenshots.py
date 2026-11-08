@@ -72,7 +72,7 @@ def screens(out: Path, theme: str, language: str) -> None:
     held.set()
     pump(app, until=lambda: app.presenter.page == 4, seconds=10)
     shot(app, out / f"4-results-{tag}.png")
-    app.dialogs.convert_more()  # "What Next?" (032)
+    app.dialogs.what_next()  # "What Next?" (032, its tiles since 033)
     dialog_shot(app, out / f"4-what-next-{tag}.png")
     app.dialogs.show_help()
     dialog_shot(app, out / f"5-help-{tag}.png")

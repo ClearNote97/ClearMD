@@ -13,7 +13,7 @@ from support.gui_fakes import FakeBackend
 from clearmd.backend.schemas.settings import Settings
 from clearmd.frontend.presenter import AppState
 from clearmd.frontend.ttk import TtkApp
-from clearmd.frontend.ttk.views.dialogs.keep_inputs import KeepInputsDialog
+from clearmd.frontend.ttk.views.dialogs.what_next import WhatNextDialog
 
 ROOT = Path(__file__).resolve().parents[2]
 QUIET = Settings(show_welcome=False, open_output_when_done=False)
@@ -113,7 +113,7 @@ def test_ac_05_convert_more_is_prominent_and_asks_every_time(display: str, tmp_p
             pump(app, until=on_page(app, 4))
             assert str(app.actions.secondary.cget("style")).startswith("Strong")
             app.actions.secondary.invoke()
-            assert isinstance(app.dialog, KeepInputsDialog)
+            assert isinstance(app.dialog, WhatNextDialog)  # "What Next?" since 033
             app.dialog.answer(keep)
             assert app.presenter.page == 1 and app.main.inputs.names() == names
         finally:

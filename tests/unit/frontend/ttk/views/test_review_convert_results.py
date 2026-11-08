@@ -5,7 +5,7 @@ from pathlib import Path
 
 from support.gui_close import shut
 from support.gui_fakes import FakeBackend, planned
-from support.ttk_unit import confirm, convert_more, press_enter, pump, shown
+from support.ttk_unit import confirm, press_enter, pump, shown, what_next
 
 from clearmd.backend.schemas.errors import SkipReason
 from clearmd.backend.schemas.models import BatchPlan, OutcomeStatus, SkippedItem
@@ -48,7 +48,7 @@ def test_review_shows_the_figures_and_each_file_then_converting_ends_in_results(
         assert ("Converted", "2") in app.results.stats.figures()
         assert app.results.problems.names() == ["notes.md"]  # skipped: said why, with what to do
         assert fake.opened  # the folder opens by itself (open_output_when_done)
-        convert_more(app)
+        what_next(app)
         assert shown(app) is app.main and app.main.inputs.names() == [f"{tmp_path.name}/"]
     finally:
         shut(app)

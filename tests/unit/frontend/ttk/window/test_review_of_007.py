@@ -29,18 +29,21 @@ def test_c7_2_the_smallest_window_shows_every_control(app: TtkApp, tmp_path: Pat
     assert bottom <= app.actions.winfo_rooty()
 
 
-def test_c7_5_enter_in_the_keep_dialog_runs_the_focused_button(app: TtkApp) -> None:
-    app.presenter.add_paths([Path("/docs")])
-    app.dialogs.convert_more()
-    from clearmd.frontend.ttk.views.dialogs.keep_inputs import KeepInputsDialog
+def test_c7_5_enter_in_what_next_runs_the_focused_tile(app: TtkApp) -> None:
+    from clearmd.frontend.presenter.state import Tool
+    from clearmd.frontend.ttk.views.dialogs.what_next import WhatNextDialog
 
+    app.presenter.add_paths([Path("/docs")])
+    app.dialogs.what_next()
     dialog = app.dialog
-    assert isinstance(dialog, KeepInputsDialog)
-    dialog.clear.focus_set()
-    dialog.update()
-    dialog.event_generate("<Return>", when="tail")
+    assert isinstance(dialog, WhatNextDialog)
+    tile = dialog.tiles[Tool.MERGE]
+    tile.focus_force()
+    pump(app, until=lambda: dialog.focus_get() is tile, seconds=2)
+    tile.event_generate("<Return>", when="tail")
     pump(app, until=lambda: app.dialog is None, seconds=1)
-    assert app.main.inputs.names() == []  # "Start Empty" had the focus
+    assert app.presenter.tool is Tool.MERGE  # the tile with the focus (033)
+    assert app.main.inputs.names()  # the box was ticked: the files are kept
 
 
 def test_c7_6_the_rail_is_drawn_again_only_when_the_page_changes(app: TtkApp) -> None:

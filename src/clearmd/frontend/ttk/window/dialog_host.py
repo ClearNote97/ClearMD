@@ -1,4 +1,4 @@
-"""One dialog at a time: help, settings, welcome, and the question after Convert more."""
+"""One dialog at a time: help, settings, welcome, and Results' "What Next?"."""
 
 import tkinter as tk
 from typing import Any
@@ -6,9 +6,9 @@ from typing import Any
 from clearmd.frontend.presenter import Action, Presenter
 from clearmd.frontend.ttk.components.dialog import Dialog
 from clearmd.frontend.ttk.views.dialogs.help import help_dialog
-from clearmd.frontend.ttk.views.dialogs.keep_inputs import KeepInputsDialog
 from clearmd.frontend.ttk.views.dialogs.settings import SettingsDialog
 from clearmd.frontend.ttk.views.dialogs.welcome import WelcomeDialog
+from clearmd.frontend.ttk.views.dialogs.what_next import WhatNextDialog
 from clearmd.frontend.ttk.window.shown import Shown
 
 
@@ -22,16 +22,17 @@ class DialogHost:
         self._shown = shown
         self.current: Dialog | None = None  # the open dialog: one at a time
 
-    def convert_more(self) -> None:
-        """Results' "What Next?", asked every time: keep the files, start empty, or go Home."""
+    def what_next(self) -> None:
+        """Results' "What Next?" (033): the three tools, the one just used first, and the box."""
         if self.current is not None:
             return
-        dialog = KeepInputsDialog(
+        dialog = WhatNextDialog(
             self._root,
             self._shown.need_catalog(),
             self._shown.palette,
             self._fonts,
-            on_answer=lambda answer: self._presenter.what_next(answer),
+            self._presenter.next_choices(),
+            on_choose=lambda tool, keep: self._presenter.continue_with(tool, keep=keep),
             on_close=self._closed,
         )
         self._open(dialog)

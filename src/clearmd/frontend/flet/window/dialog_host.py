@@ -5,9 +5,9 @@ from typing import Any
 
 from clearmd.frontend.flet.components.dialog import Dialog
 from clearmd.frontend.flet.views.dialogs.help import HelpDialog
-from clearmd.frontend.flet.views.dialogs.keep_inputs import KeepInputsDialog
 from clearmd.frontend.flet.views.dialogs.settings import SettingsDialog
 from clearmd.frontend.flet.views.dialogs.welcome import WelcomeDialog
+from clearmd.frontend.flet.views.dialogs.what_next import WhatNextDialog
 from clearmd.frontend.flet.window.focus import Focus
 from clearmd.frontend.flet.window.page_port import PagePort
 from clearmd.frontend.flet.window.shown import Shown
@@ -22,14 +22,16 @@ class DialogHost:
         self._shown = shown
         self.current: Dialog | None = None  # the open dialog: one at a time
 
-    def convert_more(self) -> None:
-        """Results' "What Next?", asked every time: keep the chosen files, start empty, or go
-        back Home (features 007, 032)."""
+    def what_next(self) -> None:
+        """Results' "What Next?", asked every time: a tool, with or without the files (033)."""
         if self.current is None:
             self._open(
-                KeepInputsDialog(
+                WhatNextDialog(
                     self._shown.need_catalog(),
-                    on_answer=lambda answer: self._sent(self._presenter.what_next, answer),
+                    self._presenter.next_choices(),
+                    on_choose=lambda tool, keep: self._sent(
+                        self._presenter.continue_with, tool, keep=keep
+                    ),
                     on_close=self._closed,
                 )
             )

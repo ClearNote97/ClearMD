@@ -23,9 +23,10 @@ from support.flet_acceptance import (
 from support.gui_fakes import FakeBackend, planned
 
 from clearmd.backend.schemas.models import BatchPlan
-from clearmd.frontend.flet.views.dialogs.keep_inputs import KeepInputsDialog
+from clearmd.frontend.flet.views.dialogs.what_next import WhatNextDialog
 from clearmd.frontend.flet.visuals.look import button_style
 from clearmd.frontend.presenter import AppState
+from clearmd.frontend.presenter.state import Tool
 
 
 @pytest.fixture
@@ -86,9 +87,11 @@ def test_ac_04_convert_more_asks_every_time(
         assert app.actions.secondary.style == button_style("strong")
         click(app.actions.secondary)
         dialog = app.dialogs.current
-        assert isinstance(dialog, KeepInputsDialog) and page_of(app).dialogs == [dialog.control]
+        assert isinstance(dialog, WhatNextDialog) and page_of(app).dialogs == [dialog.control]
+        assert dialog.keep.value is True  # ticked every time it opens (033)
         refreshes = page_of(app).refreshes
-        click(dialog.keep if keep else dialog.clear)
+        dialog.keep.value = keep
+        click(dialog.tiles[Tool.CONVERT])  # "Convert Again"
         assert app.dialogs.current is None and page_of(app).dialogs == []
         # Sent at once: closing the dialog had already updated flet's page, so without this the
         # Choose page showed only at the next click (the owner pressed twice, v1.0.1).

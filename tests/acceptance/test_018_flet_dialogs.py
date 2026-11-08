@@ -177,7 +177,7 @@ def test_ac_05_one_dialog_at_a_time_and_keys_go_to_it(flet_window: Window, tmp_p
     app.presenter.add_paths([tmp_path])
     click(app.rail.help)
     click(app.rail.settings)
-    app.dialogs.convert_more()
+    app.dialogs.what_next()
     assert isinstance(app.dialogs.current, HelpDialog) and len(page_of(app).dialogs) == 1
     page_of(app).press("2", ctrl=True)  # the window's keys wait while a dialog is open
     page_of(app).press("Delete")

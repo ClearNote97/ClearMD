@@ -2,6 +2,13 @@
 
 Each file can be checked against `SHA256SUMS.txt` ([how](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)). / Cada archivo se puede comprobar con `SHA256SUMS.txt` ([cómo](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)).
 
+**New in 2.8.1 / Novedades de la 2.8.1**
+- **What Next?** shows the three tools as small tiles (the one you just used first, "Again") and
+  one box, "Keep the files you chose": one click opens the tool you want, with or without your
+  files. / **¿Qué Sigue?** muestra las tres herramientas como tarjetas pequeñas (primero la que
+  acabas de usar, "Otra Vez") y una casilla, "Conservar los archivos que elegiste": un clic abre
+  la herramienta que quieras, con o sin tus archivos.
+
 **New in 2.8.0 / Novedades de la 2.8.0**
 - **Merge in your order:** in Merge, each document of the list moves up or down with its arrows. /
   **Une en tu orden:** en Unir, cada documento de la lista sube o baja con sus flechas.

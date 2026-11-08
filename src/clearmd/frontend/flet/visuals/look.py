@@ -113,11 +113,12 @@ def button_style(kind: str) -> ft.ButtonStyle:
     )
 
 
-def tile_style(top: int = GAP) -> ft.ButtonStyle:
+def tile_style(top: int = GAP, *, current: bool = False) -> ft.ButtonStyle:
     """A start tile (feature 021): the page's ground in the card, its border turning to the accent
     and its ground to the selection under the pointer; its content from the top, ``top`` below
-    the edge (feature 024: two tiles' icons at the same height)."""
-    border = ft.BorderSide(1, role("border"))
+    the edge (feature 024: two tiles' icons at the same height). ``current``: the accent border
+    at rest too ("What Next?"'s tool just used, feature 033)."""
+    border = ft.BorderSide(2, role("accent")) if current else ft.BorderSide(1, role("border"))
     return ft.ButtonStyle(
         color=_states("text", disabled="disabled"),
         bgcolor={DEFAULT: role("ground"), HOVERED: role("selected"), DISABLED: role("ground")},

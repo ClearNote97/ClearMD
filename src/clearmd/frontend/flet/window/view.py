@@ -85,7 +85,7 @@ class FletView:
         commands = {
             SecondaryKind.CANCEL: self._presenter.cancel,
             SecondaryKind.BACK: lambda: self._presenter.go_to(second.back_to),
-            SecondaryKind.AGAIN: self._dialogs.convert_more,
+            SecondaryKind.AGAIN: self._dialogs.what_next,
         }
         command = commands.get(second.kind)
         self._actions.show_secondary(second.text or None, command, strong=second.strong)

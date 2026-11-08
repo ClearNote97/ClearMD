@@ -1,13 +1,13 @@
-"""One dialog at a time: help, settings, welcome, and the question after Convert more."""
+"""One dialog at a time: help, settings, welcome, and Results' "What Next?"."""
 
 from PySide6.QtWidgets import QWidget
 
 from clearmd.frontend.presenter import Action, Presenter
 from clearmd.frontend.pyside.components.dialog import Dialog
 from clearmd.frontend.pyside.views.dialogs.help import HelpDialog
-from clearmd.frontend.pyside.views.dialogs.keep_inputs import KeepInputsDialog
 from clearmd.frontend.pyside.views.dialogs.settings import SettingsDialog
 from clearmd.frontend.pyside.views.dialogs.welcome import WelcomeDialog
+from clearmd.frontend.pyside.views.dialogs.what_next import WhatNextDialog
 from clearmd.frontend.pyside.window.shown import Shown
 
 
@@ -18,15 +18,17 @@ class DialogHost:
         self._shown = shown
         self.current: Dialog | None = None  # the open dialog: one at a time
 
-    def convert_more(self) -> None:
-        """Results' "What Next?", asked every time: keep the files, start empty or go back Home
-        (features 007, 032)."""
+    def what_next(self) -> None:
+        """Results' "What Next?", asked every time: a tool, and whether the files stay (033)."""
         if self.current is None:
+            presenter = self._presenter
             self._open(
-                KeepInputsDialog(
+                WhatNextDialog(
                     self._parent,
                     self._shown.need_catalog(),
-                    on_answer=self._presenter.what_next,
+                    presenter.next_choices(),
+                    colour=self._shown.palette.accent_text,
+                    on_choose=lambda tool, keep: presenter.continue_with(tool, keep=keep),
                     on_close=self._closed,
                 )
             )

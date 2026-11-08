@@ -109,9 +109,9 @@ def convert_ready(app: TtkApp) -> None:
     app.presenter.go_to(3)
 
 
-def convert_more(app: TtkApp) -> None:
+def what_next(app: TtkApp) -> None:  # Results' "What Next?" (033); its shot keeps its 007 name
     to_results(app)
-    app.dialogs.convert_more()
+    app.dialogs.what_next()
 
 
 def compact(app: TtkApp) -> None:
@@ -178,7 +178,7 @@ def main() -> int:
                     ("5-help", FakeBackend(plan=PLAN), help_window),
                     ("6-settings", FakeBackend(plan=PLAN), settings_window),
                     ("3-convert-ready", FakeBackend(plan=PLAN), convert_ready),
-                    ("4-convert-more", FakeBackend(plan=PLAN, statuses=FAILED), convert_more),
+                    ("4-convert-more", FakeBackend(plan=PLAN, statuses=FAILED), what_next),
                     ("1-choose-compact", FakeBackend(plan=PLAN), compact),
                     # Nothing chosen: each page's cards wait, faded (feature 014).
                     *(

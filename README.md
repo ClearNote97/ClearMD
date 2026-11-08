@@ -159,6 +159,7 @@ _Plus the failed and skipped files with a plain-words reason, and the history of
 | **030** The queue measured: one worker in cost order stays (ADR-0050) | ✅ done | — |
 | **031** Ready for PyPI: metadata, a checked build, Trusted Publishing (off until enabled) | ✅ done | v2.7.0 |
 | **032** Merge's order (move up/down), "What Next?" with Go Back Home, the start screen alike | ✅ done | v2.8.0 |
+| **033** "What Next?" as the three tools and one box for the files | ✅ done | v2.8.1 |
 
 Full plan in the [roadmap](./spec/roadmap.md). ClearMD has a **command line** and the same **desktop app** in three toolkits,
 ttkbootstrap (`clearmd-ttk`), PySide6 (`clearmd-pyside`, [screenshots](./docs/screenshots/016/)) and flet

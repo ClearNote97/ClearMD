@@ -1,16 +1,14 @@
-"""Merge's order, "What Next?" and the calm focus of a page that opens (feature 032, AC-05), and
-step 1 of Split at the smallest window (the list keeps its rows)."""
+"""Merge's order and the calm focus of a page that opens (feature 032, AC-05), and step 1 of
+Split at the smallest window (the list keeps its rows). "What Next?": test_what_next.py (033)."""
 
 from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
-from support.ttk_unit import confirm, pump
+from support.ttk_unit import pump
 
-from clearmd.frontend.presenter import AppState
 from clearmd.frontend.presenter.state import HOME, Tool
 from clearmd.frontend.ttk import TtkApp
-from clearmd.frontend.ttk.views.dialogs.keep_inputs import KeepInputsDialog
 
 
 def merge_three(app: TtkApp, tmp_path: Path) -> list[Path]:
@@ -66,35 +64,6 @@ def test_convert_and_split_show_no_order(app: TtkApp, tmp_path: Path) -> None:
         pump(app, seconds=0.05)
         assert not app.main.move_up.winfo_manager() and not app.main.move_down.winfo_manager()
         assert not app.main.order.hint.winfo_manager()
-
-
-def what_next(app: TtkApp, tmp_path: Path) -> KeepInputsDialog:
-    app.presenter.add_paths([tmp_path])
-    app.presenter.analyze()
-    pump(app, until=lambda: app.presenter.state is AppState.WAITING_DECISION)
-    confirm(app)
-    pump(app, until=lambda: app.presenter.page == 4)
-    assert app.actions.secondary.cget("text") == "What Next?"
-    app.actions.secondary.invoke()
-    dialog = app.dialog
-    assert isinstance(dialog, KeepInputsDialog)
-    return dialog
-
-
-def test_what_next_goes_home_with_the_files(app: TtkApp, tmp_path: Path) -> None:
-    dialog = what_next(app, tmp_path)
-    texts = [b.cget("text") for b in (dialog.keep, dialog.clear, dialog.home)]
-    assert texts == ["Keep Them", "Start Empty", "Go Back Home"]
-    dialog.home.invoke()
-    pump(app, seconds=0.05)
-    assert app.dialog is None and app.presenter.page == HOME
-    assert app.main.inputs.names() == [f"{tmp_path.name}/"]  # going Home keeps the files
-
-
-def test_what_next_starts_empty(app: TtkApp, tmp_path: Path) -> None:
-    what_next(app, tmp_path).clear.invoke()
-    pump(app, seconds=0.05)
-    assert app.presenter.page == 1 and app.main.inputs.names() == []
 
 
 def test_no_button_keeps_the_focus_of_the_press_that_opened_a_page(

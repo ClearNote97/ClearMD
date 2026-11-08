@@ -7,6 +7,6 @@
 | `settings.py` | `SettingsDialog`: the settings of ADR-0012; its rows scroll in a short window. |
 | `split_settings.py` | `SplitSettings`: the Split group of the settings (023, 024). |
 | `merge_settings.py` | `MergeSettings`: the "Merge Documents" group of the settings (026). |
-| `keep_inputs.py` | `KeepInputsDialog`: "What Next?": keep the files, start empty, or go back Home. |
+| `what_next.py` | `WhatNextDialog`: "What Next?": the three tools as tiles, and the box that keeps the files (033). |
 
 All build on `components/dialog.py`. Import each from its module; this package re-exports nothing.

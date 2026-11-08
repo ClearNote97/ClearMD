@@ -122,7 +122,7 @@ def grid_problems(root: ft.BaseControl) -> list[str]:
 def test_ac_06_the_8_px_grid_14_px_text_and_one_primary_action(flet_window: Window) -> None:
     app = flet_window(FakeBackend(settings=QUIET))
     assert grid_problems(app.root) == []
-    for open_dialog in (app.dialogs.show_help, app.dialogs.show_settings, app.dialogs.convert_more):
+    for open_dialog in (app.dialogs.show_help, app.dialogs.show_settings, app.dialogs.what_next):
         open_dialog()
         assert app.dialogs.current is not None
         assert grid_problems(app.dialogs.current.control) == []

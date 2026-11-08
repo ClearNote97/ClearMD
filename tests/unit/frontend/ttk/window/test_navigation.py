@@ -5,7 +5,7 @@ from pathlib import Path
 
 from support.gui_close import shut
 from support.gui_fakes import FakeBackend
-from support.ttk_unit import confirm, convert_more, pump, shown
+from support.ttk_unit import confirm, pump, shown, what_next
 
 from clearmd.backend.schemas.settings import Settings
 from clearmd.frontend.ttk import TtkApp
@@ -71,7 +71,7 @@ def test_convert_more_asks_whether_to_keep_the_files(display: str, tmp_path: Pat
             pump(app, until=partial(on_page, app, 4))
             assert app.actions.secondary.cget("text") == "What Next?"  # 032
             assert str(app.actions.secondary.cget("style")).startswith("Strong")
-            convert_more(app, keep=keep)
+            what_next(app, keep=keep)
             assert shown(app) is app.main and app.main.inputs.names() == expected
         finally:
             shut(app)

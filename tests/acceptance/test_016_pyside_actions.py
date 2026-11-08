@@ -23,7 +23,7 @@ from clearmd.backend.schemas.models import BatchPlan
 from clearmd.frontend.presenter import AppState
 from clearmd.frontend.presenter.state import HOME
 from clearmd.frontend.pyside import PySideApp
-from clearmd.frontend.pyside.views.dialogs.keep_inputs import KeepInputsDialog
+from clearmd.frontend.pyside.views.dialogs.what_next import WhatNextDialog
 
 Window = Callable[..., PySideApp]
 
@@ -77,8 +77,11 @@ def test_ac_04_convert_more_asks_every_time(qt_window: Window, tmp_path: Path, k
         pump(app, until=lambda: app.presenter.page == 4)
         assert app.actions.secondary.objectName() == "strong"  # prominent
         app.actions.secondary.click()
-        assert isinstance(app.dialogs.current, KeepInputsDialog)
-        app.dialogs.current.answer("keep" if keep else "clear")  # What Next? since 032
+        dialog = app.dialogs.current
+        assert isinstance(dialog, WhatNextDialog)  # What Next? since 033
+        assert dialog.keep.isChecked()  # ticked each time it opens
+        dialog.keep.setChecked(keep)
+        dialog.tiles[0].button.click()  # "Convert Again"
         assert app.dialogs.current is None and app.presenter.page == 1
         names = [row.name for row in app.main.inputs.rows()]
         assert names == ([f"{tmp_path.name}/"] if keep else [])

@@ -20,7 +20,7 @@ uv run python tests/gui/flow.py --out docs/screenshots/007 --language es   # a r
 | `3-convert-ready-*` | Step 3 before the batch: what is ready and where it goes |
 | `3-convert-*` | Step 3: the progress (a batch held mid-way) |
 | `4-results-*` | Step 4: the figures and what needs attention |
-| `4-convert-more-*` | What Next?: keep the files, start empty, or go back Home (032) |
+| `4-convert-more-*` | What Next?: the three tools as tiles, the one just used first, and the box that keeps the files (033) |
 | `1-choose-compact-*` | A narrow window: the compact rail |
 | `5-help-*`, `6-settings-*` | The help and the settings |
 | `flow-*.gif` | A real batch (the test documents) through the real backend |

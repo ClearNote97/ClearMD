@@ -34,11 +34,12 @@ def confirm(app: TtkApp) -> None:
     app.actions.primary.invoke()
 
 
-def convert_more(app: TtkApp, *, keep: bool = True) -> None:
-    from clearmd.frontend.ttk.views.dialogs.keep_inputs import KeepInputsDialog
+def what_next(app: TtkApp, *, keep: bool = True) -> None:
+    """Results' "What Next?": the tool just used again, the files kept or not (033)."""
+    from clearmd.frontend.ttk.views.dialogs.what_next import WhatNextDialog
 
     app.actions.secondary.invoke()
-    assert isinstance(app.dialog, KeepInputsDialog)
+    assert isinstance(app.dialog, WhatNextDialog)
     app.dialog.answer(keep)
 
 

@@ -1,6 +1,6 @@
 """Feature 032 on the ttk window (AC-04, AC-05): the start screen's tiles centred with the icons
-of ``design.tool_art``; Merge's order buttons, "What Next?" with Go Back Home, and no button that
-looks pressed or focused when a page opens."""
+of ``design.tool_art``; Merge's order buttons, "What Next?" (its tiles since 033), and no button
+that looks pressed or focused when a page opens."""
 
 from collections.abc import Callable
 from pathlib import Path
@@ -10,9 +10,9 @@ from support.gui_fakes import FakeBackend
 from support.ttk_unit import confirm, pump
 
 from clearmd.frontend.presenter import AppState
-from clearmd.frontend.presenter.state import HOME, Tool
+from clearmd.frontend.presenter.state import Tool
 from clearmd.frontend.ttk import TtkApp
-from clearmd.frontend.ttk.views.dialogs.keep_inputs import KeepInputsDialog
+from clearmd.frontend.ttk.views.dialogs.what_next import WhatNextDialog
 from clearmd.frontend.ttk.visuals import tool_marks
 
 
@@ -65,8 +65,9 @@ def test_ac_05_order_buttons_what_next_home_and_a_calm_focus(
     pump(app, until=lambda: app.presenter.page == 4)
     assert app.actions.secondary.cget("text") == "What Next?"
     app.actions.secondary.invoke()
-    dialog = app.dialog
-    assert isinstance(dialog, KeepInputsDialog) and dialog.home.cget("text") == "Go Back Home"
-    dialog.home.invoke()
+    dialog = app.dialog  # since 033 the tools are tiles; another tool keeps the files in order
+    assert isinstance(dialog, WhatNextDialog)
+    dialog.tiles[Tool.CONVERT].choose()
     pump(app, seconds=0.05)
-    assert app.presenter.page == HOME and app.main.inputs.names() == ["b.md", "a.md"]
+    assert (app.presenter.page, app.presenter.tool) == (1, Tool.CONVERT)
+    assert app.main.inputs.names() == ["b.md", "a.md"]
