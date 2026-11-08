@@ -4,11 +4,11 @@
 
 # Clear·MD
 
-**Convierte tus documentos a Markdown — 100% local: ClearMD nunca usa internet.**
+**Prepara tus documentos para la IA — 100% local: ClearMD nunca usa internet.**
 
-_PDF, Word, OpenDocument, PowerPoint, Excel, HTML, CSV, EPUB, notebooks y LaTeX (con sus ecuaciones) → Markdown limpio, una
-carpeta entera de una vez,
-pensado primero para quienes nunca abren una terminal._
+_Tres herramientas: **Convertir** PDF, Word, OpenDocument, PowerPoint, Excel, HTML, CSV, EPUB, notebooks, LaTeX (con sus
+ecuaciones), correos, texto enriquecido y subtítulos a Markdown limpio; **Dividir** un archivo grande en partes que quepan en
+una IA; **Unir** varios en uno. Pensado primero para quienes nunca abren una terminal._
 
 ![Python](https://img.shields.io/badge/Python-3.12%E2%80%933.14-3776AB?logo=python&logoColor=white)
 ![markitdown](https://img.shields.io/badge/markitdown-0.1.9-0078D4?logo=microsoft&logoColor=white)
