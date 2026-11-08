@@ -61,8 +61,8 @@ def test_ac_14_the_welcome_appears_until_dont_show_again(
     assert isinstance(dialog, dialogs.welcome.WelcomeDialog)
     texts = [str(child.cget("text")) for child in dialog.body.winfo_children()]
     assert [text for text in texts if text[:2] in {"1.", "2.", "3."}] == [
-        "1. Choose files or a folder",
-        "2. Review what will be converted",
+        "1. Choose a tool, then files or a folder",
+        "2. Review what will be done",
         "3. Done, your folder opens",
     ]
     dialog.dont_show.set(True)

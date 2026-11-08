@@ -11,14 +11,18 @@ from clearmd.frontend.presenter.state import Tool
 from clearmd.i18n import Catalog, printable
 
 
-def input_rows(inputs: Sequence[Path]) -> tuple[InputRow, ...]:
+def input_rows(inputs: Sequence[Path], tool: Tool = Tool.CONVERT) -> tuple[InputRow, ...]:
+    """The list of step 1; in Merge each row can move up or down (its order is the merge's)."""
     rows = []
-    for path in inputs:
+    ordered = tool is Tool.MERGE
+    last = len(inputs) - 1
+    for index, path in enumerate(inputs):
         is_folder = path.is_dir()
         name = path.name or str(path)
         icon = icon_for(path, is_folder=is_folder)
         location = printable(str(path.parent))
-        rows.append(InputRow(path, printable(name), location, is_folder, icon))
+        up, down = ordered and index > 0, ordered and index < last
+        rows.append(InputRow(path, printable(name), location, is_folder, icon, up, down))
     return tuple(rows)
 
 

@@ -49,6 +49,23 @@ class Inputs:
         self._display.show_inputs()
         self._display.set_state(s.state)
 
+    def move_input(self, path: Path, offset: int) -> None:
+        """Merge's order (feature 032): one place up (-1) or down (+1); a plan made with the
+        earlier order is dropped."""
+        s = self._session
+        where = [key(known) for known in s.inputs]
+        if key(Path(path)) not in where:
+            return
+        index = where.index(key(Path(path)))
+        other = index + offset
+        if offset not in (-1, 1) or not 0 <= other < len(s.inputs):
+            return
+        if not editable(s, self._display):
+            return
+        s.inputs[index], s.inputs[other] = s.inputs[other], s.inputs[index]
+        self._display.show_inputs()
+        self._display.set_state(s.state)
+
     def clear_inputs(self) -> None:
         s = self._session
         if not s.inputs or not editable(s, self._display):

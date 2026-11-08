@@ -37,7 +37,7 @@ class Display:
         self.view.show_state(view)
 
     def show_inputs(self) -> None:
-        self.view.show_inputs(input_rows(self._session.inputs))
+        self.view.show_inputs(input_rows(self._session.inputs, self._session.tool))
 
     def show_output(self) -> None:
         s = self._session

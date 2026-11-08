@@ -34,6 +34,8 @@ class InputRow:
     location: str  # the folder it is in, as the user would read it
     is_folder: bool
     icon: str  # an asset name under frontend/assets/icons (presenter.icons)
+    up: bool = False  # Merge only: it can move one place up (feature 032)
+    down: bool = False
 
 
 class OutputMode(StrEnum):

@@ -52,3 +52,11 @@ class Navigation:
             self._conversion.confirm(overwrite)
         else:
             self._results.open_results()
+
+    def what_next(self, answer: str) -> None:
+        """Results' "What Next?" (feature 032): "keep" or "clear" the files, or go "home" (the
+        files are kept)."""
+        if answer == "home":
+            self.go_to(HOME)
+        elif answer in ("keep", "clear"):
+            self._results.convert_more(keep=answer == "keep")

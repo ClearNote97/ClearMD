@@ -79,8 +79,8 @@ def test_ac_05_the_welcome_appears_until_dont_show_again(flet_window: Window) ->
     dialog = app.dialogs.current
     assert isinstance(dialog, WelcomeDialog)
     assert [text for text in dialog.texts() if text[:2] in {"1.", "2.", "3."}] == [
-        "1. Choose files or a folder",
-        "2. Review what will be converted",
+        "1. Choose a tool, then files or a folder",
+        "2. Review what will be done",
         "3. Done, your folder opens",
     ]
     dialog.dont_show.value = True

@@ -68,8 +68,8 @@ def test_ac_05_the_welcome_appears_until_dont_show_again(qt_window: Window) -> N
     assert isinstance(dialog, WelcomeDialog)
     texts = [label.text() for label in dialog.findChildren(QLabel)]
     assert [text for text in texts if text[:2] in {"1.", "2.", "3."}] == [
-        "1. Choose files or a folder",
-        "2. Review what will be converted",
+        "1. Choose a tool, then files or a folder",
+        "2. Review what will be done",
         "3. Done, your folder opens",
     ]
     dialog.dont_show.setChecked(True)

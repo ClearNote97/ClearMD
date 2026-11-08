@@ -84,8 +84,7 @@ class Presenter:
         return self._session.catalog
 
     @property
-    def version(self) -> str:
-        """ClearMD's version, as shown in the window and the help."""
+    def version(self) -> str:  # as shown in the window and the help
         return app_version()
 
     @property
@@ -96,8 +95,7 @@ class Presenter:
     def start(self) -> None:
         self._preferences.start()
 
-    def add_paths(self, paths: Sequence[Path]) -> None:
-        """Files or folders, from the dialogs or dropped on the window; never listed twice."""
+    def add_paths(self, paths: Sequence[Path]) -> None:  # from dialogs or dropped; never twice
         self._inputs.add_paths(paths)
 
     def remove_input(self, path: Path) -> None:
@@ -108,6 +106,9 @@ class Presenter:
 
     def clear_inputs(self) -> None:
         self._inputs.clear_inputs()
+
+    def move_input(self, path: Path, offset: int) -> None:  # Merge's order (feature 032)
+        self._inputs.move_input(path, offset)
 
     def choose_output_next_to(self) -> None:
         self._inputs.choose_output_next_to()
@@ -135,8 +136,7 @@ class Presenter:
             cut=cut, parts=parts, pages=pages, keep=keep, words=words, into=into
         )
 
-    def go_to(self, page: int) -> None:
-        """Show a step (0: Home, the start screen); only what is on screen changes."""
+    def go_to(self, page: int) -> None:  # a step, or 0: Home; only what is on screen changes
         self._navigation.go_to(page)
 
     def press_primary(self, overwrite: bool | str | None = None) -> None:
@@ -145,6 +145,9 @@ class Presenter:
 
     def convert_more(self, *, keep: bool) -> None:
         self._results.convert_more(keep=keep)
+
+    def what_next(self, answer: str) -> None:  # Results' question: "keep", "clear" or "home"
+        self._navigation.what_next(answer)
 
     def analyze(self) -> None:
         self._analysis.analyze()
@@ -159,13 +162,10 @@ class Presenter:
         elif self.state is AppState.CONVERTING:
             self._conversion.cancel()
 
-    def shutdown(self) -> None:
-        """The window is closing: a batch may still end (its summary is written), but nothing
-        opens afterwards (adversarial review of 005)."""
+    def shutdown(self) -> None:  # a batch may still end, but nothing opens afterwards (005)
         self._session.shutting_down = True
 
-    def back(self) -> None:
-        """From the plan or the result, to the inputs again (they are kept)."""
+    def back(self) -> None:  # from the plan or the result, to the inputs again (kept)
         self._results.convert_more(keep=True)
 
     def open_results(self) -> None:

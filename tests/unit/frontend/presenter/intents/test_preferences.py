@@ -52,8 +52,8 @@ def test_the_welcome_shows_once_until_dismissed() -> None:
     _, view, fake, _ = make()
     steps = view.last("welcome")
     assert steps == (
-        "1. Choose files or a folder",
-        "2. Review what will be converted",
+        "1. Choose a tool, then files or a folder",
+        "2. Review what will be done",
         "3. Done, your folder opens",
     )
     presenter, _, _, _ = make(fake)
