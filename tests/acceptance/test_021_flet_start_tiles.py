@@ -155,7 +155,7 @@ TITLES = {
         "language_title",
         "keyboard_title",
     ),
-    "gui.more": ("title", "keep", "clear"),
+    "gui.more": ("title", "convert", "split", "merge", "cancel"),
     "gui.page": ("choose_title", "review_title", "convert_title", "results_title"),
     "gui.main": (
         "add_files",

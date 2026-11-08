@@ -453,12 +453,15 @@ need_inputs_first = "Aún no hay nada elegido: agrega archivos o carpetas en Ele
 nothing_written = "Este lote no escribió ningún archivo: mira arriba por qué, o Convierte más."
 
 [gui.more]
+# "¿Qué Sigue?" de Resultados (feature 033): las tres herramientas, y si los archivos se quedan.
 title = "¿Qué Sigue?"
-question = "¿Conservar los archivos que elegiste, o hacer otra cosa?"
-explain = "Consérvalos para convertirlos otra vez o agregar más, empieza vacío para un lote nuevo, o vuelve al Inicio para elegir otra herramienta."
-home = "Volver al Inicio"
-keep = "Conservarlos"
-clear = "Empezar Vacío"
+convert = "Convertir"
+split = "Dividir"
+merge = "Unir"
+again = "{tool} Otra Vez"
+keep = "Conservar los archivos que elegiste"
+keep_help = "Desmárcalo para empezar con la lista vacía."
+cancel = "Cancelar"
 
 [gui.convert]
 ready = "Listos para convertir: {count}"
@@ -583,7 +586,6 @@ hint = "Aproximado: una IA lee una cantidad limitada de texto a la vez; si recha
 "gui.convert.ready" = "Listos para dividir: {count}"
 "gui.result.stat_converted" = "Divididos"
 "gui.result.all_good" = "Todos los archivos se dividieron. Las partes están en la carpeta ClearMD_Output, en OutputSep."
-"gui.more.explain" = "Consérvalos para dividirlos otra vez o agregar más, empieza vacío para un lote nuevo, o vuelve al Inicio para elegir otra herramienta."
 
 [gui.offer]
 # Review and Results of Convert: the PDFs too large to convert, split instead (feature 025).
@@ -627,4 +629,3 @@ into_pdf = "en un solo PDF"
 "gui.convert.ready" = "Listos para unir: {count}"
 "gui.result.stat_converted" = "Unidos"
 "gui.result.all_good" = "Todos los documentos se unieron. El archivo está en la carpeta ClearMD_Output, en OutputUnif."
-"gui.more.explain" = "Consérvalos para unirlos otra vez o agregar más, empieza vacío para un lote nuevo, o vuelve al Inicio para elegir otra herramienta."

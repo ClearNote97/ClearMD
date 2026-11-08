@@ -119,7 +119,7 @@ def test_convert_more_keeps_or_clears_the_inputs() -> None:
         presenter.go_to(3)
         presenter.press_primary()
         view.drain()
-        presenter.convert_more(keep=keep)
+        presenter.continue_with(presenter.tool, keep=keep)
         assert state(view).page == 1 and state(view).state is AppState.READY
         assert [row.name for row in view.last("inputs")] == expected
 

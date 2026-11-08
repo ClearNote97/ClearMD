@@ -7,7 +7,7 @@ from clearmd.frontend.presenter.intents.reset import editable
 from clearmd.frontend.presenter.intents.results import Results
 from clearmd.frontend.presenter.intents.tools import Tools
 from clearmd.frontend.presenter.session import Session
-from clearmd.frontend.presenter.state import HOME, AppState
+from clearmd.frontend.presenter.state import HOME, WORKING, AppState, Tool
 
 
 class Navigation:
@@ -53,10 +53,10 @@ class Navigation:
         else:
             self._results.open_results()
 
-    def what_next(self, answer: str) -> None:
-        """Results' "What Next?" (feature 032): "keep" or "clear" the files, or go "home" (the
-        files are kept)."""
-        if answer == "home":
-            self.go_to(HOME)
-        elif answer in ("keep", "clear"):
-            self._results.convert_more(keep=answer == "keep")
+    def continue_with(self, tool: Tool, *, keep: bool) -> None:
+        """Results' "What Next?" (feature 033): step 1 of ``tool`` (the same one, or another),
+        with the chosen files or an empty list."""
+        if self._session.state in WORKING:
+            return
+        self._results.convert_more(keep=keep)
+        self._tools.choose_tool(tool)

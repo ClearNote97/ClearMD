@@ -125,6 +125,15 @@ class ResultRow:
 
 
 @dataclass(frozen=True)
+class NextChoice:
+    """One tile of Results' "What Next?" (feature 033): a tool, the one just used first."""
+
+    tool: Tool
+    title: str
+    current: bool
+
+
+@dataclass(frozen=True)
 class ResultView:
     headline: str
     counts: str

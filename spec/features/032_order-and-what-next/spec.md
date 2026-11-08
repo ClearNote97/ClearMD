@@ -18,6 +18,7 @@ What the owner found testing 2.7.0:
   made with the earlier order.
 - [x] **AC-02** On Results, the second button is "What Next?" in the three tools. It asks once:
   keep the files, start empty, or go back Home to choose another tool. Going Home keeps the files.
+  *Amended by feature 033:* the three tools as small tiles and one "Keep the files" box.
 - [x] **AC-03** The Welcome speaks of the three tools, in English and Spanish.
 - [x] **AC-04** The three windows draw the start screen alike: the three tiles centred in the page,
   with the same icons (the app's own pictures, not each toolkit's).

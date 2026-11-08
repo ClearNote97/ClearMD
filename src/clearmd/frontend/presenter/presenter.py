@@ -21,7 +21,9 @@ from clearmd.frontend.presenter.intents.navigation import Navigation
 from clearmd.frontend.presenter.intents.preferences import Preferences
 from clearmd.frontend.presenter.intents.results import Results
 from clearmd.frontend.presenter.intents.tools import Tools
+from clearmd.frontend.presenter.models import NextChoice
 from clearmd.frontend.presenter.ports import ApiBackend, Backend, View
+from clearmd.frontend.presenter.screens.next import next_choices
 from clearmd.frontend.presenter.session import Session
 from clearmd.frontend.presenter.state import AppState, Tool
 from clearmd.frontend.presenter.system_theme import detect_system_theme
@@ -143,11 +145,11 @@ class Presenter:
         """The page's primary action: Next, Next, Convert, Open results folder."""
         self._navigation.press_primary(overwrite)
 
-    def convert_more(self, *, keep: bool) -> None:
-        self._results.convert_more(keep=keep)
+    def next_choices(self) -> tuple[NextChoice, ...]:  # Results' "What Next?" (feature 033)
+        return next_choices(self._session.catalog, self._session.tool)
 
-    def what_next(self, answer: str) -> None:  # Results' question: "keep", "clear" or "home"
-        self._navigation.what_next(answer)
+    def continue_with(self, tool: Tool, *, keep: bool) -> None:
+        self._navigation.continue_with(tool, keep=keep)
 
     def analyze(self) -> None:
         self._analysis.analyze()

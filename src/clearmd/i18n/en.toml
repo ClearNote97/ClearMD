@@ -453,12 +453,15 @@ need_inputs_first = "Nothing chosen yet: add files or folders on Choose."
 nothing_written = "This batch wrote no file: see why above, or Convert more."
 
 [gui.more]
+# Results' "What Next?" (feature 033): the three tools, and whether the files stay.
 title = "What Next?"
-question = "Keep the files you chose, or do something else?"
-explain = "Keep them to convert them again or add more, start empty for a new batch, or go back Home to choose another tool."
-home = "Go Back Home"
-keep = "Keep Them"
-clear = "Start Empty"
+convert = "Convert"
+split = "Split"
+merge = "Merge"
+again = "{tool} Again"
+keep = "Keep the files you chose"
+keep_help = "Untick it to start with an empty list."
+cancel = "Cancel"
 
 [gui.convert]
 ready = "Ready to convert: {count}"
@@ -583,7 +586,6 @@ hint = "About: an AI reads a limited amount of text at once; if it refuses a par
 "gui.convert.ready" = "Ready to split: {count}"
 "gui.result.stat_converted" = "Split"
 "gui.result.all_good" = "Every file was split. The parts are in the ClearMD_Output folder, in OutputSep."
-"gui.more.explain" = "Keep them to split them again or add more, start empty for a new batch, or go back Home to choose another tool."
 
 [gui.offer]
 # Review and Results of Convert: the PDFs too large to convert, split instead (feature 025).
@@ -627,4 +629,3 @@ into_pdf = "into one PDF"
 "gui.convert.ready" = "Ready to merge: {count}"
 "gui.result.stat_converted" = "Merged"
 "gui.result.all_good" = "Every document was merged. The file is in the ClearMD_Output folder, in OutputUnif."
-"gui.more.explain" = "Keep them to merge them again or add more, start empty for a new batch, or go back Home to choose another tool."

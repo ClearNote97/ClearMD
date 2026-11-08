@@ -7,7 +7,7 @@ import pytest
 from support.presenter_fakes import absolute, converted, make
 
 from clearmd.backend.api import Into, plan_batch, run_batch
-from clearmd.frontend.presenter.state import HOME, AppState, Tool
+from clearmd.frontend.presenter.state import AppState, Tool
 from clearmd.i18n import load_catalog
 
 
@@ -58,17 +58,14 @@ def test_ac_01_moving_drops_the_plan_and_the_merge_follows_the_order(workdir: Pa
     assert report is not None
 
 
-@pytest.mark.parametrize(
-    ("answer", "page", "kept"), [("keep", 1, True), ("clear", 1, False), ("home", HOME, True)]
-)
-def test_ac_02_what_next(answer: str, page: int, kept: bool) -> None:
+@pytest.mark.parametrize(("tool", "kept"), [(Tool.CONVERT, True), (Tool.MERGE, False)])
+def test_ac_02_what_next(tool: Tool, kept: bool) -> None:
+    """Amended by 033: "What Next?" goes to step 1 of a tool, keeping the files or not."""
     presenter, view, _, _ = converted()
-    presenter.what_next(answer)
+    presenter.continue_with(tool, keep=kept)
     view.drain()
-    assert presenter.page == page
+    assert (presenter.page, presenter.tool) == (1, tool)
     assert bool(view.last("inputs")) is kept
-    presenter.what_next("nonsense")  # not an answer: nothing happens
-    assert presenter.page == page
 
 
 @pytest.mark.parametrize("language", ["en", "es"])
@@ -78,7 +75,7 @@ def test_ac_02_texts(language: str) -> None:
     for tool in Tool:
         catalog = base.for_tool(tool)
         assert catalog.text("gui.result.again") == expected == catalog.text("gui.more.title")
-        assert catalog.text("gui.more.home") and catalog.text("gui.main.move_up")
+        assert catalog.text("gui.more.keep") and catalog.text("gui.main.move_up")
         assert catalog.text("gui.main.move_down") and catalog.text("gui.main.order_hint")
 
 
