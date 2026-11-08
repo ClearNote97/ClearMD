@@ -10,8 +10,11 @@ from clearmd.backend.services.worker.protocol import (
     CutRequest,
     MarkdownCutRequest,
     MarkdownParts,
+    MergePdfRequest,
+    ReadTextRequest,
     Request,
     Response,
+    TextRead,
     Words,
     WordsRequest,
 )
@@ -38,6 +41,13 @@ class PageRunner:
         request = MarkdownCutRequest(str(item.source), cut, size)
         found = self._expect(request, MarkdownParts, cancel)
         return found.parts, found.over
+
+    def read_text(self, item: PlannedConversion, cancel: CancelToken) -> str:
+        return self._expect(ReadTextRequest(str(item.source)), TextRead, cancel).text
+
+    def merge_pdfs(self, items: list[PlannedConversion], cancel: CancelToken) -> bytes:
+        request = MergePdfRequest(tuple(str(item.source) for item in items))
+        return self._expect(request, CutDone, cancel).data
 
     def _expect[T: Response](self, request: Request, kind: type[T], cancel: CancelToken) -> T:
         response = self._runner.job(request, cancel)

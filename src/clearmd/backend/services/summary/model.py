@@ -12,6 +12,8 @@ from clearmd.backend.schemas.notes import ConversionNote
 DATE_FORMAT = "%Y-%m-%d %H:%M"
 MARKDOWN_FOLDER = "OutputMD"
 SPLIT_FOLDER = "OutputSep"  # a split batch's parts (feature 023)
+MERGE_FOLDER = "OutputUnif"  # a merge's file (feature 026)
+FOLDERS = {"convert": MARKDOWN_FOLDER, "split": SPLIT_FOLDER, "merge": MERGE_FOLDER}
 
 
 class Mark(StrEnum):
@@ -59,16 +61,16 @@ class SummaryContent:
     left_out: tuple[Entry, ...]
     kept: tuple[Entry, ...]
     cancelled: tuple[Entry, ...]
-    split: bool = False  # a Split batch (feature 023): its parts are in OutputSep
+    tool: str = "convert"  # or "split" (023), "merge" (026): what the batch did
 
     @property
     def folder(self) -> str:
-        return SPLIT_FOLDER if self.split else MARKDOWN_FOLDER
+        return FOLDERS[self.tool]
 
     @property
     def where_key(self) -> str:
-        return "summary.where_split" if self.split else "summary.where"
+        return "summary.where" if self.tool == "convert" else f"summary.where_{self.tool}"
 
     @property
     def done_key(self) -> str:
-        return "summary.split_done" if self.split else "summary.converted"
+        return "summary.converted" if self.tool == "convert" else f"summary.{self.tool}_done"

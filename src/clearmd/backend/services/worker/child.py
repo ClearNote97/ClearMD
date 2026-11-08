@@ -17,17 +17,14 @@ from clearmd.backend.services.worker.pages import handle_pages
 from clearmd.backend.services.worker.power import keep_full_speed
 from clearmd.backend.services.worker.protocol import (
     Converted,
-    CountPagesRequest,
-    CutRequest,
+    ConvertRequest,
     Detected,
     DetectRequest,
     Failed,
     Job,
-    MarkdownCutRequest,
     Ready,
     Request,
     Response,
-    WordsRequest,
 )
 
 
@@ -65,7 +62,7 @@ def apply_memory_cap(limit: int) -> None:
 
 
 def handle(registry: _Registry, request: Job, max_result_chars: int) -> Response:
-    if isinstance(request, CountPagesRequest | CutRequest | WordsRequest | MarkdownCutRequest):
+    if not isinstance(request, ConvertRequest | DetectRequest):  # Split and Merge (023-026)
         return handle_pages(request, max_result_chars)
     if isinstance(request, DetectRequest):
         try:

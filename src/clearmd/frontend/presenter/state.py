@@ -18,6 +18,7 @@ class Tool(StrEnum):
 
     CONVERT = "convert"
     SPLIT = "split"
+    MERGE = "merge"  # feature 026
 
 
 HOME = 0  # the start screen: the page before step 1 (feature 023)

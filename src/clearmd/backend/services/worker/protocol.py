@@ -59,6 +59,25 @@ class MarkdownCutRequest:
 
 
 @dataclass(frozen=True)
+class ReadTextRequest:
+    """A Markdown file's text, as it is (Merge, feature 026)."""
+
+    source: str
+
+
+@dataclass(frozen=True)
+class MergePdfRequest:
+    """One PDF with every page of ``sources``, whole and in order (Merge, feature 026)."""
+
+    sources: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class TextRead:
+    text: str
+
+
+@dataclass(frozen=True)
 class Words:
     per_page: tuple[int, ...]
 
@@ -97,7 +116,14 @@ class Failed:
     detail: str
 
 
-type PageJob = CountPagesRequest | CutRequest | WordsRequest | MarkdownCutRequest
+type PageJob = (
+    CountPagesRequest
+    | CutRequest
+    | WordsRequest
+    | MarkdownCutRequest
+    | ReadTextRequest
+    | MergePdfRequest
+)
 type Job = ConvertRequest | DetectRequest | PageJob
 type Request = Job | None  # None asks the worker to exit
-type Response = Converted | Detected | Counted | CutDone | Words | MarkdownParts | Failed
+type Response = Converted | Detected | Counted | CutDone | Words | MarkdownParts | TextRead | Failed

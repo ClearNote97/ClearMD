@@ -72,12 +72,13 @@ class Tools:
         pages: int | None = None,
         keep: str | None = None,
         words: int | None = None,
+        into: str | None = None,
     ) -> None:
         """Split's cut, its sizes and what to keep: remembered (AC-10). A change drops the plan,
         which was made with the earlier cut."""
         s = self._session
         changes: dict[str, object] = {}
-        for name, value in (("split_cut", cut), ("split_keep", keep)):
+        for name, value in (("split_cut", cut), ("split_keep", keep), ("merge_into", into)):
             if value is not None and value in CHOICES[name] and value != getattr(s.settings, name):
                 changes[name] = value
         for name, number in (

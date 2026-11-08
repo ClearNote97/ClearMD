@@ -56,6 +56,7 @@ class OutputChoice:
     split_pages: int = 50
     split_keep: str = "both"  # or "pdf", "markdown"
     split_words: int = 30_000  # parts of about N words (feature 024)
+    merge_into: str = "markdown"  # or "pdf": Merge's choice, in place of the images (026)
 
 
 class RowKind(StrEnum):

@@ -36,6 +36,10 @@ action = "Try splitting it into smaller files."
 message = "This file needs more memory than ClearMD allows."
 action = "Try splitting it into smaller files, or close other programs."
 
+[error.nothing_to_merge]
+message = "Fewer than two documents could be merged, so no file was written."
+action = "Fix the documents that failed, or add more, and merge again."
+
 [error.nothing_to_measure]
 message = "This PDF has no text to measure: its pages are probably scanned images."
 action = "Split it every N pages instead."
@@ -63,6 +67,7 @@ too_much_memory = "needs about {measured} of memory; limit {limit}"
 too_much_memory_for_article = "needs about {measured} of memory in article mode; limit {limit}"
 not_splittable = "not a PDF or Markdown file (Split takes those)"
 cut_not_for_markdown = "Markdown has no pages to cut every N"
+not_for_pdf_merge = "not a PDF (one PDF is made of PDFs only)"
 
 [skip_action]
 output_folder = "ClearMD does not convert its own results."
@@ -83,6 +88,7 @@ too_much_memory = "Split it into smaller files."
 too_much_memory_for_article = "Convert it with --html full (markitdown's whole page, without this mode's guarantee)."
 not_splittable = "Convert it instead, or save it as PDF first."
 cut_not_for_markdown = "Choose Into N parts or Parts of about N words."
+not_for_pdf_merge = "Choose One Markdown to merge it too."
 
 [stop]
 timed_out = "Exceeded the time limit ({limit})."
@@ -106,6 +112,7 @@ images = "keep each document's images in a folder next to its Markdown (default:
 split_parts = "split each PDF into N parts of whole pages (N ≥ 2), into ClearMD_Output/OutputSep, instead of converting"
 split_pages = "split each PDF every N pages (N ≥ 1), into ClearMD_Output/OutputSep, instead of converting"
 split_words = "split each PDF or Markdown file into parts of about N words (N from 500 to 1,000,000), to fit an AI"
+merge = "merge every file into one, in the order given: markdown (each converted, Markdown taken as it is) or pdf (PDFs only), into ClearMD_Output/OutputUnif"
 keep = "with a split: keep the PDF parts, their Markdown, or both (default: the split_keep setting, both)"
 
 [cli]
@@ -137,6 +144,7 @@ pdf_not_written = "⚠ The PDF summary in {path} could not be written; the Markd
 nothing_to_split = "Nothing to split."
 dry_run_split = "Dry run: nothing was written. {count} file(s) would be split."
 keep_needs_split = "--keep goes with --split-parts or --split-pages."
+merge_needs_one = "--merge cannot go with a split."
 
 [time]
 under_a_minute = "less than a minute"
@@ -219,6 +227,23 @@ split_headline.nothing.one = "Nothing was split: see what was left out."
 split_headline.nothing.other = "Nothing was split: see what was left out."
 count.split.one = "{count} split"
 count.split.other = "{count} split"
+merge_done = "Merged"
+where_merge = "The merged file is in the {folder} folder, next to this summary."
+merge_but = "merged, but:"
+merge_headline.all.one = "The document was merged."
+merge_headline.all.other = "All {count} documents were merged into one file."
+merge_headline.none.one = "The document could not be merged."
+merge_headline.none.other = "None of the {count} documents could be merged."
+merge_headline.some.one = "{count} of {total} documents was merged."
+merge_headline.some.other = "{count} of {total} documents were merged into one file."
+merge_headline.cancelled.one = "The batch was cancelled: nothing was merged."
+merge_headline.cancelled.other = "The batch was cancelled: nothing was merged."
+merge_headline.nothing_new.one = "Nothing was merged."
+merge_headline.nothing_new.other = "Nothing was merged."
+merge_headline.nothing.one = "Nothing was merged: see what was left out."
+merge_headline.nothing.other = "Nothing was merged: see what was left out."
+count.merged.one = "{count} merged"
+count.merged.other = "{count} merged"
 
 [note]
 unknown_commands = "commands ClearMD does not know were left as written: {items}"
@@ -380,6 +405,8 @@ split_help = "Into a number of parts, or every so many pages; and what to keep o
 split_parts = "Into N parts"
 split_pages = "Every N pages"
 split_words = "Parts of about N words"
+merge = "Merge Documents"
+merge_help = "Into one Markdown (each document converted), or one PDF (PDF files only)."
 split_keep = "Keep"
 
 [gui.help]
@@ -494,6 +521,8 @@ convert = "Convert to Markdown"
 convert_body = "PDF, Word, Excel, PowerPoint, HTML and more"
 split = "Split a Document"
 split_body = "A PDF or Markdown file, into parts of whole pages or sections"
+merge = "Merge Documents"
+merge_body = "Several documents into one Markdown or one PDF, in your order"
 files_note = "The tools change files, never what is inside them."
 step = "Home"
 
@@ -550,3 +579,45 @@ hint = "About: an AI reads a limited amount of text at once; if it refuses a par
 [gui.offer]
 # Review and Results of Convert: the PDFs too large to convert, split instead (feature 025).
 split = "Split the Large PDFs ({count})"
+
+[merge]
+# A merged file's name, without extension (feature 026): {stamp} is "2026-11-08 10-30".
+name = "Merged {stamp}"
+
+[gui.merge]
+# Step 1 of Merge (feature 026).
+title = "How to Merge"
+into = "Into:"
+markdown = "One Markdown"
+pdf = "One PDF (PDF files only)"
+note = "Each document keeps its content whole. The list's order is the result's order."
+into_markdown = "into one Markdown"
+into_pdf = "into one PDF"
+
+[tool.merge]
+# What Merge says in place of Convert (feature 026).
+"gui.page.choose_title" = "Choose What to Merge"
+"gui.page.choose_subtitle" = "Documents or folders, in the order you want them: ClearMD joins them into one file, on your computer."
+"gui.page.review_title" = "Review Before Merging"
+"gui.page.convert_title" = "Merge"
+"gui.page.convert_subtitle" = "Nothing is written until you press Merge; you can cancel at any time."
+"gui.steps.convert" = "Merge"
+"gui.main.convert" = "Merge"
+"gui.plan.summary" = "To merge: {convert} · Skipped: {skipped} · Already exist: {existing}"
+"gui.plan.stat_convert" = "To Merge"
+"gui.plan.confirm" = "Merge"
+"gui.plan.nothing" = "There is nothing to merge here. Go back and choose documents."
+"gui.plan.ready" = "✓ Ready to merge · {format}"
+"gui.nav.nothing" = "Nothing here can be merged. Go back to Choose."
+"gui.nav.converting" = "Merging… wait for it to finish, or cancel it."
+"gui.nav.done" = "This batch is done: see Results, or Merge more."
+"gui.nav.no_results" = "Merge something first: the result appears here."
+"gui.nav.nothing_written" = "This batch wrote no file: see why above, or Merge more."
+"gui.state.converting" = "Merging"
+"gui.progress.current" = "Now Reading"
+"gui.convert.ready" = "Ready to merge: {count}"
+"gui.result.stat_converted" = "Merged"
+"gui.result.again" = "Merge More"
+"gui.result.all_good" = "Every document was merged. The file is in the ClearMD_Output folder, in OutputUnif."
+"gui.more.title" = "Merge More"
+"gui.more.explain" = "Keep them to merge them again or add more; start empty for a new batch."

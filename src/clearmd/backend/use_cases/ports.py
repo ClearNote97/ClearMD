@@ -49,6 +49,14 @@ class PageCutter(Protocol):
         """A Markdown file's parts, and which ones are over the size (feature 024)."""
         ...
 
+    def read_text(self, item: PlannedConversion, cancel: CancelToken) -> str:
+        """A Markdown file's text, as it is (Merge, feature 026)."""
+        ...
+
+    def merge_pdfs(self, items: list[PlannedConversion], cancel: CancelToken) -> bytes:
+        """One PDF with every page of ``items``, whole and in order (feature 026)."""
+        ...
+
 
 class Clock(Protocol):
     def now(self) -> datetime: ...

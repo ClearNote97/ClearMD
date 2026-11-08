@@ -5,7 +5,7 @@ from collections.abc import Callable, Sequence
 from importlib.metadata import version
 from pathlib import Path
 
-from clearmd.backend.api import Keep, Strategy
+from clearmd.backend.api import Into, Keep, Strategy
 from clearmd.i18n import SUPPORTED_LANGUAGES, Catalog
 
 
@@ -61,6 +61,9 @@ def build_parser(catalog: Catalog) -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--keep", choices=[keep.value for keep in Keep], help=help_("cli.help.keep")
+    )
+    parser.add_argument(  # Merge (feature 026)
+        "--merge", choices=[into.value for into in Into], help=help_("cli.help.merge")
     )
     parser.add_argument("--dry-run", action="store_true", help=help_("cli.help.dry_run"))
     parser.add_argument("--open", action="store_true", help=help_("cli.help.open"))

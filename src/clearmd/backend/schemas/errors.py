@@ -21,6 +21,8 @@ class ErrorCode(StrEnum):
     WORKER_CRASHED = "worker_crashed"
     # Split by words: a PDF without any text (scanned) has nothing to measure (feature 024).
     NOTHING_TO_MEASURE = "nothing_to_measure"
+    # Merge: fewer than two documents could be joined, so nothing was written (feature 026).
+    NOTHING_TO_MERGE = "nothing_to_merge"
 
     @property
     def message_key(self) -> str:
@@ -52,6 +54,7 @@ class SkipReason(StrEnum):
     TOO_DEEP = "too_deep"
     NOT_SPLITTABLE = "not_splittable"  # Split takes PDF and Markdown (features 023, 024)
     CUT_NOT_FOR_MARKDOWN = "cut_not_for_markdown"  # "every N pages" means nothing for Markdown
+    NOT_FOR_PDF_MERGE = "not_for_pdf_merge"  # one PDF can only be made of PDFs (feature 026)
 
     @property
     def key(self) -> str:

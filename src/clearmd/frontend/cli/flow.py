@@ -6,6 +6,7 @@ from collections.abc import Sequence
 
 from clearmd.backend.api import (
     Cut,
+    Into,
     Keep,
     SplitSpec,
     Strategy,
@@ -44,6 +45,9 @@ def run(argv: Sequence[str] | None) -> int:
     if args.keep and not (args.split_parts or args.split_pages or args.split_words):
         parser.error(catalog.text("cli.keep_needs_split"))
     split = split_spec(args, settings)
+    if args.merge and split is not None:
+        parser.error(catalog.text("cli.merge_needs_one"))
+    merge = Into(args.merge) if args.merge else None
     err = sys.stderr
     print_settings_warnings(catalog, settings_warnings, err)
 
@@ -59,6 +63,7 @@ def run(argv: Sequence[str] | None) -> int:
             output_root=args.output_root,
             html_strategy=Strategy(args.html or settings.html_strategy),
             split=split,
+            merge=merge,
         )
     except KeyboardInterrupt:
         print(catalog.text("cli.cancelled_before_start"), file=err)

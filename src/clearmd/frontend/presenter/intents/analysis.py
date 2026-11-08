@@ -3,7 +3,7 @@ confirms. The scan's count, its cancel and the plan's arrival."""
 
 from functools import partial
 
-from clearmd.backend.api import CancelToken, Cut, Keep, SplitSpec, Strategy
+from clearmd.backend.api import CancelToken, Cut, Into, Keep, SplitSpec, Strategy
 from clearmd.backend.schemas.events import BatchEvent, ScanProgress
 from clearmd.backend.schemas.models import BatchPlan
 from clearmd.frontend.presenter.background import Background
@@ -50,6 +50,7 @@ class Analysis:
             "output_root": s.output_folder,
             "html_strategy": Strategy(s.settings.html_strategy),
             "split": split_spec(s),
+            "merge": Into(s.settings.merge_into) if s.tool is Tool.MERGE else None,
         }
         s.cancel = token = CancelToken()
         s.scan_count = None

@@ -35,6 +35,9 @@ class _HasCatalogKeys(Protocol):
     def action_key(self) -> str: ...
 
 
+_DONE = {"convert": "converted", "split": "split", "merge": "merged"}  # what a batch did
+
+
 class Catalog:
     def __init__(self, language: str, messages: Mapping[str, str]) -> None:
         self.language = language
@@ -106,12 +109,12 @@ class Catalog:
         return self.text(f"{key}.{form}", count=self.count(number), **values)
 
     def totals(
-        self, converted: int, skipped: int, failed: int, stopped: int = 0, *, split: bool = False
+        self, converted: int, skipped: int, failed: int, stopped: int = 0, *, tool: str = "convert"
     ) -> str:
         """ "2 converted · 1 skipped · 0 failed", singular and plural; stopped only when any.
         A Split batch counts what was split (feature 023)."""
         parts = [
-            self.plural("summary.count.split" if split else "summary.count.converted", converted),
+            self.plural(f"summary.count.{_DONE[tool]}", converted),
             self.plural("summary.count.skipped", skipped),
             self.plural("summary.count.failed", failed),
         ]

@@ -3,12 +3,15 @@
 import os
 from collections.abc import Callable, Sequence
 from dataclasses import replace
+from datetime import datetime
 from pathlib import Path
 
 from clearmd.backend.api import composition
+from clearmd.backend.api.naming import STAMP, named
 from clearmd.backend.api.summaries import write_summaries
 from clearmd.backend.schemas.events import BatchEvent
 from clearmd.backend.schemas.formats import Strategy
+from clearmd.backend.schemas.merge import Into
 from clearmd.backend.schemas.models import (
     BatchPlan,
     BatchReport,
@@ -26,12 +29,14 @@ from clearmd.backend.services.rejections import (
 )
 from clearmd.backend.use_cases.cancel import CancelToken
 from clearmd.backend.use_cases.execution import execute_plan
+from clearmd.backend.use_cases.merging import execute_merge
 from clearmd.backend.use_cases.planning import build_plan
 from clearmd.backend.use_cases.split_advice import large_in_plan, large_in_report, most_parts
 from clearmd.i18n import load_catalog
 
 __all__ = [
     "CancelToken",
+    "Into",
     "Cut",
     "Keep",
     "SplitSpec",
@@ -85,6 +90,7 @@ def plan_batch(
     html_strategy: Strategy = Strategy.FULL,
     cancel: CancelToken | None = None,
     split: SplitSpec | None = None,
+    merge: Into | None = None,
 ) -> BatchPlan:
     """Everything that would happen, computed without writing anything.
 
@@ -105,6 +111,8 @@ def plan_batch(
             html_strategy=html_strategy,
             cancel=cancel,
             split=split,
+            merge=merge,
+            stamp=datetime.now().strftime(STAMP),
         )
     finally:
         worker.close()
@@ -133,36 +141,33 @@ def run_batch(
                 replace(item, images=f"{item.target.stem}{suffix}") for item in plan.conversions
             ),
         )
-    plan = _parts_named(plan, language)
+    plan = named(plan, language)
     runner = composition.build_runner(composition.default_limits())
+    pages = composition.build_page_runner(runner)
     try:
-        report = execute_plan(
-            plan,
-            overwrite=overwrite,
-            runner=runner,
-            on_event=on_event or _ignore,
-            cancel=cancel or CancelToken(),
-            clock=composition.build_clock(),
-            startup_seconds=composition.default_limits().worker_startup_seconds,
-            cutter=composition.build_page_runner(runner),
-        )
+        if plan.merge is not None:  # Merge (feature 026): every document into one file
+            report = execute_merge(
+                plan,
+                runner=runner,
+                cutter=pages,
+                on_event=on_event or _ignore,
+                cancel=cancel or CancelToken(),
+                clock=composition.build_clock(),
+            )
+        else:
+            report = execute_plan(
+                plan,
+                overwrite=overwrite,
+                runner=runner,
+                on_event=on_event or _ignore,
+                cancel=cancel or CancelToken(),
+                clock=composition.build_clock(),
+                startup_seconds=composition.default_limits().worker_startup_seconds,
+                cutter=pages,
+            )
     finally:
         runner.close()
     unwritten, unwritten_pdfs = write_summaries(
         report, language, summary_pdf=summary_pdf, summary_markdown=summary_markdown
     )
     return replace(report, unwritten_summaries=unwritten, unwritten_pdfs=unwritten_pdfs)
-
-
-def _parts_named(plan: BatchPlan, language: str) -> BatchPlan:
-    """A split file's parts named in the user's language (feature 023)."""
-    template = load_catalog(language).text_template("split.part_name")
-    return replace(
-        plan,
-        conversions=tuple(
-            replace(item, split=replace(item.split, part_name=template))
-            if item.split is not None
-            else item
-            for item in plan.conversions
-        ),
-    )

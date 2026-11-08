@@ -36,6 +36,10 @@ action = "Prueba dividiéndolo en archivos más pequeños."
 message = "Este archivo necesita más memoria de la que ClearMD permite."
 action = "Prueba dividiéndolo en archivos más pequeños o cierra otros programas."
 
+[error.nothing_to_merge]
+message = "Se pudieron unir menos de dos documentos, así que no se escribió ningún archivo."
+action = "Arregla los documentos que fallaron, o agrega más, y vuelve a unir."
+
 [error.nothing_to_measure]
 message = "Este PDF no tiene texto para medir: sus páginas seguramente son imágenes escaneadas."
 action = "Divídelo mejor cada N páginas."
@@ -63,6 +67,7 @@ too_much_memory = "requiere unos {measured} de memoria; límite {limit}"
 too_much_memory_for_article = "en modo artículo requiere unos {measured} de memoria; límite {limit}"
 not_splittable = "no es un PDF ni un Markdown (Dividir recibe esos)"
 cut_not_for_markdown = "Markdown no tiene páginas para cortar cada N"
+not_for_pdf_merge = "no es un PDF (un PDF se arma solo con PDF)"
 
 [skip_action]
 output_folder = "ClearMD no convierte sus propios resultados."
@@ -83,6 +88,7 @@ too_much_memory = "Divídelo en archivos más pequeños."
 too_much_memory_for_article = "Conviértelo con --html full (la página completa de markitdown, sin la garantía de este modo)."
 not_splittable = "Conviértelo, o guárdalo primero como PDF."
 cut_not_for_markdown = "Elige En N partes o Partes de unas N palabras."
+not_for_pdf_merge = "Elige Un Markdown para unirlo también."
 
 [stop]
 timed_out = "Superó el límite de tiempo ({limit})."
@@ -106,6 +112,7 @@ images = "guarda las imágenes de cada documento en una carpeta junto a su Markd
 split_parts = "divide cada PDF en N partes de páginas enteras (N ≥ 2), en ClearMD_Output/OutputSep, en vez de convertir"
 split_pages = "divide cada PDF cada N páginas (N ≥ 1), en ClearMD_Output/OutputSep, en vez de convertir"
 split_words = "divide cada PDF o Markdown en partes de unas N palabras (N de 500 a 1.000.000), para que quepan en una IA"
+merge = "une todos los archivos en uno, en el orden dado: markdown (cada uno convertido, los Markdown tal cual) o pdf (solo PDF), en ClearMD_Output/OutputUnif"
 keep = "al dividir: conserva las partes en PDF, su Markdown, o ambas (por defecto: el ajuste split_keep, ambas)"
 
 [cli]
@@ -137,6 +144,7 @@ pdf_not_written = "⚠ No se pudo escribir el resumen en PDF en {path}; el resum
 nothing_to_split = "Nada que dividir."
 dry_run_split = "Simulación: no se escribió nada. Se dividirían {count} archivo(s)."
 keep_needs_split = "--keep va con --split-parts o --split-pages."
+merge_needs_one = "--merge no puede ir con una división."
 
 [time]
 under_a_minute = "menos de un minuto"
@@ -219,6 +227,23 @@ split_headline.nothing.one = "No se dividió nada: revisa lo que quedó fuera."
 split_headline.nothing.other = "No se dividió nada: revisa lo que quedó fuera."
 count.split.one = "{count} dividido"
 count.split.other = "{count} divididos"
+merge_done = "Unidos"
+where_merge = "El archivo unido está en la carpeta {folder}, junto a este resumen."
+merge_but = "se unió, pero:"
+merge_headline.all.one = "El documento se unió."
+merge_headline.all.other = "Los {count} documentos se unieron en un solo archivo."
+merge_headline.none.one = "El documento no se pudo unir."
+merge_headline.none.other = "Ninguno de los {count} documentos se pudo unir."
+merge_headline.some.one = "Se unió {count} de {total} documentos."
+merge_headline.some.other = "Se unieron {count} de {total} documentos en un solo archivo."
+merge_headline.cancelled.one = "El lote se canceló: no se unió nada."
+merge_headline.cancelled.other = "El lote se canceló: no se unió nada."
+merge_headline.nothing_new.one = "No se unió nada."
+merge_headline.nothing_new.other = "No se unió nada."
+merge_headline.nothing.one = "No se unió nada: revisa lo que quedó fuera."
+merge_headline.nothing.other = "No se unió nada: revisa lo que quedó fuera."
+count.merged.one = "{count} unido"
+count.merged.other = "{count} unidos"
 
 [note]
 unknown_commands = "se dejaron tal cual comandos que ClearMD no conoce: {items}"
@@ -380,6 +405,8 @@ split_help = "En un número de partes, o cada tantas páginas; y qué guardar de
 split_parts = "En N partes"
 split_pages = "Cada N páginas"
 split_words = "Partes de unas N palabras"
+merge = "Unir Documentos"
+merge_help = "En un solo Markdown (cada documento convertido), o en un solo PDF (solo archivos PDF)."
 split_keep = "Guardar"
 
 [gui.help]
@@ -494,6 +521,8 @@ convert = "Convertir a Markdown"
 convert_body = "PDF, Word, Excel, PowerPoint, HTML y más"
 split = "Dividir un Documento"
 split_body = "Un PDF o un Markdown, en partes de páginas o secciones enteras"
+merge = "Unir Documentos"
+merge_body = "Varios documentos en un solo Markdown o un solo PDF, en tu orden"
 files_note = "Las herramientas cambian archivos, nunca lo que hay dentro."
 step = "Inicio"
 
@@ -550,3 +579,45 @@ hint = "Aproximado: una IA lee una cantidad limitada de texto a la vez; si recha
 [gui.offer]
 # Review and Results of Convert: the PDFs too large to convert, split instead (feature 025).
 split = "Dividir los PDF Muy Grandes ({count})"
+
+[merge]
+# A merged file's name, without extension (feature 026): {stamp} is "2026-11-08 10-30".
+name = "Unidos {stamp}"
+
+[gui.merge]
+# Paso 1 de Unir (feature 026).
+title = "Cómo Unir"
+into = "En:"
+markdown = "Un Markdown"
+pdf = "Un PDF (solo archivos PDF)"
+note = "Cada documento conserva su contenido entero. El orden de la lista es el orden del resultado."
+into_markdown = "en un solo Markdown"
+into_pdf = "en un solo PDF"
+
+[tool.merge]
+# Lo que dice Unir en lugar de Convertir (feature 026).
+"gui.page.choose_title" = "Elige Qué Unir"
+"gui.page.choose_subtitle" = "Documentos o carpetas, en el orden que quieras: ClearMD los junta en un solo archivo, en tu computador."
+"gui.page.review_title" = "Revisa Antes de Unir"
+"gui.page.convert_title" = "Unir"
+"gui.page.convert_subtitle" = "Nada se escribe hasta que pulses Unir; puedes cancelar cuando quieras."
+"gui.steps.convert" = "Unir"
+"gui.main.convert" = "Unir"
+"gui.plan.summary" = "Por unir: {convert} · Omitidos: {skipped} · Ya existen: {existing}"
+"gui.plan.stat_convert" = "Por Unir"
+"gui.plan.confirm" = "Unir"
+"gui.plan.nothing" = "Aquí no hay nada para unir. Vuelve y elige documentos."
+"gui.plan.ready" = "✓ Listo para unir · {format}"
+"gui.nav.nothing" = "Aquí no hay nada para unir. Vuelve a Elegir."
+"gui.nav.converting" = "Uniendo… espera a que termine, o cancélalo."
+"gui.nav.done" = "Este lote terminó: mira los Resultados o Une más."
+"gui.nav.no_results" = "Une algo primero: el resultado aparece aquí."
+"gui.nav.nothing_written" = "Este lote no escribió ningún archivo: mira por qué arriba, o Une más."
+"gui.state.converting" = "Uniendo"
+"gui.progress.current" = "Leyendo Ahora"
+"gui.convert.ready" = "Listos para unir: {count}"
+"gui.result.stat_converted" = "Unidos"
+"gui.result.again" = "Unir Más"
+"gui.result.all_good" = "Todos los documentos se unieron. El archivo está en la carpeta ClearMD_Output, en OutputUnif."
+"gui.more.title" = "Unir Más"
+"gui.more.explain" = "Consérvalos para unirlos otra vez o agregar más; empieza vacío para un lote nuevo."

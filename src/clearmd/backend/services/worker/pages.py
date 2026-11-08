@@ -5,7 +5,7 @@ from pathlib import Path
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.schemas.split import Cut
 from clearmd.backend.services.split.markdown_cut import cut_markdown
-from clearmd.backend.services.split.pdf_pages import count_pages, cut_pages
+from clearmd.backend.services.split.pdf_pages import count_pages, cut_pages, merge_pdfs
 from clearmd.backend.services.split.words import page_words
 from clearmd.backend.services.worker.protocol import (
     Counted,
@@ -14,21 +14,29 @@ from clearmd.backend.services.worker.protocol import (
     Failed,
     MarkdownCutRequest,
     MarkdownParts,
+    MergePdfRequest,
     PageJob,
+    ReadTextRequest,
     Response,
+    TextRead,
     Words,
     WordsRequest,
 )
 
 
-def _markdown(request: MarkdownCutRequest, max_result_bytes: int) -> Response:
-    source = Path(request.source)
+def _text(path: str, max_result_bytes: int) -> str:
+    """A text file's text, its encoding guessed when it is not UTF-8."""
+    source = Path(path)
     if source.stat().st_size > max_result_bytes:
-        return Failed(ErrorCode.CONVERSION_FAILED.value, "file too large to split")
+        raise ConversionError(ErrorCode.CONVERSION_FAILED, "file too large")
     # Imported here: its module brings pylatexenc, which only TeX needs at start (feature 002).
     from clearmd.backend.services.conversion.tex.source import decode_source
 
-    text = decode_source(source.read_bytes()).text
+    return decode_source(source.read_bytes()).text
+
+
+def _markdown(request: MarkdownCutRequest, max_result_bytes: int) -> Response:
+    text = _text(request.source, max_result_bytes)
     parts, over = cut_markdown(text, Cut(request.cut), request.size)
     return MarkdownParts(parts, over)
 
@@ -41,7 +49,12 @@ def handle_pages(request: PageJob, max_result_bytes: int) -> Response:
             return Words(page_words(Path(request.source)))
         if isinstance(request, MarkdownCutRequest):
             return _markdown(request, max_result_bytes)
-        data = cut_pages(Path(request.source), request.first, request.last)
+        if isinstance(request, ReadTextRequest):
+            return TextRead(_text(request.source, max_result_bytes))
+        if isinstance(request, MergePdfRequest):
+            data = merge_pdfs([Path(source) for source in request.sources])
+        else:
+            data = cut_pages(Path(request.source), request.first, request.last)
     except ConversionError as error:
         return Failed(error.code.value, error.detail)
     except OSError as error:

@@ -25,6 +25,7 @@ class Settings:
     split_cut: str = "parts"  # or "pages", or "words" (feature 024)
     split_parts: int = 2
     split_pages: int = 50
+    merge_into: str = "markdown"  # or "pdf" (feature 026)
     split_words: int = 30_000  # about 40,000 tokens in English, more in Spanish (ADR-0045)
     split_keep: str = "both"  # or "pdf", "markdown"
 
@@ -40,6 +41,7 @@ CHOICES: Mapping[str, frozenset[str]] = MappingProxyType(
         "images": frozenset({"omit", "folder"}),
         "split_cut": frozenset({"parts", "pages", "words"}),
         "split_keep": frozenset({"pdf", "markdown", "both"}),
+        "merge_into": frozenset({"markdown", "pdf"}),
     }
 )
 

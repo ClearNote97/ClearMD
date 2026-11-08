@@ -61,7 +61,7 @@ def stat(catalog: Catalog, key: str, value: int, tone: Tone = Tone.WARNING) -> S
 def _cut(catalog: Catalog, item: PlannedConversion) -> str:
     """How a file will be split (feature 023): " · into 4 parts"; nothing for Convert."""
     if item.split is None:
-        return ""
+        return ""  # Convert, and Merge (its order is the list's; the row says it)
     key = f"gui.split.by_{item.split.cut.value}"  # by_parts, by_pages, by_words
     return " · " + catalog.text(key, count=item.split.size)
 

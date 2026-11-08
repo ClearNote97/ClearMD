@@ -1,12 +1,14 @@
 """Immutable data of a batch: the plan the user reviews and the report of what happened."""
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
 
 from clearmd.backend.schemas.errors import ErrorCode, SkipReason
-from clearmd.backend.schemas.formats import FormatId, Strategy
+from clearmd.backend.schemas.formats import MERGE_DIR_NAME, FormatId, Strategy
+from clearmd.backend.schemas.merge import MergeSpec
 from clearmd.backend.schemas.notes import ConversionNote
 from clearmd.backend.schemas.split import SplitSpec
 
@@ -94,6 +96,7 @@ class BatchPlan:
     skipped: tuple[SkippedItem, ...]
     input_errors: tuple[InputError, ...]
     warnings: tuple[PlanWarning, ...] = ()
+    merge: MergeSpec | None = None  # Merge (feature 026): every conversion into one file
 
     @property
     def is_empty(self) -> bool:
@@ -170,3 +173,14 @@ class BatchReport:
     # Output roots whose Resumen_ClearMD.md could not be written (disk full, ...).
     unwritten_summaries: tuple[Path, ...] = ()
     unwritten_pdfs: tuple[Path, ...] = ()  # the PDF summary could not be written there
+
+
+def tool_of(items: Iterable[PlannedConversion]) -> str:
+    """What a batch did: "split" (023), "merge" (026: its result is in OutputUnif) or
+    "convert"."""
+    for item in items:
+        if item.split is not None:
+            return "split"
+        if item.target.parent.name == MERGE_DIR_NAME:
+            return "merge"
+    return "convert"

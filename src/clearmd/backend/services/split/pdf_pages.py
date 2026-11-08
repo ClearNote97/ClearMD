@@ -41,6 +41,23 @@ def count_pages(path: Path) -> int:
         document.close()
 
 
+def merge_pdfs(paths: list[Path]) -> bytes:
+    """One PDF with every page of ``paths``, whole and in order (Merge, feature 026)."""
+    merged = pdfium.PdfDocument.new()
+    try:
+        for path in paths:
+            source = open_pdf(path)
+            try:
+                merged.import_pages(source)
+            finally:
+                source.close()
+        stream = io.BytesIO()
+        merged.save(stream)
+        return stream.getvalue()
+    finally:
+        merged.close()
+
+
 def cut_pages(path: Path, first: int, last: int) -> bytes:
     """A new PDF with the pages ``first``..``last`` (1-based, inclusive) of ``path``."""
     source = open_pdf(path)

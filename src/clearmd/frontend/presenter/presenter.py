@@ -131,9 +131,12 @@ class Presenter:
         pages: int | None = None,
         keep: str | None = None,
         words: int | None = None,
+        into: str | None = None,
     ) -> None:
-        """Split's choices on step 1, remembered (features 023, 024)."""
-        self._tools.choose_split(cut=cut, parts=parts, pages=pages, keep=keep, words=words)
+        """Split's and Merge's choices on step 1, remembered (features 023, 024, 026)."""
+        self._tools.choose_split(
+            cut=cut, parts=parts, pages=pages, keep=keep, words=words, into=into
+        )
 
     def go_to(self, page: int) -> None:
         """Show a step (0: Home, the start screen); only what is on screen changes."""

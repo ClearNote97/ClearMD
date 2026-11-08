@@ -14,6 +14,7 @@ from clearmd.backend.schemas.errors import SkipReason
 from clearmd.backend.schemas.events import BatchEvent, PlanReady
 from clearmd.backend.schemas.formats import WITH_STRATEGIES, ZIP_BASED, FormatId, Strategy
 from clearmd.backend.schemas.limits import Limits
+from clearmd.backend.schemas.merge import Into
 from clearmd.backend.schemas.models import (
     BatchPlan,
     Detection,
@@ -24,6 +25,7 @@ from clearmd.backend.schemas.models import (
 from clearmd.backend.schemas.split import SplitSpec
 from clearmd.backend.use_cases.archive import inspect_archive, unsafe_reason
 from clearmd.backend.use_cases.cancel import CancelToken
+from clearmd.backend.use_cases.merging import as_merge, merge_skip
 from clearmd.backend.use_cases.paths import (
     NameRequest,
     keeps_output_inside,
@@ -68,6 +70,8 @@ def build_plan(
     html_strategy: Strategy = Strategy.FULL,
     cancel: CancelToken | None = None,
     split: SplitSpec | None = None,
+    merge: Into | None = None,
+    stamp: str = "",
 ) -> BatchPlan:
     """The plan; with ``split``, of the PDFs to split (feature 023): any other file is left out,
     and the parts' folder in OutputSep is the target."""
@@ -78,7 +82,7 @@ def build_plan(
         limits=limits,
         on_progress=on_event,
         cancel=cancel,
-        markdown=split is not None,  # Split takes Markdown (024)
+        markdown=split is not None or merge is not None,  # Split and Merge take Markdown
     )
     drafts: list[tuple[Candidate, Detection, Path, float, Strategy]] = []
     requests: list[NameRequest] = []
@@ -95,7 +99,7 @@ def build_plan(
         if cancel is not None and cancel.is_set():  # cancelled: what is left is not examined
             break
         root = output_root_for(candidate.input, is_dir=candidate.input_is_dir, override=output_root)
-        detection = split_detection(candidate.path) if split else None
+        detection = split_detection(candidate.path) if split or merge else None
         detection = detection or detector.detect(candidate.path)
         if detection is None:
             skipped.append(
@@ -107,13 +111,13 @@ def build_plan(
                 )
             )
             continue
+        reason = split_skip(detection, split) if split else merge_skip(detection, merge)
+        if reason is not None:  # a tool that does not take it (features 023, 024, 026)
+            skipped.append(
+                SkippedItem(candidate.path, reason, output_root=root, **_found(candidate))
+            )
+            continue
         if split is not None:
-            reason = split_skip(detection, split)
-            if reason is not None:
-                skipped.append(
-                    SkippedItem(candidate.path, reason, output_root=root, **_found(candidate))
-                )
-                continue
             cost = split_cost(limits, candidate.size, split)
             target = split_target_for(candidate.path, root, _relative_dir(candidate))
             drafts.append((candidate, detection, root, cost, Strategy.FULL))
@@ -179,13 +183,15 @@ def build_plan(
             drafts, resolve_names(requests), strict=True
         )
     ]
-    ordered = order_by_cost(conversions)
+    ordered = tuple(conversions) if merge else order_by_cost(conversions)  # Merge: the list's order
     warnings = tuple(  # a split file is converted part by part: no file-wide warning
         PlanWarning(item, item.cost, limits.time_per_file)
         for item in ordered
         if item.cost > limits.time_per_file and item.split is None
     )
     plan = BatchPlan(ordered, tuple(skipped), scanned.input_errors, warnings)
+    if merge is not None:
+        plan = as_merge(plan, merge, stamp)
     if on_event is not None:
         on_event(PlanReady(plan))
     return plan

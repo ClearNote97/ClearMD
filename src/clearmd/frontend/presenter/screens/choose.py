@@ -45,6 +45,7 @@ def output_choice(
         settings.split_pages,
         settings.split_keep,
         settings.split_words,
+        settings.merge_into,
     )
 
 

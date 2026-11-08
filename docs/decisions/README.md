@@ -63,3 +63,4 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 | [0043](./0043-local-toolkit-for-ai.md) | A local toolkit that prepares documents for AI: Convert, Split, Merge | accepted |
 | [0044](./0044-split-by-whole-pages.md) | Split cuts a PDF by whole pages in the worker; Markdown part by part | accepted |
 | [0045](./0045-split-by-words.md) | Parts that fit an AI measured in words, approximately; Markdown cut at headings | accepted |
+| [0046](./0046-merge.md) | Merge joins documents into one Markdown or one PDF, in the list's order | accepted |

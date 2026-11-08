@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import TextIO
 
 from clearmd.backend.api import skipped_line
-from clearmd.backend.schemas.models import BatchPlan, BatchReport, OutcomeStatus
+from clearmd.backend.schemas.models import BatchPlan, BatchReport, OutcomeStatus, tool_of
 from clearmd.backend.schemas.settings import SettingsWarning
 from clearmd.i18n import Catalog, printable
 
@@ -21,7 +21,7 @@ def print_summary(catalog: Catalog, report: BatchReport) -> None:
         skipped,
         count[OutcomeStatus.FAILED],
         count[OutcomeStatus.STOPPED],
-        split=any(outcome.item.split is not None for outcome in report.outcomes),
+        tool=tool_of(outcome.item for outcome in report.outcomes),
     )
     print(line)
     for root in output_roots(report):
