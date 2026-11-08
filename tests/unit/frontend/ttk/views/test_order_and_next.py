@@ -3,6 +3,7 @@ step 1 of Split at the smallest window (the list keeps its rows)."""
 
 from dataclasses import replace
 from pathlib import Path
+from typing import Any
 
 from support.ttk_unit import confirm, pump
 
@@ -20,6 +21,12 @@ def merge_three(app: TtkApp, tmp_path: Path) -> list[Path]:
     app.presenter.add_paths(files)
     pump(app, seconds=0.1)
     return files
+
+
+def focus(app: TtkApp, widget: Any) -> None:
+    app.root.deiconify()
+    widget.focus_force()
+    pump(app, until=lambda: app.root.focus_get() is widget, seconds=2)
 
 
 def select(app: TtkApp, index: int) -> None:
@@ -45,8 +52,8 @@ def test_merge_moves_the_selected_row_and_keeps_it_selected(app: TtkApp, tmp_pat
     assert app.main.inputs.names() == ["a.md", "c.md", "b.md"]
     assert app.main.inputs.selected()[0].name == "c.md"  # still selected, in its new place
     tree = app.main.inputs.tree
-    tree.focus_set()
-    tree.event_generate("<Alt-Up>")  # the keyboard's way: Alt+Up
+    focus(app, tree)  # keys go to the focus: Windows gives it only on demand
+    tree.event_generate("<Alt-Up>", when="tail")  # the keyboard's way: Alt+Up
     pump(app, seconds=0.05)
     assert app.main.inputs.names() == ["c.md", "a.md", "b.md"]
 
@@ -114,10 +121,20 @@ def test_split_at_the_smallest_window_keeps_rows_in_the_list(app: TtkApp, tmp_pa
     pump(app, seconds=0.6)
     tree = app.main.inputs.tree
     assert tree.winfo_height() >= 3 * 36  # the heading and two rows at least
-    assert app.main._output.area.scrolls  # the card scrolls instead of taking the list's room
-    cuts = app.main.split.cuts
-    assert cuts["words"].winfo_rooty() > cuts["parts"].winfo_rooty()  # wrapped: two, then one
-    assert cuts["pages"].winfo_rooty() == cuts["parts"].winfo_rooty()
+    card = app.main._output.area
+    assert card.winfo_rooty() >= tree.winfo_rooty() + tree.winfo_height()  # not over the list
+    # The three cuts, on one row or wrapped (it depends on the fonts): whole and apart.
+    block = app.main.split
+    boxes = []
+    for cut in block.cuts.values():
+        group = cut.nametowidget(cut.winfo_parent())
+        x, y = group.winfo_rootx(), group.winfo_rooty()
+        boxes.append((x, y, x + group.winfo_width(), y + group.winfo_height()))
+    right = block.winfo_rootx() + block.winfo_width()
+    assert all(x2 <= right for _, _, x2, _ in boxes)  # none cut at the card's edge
+    for index, (x1, y1, x2, y2) in enumerate(boxes):
+        for a1, b1, a2, b2 in boxes[index + 1 :]:
+            assert x2 <= a1 or a2 <= x1 or y2 <= b1 or b2 <= y1  # none over another
 
 
 def test_split_at_the_default_size_does_not_scroll_even_in_spanish(app: TtkApp) -> None:

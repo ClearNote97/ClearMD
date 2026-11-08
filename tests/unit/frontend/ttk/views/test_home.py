@@ -69,8 +69,11 @@ def test_the_rail_s_home_and_ctrl_0_bring_it_back(app: TtkApp) -> None:
     assert app.presenter.page == HOME and shown(app) is app.home
     assert app.rail.home_text() == "> Home"
     app.presenter.go_to(1)
-    app.root.event_generate("<Control-Key-0>")
-    pump(app, seconds=0.05)
+    app.root.deiconify()  # keys go to the focus: Windows gives it only on demand
+    app.root.focus_force()
+    pump(app, until=lambda: app.root.focus_get() is not None, seconds=2)
+    app.root.event_generate("<Control-Key-0>", when="tail")
+    pump(app, until=lambda: app.presenter.page == HOME, seconds=1)
     assert app.presenter.page == HOME
 
 
