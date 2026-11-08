@@ -55,10 +55,13 @@ class ConverterRegistry:
 
 def build_registry() -> ConverterRegistry:
     """The real registry: markitdown, ClearMD's own converters and content signatures."""
+    from clearmd.backend.services.conversion.eml import EmlConverter
     from clearmd.backend.services.conversion.html import ArticleConverter
     from clearmd.backend.services.conversion.markitdown_adapter import MarkItDownConverter
     from clearmd.backend.services.conversion.odt import OdtConverter
     from clearmd.backend.services.conversion.pdf import PdfConverter
+    from clearmd.backend.services.conversion.rtf import RtfConverter
+    from clearmd.backend.services.conversion.subtitles import SubtitlesConverter
     from clearmd.backend.services.conversion.tex import TexConverter
     from clearmd.backend.services.conversion.xlsx import XlsxConverter
     from clearmd.backend.services.detection.content import SignatureDetector
@@ -69,6 +72,9 @@ def build_registry() -> ConverterRegistry:
     converters[FormatId.ODT] = OdtConverter()
     converters[FormatId.PDF] = PdfConverter()  # PDFium + ClearMD's cleaning (ADR-0030)
     converters[FormatId.XLSX] = XlsxConverter()  # openpyxl, no pandas (ADR-0032)
+    converters[FormatId.EML] = EmlConverter(markitdown)  # its HTML body: markitdown (029)
+    converters[FormatId.RTF] = RtfConverter()
+    converters[FormatId.SRT] = converters[FormatId.VTT] = SubtitlesConverter()
     article = ArticleConverter()  # no article: the whole page, written by ClearMD too
     return ConverterRegistry(
         converters,

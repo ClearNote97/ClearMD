@@ -19,6 +19,10 @@ class FormatId(StrEnum):
     TXT = "txt"
     TEX = "tex"  # ClearMD's own converter (feature 002)
     ODT = "odt"  # ClearMD's own converter, standard library only (feature 003)
+    EML = "eml"  # e-mail, ClearMD's own converter (feature 029)
+    RTF = "rtf"  # Rich Text Format, ClearMD's own converter (feature 029)
+    SRT = "srt"  # subtitles (feature 029)
+    VTT = "vtt"  # WebVTT subtitles (feature 029)
     MARKDOWN = "md"  # only split, never converted (feature 024)
 
 
@@ -47,6 +51,10 @@ EXTENSIONS: Mapping[str, FormatId] = MappingProxyType(
         ".txt": FormatId.TXT,
         ".tex": FormatId.TEX,
         ".odt": FormatId.ODT,
+        ".eml": FormatId.EML,
+        ".rtf": FormatId.RTF,
+        ".srt": FormatId.SRT,
+        ".vtt": FormatId.VTT,
     }
 )
 

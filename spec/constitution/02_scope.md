@@ -15,6 +15,8 @@
   ADR-0004).
 - **Convert LaTeX (`.tex`)** keeping the math, over a subset defined in its spec (ADR-0006).
 - **Convert OpenDocument (`.odt`)** with no external dependency (ADR-0006).
+- **Convert e-mails (`.eml`), Rich Text (`.rtf`) and subtitles (`.srt`, `.vtt`)** with the standard
+  library (ADR-0049); an e-mail's attachments are listed by name, never extracted.
 - **Extract only the article** from an HTML file, as an alternative strategy to the full page (ADR-0006).
 - **Split and merge files** (version 2, ADR-0043): cut one file into parts, or join several into one.
   The user chooses the cut (a number of parts, every N pages or rows, or parts that fit an AI's context,
@@ -49,7 +51,6 @@
 - **Editing the resulting Markdown inside the app:** editors already do that.
 - **A database or a searchable history** (ADR-0002).
 - **A macOS executable:** notarization requires a paid Apple Developer account (ADR-0008).
-- **Minor formats** (`.rtf`, `.eml`, subtitles): on the roadmap, not in v1.
 - **Other summary formats** (e.g. PDF): a possible option later; v1 writes Markdown only.
 
 ## Assumptions

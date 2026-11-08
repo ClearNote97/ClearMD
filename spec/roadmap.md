@@ -112,7 +112,7 @@ follows Choose → Review → Results in the three windows; the command line get
       and joined (`OutputUnif/`); the order chosen by the user.
 - [x] **027 — Split more formats** (ADR-0047): v2.4.0: text and CSV by lines (the CSV header in every part), Excel by whole sheets.
 - [x] **028 — Incremental mode** (ADR-0048): v2.5.0: "Replace it if the original changed".
-- [ ] **029 — Minor formats** (v2.6.0): `.eml`, `.rtf`, subtitles.
+- [x] **029 — Minor formats** (ADR-0049): v2.6.0: `.eml`, `.rtf`, `.srt` and `.vtt`.
 - [ ] **030 — Measure the queue** (only if blocking shows): a second lane for heavy files, or parallel
       workers (ADR-0015).
 - [ ] **031 — Publish on PyPI** (`pip install clearmd` / `uv tool install clearmd`), at the end (ADR-0018).

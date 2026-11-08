@@ -7,8 +7,16 @@ from clearmd.backend.schemas.formats import EXTENSIONS, MARKDOWN_EXTENSIONS, For
 FOLDER = "folder"
 MARKDOWN = "markdown"
 UNKNOWN = "unknown"
+# Formats drawn with another format's icon (features 024, 029).
+SHARED: dict[FormatId, str] = {
+    FormatId.MARKDOWN: MARKDOWN,
+    FormatId.EML: FormatId.TXT.value,
+    FormatId.RTF: FormatId.DOCX.value,
+    FormatId.SRT: FormatId.TXT.value,
+    FormatId.VTT: FormatId.TXT.value,
+}
 ICONS: frozenset[str] = frozenset(
-    {*(f.value for f in FormatId if f is not FormatId.MARKDOWN), FOLDER, MARKDOWN, UNKNOWN}
+    {*(f.value for f in FormatId if f not in SHARED), FOLDER, MARKDOWN, UNKNOWN}
 )
 
 
@@ -20,9 +28,9 @@ def icon_for(path: Path, *, is_folder: bool) -> str:
     if extension in MARKDOWN_EXTENSIONS:
         return MARKDOWN
     found = EXTENSIONS.get(extension)
-    return found.value if found is not None else UNKNOWN
+    return icon_of_format(found) if found is not None else UNKNOWN
 
 
 def icon_of_format(format_id: FormatId) -> str:
     """The icon of a detected format (a file without an extension still gets its format's icon)."""
-    return MARKDOWN if format_id is FormatId.MARKDOWN else format_id.value
+    return SHARED.get(format_id, format_id.value)

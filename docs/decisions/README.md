@@ -66,3 +66,4 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 | [0046](./0046-merge.md) | Merge joins documents into one Markdown or one PDF, in the list's order | accepted |
 | [0047](./0047-split-text-csv-excel.md) | Split cuts text and CSV between lines or rows, and Excel by whole sheets | accepted |
 | [0048](./0048-incremental-by-dates.md) | Incremental mode compares an original's date with its result's | accepted |
+| [0049](./0049-minor-formats.md) | E-mail, Rich Text and subtitles with ClearMD's own converters | accepted |

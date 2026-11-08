@@ -2,6 +2,13 @@
 
 Each file can be checked against `SHA256SUMS.txt` ([how](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)). / Cada archivo se puede comprobar con `SHA256SUMS.txt` ([cómo](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)).
 
+**New in 2.6.0 / Novedades de la 2.6.0**
+- Convert **e-mails** (`.eml`: subject, sender, date, text and the names of the attachments),
+  **Rich Text** (`.rtf`) and **subtitles** (`.srt`, `.vtt`: one line per cue with its time). /
+  Convierte **correos** (`.eml`: asunto, remitente, fecha, texto y los nombres de los adjuntos),
+  **texto enriquecido** (`.rtf`) y **subtítulos** (`.srt`, `.vtt`: una línea por diálogo con su
+  hora).
+
 **New in 2.5.0 / Novedades de la 2.5.0**
 - **Only what changed:** "When a Result Already Exists" gains **Replace it if the original
   changed**, in Settings, on Review and as `--changed`: converting a folder again converts only

@@ -20,6 +20,8 @@ from clearmd.backend.services.conversion.markitdown_adapter import (
     map_exception,
 )
 
+# ClearMD's own: e-mail, RTF and subtitles (feature 029).
+OWN = {FormatId.EML, FormatId.RTF, FormatId.SRT, FormatId.VTT}
 # PDF and Excel are ClearMD's own (ADR-0030, ADR-0032).
 CONVERTIBLE = sorted(name for name in MARKERS if not name.endswith((".pdf", ".xlsx")))
 
@@ -92,7 +94,7 @@ def test_no_image_audio_or_zip_converter_is_ever_registered() -> None:
     assert names.isdisjoint(
         {"ZipConverter", "ImageConverter", "AudioConverter", "OutlookMsgConverter"}
     )
-    assert set(MarkItDownConverter().converters) == formats.CONVERTIBLE - {
+    assert set(MarkItDownConverter().converters) == formats.CONVERTIBLE - OWN - {
         FormatId.TEX,
         FormatId.ODT,
         FormatId.PDF,
