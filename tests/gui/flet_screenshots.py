@@ -39,6 +39,10 @@ class Shooter:
         self.page, self.out, self.tag = page, out, tag
 
     async def shot(self, name: str, settle: float = 0.9) -> None:
+        # The script calls the presenter outside flet's events: nothing is sent to flet's program
+        # until a window callback runs (FletPage.post). A change that stays on the same page posts
+        # none (Split's step 1 to Merge's, 026), so the page is sent here, before every shot.
+        self.page.update()
         # Past the primary action's pause after a page change (F-1), and flet's own drawing.
         await asyncio.sleep(settle)
         picture = await self.page.take_screenshot()
