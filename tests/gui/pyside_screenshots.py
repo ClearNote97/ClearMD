@@ -1,6 +1,7 @@
 """Screenshots of the PySide6 GUI for docs/ (feature 016, AC-10): every screen, light and dark,
 English and Spanish, drawn offscreen with the presenter's fake backend (the same demo as ttk's);
-the start screen and Split's step 1 since feature 023; Review's offer to split since 025.
+the start screen and Split's step 1 since feature 023; Review's offer to split since 025;
+Merge's step 1 since 026.
 
     uv run python tests/gui/pyside_screenshots.py --out docs/screenshots/016
 """
@@ -84,6 +85,10 @@ def screens(out: Path, theme: str, language: str) -> None:
     app.presenter.clear_inputs()
     app.presenter.add_paths([path for path in demo.INPUTS if path.suffix == ".pdf"])
     shot(app, out / f"1-choose-split-{tag}.png")
+    app.presenter.choose_tool(Tool.MERGE)
+    app.presenter.clear_inputs()
+    app.presenter.add_paths([path for path in demo.INPUTS if path.suffix][:3])
+    shot(app, out / f"1-choose-merge-{tag}.png")
     shut(app)
 
 

@@ -27,21 +27,21 @@ Step 1 of Merge:
 
 ## Acceptance criteria (what MUST be true)
 
-- [ ] **AC-01** **Into one Markdown:** each document is converted as Convert would convert it,
+- [x] **AC-01** **Into one Markdown:** each document is converted as Convert would convert it,
   each within the time limit; Markdown files are taken as they are. The documents are joined
   in the list's order into `ClearMD_Output/OutputUnif/Merged <date time>.md`. Each document
   starts with a comment naming its source (`<!-- ClearMD: name.pdf -->`), which a Markdown
   viewer does not show. Nothing else is added.
-- [ ] **AC-02** **Into one PDF:** the PDFs' pages are copied whole, in order, into
+- [x] **AC-02** **Into one PDF:** the PDFs' pages are copied whole, in order, into
   `OutputUnif/Merged <date time>.pdf`. Any file that is not a PDF is left out with a reason
   (choose One Markdown).
-- [ ] **AC-03** A document that fails is left out of the result, and the summary says so. The
+- [x] **AC-03** A document that fails is left out of the result, and the summary says so. The
   result is still written with the others. A merge that would hold fewer than two documents
   writes nothing, and says why.
-- [ ] **AC-04** The command line merges with `--merge markdown|pdf` (the order is the order of
+- [x] **AC-04** The command line merges with `--merge markdown|pdf` (the order is the order of
   the paths, and the files of a folder go in name order). It cannot be combined with a split.
-- [ ] **AC-05** The start screen gains its third tile, **Merge Documents**. Step 1 of Merge shows
+- [x] **AC-05** The start screen gains its third tile, **Merge Documents**. Step 1 of Merge shows
   "How to Merge" (One Markdown / One PDF) in place of the images, and says that the list's order
   is the result's. The steps speak as Merge (Merge's words in place of Convert's). The choice is
   remembered (`merge_into`) and is in Settings.
-- [ ] **AC-06** Texts in English and Spanish, with titles and buttons in Title Case.
+- [x] **AC-06** Texts in English and Spanish, with titles and buttons in Title Case.

@@ -2,6 +2,14 @@
 
 Each file can be checked against `SHA256SUMS.txt` ([how](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)). / Cada archivo se puede comprobar con `SHA256SUMS.txt` ([cómo](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)).
 
+**New in 2.3.0 / Novedades de la 2.3.0**
+- The third tool, **Merge Documents**: several documents into **one Markdown** (each converted,
+  Markdown taken as it is) or **one PDF** (PDFs only), in the list's order, in
+  `ClearMD_Output/OutputUnif/`. Command line: `--merge markdown|pdf`. / La tercera
+  herramienta, **Unir Documentos**: varios documentos en **un solo Markdown** (cada uno
+  convertido, los Markdown tal cual) o **un solo PDF** (solo PDF), en el orden de la lista, en
+  `ClearMD_Output/OutputUnif/`. Línea de comandos: `--merge markdown|pdf`.
+
 **New in 2.2.0 / Novedades de la 2.2.0**
 - When Convert meets a PDF too large for its limits, Review and Results offer **Split the Large
   PDFs**: it opens Split with them, into the recommended number of parts, keeping their

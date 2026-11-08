@@ -137,8 +137,8 @@ class ToolTile(tk.Canvas):
         title, body = self._texts
         strong, text = self._fonts["strong"], self._fonts["body"]
         icon = self._icon(p.accent_text)
-        # Room for two lines of body in every tile: the icons and titles of both tiles line up.
-        lines = max(2, text.measure(body) // max(width - 2 * GAP, 1) + 1)
+        # Room for three lines of body in every tile: the icons and titles of the tiles line up.
+        lines = max(3, text.measure(body) // max(width - 2 * GAP, 1) + 1)
         block = icon.height + HALF + strong.metrics("linespace") + HALF
         block += lines * text.metrics("linespace")
         y = max(GAP, (height - block) // 2)

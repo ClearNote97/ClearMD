@@ -96,6 +96,7 @@ def build_frame(
     home = HomeView(
         on_convert=lambda: presenter.choose_tool(Tool.CONVERT),
         on_split=lambda: presenter.choose_tool(Tool.SPLIT),
+        on_merge=lambda: presenter.choose_tool(Tool.MERGE),
     )
     review = ReviewView()
     converting = ConvertView()

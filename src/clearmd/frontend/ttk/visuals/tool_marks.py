@@ -1,5 +1,6 @@
-"""Pillow marks of the tools (feature 023): a document for Convert, scissors for Split, and the
-house of the rail's Home. Drawn in one colour, larger and reduced, like the rail's art."""
+"""Pillow marks of the tools (features 023, 026): a document for Convert, scissors for Split, two
+paths joining into one for Merge, and the house of the rail's Home. Drawn in one colour, larger
+and reduced, like the rail's art."""
 
 from PIL import Image, ImageDraw
 
@@ -53,6 +54,20 @@ def scissors(colour: str, size: int = TOOL_ICON) -> Image.Image:
     draw.line([(24.5 * u, 25 * u), (11 * u, 5 * u)], fill=ink, width=width)
     pivot = 1.6 * u
     draw.ellipse((20 * u - pivot, 18.3 * u - pivot, 20 * u + pivot, 18.3 * u + pivot), fill=ink)
+    return _small(big, size)
+
+
+def merge(colour: str, size: int = TOOL_ICON) -> Image.Image:
+    """Two paths joining into one, an arrow down (Merge Documents)."""
+    big, draw, s = _canvas(size)
+    u = size * s / 40
+    ink = rgba(colour)
+    width = round(2.6 * u)
+    for x in (9 * u, 31 * u):
+        draw.line([(x, 5 * u), (x, 9 * u), (20 * u, 20 * u)], fill=ink, width=width, joint="curve")
+    draw.line([(20 * u, 19 * u), (20 * u, 34 * u)], fill=ink, width=width)
+    draw.line([(13.5 * u, 27.5 * u), (20 * u, 34 * u), (26.5 * u, 27.5 * u)], fill=ink,
+              width=width, joint="curve")  # fmt: skip
     return _small(big, size)
 
 

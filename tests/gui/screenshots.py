@@ -128,10 +128,14 @@ def settings_window(app: TtkApp) -> None:
     app.dialogs.show_settings()
 
 
-def choose_split(app: TtkApp) -> None:
-    """Split's step 1 (feature 023) with a PDF listed: How to Split in place of the images."""
-    app.presenter.choose_tool(Tool.SPLIT)
-    app.presenter.add_paths([INPUTS[0]])
+def _tool(tool: Tool, paths: list[Path]) -> Callable[[TtkApp], None]:
+    """Step 1 of Split or Merge (023, 026) with ``paths``: its block in place of the images."""
+
+    def prepare(app: TtkApp) -> None:
+        app.presenter.choose_tool(tool)
+        app.presenter.add_paths(paths)
+
+    return prepare
 
 
 def convert_ready(app: TtkApp) -> None:
@@ -148,10 +152,6 @@ def compact(app: TtkApp) -> None:
     app.root.geometry(f"{COMPACT_WIDTH}x{HEIGHT}+0+0")
     choose(app)
     settle(app, seconds=0.4)
-
-
-def welcome(app: TtkApp) -> None:
-    settle(app, until=lambda: app.dialog is not None)
 
 
 def converted(app: TtkApp) -> bool:
@@ -177,7 +177,7 @@ def converting(app: TtkApp, held: Held) -> None:
     settle(app, until=lambda: held.files == 3)
 
 
-def _go(page: int) -> Callable[[TtkApp], None]:
+def _go(page: int) -> Callable[[TtkApp], None]:  # a page shown with nothing chosen
     return lambda app: app.presenter.go_to(page)
 
 
@@ -197,7 +197,8 @@ def main() -> int:
                 shots: list[tuple[str, FakeBackend, Callable[[TtkApp], None]]] = [
                     ("0-home", FakeBackend(plan=PLAN), lambda app: None),  # as it opens (023)
                     ("1-choose-empty", FakeBackend(plan=PLAN), _go(1)),
-                    ("1-choose-split", FakeBackend(plan=PLAN), choose_split),
+                    ("1-choose-split", FakeBackend(plan=PLAN), _tool(Tool.SPLIT, INPUTS[:1])),
+                    ("1-choose-merge", FakeBackend(plan=PLAN), _tool(Tool.MERGE, INPUTS[2:4])),
                     ("1-choose", FakeBackend(plan=PLAN), choose),
                     ("2-review", FakeBackend(plan=PLAN), to_review),
                     ("2-review-split-offer", FakeBackend(plan=OFFER), to_review),
@@ -227,7 +228,7 @@ def main() -> int:
                 if only is not None:
                     continue
                 app = window(language, theme, FakeBackend(plan=PLAN), welcome=True)
-                welcome(app)
+                settle(app, until=partial(lambda shown: shown.dialog is not None, app))  # welcome
                 capture(app, args.out / f"0-welcome-{theme}-{language}.png")
                 app.close()
                 held = Held()

@@ -24,21 +24,25 @@ def test_ac_08_the_three_windows_open_on_the_start_screen_and_a_tile_opens_its_t
     flet_window: Callable[..., FletApp],
 ) -> None:
     ttk = window(MemoryBackend(QUIET))
-    assert ttk.presenter.page == HOME and set(ttk.home.tiles) == {Tool.CONVERT, Tool.SPLIT}
+    assert ttk.presenter.page == HOME and set(ttk.home.tiles) == {
+        Tool.CONVERT,
+        Tool.SPLIT,
+        Tool.MERGE,
+    }  # 026
     ttk.home.tiles[Tool.SPLIT].choose()
     assert (ttk.presenter.page, ttk.presenter.tool) == (1, Tool.SPLIT)
     ttk.presenter.go_to(HOME)
     assert ttk.presenter.page == HOME
 
     qt = qt_window(MemoryBackend(QUIET))
-    assert qt.presenter.page == HOME and len(qt.home.tiles) == 2
+    assert qt.presenter.page == HOME and len(qt.home.tiles) == 3
     qt.home.split.button.click()
     assert (qt.presenter.page, qt.presenter.tool) == (1, Tool.SPLIT)
     qt.home.convert.button.click()  # from Home again: the other tool
     assert qt.presenter.tool is Tool.CONVERT
 
     flet = flet_window(MemoryBackend(QUIET))
-    assert flet.presenter.page == HOME and len(flet.home.tiles) == 2
+    assert flet.presenter.page == HOME and len(flet.home.tiles) == 3
     click(flet.home.split.control)
     assert (flet.presenter.page, flet.presenter.tool) == (1, Tool.SPLIT)
 

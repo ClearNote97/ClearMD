@@ -115,12 +115,10 @@ class Presenter:
     def choose_output_folder(self, folder: Path) -> None:
         self._inputs.choose_output_folder(folder)
 
-    def choose_tool(self, tool: Tool) -> None:
-        """A tile of the start screen: step 1 of that tool (feature 023)."""
+    def choose_tool(self, tool: Tool) -> None:  # a tile of the start screen (feature 023)
         self._tools.choose_tool(tool)
 
-    def split_large(self) -> None:
-        """Review's or Results' "Split the Large PDFs" (feature 025)."""
+    def split_large(self) -> None:  # Review's and Results' offer (feature 025)
         self._tools.split_large()
 
     def choose_split(
@@ -133,7 +131,6 @@ class Presenter:
         words: int | None = None,
         into: str | None = None,
     ) -> None:
-        """Split's and Merge's choices on step 1, remembered (features 023, 024, 026)."""
         self._tools.choose_split(
             cut=cut, parts=parts, pages=pages, keep=keep, words=words, into=into
         )

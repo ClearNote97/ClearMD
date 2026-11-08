@@ -1,11 +1,13 @@
 """The Choose step's output half: where the results go, the summary's format and the images'
-choice, in one card; for Split, How to Split in place of the images (feature 023)."""
+choice, in one card; for Split, How to Split in place of the images (feature 023); for Merge,
+How to Merge (feature 026)."""
 
 from collections.abc import Callable
 
 import flet as ft
 
 from clearmd.frontend.design.metrics import GAP, SPACE
+from clearmd.frontend.flet.components.merge_block import MergeBlock
 from clearmd.frontend.flet.components.primitives import (
     Choice,
     Wording,
@@ -43,6 +45,7 @@ class OutputCard:
         heading = ft.Row([title, stretch(), images_title, self.images.control], spacing=SPACE)
         self.split = SplitBlock(wording, on_split=on_split)
         self.split.control.visible = False
+        self.merge = MergeBlock(wording, on_split=on_split)
 
         self.mode = Choice((OutputMode.NEXT_TO.value, OutputMode.FOLDER.value), on_mode)
         wording.add(self.mode.radios[OutputMode.NEXT_TO.value], "gui.output.next_to")
@@ -57,16 +60,20 @@ class OutputCard:
         wording.add(self.summary.radios["markdown_pdf"], "gui.main.summary_pdf")
         wording.add(self.summary.radios["pdf"], "gui.main.summary_pdf_only")
         summary = ft.Row([summary_title, self.summary.control], spacing=GAP)
-        self.control = card([self.split.control, heading, choices, self.output_label, summary])
+        self.control = card(
+            [self.split.control, self.merge.control, heading, choices, self.output_label, summary]
+        )
         self.choices = (self.images, self.mode, self.summary)
 
     def show(self, choice: OutputChoice) -> None:
-        """The presenter's choice: for Split, its cut and what it keeps instead of the images."""
+        """The presenter's choice: for Split its cut and what it keeps, for Merge what it makes,
+        instead of the images."""
         self.mode.set(choice.mode.value)
         self.output_label.value = choice.label
         self.summary.set(choice.summary_format)
         self.images.set(choice.images)
-        splitting = choice.tool is Tool.SPLIT
-        self.split.control.visible = splitting
-        self._images_title.visible = self.images.control.visible = not splitting
+        self.split.control.visible = choice.tool is Tool.SPLIT
+        self.merge.control.visible = choice.tool is Tool.MERGE
+        self._images_title.visible = self.images.control.visible = choice.tool is Tool.CONVERT
         self.split.show(choice)
+        self.merge.show(choice)

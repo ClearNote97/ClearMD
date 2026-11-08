@@ -39,7 +39,7 @@ class ChooseView(ttk.Frame):
         super().__init__(parent, style=PAGE)
         self._texts: list[tuple[Any, str]] = []  # a widget with a text, and its catalog key
         self._short = False  # a short window (review of 011)
-        self._splitting = False  # Split's choices shown (feature 023)
+        self._splitting = False  # Split's or Merge's choices shown (features 023, 026)
 
         inputs = InputsCard(
             self,
@@ -80,6 +80,7 @@ class ChooseView(ttk.Frame):
         self.images = output.images
         self._output = output
         self.split = output.split
+        self.merge = output.merge
         self.pictures = output.pictures
 
     # --- What the presenter shows ------------------------------------------------------------
@@ -101,8 +102,8 @@ class ChooseView(ttk.Frame):
 
     def show_output_choice(self, choice: OutputChoice) -> None:
         self._output.show(choice)
-        splitting = choice.tool is Tool.SPLIT
-        if splitting != self._splitting:  # Split's taller card: the short entry keeps the list
+        splitting = choice.tool is not Tool.CONVERT
+        if splitting != self._splitting:  # a taller card: the short entry keeps the list
             self._splitting = splitting
             self._inputs_card.set_short(self._short or splitting)
 

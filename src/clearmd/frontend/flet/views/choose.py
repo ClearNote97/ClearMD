@@ -59,6 +59,7 @@ class ChooseView:
         self._output = output
         self.mode, self.pick, self.output_label = output.mode, output.pick, output.output_label
         self.summary, self.images, self.split = output.summary, output.images, output.split
+        self.merge = output.merge
         self.choices = output.choices
         # Stretched: every card spans the page's width, as in Qt (flet's column hugs by default).
         self.control = ft.Column(

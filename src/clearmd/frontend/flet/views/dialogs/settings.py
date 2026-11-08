@@ -20,8 +20,8 @@ _LANGUAGES = {"en": "English", "es": "Español"}  # each in its own language
 
 class SettingsDialog(Dialog):
     """Exactly the settings of ADR-0012, each with one line of explanation; Restore defaults puts
-    the controls back to the defaults; Save applies and writes them (UX §7). Split a PDF's group
-    follows the images (feature 023)."""
+    the controls back to the defaults; Save applies and writes them (UX §7). Split's group
+    follows the images (feature 023), then Merge's choice (feature 026)."""
 
     ROWS = (
         ("language", "language"),
@@ -32,6 +32,7 @@ class SettingsDialog(Dialog):
         ("html_strategy", "html"),
         ("summary_format", "summary"),
         ("images", "images"),
+        ("merge_into", "merge"),  # after Split's group (feature 026)
         ("show_welcome", "welcome"),
     )
 
@@ -63,6 +64,7 @@ class SettingsDialog(Dialog):
                 v: text(f"gui.settings.summary_{v}") for v in ("markdown", "markdown_pdf", "pdf")
             },
             "images": {v: text(f"gui.settings.images_{v}") for v in ("omit", "folder")},
+            "merge_into": {v: text(f"gui.merge.{v}") for v in ("markdown", "pdf")},
         }
         self.controls: dict[str, ft.Dropdown | ft.Checkbox] = {}
         self.split = SplitSettings(catalog)

@@ -108,7 +108,7 @@ follows Choose → Review → Results in the three windows; the command line get
       no tokenizer downloaded), for PDF and Markdown (Markdown by headings).
 - [x] **025 — "Split It" from Convert**: v2.2.0: a file marked too big or too slow (AC-42/43 of feature
       001) offers to split it, with the recommended cut; the parts come back to the batch.
-- [ ] **026 — Merge** (v2.3.0): several `.md` into one, PDFs into one PDF, and mixed documents converted
+- [x] **026 — Merge** (ADR-0046): v2.3.0: several `.md` into one, PDFs into one PDF, and mixed documents converted
       and joined (`OutputUnif/`); the order chosen by the user.
 - [ ] **027 — Split more formats** (v2.4.0): text and CSV by lines, Excel by rows or sheets.
 - [ ] **028 — Incremental mode** (v2.5.0): skip files unchanged since the last run.

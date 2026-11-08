@@ -26,7 +26,7 @@ def apply_enabled(enabled: Collection[Action], main: ChooseView, rail: Rail) -> 
     )
     for control, action in controls:
         control.disabled = action not in enabled
-    for choice in (*main.choices, main.split):
+    for choice in (*main.choices, main.split, main.merge):
         choice.set_disabled(Action.CHOOSE_OUTPUT not in enabled)
 
 

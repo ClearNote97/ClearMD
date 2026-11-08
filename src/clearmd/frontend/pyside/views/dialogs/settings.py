@@ -15,7 +15,7 @@ from clearmd.i18n import Catalog
 
 CONTROL_WIDTH = 28 * SPACE  # the combo boxes' column (their style sheet makes them 24 * 8 wide)
 _LANGUAGES = {"en": "English", "es": "Español"}  # each in its own language
-SPLIT_BEFORE = "show_welcome"  # the Split a PDF group goes after the conversion's settings
+SPLIT_BEFORE = "merge_into"  # Split's group goes after the conversion's settings, before Merge
 
 
 class SettingsDialog(Dialog):
@@ -31,6 +31,7 @@ class SettingsDialog(Dialog):
         ("html_strategy", "html"),
         ("summary_format", "summary"),
         ("images", "images"),
+        ("merge_into", "merge"),  # after Split's group (feature 026)
         ("show_welcome", "welcome"),
     )
 
@@ -60,6 +61,7 @@ class SettingsDialog(Dialog):
                 v: text(f"gui.settings.summary_{v}") for v in ("markdown", "markdown_pdf", "pdf")
             },
             "images": {v: text(f"gui.settings.images_{v}") for v in ("omit", "folder")},
+            "merge_into": {v: text(f"gui.merge.{v}") for v in ("markdown", "pdf")},
         }
         self.controls: dict[str, QComboBox | QCheckBox] = {}
         rows = QVBoxLayout()

@@ -67,6 +67,7 @@ class ChooseView(QWidget):
         )
         self._output_card = output
         self.split = output.split
+        self.merge = output.merge
         self.next_to = output.next_to
         self.in_folder = output.in_folder
         self.pick = output.pick
@@ -94,7 +95,7 @@ class ChooseView(QWidget):
         radios.get(choice.summary_format, self.summary_md).setChecked(True)
         (self.images_omit if choice.images == "omit" else self.images_folder).setChecked(True)
         self._output_card.show_tool(choice)
-        self._split = choice.tool is Tool.SPLIT
+        self._split = choice.tool is not Tool.CONVERT  # Split's or Merge's block
         self._fit()
 
     def output_mode(self) -> str:
@@ -106,8 +107,8 @@ class ChooseView(QWidget):
         self._fit()
 
     def _fit(self) -> None:
-        """Split's block is taller than the images' choice: with it, the add buttons go side by
-        side at any height, so the list keeps a row (feature 024; ttk's are always so)."""
+        """Split's and Merge's blocks are taller than the images' choice: with them, the add
+        buttons go side by side at any height, so the list keeps a row (024, 026; as ttk)."""
         self._inputs_card.set_short(self._short or self._split)
 
     def apply_language(self, catalog: Catalog) -> None:

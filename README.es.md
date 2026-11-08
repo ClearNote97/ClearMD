@@ -156,6 +156,7 @@ anteriores._
 | **023** Pantalla de inicio y Dividir un PDF — ClearMD 2.0 | ✅ lista | v2.0.0 · [capturas](./docs/screenshots/016/) |
 | **024** Dividir en partes que quepan en una IA (unas N palabras); Dividir acepta Markdown | ✅ lista | v2.1.0 |
 | **025** "Dividir los PDF Muy Grandes" desde Convertir | ✅ lista | v2.2.0 |
+| **026** Unir documentos en un solo Markdown o un solo PDF | ✅ lista | v2.3.0 |
 
 El plan completo está en el [roadmap](./spec/roadmap.md). ClearMD tiene **línea de comandos** y la misma **app de
 escritorio** en tres toolkits, ttkbootstrap (`clearmd-ttk`), PySide6 (`clearmd-pyside`,

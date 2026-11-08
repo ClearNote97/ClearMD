@@ -1,6 +1,7 @@
-"""Home, the start screen (feature 023, ADR-0043): what the user wants to do, as two large tiles,
-Convert to Markdown and Split a PDF, and the line that says the tools change files, never what is
-inside them. The page's title and subtitle are the surface's header, as on every step."""
+"""Home, the start screen (features 023, 026; ADR-0043): what the user wants to do, as three large
+tiles, Convert to Markdown, Split a Document and Merge Documents, and the line that says the tools
+change files, never what is inside them. The page's title and subtitle are the surface's header,
+as on every step."""
 
 from collections.abc import Callable
 
@@ -18,7 +19,7 @@ HOME_TOP = 4 * SPACE  # the content from the top, as Qt's: icons and titles in l
 
 
 class HomeView:
-    """The two tools' tiles side by side, the note centered under them."""
+    """The three tools' tiles side by side, of equal width, the note centered under them."""
 
     def __init__(self, *, on_tool: Callable[[Tool], None]) -> None:
         self._wording = Wording()
@@ -42,11 +43,21 @@ class HomeView:
             icon_size=HOME_ICON_SIZE,
             top=HOME_TOP,
         )
-        self.tiles = (self.convert, self.split)
+        self.merge = Tile(
+            self._wording,
+            ft.Icons.MERGE,
+            "gui.home.merge",
+            "gui.home.merge_body",
+            lambda: on_tool(Tool.MERGE),
+            height=HOME_TILE_HEIGHT,
+            icon_size=HOME_ICON_SIZE,
+            top=HOME_TOP,
+        )
+        self.tiles = (self.convert, self.split, self.merge)
         self.note = label("hint")
         self.note.text_align = ft.TextAlign.CENTER
         self._wording.add(self.note, "gui.home.files_note")
-        row = ft.Row([self.convert.control, self.split.control], spacing=GAP)
+        row = ft.Row([tile.control for tile in self.tiles], spacing=GAP)  # equal widths
         self.control = ft.Column(
             [row, self.note],
             spacing=GAP,

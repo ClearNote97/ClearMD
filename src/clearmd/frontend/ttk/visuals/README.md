@@ -9,6 +9,6 @@
 | `buttons.py` | The rounded button element. |
 | `shapes.py` | Pillow shapes: rounded rectangles, dashes, the background shape, circles. |
 | `marks.py` | Pillow marks: file icons, logo, checkbox, a row's number, a heading's cell. |
-| `tool_marks.py` | Pillow marks of the tools: document (Convert), scissors (Split), house (Home). |
+| `tool_marks.py` | Pillow marks of the tools: document (Convert), scissors (Split), merge (Merge), house (Home). |
 
 Imports only `frontend.design` and the libraries; never `components/` or `views/`.

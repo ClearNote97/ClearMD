@@ -1,5 +1,6 @@
-"""What the start screen's tiles draw (feature 023): a Markdown document and a pair of scissors,
-in lines of one colour, on a 24-unit grid like the rail's badges."""
+"""What the start screen's tiles draw (features 023, 026): a Markdown document, a pair of
+scissors and two arrows joining into one, in lines of one colour, on a 24-unit grid like the rail's
+badges."""
 
 from collections.abc import Callable
 
@@ -57,9 +58,26 @@ def _scissors(painter: QPainter, u: float) -> None:
     painter.drawLine(QPointF(16 * u, 15 * u), QPointF(7 * u, 3 * u))
 
 
+def _merge(painter: QPainter, u: float) -> None:
+    """Two paths coming together into one, with its arrow head: several documents into one."""
+    for start in (3 * u, 21 * u):
+        path = QPainterPath(QPointF(start, 3 * u))
+        path.cubicTo(QPointF(start, 11 * u), QPointF(12 * u, 9 * u), QPointF(12 * u, 15 * u))
+        painter.drawPath(path)
+    painter.drawLine(QPointF(12 * u, 15 * u), QPointF(12 * u, 21 * u))
+    head = QPainterPath(QPointF(8.5 * u, 17.5 * u))
+    head.lineTo(12 * u, 21 * u)
+    head.lineTo(15.5 * u, 17.5 * u)
+    painter.drawPath(head)
+
+
 def document_art(size: int, colour: str) -> QPixmap:
     return _art(size, colour, _document)
 
 
 def scissors_art(size: int, colour: str) -> QPixmap:
     return _art(size, colour, _scissors)
+
+
+def merge_art(size: int, colour: str) -> QPixmap:
+    return _art(size, colour, _merge)

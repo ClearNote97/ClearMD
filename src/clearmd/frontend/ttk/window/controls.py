@@ -22,6 +22,7 @@ def apply_enabled(enabled: Collection[Action], main: ChooseView, rail: Rail) -> 
         (main.pick, Action.CHOOSE_OUTPUT),
         *((button, Action.CHOOSE_OUTPUT) for button in main.summary_buttons),
         *((control, Action.CHOOSE_OUTPUT) for control in main.split.controls),  # 023
+        *((control, Action.CHOOSE_OUTPUT) for control in main.merge.controls),  # 026
         (rail.settings, Action.SETTINGS),
         (rail.help, Action.HELP),
     ):

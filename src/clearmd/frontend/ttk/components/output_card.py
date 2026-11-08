@@ -11,6 +11,7 @@ from typing import Any
 from clearmd.frontend.design.metrics import GAP, SPACE
 from clearmd.frontend.presenter.models import OutputChoice, OutputMode
 from clearmd.frontend.presenter.state import Tool
+from clearmd.frontend.ttk.components.merge_choice import MergeChoice
 from clearmd.frontend.ttk.components.split_choice import OnSplit, SplitChoice
 from clearmd.frontend.ttk.visuals.style_names import CARD, MUTED, PAGE, SOFT_ON_CARD
 
@@ -42,6 +43,8 @@ class OutputCard:
         self._heading = heading
         # Split's choices: above the output's, shown only while the tool is Split (feature 023).
         self.split = SplitChoice(output, fonts=fonts, on_split=on_split, label=label)
+        self.merge = MergeChoice(output, fonts=fonts, on_split=on_split, label=label)  # 026
+        self._tool = Tool.CONVERT
         title = ttk.Label(heading, font=fonts["strong"])
         title.pack(side="left")
         label(title, "gui.main.output_title")
@@ -111,23 +114,24 @@ class OutputCard:
             self.summary_buttons.append(button)  # enabled and disabled with the output's
 
     def show(self, choice: OutputChoice) -> None:
-        """The choice as the presenter has it; Split's block in place of the images for Split."""
+        """The choice as the presenter has it; Split's or Merge's block in place of the images."""
         self.output_mode.set(choice.mode.value)
         self.output_label.configure(text=choice.label)
         self.summary_format.set(choice.summary_format)
         self.images.set(choice.images)
         self.split.show(choice)
-        splitting = choice.tool is Tool.SPLIT
-        if splitting == bool(self.split.winfo_manager()):
+        self.merge.show(choice)
+        if choice.tool is self._tool:
             return
-        # Split's block above; the summary takes the images' place, at the title's right, so the
-        # list keeps its rows (feature 023).
-        self.pictures.pack_forget()
-        self._summary.pack_forget()
-        if splitting:
-            self.split.pack(fill="x", pady=(0, SPACE), before=self._heading)
+        self._tool = choice.tool
+        # The tool's block above; the summary takes the images' place, at the title's right, so
+        # the list keeps its rows (features 023, 026).
+        for widget in (self.pictures, self._summary, self.split, self.merge):
+            widget.pack_forget()
+        block = {Tool.SPLIT: self.split, Tool.MERGE: self.merge}.get(choice.tool)
+        if block is not None:
+            block.pack(fill="x", pady=(0, SPACE), before=self._heading)
             self._summary.pack(in_=self._heading, side="right")
         else:
-            self.split.pack_forget()
             self.pictures.pack(side="right")
             self._summary.pack(in_=self._output, fill="x", pady=(GAP, 0))

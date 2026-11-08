@@ -1,6 +1,6 @@
 """The Choose step's output half: where the results go, the summary's format and the images'
-choice; for Split, How to Split in place of the images (feature 023). It adds its card to the
-step's own layout, so the arrangement stays the step's."""
+choice; for Split and Merge, their block in place of the images (features 023, 026). It adds its
+card to the step's own layout, so the arrangement stays the step's."""
 
 from collections.abc import Callable
 
@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 from clearmd.frontend.design.metrics import GAP, SPACE
 from clearmd.frontend.presenter.models import OutputChoice
 from clearmd.frontend.presenter.state import Tool
+from clearmd.frontend.pyside.components.merge_choice import MergeChoice
 from clearmd.frontend.pyside.components.primitives import button, card, label, radio_button
 from clearmd.frontend.pyside.components.split_choice import SplitChoice
 
@@ -40,6 +41,9 @@ class OutputCard:
         self.split = SplitChoice(parent, text=text, on_split=on_split)
         self.split.widget.hide()
         output_layout.addWidget(self.split.widget)
+        self.merge = MergeChoice(parent, text=text, on_split=on_split)
+        self.merge.widget.hide()
+        output_layout.addWidget(self.merge.widget)
         heading = self._heading = QHBoxLayout()
         title = label("strong")
         text(title, "gui.main.output_title")
@@ -109,20 +113,22 @@ class OutputCard:
             self.images_omit,
             self.images_folder,
             *self.split.controls,
+            *self.merge.controls,
         )
 
     def show_tool(self, choice: OutputChoice) -> None:
-        """Split's block in place of the images, with what the presenter keeps."""
-        split = choice.tool is Tool.SPLIT
+        """Split's or Merge's block in place of the images, with what the presenter keeps."""
+        convert = choice.tool is Tool.CONVERT
         for widget in (self.images_title, self.images_omit, self.images_folder):
-            widget.setVisible(not split)
-        self.split.widget.setVisible(split)
-        self.split.show(choice)
-        self._place_summary(on_heading=split)
+            widget.setVisible(convert)
+        for tool, block in ((Tool.SPLIT, self.split), (Tool.MERGE, self.merge)):
+            block.widget.setVisible(choice.tool is tool)
+            block.show(choice)
+        self._place_summary(on_heading=not convert)
 
     def _place_summary(self, *, on_heading: bool) -> None:
-        """For Split the summary goes up to the heading, where the images are for Convert: the
-        block above takes the line it frees (feature 024, the window at 1080 x 720)."""
+        """For Split and Merge the summary goes up to the heading, where the images are for
+        Convert: the block above takes the line it frees (024, 026; the window at 1080 x 720)."""
         source, target = self._summary_line, self._heading
         if on_heading:
             target.removeWidget(self._summary_row)  # no-op unless it is there

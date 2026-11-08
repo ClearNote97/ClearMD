@@ -137,7 +137,7 @@ def test_ac_05_the_settings_window_saves_settings_toml_and_applies_it(flet_windo
     assert isinstance(dialog, SettingsDialog)
     assert set(dialog.controls) == {
         "language", "theme", "open_output_when_done", "on_existing_output", "recursive",
-        "html_strategy", "show_welcome", "summary_format", "images",
+        "html_strategy", "show_welcome", "summary_format", "images", "merge_into",
     }  # fmt: skip
     language, html = dialog.controls["language"], dialog.controls["html_strategy"]
     assert isinstance(language, ft.Dropdown) and isinstance(html, ft.Dropdown)

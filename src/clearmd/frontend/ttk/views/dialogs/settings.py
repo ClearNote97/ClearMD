@@ -1,4 +1,5 @@
-"""The settings dialog: exactly the settings of ADR-0012 (UX §7; AC-15), and Split's (023)."""
+"""The settings dialog: exactly the settings of ADR-0012 (UX §7; AC-15), and the groups of Split
+and Merge (features 023, 026)."""
 
 import tkinter as tk
 import tkinter.font as tkfont
@@ -11,6 +12,7 @@ from clearmd.frontend.design.metrics import GAP, MIN_HEIGHT, SPACE
 from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.ttk.components.dialog import Dialog
 from clearmd.frontend.ttk.components.scroll_area import ScrollArea
+from clearmd.frontend.ttk.views.dialogs.merge_settings import MergeSettings
 from clearmd.frontend.ttk.views.dialogs.split_settings import SplitSettings
 from clearmd.frontend.ttk.visuals.style_names import MUTED, PRIMARY, SOFT
 from clearmd.i18n import Catalog
@@ -76,6 +78,7 @@ class SettingsDialog(Dialog):
         for row, (setting, key) in enumerate(rows):
             self._row(row, setting, text(f"gui.settings.{key}"), text(f"gui.settings.{key}_help"))
         self.split = SplitSettings(self._rows, len(rows), catalog, fonts)
+        self.merge = MergeSettings(self._rows, len(rows) + 1, catalog, fonts)  # 026
         self._load(settings)
 
         save = ttk.Button(
@@ -126,6 +129,7 @@ class SettingsDialog(Dialog):
             value = getattr(settings, setting)
             variable.set(self._choices[setting][value] if setting in self._choices else value)
         self.split.load(settings)
+        self.merge.load(settings)
 
     def chosen(self) -> Settings:
         """The settings as the controls show them (the remembered folder is kept)."""
@@ -137,6 +141,7 @@ class SettingsDialog(Dialog):
             else:
                 changes[setting] = bool(variable.get())
         changes.update(self.split.chosen())
+        changes.update(self.merge.chosen())
         return replace(self._settings, **changes)  # type: ignore[arg-type]
 
     def restore(self) -> None:
@@ -144,6 +149,7 @@ class SettingsDialog(Dialog):
 
     def close(self) -> None:
         self.split.release()
+        self.merge.release()
         super().close()
 
     def save(self) -> None:
