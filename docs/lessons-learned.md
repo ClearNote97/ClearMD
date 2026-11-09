@@ -15,13 +15,18 @@ The lessons are grouped by theme:
 | VI | Quality and the safety net |
 | VII | Operational efficiency: agents, environment, CI |
 | VIII | Releasing to non-technical users |
+| IX | What the audit boards taught (2026-11-08) |
 
 Each lesson says what happened, then what a template should do. Within a part, the lessons that would have
 saved the most come first.
 
-> **Revision history.** This file was rewritten on 2026-11-08, before the external audit by the three boards
-> (backend, frontend, conciliator). The lessons from that audit are in Part IX, and the full report is in
-> [`audit/2026-11-08-audit-boards.md`](./audit/2026-11-08-audit-boards.md).
+> **Revision history.** On 2026-11-08 this file was rewritten twice:
+>
+> - before the external audit by three boards (backend, frontend, conciliator), to bring Parts I–VIII up to
+>   2.8.1;
+> - after the audit, to add Part IX.
+>
+> The full report is in [`audit/2026-11-08-audit-boards.md`](./audit/2026-11-08-audit-boards.md).
 
 ---
 
@@ -401,3 +406,142 @@ saved the most come first.
 - Use exact pins for pre-1.0 libraries, and accept no release younger than two weeks.
 - Private examples go in a git-ignored folder. Scan the history before making a repository public.
 - Stage by path, never `git add -A`.
+
+---
+
+## Part IX — What the audit boards taught (2026-11-08)
+
+Two boards audited 2.8.1, each with four lenses: logic, efficiency, what the user sees, and "Clarity is care".
+They reviewed independently, then debated each other's reports. A conciliator verified the result against the
+code: of 38 merged findings, 29 were confirmed, 9 were partly true, and none was refuted. Score: 6.5 of 10. The
+core lesson is that the happy path was well protected, and trust broke at the edges.
+
+### Philosophy
+
+#### IX.1 Trust breaks where the user cannot check
+
+- **What happened.** The worst findings were not crashes. They were results reported as fine when they were
+  not:
+  - a re-split deleted the earlier parts before it had the new ones;
+  - two merges in the same minute overwrote each other;
+  - images broke when Markdown was split or merged;
+  - a semicolon CSV (Excel's default in Spanish) came out as one column;
+  - a folder plus one of its own files was processed twice.
+
+  The opposite failure did as much damage. Warnings appeared where nothing was wrong: almost every PDF carried
+  a ⚠️ for a clean-up that was good news.
+- **For the template:** every feature spec gets an "honesty" section with two lists. First, what the user
+  cannot verify themselves. Second, how the product proves it, or how it says that it can't.
+
+#### IX.2 A message never guesses a cause the code did not check
+
+- These messages each named a cause that had not been checked:
+  - a password-protected Word file was called "damaged";
+  - an empty text file was called "a scanned PDF";
+  - a failed merge asked "is the disk full?".
+
+  Users follow a wrong hint to the letter, so it is worse than a vague one.
+- **For the template:** each error code means exactly one thing. Ship end-to-end "sad path" tests for every
+  tool: a damaged file, an empty file, an encrypted file, and a cancel halfway.
+
+### Architecture and logic
+
+#### IX.3 Replacing a set of files must be atomic as a set
+
+- Atomic single-file writes were already solid. The gap was sets: split parts, image folders. Write the new
+  set aside, move it in at the end, and only then delete the old one.
+- **For the template:** ship a test that cancelling halfway keeps the earlier result.
+
+#### IX.4 Generated names need a collision suffix
+
+- A name built from a minute-precision timestamp collides. Add `(2)`, `(3)`, and test "two runs in a row".
+
+#### IX.5 Deduplicate inputs by real file, after expanding folders, in the backend
+
+- Do it in the backend, so every interface gets it.
+
+#### IX.6 Anything that moves or combines Markdown checks its local links
+
+- Every image or local link in the result must point to a file that exists.
+
+#### IX.7 Notes have two levels from day one
+
+- The two levels are *information* and *attention*. What the user decided (for example "keep") never counts as
+  a problem, in the window or in the report.
+
+### Design and interface text
+
+#### IX.8 Grow the texts with the product
+
+- The app went from one tool to three faster than its texts did:
+  - Help described a path that no longer existed;
+  - the welcome promised "three steps" where there were four;
+  - the CLI said "nothing to convert" for a merge.
+- **For the template:** test the Help. Each button it names must exist, and each tool on Home must have a
+  section. When a feature renames or adds a button, search the catalog for every sentence that names it.
+
+#### IX.9 Window text and terminal text are separate channels
+
+- The window showed `--overwrite` and a library's name, and the terminal said "choose *Into N parts*".
+- **For the template:** keep separate catalog branches for the window and the terminal. Add a linter that
+  bans the following from window text:
+  - `--options`;
+  - library names;
+  - exception names.
+
+  The same linter requires singular and plural forms next to every number.
+
+#### IX.10 The last screen says where the result is, in words
+
+- Show the exact path as text. No explanatory text may be truncated unless the user has a way to read it in
+  full that does not need a mouse.
+
+#### IX.11 Lists have a budget test
+
+- Every list in an interface gets a test with 1,000 rows, and a test that the scroll bar is visible at the
+  minimum window size. Per-row images are cached.
+
+#### IX.12 Contrast claims need a test
+
+- An ADR stated "every pair passes AA", but derived colours fell below 4.5:1. Compute the ratios in a test,
+  for both themes.
+
+### Operations and release
+
+#### IX.13 The default download weighs what the default install installs
+
+- The installer was about 176 MB for a default install of about 37 MB. Put a size budget on every published
+  file in CI.
+
+#### IX.14 The first run speaks the installer's language
+
+- The installer was in Spanish, and the app opened in English (ADR-0017). Pass the installer's choice to the
+  first-run settings.
+
+#### IX.15 Fixtures carry the public's real formats
+
+- Include files as people really have them:
+  - CSV with `;`, a BOM, and cp1252 encoding;
+  - old Office files (`.doc`, `.xls`, `.ppt`), each with its own message;
+  - folders of numbered chapters, sorted in natural order (1, 2 … 10).
+
+### Running audit boards
+
+#### IX.16 Independent first, then debate, then a verifier
+
+- **Debate added real value.** It merged duplicates across boards, and it traced several findings to one root
+  cause, for example "never destroy earlier work before the replacement exists".
+- **Debate also amplified by echo.** "Four auditors found it" raised severities without a new check. A false
+  claim spread that way: that kept results left a run "finished with problems". Only the conciliator's own
+  check against the code stopped it.
+- **For the template:**
+  - Agreement confirms a fact, not its severity. A claim adopted from another auditor is re-checked in the
+    code before its severity is raised.
+  - Auditors read the ADRs before recommending something that contradicts one, and cite the ADR when they do.
+    No board noticed that "follow the system language" contradicts ADR-0017.
+  - The debate round diffs against round 1, so that real findings are not dropped. Here it dropped the old
+    Office formats and the startup language. The conciliator restored them.
+  - Each auditor gets its brief, a schema, a retry on network failure and a report as the deliverable. A first
+    run lost 6 of 9 agents to a DNS outage. With a retry per agent, the rerun lost none.
+  - Keep the private corpus out of reports. Auditors were told not to quote private documents, yet two file
+    names still leaked into evidence strings. Scan the report before publishing it.
