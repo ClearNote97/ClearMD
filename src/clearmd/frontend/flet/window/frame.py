@@ -71,7 +71,9 @@ def build_frame(
     home.control.visible = False
     review, converting, results = ReviewView(), ConvertView(), ResultsView()
     pages = tuple(view.control for view in (main, review, converting, results))
-    message_line = MessageLine(on_details=lambda: presenter.copy_details())  # 036
+    message_line = MessageLine(  # "Copy Details" (036) and "Undo" after Clear All (039)
+        on_details=lambda: presenter.copy_details(), on_undo=lambda: presenter.undo_clear()
+    )
     message = message_line.text
     actions = ActionBar(on_primary=on_primary, on_offer=lambda: presenter.split_large())
     panel = ft.Container(

@@ -1,5 +1,7 @@
 """What the user does without a pointer: Enter, Esc, Ctrl+0 (Home) and Ctrl+1..4, Delete and Ctrl+A
-on the list.
+on the list. One rule (039, UX §6): Enter on a button presses it, in a field confirms it, and only
+otherwise (nothing focused, or the list) runs the primary action; Delete and Ctrl+A act on the list
+only while it, or nothing, has the focus.
 
 flet gives every key to the page, not to a control: the window decides here what each does — a
 dialog's keys first (Esc closes it, Enter runs its default action), then the window's. Enter is
@@ -42,7 +44,8 @@ class Keys:
                 dialog.press_default()
             return
         if key.key in ENTER:
-            if not self._focus.taken:  # a focused control takes Enter itself (Flutter)
+            # A focused button or field takes Enter itself (Flutter); the list does not (039).
+            if not self._focus.taken or self._main.inputs.holds(self._focus.holder):
                 self._press_primary()
         elif key.ctrl and key.key in STEP_KEYS:  # the rail by keyboard
             self._presenter.go_to(STEP_KEYS[key.key])
@@ -50,7 +53,12 @@ class Keys:
             self._on_choose(key)
 
     def _on_choose(self, key: KeyPress) -> None:
-        """The list of Choose: Delete removes the checked files, Ctrl+A checks them all."""
+        """The list of Choose: Delete removes the checked files, Ctrl+A checks them all; only
+        while the list has the focus or nothing has it (039: a number being typed, or a button,
+        keeps its keys)."""
+        holder = self._focus.holder
+        if holder is not None and not self._main.inputs.holds(holder):
+            return
         if key.key == "Delete" and not self._main.remove.disabled:
             self._main.remove_selected()
         elif key.ctrl and key.key.upper() == "A":

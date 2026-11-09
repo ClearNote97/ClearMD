@@ -28,12 +28,14 @@ def test_the_plan_is_shown_and_nothing_runs_before_confirming() -> None:
     view.drain()
     shown = view.last("plan")
     assert fake.run_calls == []
-    assert shown.summary == "To convert: 2 · Skipped: 1 · Already exist: 1"
+    assert (
+        shown.summary == "To convert: 1 · Skipped: 1 · Already exist: 1"
+    )  # each file once (F5-01)
     kinds = [row.kind for row in shown.rows]
     assert kinds == [RowKind.CONVERT, RowKind.EXISTS, RowKind.SKIPPED]
     skipped = shown.rows[-1]
     assert skipped.name == "notes.md"
-    assert skipped.detail == "already Markdown. It needs no conversion."
+    assert skipped.detail == "Left out: already Markdown. It needs no conversion."
     assert shown.asks_about_existing  # the setting is "ask"
 
 
@@ -48,9 +50,9 @@ def test_the_plan_gives_its_counts_as_figures_for_the_summary_cards() -> None:
     presenter.analyze()
     view.drain()
     assert view.last("plan").stats == (
-        Stat("To Convert", 2, Tone.ACCENT),
+        Stat("To Convert", 1, Tone.ACCENT),
         Stat("Skipped", 1, Tone.WARNING),
-        Stat("Already Exist", 1, Tone.NEUTRAL),
+        Stat("Already Exists", 1, Tone.NEUTRAL),
     )
 
 

@@ -59,6 +59,9 @@ class FakeView:
     def show_scan(self, text: str) -> None:
         self._record("scan", text)
 
+    def show_undo(self, text: str | None) -> None:
+        self._record("undo", text)
+
     def show_details_button(self, label: str | None) -> None:
         self._record("details_button", label)
 

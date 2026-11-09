@@ -73,12 +73,13 @@ def test_ac_02_the_action_opens_split_with_them_and_the_recommendation() -> None
     shown = state(view)
     assert (shown.page, shown.tool) == (1, Tool.SPLIT)
     assert [row.name for row in view.last("inputs")] == ["big.pdf", "heavy.pdf"]
-    settings = fake.settings
+    settings = presenter.settings  # for this task only: never saved as a choice (audit v3)
     assert (settings.split_cut, settings.split_parts, settings.split_keep) == (
         "parts",
         7,
         "markdown",
     )
+    assert all(saved.split_parts != 7 for saved in fake.saved)
     presenter.analyze()  # the user goes on: Split's plan with the recommended cut
     view.drain()
     assert fake.plan_calls[-1]["split"] == SplitSpec(Cut.PARTS, 7, Keep.MARKDOWN)

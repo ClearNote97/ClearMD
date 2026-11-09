@@ -18,6 +18,7 @@ from clearmd.frontend.presenter.models import (
 )
 from clearmd.frontend.presenter.state import HOME, WORKING
 from clearmd.frontend.ttk.visuals.look import Look
+from clearmd.frontend.ttk.visuals.style_names import WARNING
 from clearmd.frontend.ttk.window import controls, home_chrome, offer, ready
 from clearmd.frontend.ttk.window.dialog_host import DialogHost
 from clearmd.frontend.ttk.window.frame import Frame
@@ -68,6 +69,7 @@ class TtkView:
         if previous is not None and previous.page != state.page:
             self._message.configure(text="")  # a message belongs to the page it was given on
             self._actions.show_details(None)  # and so does its "Copy Details" (036)
+            self._actions.show_undo(None)  # or its "Undo" (039)
             self._primary_button.page_shown()
             home_chrome.calm_focus(self._root)
         converting = state.state is AppState.CONVERTING
@@ -148,7 +150,7 @@ class TtkView:
         offer.show_offer(self._actions, self._shown, self._presenter)
 
     def show_message(self, text: str) -> None:
-        self._message.configure(text=text)
+        self._message.configure(text=text, style=WARNING)  # after an Undo line (039): a warning
 
     def apply_theme(self, theme: str) -> None:
         self._shown.palette = PALETTES.get(theme, LIGHT)
@@ -171,6 +173,7 @@ class TtkView:
         if self._shown.catalog is None or self._shown.state is None:
             return
         header = header_of(self._shown.catalog, self._shown.state, self._shown.scan)
+        problems = self._shown.state.state is AppState.FINISHED_WITH_PROBLEMS
         self._surface.show_header(
-            eyebrow=header.eyebrow, title=header.title, subtitle=header.subtitle
+            eyebrow=header.eyebrow, title=header.title, subtitle=header.subtitle, warning=problems
         )

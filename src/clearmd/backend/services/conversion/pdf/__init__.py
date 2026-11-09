@@ -61,6 +61,12 @@ class PdfConverter:
             notes.append(ConversionNote(NoteKind.PDF_TEXT_UNREADABLE))
         if document.cut_pages:
             notes.append(ConversionNote(NoteKind.PAGE_CUT))
+        if document.hidden_pages:  # never silent: the AI would have read it (ADR-0054)
+            items = page_ranges(document.hidden_pages)
+            notes.append(ConversionNote(NoteKind.PDF_HIDDEN_TEXT_LEFT_OUT, items))
+        if document.equation_pages:  # a formula an AI may misread: said (audit v3, B3-02)
+            items = page_ranges(document.equation_pages)
+            notes.append(ConversionNote(NoteKind.PDF_EQUATIONS_AS_TEXT, items))
         if cleaned.running_removed:
             notes.append(ConversionNote(NoteKind.PDF_RUNNING_REMOVED))
         return ConversionResult(cleaned.markdown, tuple(notes))

@@ -80,7 +80,9 @@ def test_a7_3_a_burst_of_resizes_leaves_one_redraw_waiting(app: TtkApp) -> None:
         app.rail.redraw_soon()
         app.rail.set_compact(not app.rail._compact)
     waiting = [app.root.tk.call("after", "info", t) for t in app.root.tk.call("after", "info")]
-    assert sum("_redraw_now" in str(script) for script in waiting) <= 3  # surface, rail, drop
+    # One redraw at most per widget that draws: surface, rail, drop zone, and Home's tiles (023),
+    # whose own first-size redraw may still be waiting when the test starts.
+    assert sum("_redraw_now" in str(script) for script in waiting) <= 3 + len(app.home.tiles)
 
 
 def test_c7_7_arrows_move_the_focus_so_checks_add_up(app: TtkApp, tmp_path: Path) -> None:

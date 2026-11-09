@@ -10,6 +10,7 @@ from clearmd.backend.api import (
     skip_reason,
     stopped_message,
 )
+from clearmd.backend.schemas.errors import SkipReason
 from clearmd.backend.schemas.formats import MERGE_DIR_NAME, RESULTS_DIR_NAME, SPLIT_DIR_NAME
 from clearmd.backend.schemas.models import BatchReport, ConversionOutcome, OutcomeStatus, tool_of
 from clearmd.frontend.presenter.icons import FOLDER, icon_for, icon_of_format
@@ -36,12 +37,14 @@ def result_view(catalog: Catalog, report: BatchReport, state: AppState) -> Resul
             continue
         icon = icon_of_format(outcome.item.detection.format)
         rows.append(ResultRow(*shown(source), detail, icon, Tone.DANGER))
-    for skipped in report.skipped:
+    for skipped in sorted(report.skipped, key=lambda s: s.reason in INFORMING):
         reason = skip_reason(catalog, skipped)
         word = catalog.text("gui.result.word_skipped")
         detail = f"{word} {reason}. {skip_action(catalog, skipped)}"
         icon = icon_for(skipped.path, is_folder=skipped.is_dir)
-        rows.append(ResultRow(*shown(skipped.path), detail, icon, Tone.WARNING))
+        # What only informs (nothing to do) stays calm, after what asks something (F5-02).
+        tone = Tone.NEUTRAL if skipped.reason in INFORMING else Tone.WARNING
+        rows.append(ResultRow(*shown(skipped.path), detail, icon, tone))
     for root in report.unwritten_summaries:
         detail = catalog.text("gui.result.no_summary")
         rows.append(ResultRow(*shown(root), detail, FOLDER))
@@ -69,7 +72,21 @@ def result_view(catalog: Catalog, report: BatchReport, state: AppState) -> Resul
     folders = result_folders(report)
     offer = split_offer(catalog, large_in_report(report))
     where = where_line(catalog, report)
-    return ResultView(headline, counts, tuple(rows), folders, tuple(stats), offer, where)
+    with_ai = catalog.text("gui.result.with_ai") if count[OutcomeStatus.CONVERTED] else ""
+    return ResultView(headline, counts, tuple(rows), folders, tuple(stats), offer, where, with_ai)
+
+
+# Left out because nothing had to be done: no colour of alarm (audit v3, F5-02).
+INFORMING = frozenset(
+    {
+        SkipReason.ALREADY_MARKDOWN,
+        SkipReason.ALREADY_INCLUDED,
+        SkipReason.LOCK_FILE,
+        SkipReason.HIDDEN,
+        SkipReason.OUTPUT_FOLDER,
+        SkipReason.EXISTING_OUTPUT,
+    }
+)
 
 
 def result_folders(report: BatchReport | None) -> tuple[Path, ...]:

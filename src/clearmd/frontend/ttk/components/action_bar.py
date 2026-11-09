@@ -1,5 +1,6 @@
 """The bar at the foot of every page (ADR-0029): the page's primary action, why it is disabled,
-one secondary action (Back, Cancel or Convert more), and Results' "Split the Large PDFs" (025)."""
+one secondary action (Back, Cancel or Convert more), Results' "Split the Large PDFs" (025), and
+at its left, under the message, "Copy Details" (036) or "Undo" after Clear All (039)."""
 
 import tkinter as tk
 from collections.abc import Callable
@@ -29,6 +30,8 @@ class ActionBar(ttk.Frame):
         self._offer_command: Callable[[], None] | None = None
         # After an unexpected error, under its message: "Copy Details" (feature 036, D3).
         self.details = ttk.Button(self, style=SOFT, command=self._details)
+        self.undo = ttk.Button(self, style=SOFT, command=self._undo)  # after Clear All (039)
+        self._undo_command: Callable[[], None] | None = None
         self._details_command: Callable[[], None] | None = None
 
     def _secondary(self) -> None:
@@ -39,6 +42,21 @@ class ActionBar(ttk.Frame):
         if self._details_command is not None:
             self._details_command()
 
+    def show_undo(self, label: str | None, command: Callable[[], None] | None = None) -> None:
+        """ "Undo" at the bar's left after Clear All, or none (``label`` is None)."""
+        if label is None:
+            self.undo.pack_forget()
+            return
+        if command is not None:
+            self._undo_command = command
+        self.undo.configure(text=label)
+        if not self.undo.winfo_manager():
+            self.undo.pack(side="left", fill="y", before=self.hint)  # as tall as the bar: ≥ 44 px
+
+    def _undo(self) -> None:
+        if self._undo_command is not None:
+            self._undo_command()
+
     def show_details(self, label: str | None, command: Callable[[], None] | None = None) -> None:
         """ "Copy Details" at the bar's left, or none (``label`` is None)."""
         if label is None:
@@ -48,7 +66,7 @@ class ActionBar(ttk.Frame):
             self._details_command = command
         self.details.configure(text=label)
         if not self.details.winfo_manager():
-            self.details.pack(side="left", before=self.hint)
+            self.details.pack(side="left", fill="y", before=self.hint)
 
     def _offer(self) -> None:
         if self._offer_command is not None:

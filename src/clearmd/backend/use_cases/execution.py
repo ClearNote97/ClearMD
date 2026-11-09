@@ -36,6 +36,7 @@ from clearmd.backend.use_cases.output_files import (
     write_images,
 )
 from clearmd.backend.use_cases.ports import Clock, ConversionRunner, PageCutter
+from clearmd.backend.use_cases.split_names import has_result
 from clearmd.backend.use_cases.splitting import split_one
 
 STOPPING_CODES = frozenset({ErrorCode.TIMED_OUT, ErrorCode.OUT_OF_MEMORY})
@@ -116,7 +117,7 @@ def execute_plan(
         if problem is not None:
             outcome = ConversionOutcome(item, OutcomeStatus.FAILED, *problem)
         # Re-checked now: an output may have appeared after the plan was made.
-        elif (item.exists or item.target.exists()) and not overwrite(item):
+        elif (item.exists or has_result(item)) and not overwrite(item):
             outcome = ConversionOutcome(item, OutcomeStatus.KEPT)
         elif startup_failure is not None:  # do not wait for a worker that cannot start
             outcome = ConversionOutcome(

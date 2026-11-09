@@ -41,3 +41,10 @@ it a project in its organization; that takes days.
   request), so a release can no longer finish unattended.
 - The author does once: apply at signpath.org, then add the variables and the secret in the
   repository's settings (*Settings → Secrets and variables → Actions*).
+
+
+## Amendment (2026-11-09, the owner's decision on the third audit, F4-01)
+
+The installers (`ClearMD-Setup-<v>.exe`, `ClearMD-Setup-Full-<v>.exe`) are signed too, in a second
+SignPath request after they are compiled and checked. Like the rest, this runs only once SignPath is
+set up; the installers' own uninstaller is not signed yet.

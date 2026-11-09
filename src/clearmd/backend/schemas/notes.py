@@ -37,6 +37,14 @@ class NoteKind(StrEnum):
     PARTS_OVER_SIZE = "parts_over_size"
     # Split into N parts: the file allowed fewer (fewer pages, sheets or blocks than parts).
     PARTS_FEWER = "parts_fewer"
+    # Text no one sees on the page (off it, tiny, invisible without a picture): ADR-0054.
+    PDF_HIDDEN_TEXT_LEFT_OUT = "pdf_hidden_text_left_out"
+    # Display equations ClearMD could not rebuild, kept as their characters (audit v3, B3-02).
+    PDF_EQUATIONS_AS_TEXT = "pdf_equations_as_text"
+    # Parts whose Markdown could not be made; their original part is kept (audit v3, B1-02).
+    PARTS_NOT_CONVERTED = "parts_not_converted"
+    # Remote images, unsafe links and active HTML turned into text (audit v3, B2-01).
+    MADE_SAFE = "made_safe"
 
     @property
     def key(self) -> str:
@@ -49,7 +57,9 @@ class NoteKind(StrEnum):
 
 
 # Notes that tell what ClearMD tidied up: told in a calm section, never as "needs attention".
-INFORMATION = frozenset({NoteKind.PDF_RUNNING_REMOVED, NoteKind.PDF_TEXT_DECODED})
+INFORMATION = frozenset(
+    {NoteKind.PDF_RUNNING_REMOVED, NoteKind.PDF_TEXT_DECODED, NoteKind.MADE_SAFE}
+)
 
 
 class NoteReason(StrEnum):

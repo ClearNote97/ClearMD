@@ -12,6 +12,7 @@ from clearmd.backend.schemas.models import (
     SkippedItem,
     tool_of,
 )
+from clearmd.backend.services.privacy import without_paths
 from clearmd.backend.services.rejections import (
     error_action,
     error_text,
@@ -151,7 +152,8 @@ class SummaryBuilder:
 
     def _failed(self, outcome: ConversionOutcome, markdown: Path) -> Entry:
         assert outcome.error is not None
-        detail = printable(" ".join(outcome.detail.split()))
+        placeholder = self._catalog.text("gui.app.file_placeholder")
+        detail = printable(without_paths(" ".join(outcome.detail.split()), placeholder))
         return Entry(
             Mark.FAILED,
             *_converted_place(outcome, markdown),

@@ -8,9 +8,10 @@ dropped.
 
 import time
 from collections.abc import Callable, Sequence
+from dataclasses import replace
 from pathlib import Path
 
-from clearmd.backend.schemas.settings import Settings
+from clearmd.backend.schemas.settings import CHOICES, Settings
 from clearmd.frontend.presenter.background import Background
 from clearmd.frontend.presenter.display import Display
 from clearmd.frontend.presenter.intents.analysis import Analysis
@@ -23,15 +24,14 @@ from clearmd.frontend.presenter.intents.results import Results
 from clearmd.frontend.presenter.intents.tools import Tools
 from clearmd.frontend.presenter.models import NextChoice
 from clearmd.frontend.presenter.ports import ApiBackend, Backend, View
+from clearmd.frontend.presenter.reads import Reads
 from clearmd.frontend.presenter.screens.next import next_choices
 from clearmd.frontend.presenter.session import Session
 from clearmd.frontend.presenter.state import AppState, Tool
 from clearmd.frontend.presenter.system_theme import detect_system_theme
-from clearmd.frontend.presenter.version import app_version
-from clearmd.i18n import Catalog
 
 
-class Presenter:
+class Presenter(Reads):
     def __init__(
         self,
         view: View,
@@ -59,34 +59,6 @@ class Presenter:
             session, display, self._tools, self._analysis, self._conversion, self._results
         )
 
-    @property
-    def state(self) -> AppState:
-        return self._session.state
-
-    @property
-    def page(self) -> int:
-        return self._session.page
-
-    @property
-    def tool(self) -> Tool:
-        return self._session.tool
-
-    @property
-    def settings(self) -> Settings:
-        return self._session.settings
-
-    @property
-    def catalog(self) -> Catalog:
-        return self._session.catalog
-
-    @property
-    def version(self) -> str:  # as shown in the window and the help
-        return app_version()
-
-    @property
-    def output_folder(self) -> Path | None:  # the results' folder; None: next to the originals
-        return self._session.output_folder
-
     def start(self) -> None:
         self._preferences.start()
 
@@ -101,6 +73,9 @@ class Presenter:
 
     def clear_inputs(self) -> None:
         self._inputs.clear_inputs()
+
+    def undo_clear(self) -> None:  # "Undo" after Clear All (audit v3, F1-03)
+        self._inputs.undo_clear()
 
     def move_input(self, path: Path, offset: int) -> None:  # Merge's order (feature 032)
         self._inputs.move_input(path, offset)
@@ -178,6 +153,10 @@ class Presenter:
 
     def restore_defaults(self) -> None:
         self._preferences.restore_defaults()
+
+    def choose_language(self, language: str) -> None:  # the Welcome's buttons (audit v3, F4-05)
+        if language in CHOICES["language"] and language != self._session.settings.language:
+            self._preferences.save_settings(replace(self._session.settings, language=language))
 
     def dismiss_welcome(self, *, show_again: bool) -> None:
         self._preferences.dismiss_welcome(show_again=show_again)

@@ -68,7 +68,7 @@ def test_c4_inputs_and_the_output_cannot_change_while_analyzing() -> None:
 def test_c5_the_result_follows_a_language_change() -> None:
     presenter, view, fake, _ = converted()
     presenter.save_settings(replace(fake.settings, language="es"))
-    assert view.last("result").stats[0].label == "Convertidos"
+    assert view.last("result").stats[0].label == "Convertido"  # one: the singular (audit v3, F5-07)
 
 
 def test_c5_the_theme_is_applied_only_when_it_changes() -> None:

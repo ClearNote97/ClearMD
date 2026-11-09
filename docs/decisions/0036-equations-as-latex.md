@@ -76,3 +76,10 @@ An adversarial review found 15 points; 14 were fixed, each with a test:
   for a product is a letter; the alignment of a system's rows is not kept (each row from the left).
 - A viewer without math shows the LaTeX source: still readable, and exact.
 - Supersedes ADR-0034's "a picture with the images folder" for the equations that are understood.
+
+
+## Amendment (2026-11-09, the third audit, B3-02)
+
+The count "all 15 equations are LaTeX" held for the document measured then, not for every PDF. An
+equation ClearMD cannot rebuild coherently stays as its symbols, and the summary now says so with
+its pages ("equations kept as their symbols; check them against the original").

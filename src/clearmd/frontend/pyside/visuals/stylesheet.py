@@ -59,6 +59,7 @@ QPushButton#railButton:disabled, QPushButton#step:disabled {{
 }}
 
 QLabel#eyebrow {{ color: {p.accent_text}; font-weight: bold; background: transparent; }}
+QLabel#eyebrow[tone="warning"] {{ color: {p.warning}; }}
 QLabel#title {{ font-size: {TITLE}px; font-weight: bold; background: transparent; }}
 QLabel#subtitle, QLabel#hint {{ color: {p.muted}; background: transparent; }}
 QLabel#message {{ color: {p.warning}; background: transparent; }}

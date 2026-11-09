@@ -48,12 +48,13 @@ def article_md(workdir: Path) -> str:
     return output(workdir, "news.md")
 
 
-def test_ac_01_by_default_a_page_converts_in_full(workdir: Path) -> None:
+def test_ac_01_by_default_a_page_converts_its_article(workdir: Path) -> None:
+    # The default since the owner's decision on audit v3 (ADR-0025 amended): only the article.
     (page,) = copy_html(workdir, "news.html")
     assert main([str(page), "--quiet"]) == 0
     markdown = output(workdir, "news.md")
-    assert "fixture-html-article" in markdown and "MENU-FIXTURE" in markdown
-    assert "| `news.html` | — | `news.md` | HTML |" in summary(workdir)
+    assert "fixture-html-article" in markdown and "MENU-FIXTURE" not in markdown
+    assert "| `news.html` | — | `news.md` |" in summary(workdir)
 
 
 def test_ac_02_the_setting_or_the_flag_chooses_the_article(workdir: Path) -> None:

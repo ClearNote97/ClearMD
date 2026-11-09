@@ -22,7 +22,7 @@ def test_texts_follow_the_language_setting() -> None:
     presenter.add_paths([Path("/docs")])
     presenter.analyze()
     view.drain()
-    assert view.last("plan").rows[0].detail == "ya es Markdown. No necesita conversión."
+    assert view.last("plan").rows[0].detail == "Omitido: ya es Markdown. No necesita conversión."
 
 
 def test_saving_settings_applies_the_language_and_the_theme() -> None:

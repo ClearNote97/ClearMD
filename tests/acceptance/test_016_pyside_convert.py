@@ -128,12 +128,15 @@ def test_ac_03_the_result_tells_the_counts_the_problems_and_the_selected_ones_de
         ("Failed", "2"),
     ]
     assert app.results.problems.tree.topLevelItemCount() == 2
+    assert app.results.detail.text() == ""  # no row chosen for the user (039)
+    app.results.problems.select(0)
     assert "password" in app.results.detail.text() and "a.pdf" in app.results.detail.text()
     app.results.problems.select(1)  # the detail follows the selected problem
     assert "c.pdf" in app.results.detail.text()
-    assert fake.opened == [Path("/docs/ClearMD_Output")]  # opened by itself
+    assert fake.opened == []  # with problems it does not open by itself (audit v3, F1-06)
+    pump(app, seconds=0.8)  # past the primary action's pause (F-1)
     app.actions.primary.click()
-    assert len(fake.opened) == 2
+    assert fake.opened == [Path("/docs/ClearMD_Output")]
 
 
 def test_ac_03_when_every_file_converts_the_result_says_so(

@@ -62,3 +62,12 @@ feature 001).
   and another parser.
 - **One request per document (cut and convert together).** Rejected: the time limit would apply to
   the whole document, which is the problem Split solves.
+
+
+## Amendment (2026-11-09, the third audit, B1-02)
+
+"Never destroy the earlier cut before the new one exists" stays. "All or nothing" no longer throws
+away good work: when one part's Markdown stops or fails, the parts already cut are kept, that part's
+original stays in the folder to try again, and the summary names it. A folder holds a result only
+when it has ClearMD's own parts: an empty folder left by a failure is removed, and never counts as
+"already exists".

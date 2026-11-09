@@ -79,3 +79,13 @@ Markdown link to them makes the viewer fetch them when the file is opened.
 - **Remote images as links:** what a browser would show, but opening the file would contact the image hosts.
 - **Readability ports (`readability-lxml`):** less maintained, weaker extraction in benchmarks of the field.
 - **Failing when no article is found:** the user asked for content; the full page is the honest fallback.
+
+
+## Amendment (2026-11-09, the owner's decision on the third audit)
+
+- **Article mode is the default** (`html_strategy = "article"`): a page is written by ClearMD, its
+  article only, or the whole page when none is found. "Full" stays a choice in Settings and
+  `--html full`. Settings files saved before keep their value.
+- Whatever converts a page (ClearMD or markitdown), one common pass after every converter turns
+  remote images, `file:`/`javascript:` links and active HTML into text, with a note (audit v3,
+  B2-01). An e-mail's HTML body is written by ClearMD's page writer, in memory (B2-07).

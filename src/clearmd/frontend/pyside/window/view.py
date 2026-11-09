@@ -21,6 +21,7 @@ from clearmd.frontend.pyside.visuals.stylesheet import stylesheet
 from clearmd.frontend.pyside.window import controls
 from clearmd.frontend.pyside.window.dialog_host import DialogHost
 from clearmd.frontend.pyside.window.frame import Frame
+from clearmd.frontend.pyside.window.note import Note
 from clearmd.frontend.pyside.window.offer import offer_of
 from clearmd.frontend.pyside.window.primary_button import PrimaryButton
 from clearmd.frontend.pyside.window.secondary import show_secondary
@@ -47,8 +48,7 @@ class PySideView:
         self._surface = frame.surface
         self._stack = frame.stack
         self._actions = frame.actions
-        self._message = frame.message
-        self._details = frame.details
+        self._note = Note(frame.message, frame.details, frame.undo)
         self._home = frame.home
         self._panel = frame.panel
         self._main = frame.main
@@ -134,18 +134,17 @@ class PySideView:
         self._review.forget()
         self._converting.forget(self._main.output_label.text())
         self._results.forget()
-        self._details.hide()
+        self._note.forget()
         self._show_offer()
 
     def show_message(self, text: str) -> None:
-        self._message.setText(text)
-        if not text:  # "Copy Details" goes with the message it explains (036)
-            self._details.hide()
+        self._note.show_message(text)
 
     def show_details_button(self, text: str | None) -> None:
-        self._details.setText(text or "")
-        self._details.setAccessibleName(text or "")
-        self._details.setVisible(bool(text))
+        self._note.show_details_button(text)
+
+    def show_undo(self, text: str | None) -> None:
+        self._note.show_undo(text)
 
     def apply_theme(self, theme: str) -> None:
         self._shown.palette = PALETTES.get(theme, LIGHT)
@@ -157,6 +156,8 @@ class PySideView:
 
     def apply_language(self, catalog: Catalog) -> None:
         self._shown.catalog = catalog
+        self._note.apply_language(catalog)
+        self._dialogs.apply_language(catalog)
         self._window.setWindowTitle(catalog.text("gui.app.title"))
         self._rail.apply_language(catalog)
         for view in (self._home, self._main, self._review, self._converting, self._results):
@@ -167,6 +168,10 @@ class PySideView:
         if self._shown.catalog is None or self._shown.state is None:
             return
         header = header_of(self._shown.catalog, self._shown.state, self._shown.scan)
+        problems = self._shown.state.state is AppState.FINISHED_WITH_PROBLEMS  # F3-03
         self._surface.show_header(  # Qt's eyebrow in capitals: the draft's own look (P0 list)
-            eyebrow=header.eyebrow.upper(), title=header.title, subtitle=header.subtitle
+            eyebrow=header.eyebrow.upper(),
+            title=header.title,
+            subtitle=header.subtitle,
+            warning=problems,
         )

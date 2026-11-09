@@ -25,7 +25,7 @@ def test_ac_07_parts_are_named_by_what_a_person_notices() -> None:
         "spanish.ShortcutCli=ClearMD Línea de Comandos",
     ):
         assert line in script
-    assert "english.CardFletTag=about 120 MB · made with Flutter (flet)" in painted
+    assert "english.CardFletTag=about 120 MB" in painted  # no toolkit names (audit v3, C-3)
     titles = re.findall(r"^(?:english|spanish)\.Card\w+Title=(.*)$", painted, re.M)
     assert titles and not any(word in t for t in titles for word in ("ttk", "Qt", "flet"))
 

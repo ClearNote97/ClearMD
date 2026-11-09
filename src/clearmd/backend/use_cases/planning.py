@@ -37,6 +37,7 @@ from clearmd.backend.use_cases.paths import (
 from clearmd.backend.use_cases.ports import FormatDetector
 from clearmd.backend.use_cases.scanning import Candidate, first_time, scan, unsupported_reason
 from clearmd.backend.use_cases.scheduling import order_by_cost
+from clearmd.backend.use_cases.split_names import parts_in
 from clearmd.backend.use_cases.splitting import (
     split_cost,
     split_detection,
@@ -176,7 +177,7 @@ def build_plan(
             output_root=root,
             target=target,
             detection=detection,
-            exists=target.exists(),
+            exists=target.exists() if split is None else bool(parts_in(target, split)),
             cost=cost,
             strategy=strategy,
             split=split,
@@ -189,7 +190,11 @@ def build_plan(
     warnings = tuple(  # a split file is converted part by part: no file-wide warning
         PlanWarning(item, item.cost, limits.time_per_file)
         for item in ordered
-        if item.cost > limits.time_per_file and item.split is None
+        if item.cost > limits.time_per_file
+        and item.split is None
+        # A PDF reports its progress page by page and stops only when it makes none: a size
+        # estimate would warn of a stop that does not come (audit v3, B4-01).
+        and item.detection.format is not FormatId.PDF
     )
     plan = BatchPlan(ordered, tuple(skipped), scanned.input_errors, warnings)
     if merge is not None:

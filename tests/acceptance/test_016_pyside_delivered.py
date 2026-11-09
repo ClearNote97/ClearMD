@@ -37,4 +37,5 @@ def test_ac_08_the_pyside_window_converts_like_the_cli(
     tables = [[line for line in text.splitlines() if line.startswith("| `")] for text in summaries]
     assert tables[0] == tables[1] != []
     assert app.results.stats.figures()[0] == ("Converted", "3")  # and the window says so
+    app.results.problems.select(0)  # Results chooses no row itself (039)
     assert "password" in app.results.detail.text()  # the encrypted one, in its words

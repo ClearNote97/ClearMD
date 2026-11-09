@@ -1,7 +1,8 @@
 """Screenshots of the PySide6 GUI for docs/ (feature 016, AC-10): every screen, light and dark,
 English and Spanish, drawn offscreen with the presenter's fake backend (the same demo as ttk's);
 the start screen and Split's step 1 since feature 023; Review's offer to split since 025;
-Merge's step 1 since 026; What Next? and Split at 800 px since 032.
+Merge's step 1 since 026; What Next? and Split at 800 px since 032;
+Settings on a 1366 x 768 screen since 039.
 
     uv run python tests/gui/pyside_screenshots.py --out docs/screenshots/016
 """
@@ -18,6 +19,7 @@ import support.ttk_demo as demo  # noqa: E402
 from support.gui_fakes import FakeBackend  # noqa: E402
 from support.pyside_acceptance import open_window, pump, shut  # noqa: E402 -- sets offscreen
 
+import clearmd.frontend.pyside.components.dialog as dialog_module  # noqa: E402
 from clearmd.backend.schemas.models import PlanWarning  # noqa: E402
 from clearmd.backend.schemas.settings import Settings  # noqa: E402
 from clearmd.frontend.design.metrics import START_HEIGHT, START_WIDTH  # noqa: E402
@@ -26,6 +28,7 @@ from clearmd.frontend.pyside import PySideApp  # noqa: E402
 from clearmd.i18n import load_catalog  # noqa: E402
 
 COMPACT = (900, 640)  # below 1000 px the rail is compact (feature 007)
+LAPTOP = 768 - 40  # a 1366 x 768 screen less its taskbar: the room a dialog has (039)
 NARROWEST = (800, 600)  # the window's least width (032): Split's cuts and the list stay usable
 
 
@@ -78,6 +81,11 @@ def screens(out: Path, theme: str, language: str) -> None:
     dialog_shot(app, out / f"5-help-{tag}.png")
     app.dialogs.show_settings()
     dialog_shot(app, out / f"6-settings-{tag}.png")
+    room = dialog_module.screen_room
+    dialog_module.screen_room = lambda widget: LAPTOP - dialog_module.SCREEN_MARGIN
+    app.dialogs.show_settings()  # a 1366 x 768 screen: the settings scroll, Save stays (039)
+    dialog_shot(app, out / f"6-settings-1366x768-{tag}.png")
+    dialog_module.screen_room = room
     catalog = load_catalog(language)
     app.dialogs.welcome(tuple(catalog.text(f"gui.welcome.step{n}") for n in (1, 2, 3)))
     dialog_shot(app, out / f"0-welcome-{tag}.png")
@@ -97,6 +105,8 @@ def screens(out: Path, theme: str, language: str) -> None:
     app.presenter.clear_inputs()
     app.presenter.add_paths([path for path in demo.INPUTS if path.suffix][:3])
     shot(app, out / f"1-choose-merge-{tag}.png")
+    app.presenter.clear_inputs()  # Clear All: the line and Undo (039)
+    shot(app, out / f"1-choose-cleared-{tag}.png")
     shut(app)
 
 

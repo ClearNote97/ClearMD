@@ -32,3 +32,9 @@ class Session:
         self.page = HOME  # the step on screen (ADR-0029); the start screen first (feature 023)
         self.tool = Tool.CONVERT
         self.plan_id = 0  # each plan's own number (security audit of 007, F-2)
+        # "Split the large PDFs" from Convert (audit v3, F1-02): the rest of Convert's list, and
+        # Split's own choices, both given back on returning to Convert.
+        self.back_to_convert: list[Path] | None = None
+        self.notice: str | None = None  # a message shown once the step on screen has changed
+        self.cleared: list[Path] | None = None  # the list "Clear All" emptied, for "Undo"
+        self.split_before: Settings | None = None

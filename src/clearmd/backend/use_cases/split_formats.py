@@ -17,7 +17,7 @@ from clearmd.backend.use_cases.output_files import (
 from clearmd.backend.use_cases.part_stage import PartStage
 from clearmd.backend.use_cases.ports import ConversionRunner, PageCutter
 from clearmd.backend.use_cases.split_names import part_name
-from clearmd.backend.use_cases.split_notes import over_size
+from clearmd.backend.use_cases.split_notes import not_converted, over_size, part_markdown
 
 OWN_FORMAT_PARTS = frozenset({FormatId.TXT, FormatId.CSV, FormatId.XLSX})
 
@@ -45,6 +45,7 @@ def split_file(
         raise ConversionError(ErrorCode.EMPTY_FILE, "an empty file")
     suffix = "." + item.detection.format.value
     notes: list[ConversionNote] = []
+    failed: list[int] = []
     for index, data in enumerate(parts, start=1):
         name = part_name(spec, item.target.name, index, len(parts))
         path = stage.at(item.target / f"{name}{suffix}")
@@ -56,9 +57,12 @@ def split_file(
             part = replace(
                 item, source=path, target=stage.at(item.target / f"{name}.md"), split=None
             )
-            result = runner.convert(part, cancel)
+            result = part_markdown(runner, part, cancel)
+            if result is None:
+                failed.append(index)
+                continue  # its original part stays, to try again
             atomic_write(part.target, result.markdown, inside=item.output_root)
             notes.extend(result.notes)
             if not spec.keep.original:
                 remove_regular_file(path, inside=item.output_root)
-    return len(parts), tuple(dict.fromkeys(notes)) + over_size(over)
+    return len(parts), tuple(dict.fromkeys(notes)) + over_size(over) + not_converted(failed)

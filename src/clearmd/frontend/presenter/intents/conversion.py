@@ -151,5 +151,6 @@ class Conversion:
         s.page = 4  # the results open by themselves (ADR-0029)
         self._display.set_state(state)
         opens = s.settings.open_output_when_done and not s.shutting_down
-        if state is not AppState.CANCELLED and opens:
+        # Only when all went well: a folder opening over the list would hide what failed (F1-06).
+        if state is AppState.FINISHED and opens:
             self._open_results()

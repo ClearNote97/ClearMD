@@ -3,7 +3,11 @@ larger than the size."""
 
 import re
 
+from clearmd.backend.schemas.errors import ConversionError
+from clearmd.backend.schemas.models import ConversionResult, PlannedConversion
 from clearmd.backend.schemas.notes import ConversionNote, NoteItem, NoteKind
+from clearmd.backend.use_cases.cancel import CancelToken
+from clearmd.backend.use_cases.ports import ConversionRunner
 
 
 def _shifted(pages: str, shift: int) -> str:
@@ -31,3 +35,21 @@ def over_size(parts: tuple[int, ...]) -> tuple[ConversionNote, ...]:
     if not parts:
         return ()
     return (ConversionNote(NoteKind.PARTS_OVER_SIZE, tuple(NoteItem(str(n)) for n in parts)),)
+
+
+def part_markdown(
+    runner: ConversionRunner, part: PlannedConversion, cancel: CancelToken
+) -> ConversionResult | None:
+    """A part's Markdown; ``None`` when that part could not be converted (stopped, failed). The
+    parts already cut stay: one part that stops never costs the others (audit v3, B1-02)."""
+    try:
+        return runner.convert(part, cancel)
+    except ConversionError:
+        return None
+
+
+def not_converted(parts: list[int]) -> tuple[ConversionNote, ...]:
+    """Parts whose Markdown could not be made: their original part stays in the folder."""
+    if not parts:
+        return ()
+    return (ConversionNote(NoteKind.PARTS_NOT_CONVERTED, tuple(NoteItem(str(n)) for n in parts)),)

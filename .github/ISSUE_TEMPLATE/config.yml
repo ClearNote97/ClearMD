@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: A question, an idea, or a problem without a template
+    url: https://github.com/ClearNote97/ClearMD/discussions
+    about: The project's community. Without a GitHub account, write to nienvasa@gmail.com.
   - name: Security problem
     url: https://github.com/ClearNote97/ClearMD/security/advisories/new
     about: Report it privately, never in a public issue (see SECURITY.md).

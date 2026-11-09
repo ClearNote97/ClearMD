@@ -33,6 +33,9 @@ class ResultsView(QWidget):
         )
         self.where.hide()
         self.layout_.addWidget(self.where)
+        self.with_ai = label("muted", wrap=True)  # what to do with the result (audit v3, F4-06)
+        self.with_ai.hide()
+        self.layout_.addWidget(self.with_ai)
         self.all_good, good_layout = card(padding=3 * SPACE)
         message = label("strong", wrap=True)
         self._text(message, "gui.result.all_good")
@@ -53,11 +56,14 @@ class ResultsView(QWidget):
     def show(self, result: ResultView) -> None:  # type: ignore[override]  # the presenter's
         current = self.problems.current()
         rows = self.problems.rows()
-        selected = rows.index(current) if current in rows else 0
-        keep = len(rows) == len(result.rows)  # the same result again (settings)
+        # Never a row chosen for the user (audit v3, F3-03); the same result again keeps theirs.
+        selected = rows.index(current) if current in rows else -1
+        keep = len(rows) == len(result.rows)
         self.stats.show_stats(result.stats)
         self.where.setText(result.where)
         self.where.setVisible(bool(result.where))
+        self.with_ai.setText(result.with_ai)
+        self.with_ai.setVisible(bool(result.with_ai))
         if result.rows:
             self.problems.show_rows(
                 [
@@ -65,14 +71,15 @@ class ResultsView(QWidget):
                         row.icon,
                         row.name,
                         (row.detail,),
-                        warning=row.tone is not Tone.DANGER,
+                        warning=row.tone is Tone.WARNING,  # NEUTRAL: informative, plain
                         danger=row.tone is Tone.DANGER,
                     )
                     for row in result.rows
                 ]
             )
             self._showing(True)
-            self.problems.select(selected if keep and selected < len(result.rows) else 0)
+            if keep and 0 <= selected < len(result.rows):
+                self.problems.select(selected)
             self._show_detail()
         else:
             self._showing(False)
@@ -82,6 +89,8 @@ class ResultsView(QWidget):
         self.problems.show_rows([])
         self.where.setText("")
         self.where.hide()
+        self.with_ai.setText("")
+        self.with_ai.hide()
         self._showing(None)
 
     def _showing(self, problems: bool | None) -> None:

@@ -10,6 +10,7 @@ forwards every `View` call to the one that does it. None of them receives the wh
 | `frame.py` | The widgets and their arrangement (rail, surface, Home and step views, action bar). |
 | `home_chrome.py` | Home has no action bar nor message at its foot (023). |
 | `ready.py` | Step 3's card before the batch: what will be written, the existing results (035). |
+| `note.py`, `undo.py` | The message line's companions: Copy Details (036), Undo after Clear All (039), the clipboard. |
 | `controls.py` | Which buttons a state enables; the compact and short layouts. |
 | `shown.py` | What the window shows now (state, plan, result, language, theme, page). |
 | `dialog_host.py` | One dialog at a time: help, settings, welcome, Convert more. |

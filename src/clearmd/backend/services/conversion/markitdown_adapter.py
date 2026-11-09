@@ -147,7 +147,23 @@ class MarkItDownConverter:
                 result = converter.convert(stream, hint, **options)
             except Exception as error:
                 raise map_exception(error) from error
+        if detection.format is FormatId.DOCX and merged_cells(source):  # audit v3, B3-01
+            notes = (*notes, ConversionNote(NoteKind.TABLE_SIMPLIFIED, (NoteItem(source.name),)))
         markdown = take_data_images(result.markdown, images)
         if images is not None and detection.format is FormatId.EPUB:
             markdown = epub_images(source, markdown, images)
         return ConversionResult(markdown, notes)  # markitdown reports nothing else it skipped
+
+
+MAX_DOCUMENT_XML = 64 * 1024**2  # the body read to look for merged cells, at most
+
+
+def merged_cells(source: Path) -> bool:
+    """Whether a Word file's tables merge cells (``gridSpan``, ``vMerge``): markitdown writes
+    such a table with its cells shifted, so the summary says to check it."""
+    try:
+        with zipfile.ZipFile(source) as package, package.open("word/document.xml") as body:
+            data = body.read(MAX_DOCUMENT_XML)
+    except (OSError, KeyError, zipfile.BadZipFile):
+        return False
+    return b"<w:gridSpan" in data or b"<w:vMerge" in data

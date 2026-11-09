@@ -21,25 +21,27 @@ def plan_view(catalog: Catalog, plan: BatchPlan, on_existing_output: str, plan_i
         rows.append(PlanRow(kind, name, location, detail, icon))
     for skipped in plan.skipped:
         reason = skip_reason(catalog, skipped)
-        detail = f"{reason}. {skip_action(catalog, skipped)}"
+        word = catalog.text("gui.result.word_skipped")  # a word, never a colour alone (F2-05)
+        detail = f"{word} {reason}. {skip_action(catalog, skipped)}"
         name, location = shown(skipped.path, is_dir=skipped.is_dir)
         icon = icon_for(skipped.path, is_folder=skipped.is_dir)
         rows.append(PlanRow(RowKind.SKIPPED, name, location, detail, icon))
     for missing in plan.input_errors:
-        detail = catalog.text("gui.plan.not_found")
+        detail = f"{catalog.text('gui.plan.word_missing')} {catalog.text('gui.plan.not_found')}"
         name, location = shown(missing.path)
         icon = icon_for(missing.path, is_folder=False)  # it is not there: only its name
         rows.append(PlanRow(RowKind.MISSING, name, location, detail, icon))
     existing = len(plan.existing)
+    new = len(plan.conversions) - existing  # each file counted once (audit v3, F5-01)
     summary = catalog.text(
         "gui.plan.summary",
-        convert=len(plan.conversions),
+        convert=new,
         skipped=len(plan.skipped) + len(plan.input_errors),
         existing=existing,
     )
     asks = existing > 0 and on_existing_output == "ask"
     stats = (
-        stat(catalog, "gui.plan.stat_convert", len(plan.conversions), Tone.ACCENT),
+        stat(catalog, "gui.plan.stat_convert", new, Tone.ACCENT),
         stat(catalog, "gui.plan.stat_skipped", len(plan.skipped) + len(plan.input_errors)),
         stat(catalog, "gui.plan.stat_existing", existing, Tone.NEUTRAL),
     )
@@ -54,8 +56,11 @@ def split_offer(catalog: Catalog, found: tuple[tuple[Path, int], ...]) -> str:
 
 
 def stat(catalog: Catalog, key: str, value: int, tone: Tone = Tone.WARNING) -> Stat:
-    """A figure; a warning or a problem only when it is not zero."""
-    return Stat(catalog.text(key), value, tone if value or tone is Tone.ACCENT else Tone.NEUTRAL)
+    """A figure; a warning or a problem only when it is not zero. One is said in the singular
+    ("1 Omitido") where the language has its own word (audit v3, F5-07)."""
+    one = f"{key}_one"
+    label = catalog.text(one) if value == 1 and one in catalog.keys() else catalog.text(key)
+    return Stat(label, value, tone if value or tone is Tone.ACCENT else Tone.NEUTRAL)
 
 
 def _cut(catalog: Catalog, item: PlannedConversion) -> str:

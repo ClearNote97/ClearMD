@@ -66,8 +66,11 @@
 
 ## 6. Keyboard and accessibility
 
-- Everything works with the keyboard: logical tab order, visible focus, Enter triggers the primary action,
-  Esc closes dialogs.
+- Everything works with the keyboard: logical tab order, visible focus, Esc closes dialogs.
+- **Enter** on a button presses that button; in a field it confirms the field; only otherwise it runs
+  the primary action. **Delete** and **Ctrl+A** act on the file list only while the list has the focus
+  (audit v3, F1-10). A test matrix checks it in every window.
+- An action that empties the list ("Clear All") can be undone until the list changes again (F1-03).
 - Controls have accessible names (where the toolkit exposes them).
 
 ## 7. Settings window

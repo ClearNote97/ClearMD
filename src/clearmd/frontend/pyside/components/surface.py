@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from clearmd.frontend.design.metrics import GAP, HALF, SPACE
 from clearmd.frontend.design.palette import Palette
-from clearmd.frontend.pyside.components.primitives import label
+from clearmd.frontend.pyside.components.primitives import label, restyle
 
 
 class Surface(QWidget):
@@ -36,8 +36,13 @@ class Surface(QWidget):
         self._shape = QColor(palette.shape)
         self.update()
 
-    def show_header(self, *, eyebrow: str, title: str, subtitle: str) -> None:
+    def show_header(
+        self, *, eyebrow: str, title: str, subtitle: str, warning: bool = False
+    ) -> None:
+        """``warning``: the eyebrow in the warning colour (finished with problems, audit v3)."""
         self.eyebrow.setText(eyebrow)
+        if self.eyebrow.property("tone") != ("warning" if warning else ""):
+            restyle(self.eyebrow, "tone", "warning" if warning else "")
         self.eyebrow.setVisible(bool(eyebrow))  # none on the start screen (feature 023)
         self.title.setText(title)
         self.subtitle.setText(subtitle)

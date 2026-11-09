@@ -13,6 +13,7 @@ from clearmd.backend.schemas.formats import FormatId, Strategy
 from clearmd.backend.schemas.models import Detection, DetectionMethod
 from clearmd.backend.schemas.notes import ConversionNote, NoteItem, NoteKind
 from clearmd.backend.services.conversion.images import ImageSink
+from clearmd.backend.services.conversion.markdown_out.safe_output import safe_output
 from clearmd.backend.services.conversion.progress import listen
 from clearmd.backend.services.conversion.registry import DocumentConverter
 from clearmd.backend.services.worker.pages import handle_pages
@@ -105,11 +106,14 @@ def handle(registry: _Registry, request: Job, max_result_chars: int) -> Response
             ErrorCode.CONVERSION_FAILED.value,
             f"result too large: {len(result.markdown)} characters, limit {max_result_chars}",
         )
+    markdown, made_safe = safe_output(result.markdown)  # whoever converted it (audit v3, B2-01)
     notes = result.notes
+    if made_safe:
+        notes = (*notes, ConversionNote(NoteKind.MADE_SAFE, (NoteItem(str(made_safe)),)))
     if sink is not None and sink.left_out:  # pictures a viewer cannot show, or past the limits
         notes = (*notes, ConversionNote(NoteKind.IMAGES_LEFT_OUT, (NoteItem(str(sink.left_out)),)))
     images = tuple(sink.images) if sink is not None else result.images
-    return Converted(result.markdown, notes, images)
+    return Converted(markdown, notes, images)
 
 
 def worker_main(

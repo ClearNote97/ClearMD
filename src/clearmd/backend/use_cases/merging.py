@@ -9,6 +9,7 @@ fewer than two documents write nothing. A merged file never replaces another: "(
 """
 
 import os
+import re
 from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
@@ -25,6 +26,7 @@ from clearmd.backend.schemas.models import (
     OutcomeStatus,
     PlannedConversion,
 )
+from clearmd.backend.schemas.notes import ConversionNote
 from clearmd.backend.use_cases.cancel import CancelToken
 from clearmd.backend.use_cases.output_files import atomic_write, atomic_write_bytes, prepare_root
 from clearmd.backend.use_cases.ports import Clock, ConversionRunner, PageCutter
@@ -82,14 +84,27 @@ def _failed(item: PlannedConversion, error: ConversionError) -> ConversionOutcom
     return ConversionOutcome(item, status, error.code, error.detail, limit=error.limit)
 
 
+_FOOTNOTE = re.compile(r"\[\^([^\]\s]{1,64})\]")
+
+
 def _piece(
-    item: PlannedConversion, runner: ConversionRunner, cutter: PageCutter, cancel: CancelToken
-) -> str:
+    item: PlannedConversion,
+    runner: ConversionRunner,
+    cutter: PageCutter,
+    cancel: CancelToken,
+    index: int,
+) -> tuple[str, tuple[ConversionNote, ...]]:
+    """The document's Markdown, and its notes: kept for the summary, never lost in the merge
+    (audit v3, B1-04). Its footnotes are its own: ``[^1]`` becomes ``[^d2-1]`` in the second
+    document, so two documents' first notes never answer each other's calls (B3-07)."""
+    notes: tuple[ConversionNote, ...] = ()
     if item.detection.format is FormatId.MARKDOWN:
         text = cutter.read_text(item, cancel)
     else:
-        text = runner.convert(item, cancel).markdown
-    return relinked(text, item.source.parent, item.target.parent)  # images show from OutputUnif
+        result = runner.convert(item, cancel)
+        text, notes = result.markdown, result.notes
+    text = _FOOTNOTE.sub(lambda found: f"[^d{index}-{found.group(1)}]", text)
+    return relinked(text, item.source.parent, item.target.parent), notes  # images: OutputUnif
 
 
 def execute_merge(
@@ -114,12 +129,14 @@ def execute_merge(
         on_event(ConversionStarted(index, total, item, None))
         began = clock.now()
         try:
+            notes: tuple[ConversionNote, ...] = ()
             if spec.into is Into.PDF:
                 cutter.count_pages(item, cancel)  # opens: a broken or locked PDF fails here
                 pieces.append((item, ""))
             else:
-                pieces.append((item, _piece(item, runner, cutter, cancel)))
-            outcome = ConversionOutcome(item, OutcomeStatus.CONVERTED)
+                text, notes = _piece(item, runner, cutter, cancel, index)
+                pieces.append((item, text))
+            outcome = ConversionOutcome(item, OutcomeStatus.CONVERTED, notes=notes)
         except Cancelled:
             outcome = ConversionOutcome(item, OutcomeStatus.CANCELLED)
         except ConversionError as error:

@@ -72,7 +72,7 @@ def build_registry() -> ConverterRegistry:
     converters[FormatId.ODT] = OdtConverter()
     converters[FormatId.PDF] = PdfConverter()  # PDFium + ClearMD's cleaning (ADR-0030)
     converters[FormatId.XLSX] = XlsxConverter()  # openpyxl, no pandas (ADR-0032)
-    converters[FormatId.EML] = EmlConverter(markitdown)  # its HTML body: markitdown (029)
+    converters[FormatId.EML] = EmlConverter()  # its HTML body: ClearMD's page writer (039)
     converters[FormatId.RTF] = RtfConverter()
     converters[FormatId.SRT] = converters[FormatId.VTT] = SubtitlesConverter()
     article = ArticleConverter()  # no article: the whole page, written by ClearMD too

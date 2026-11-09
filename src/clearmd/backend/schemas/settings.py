@@ -14,7 +14,7 @@ class Settings:
     open_output_when_done: bool = True
     on_existing_output: str = "ask"
     recursive: bool = True
-    html_strategy: str = "full"
+    html_strategy: str = "article"  # the owner's decision on audit v3 (ADR-0025 amended)
     show_welcome: bool = True
     # "markdown", "markdown_pdf" (Resumen_ClearMD.pdf too, ADR-0031) or "pdf" (the PDF alone, 020)
     summary_format: str = "markdown"

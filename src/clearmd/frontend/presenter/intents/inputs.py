@@ -33,6 +33,7 @@ class Inputs:
         if not new or not editable(s, self._display):  # nothing new: the plan stays (C7-4)
             return
         s.inputs.extend(new)
+        self._forget_undo()
         if s.page == HOME:  # dropped on the start screen: they go to step 1 (feature 023)
             s.page = 1
         self._display.show_inputs()
@@ -46,6 +47,7 @@ class Inputs:
         if len(kept) == len(s.inputs) or not editable(s, self._display):
             return
         s.inputs = kept
+        self._forget_undo()
         self._display.show_inputs()
         self._display.set_state(s.state)
 
@@ -67,12 +69,30 @@ class Inputs:
         self._display.set_state(s.state)
 
     def clear_inputs(self) -> None:
+        """Empty the list; "Undo" gives it back, order included, until the list changes again
+        (audit v3, F1-03)."""
         s = self._session
         if not s.inputs or not editable(s, self._display):
             return
+        s.cleared = list(s.inputs)
         s.inputs.clear()
         self._display.show_inputs()
         self._display.set_state(s.state)
+        self._display.view.show_undo(s.catalog.text("gui.main.cleared", count=len(s.cleared)))
+
+    def undo_clear(self) -> None:
+        s = self._session
+        if s.cleared is None or s.inputs or not editable(s, self._display):
+            return
+        s.inputs, s.cleared = s.cleared, None
+        self._display.view.show_undo(None)
+        self._display.show_inputs()
+        self._display.set_state(s.state)
+
+    def _forget_undo(self) -> None:
+        if self._session.cleared is not None:
+            self._session.cleared = None
+            self._display.view.show_undo(None)
 
     def choose_output_next_to(self) -> None:
         s = self._session

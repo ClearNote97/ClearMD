@@ -12,6 +12,7 @@ from clearmd.frontend.ttk.views.dialogs.settings import SettingsDialog
 from clearmd.frontend.ttk.views.dialogs.welcome import WelcomeDialog
 from clearmd.frontend.ttk.views.dialogs.what_next import WhatNextDialog
 from clearmd.frontend.ttk.window.shown import Shown
+from clearmd.i18n import Catalog
 
 
 class DialogHost:
@@ -86,9 +87,15 @@ class DialogHost:
             self._presenter.dismiss_welcome(show_again=show_again)
 
         dialog = WelcomeDialog(
-            self._root, self._shown.need_catalog(), self._shown.palette, self._fonts, steps, done
-        )
+            self._root, self._shown.need_catalog(), self._shown.palette, self._fonts, steps, done,
+            on_language=self._presenter.choose_language,
+        )  # fmt: skip
         self._open(dialog)
+
+    def apply_language(self, catalog: Catalog) -> None:
+        """An open Welcome speaks the new language at once (its language buttons, 039)."""
+        if isinstance(self.current, WelcomeDialog):
+            self.current.apply_language(catalog)
 
     def confirm_close(self, on_confirm: Callable[[], None]) -> None:
         """Closing while a task runs: asked once (038); the open dialog gives way to it."""

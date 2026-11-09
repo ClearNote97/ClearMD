@@ -115,15 +115,15 @@ def test_ac_43_a_file_that_may_take_too_long_is_warned_about_and_still_tried(
     workdir: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     put(workdir, "sample.txt", "quick.txt")
-    put(workdir, "sample.pdf", "manual.pdf")
-    # The PDF's estimate (~0.003 s since audit v2's recalibration) exceeds this limit; the tiny
-    # text file's does not.
-    limits = replace(composition.default_limits(), time_per_file=0.001)
+    put(workdir, "sample.docx", "manual.docx")
+    # The Word file's estimate exceeds this limit; the tiny text file's does not. (A PDF is never
+    # warned about beforehand: it reports its pages as it goes, audit v3, B4-01.)
+    limits = replace(composition.default_limits(), time_per_file=0.000001)
     monkeypatch.setattr(composition, "default_limits", lambda: limits)
     main([str(workdir)])
     err = capsys.readouterr().err
-    assert "⚠ manual.pdf — may take more than" in err
-    assert _progress_names(err)[-1] == "manual.pdf"
+    assert "⚠ manual.docx — may take more than" in err
+    assert _progress_names(err)[-1] == "manual.docx"
 
 
 def test_ac_23_and_ac_44_a_file_over_the_time_limit_is_stopped_not_failed(

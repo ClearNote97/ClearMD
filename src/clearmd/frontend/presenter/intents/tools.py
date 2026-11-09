@@ -30,6 +30,8 @@ class Tools:
             editable(s, self._display)
             s.tool = tool
             s.catalog = load_catalog(s.catalog.language).for_tool(tool)
+            if tool is Tool.CONVERT:
+                self._give_back()
             self._display.view.apply_language(s.catalog)
             self._display.show_inputs()
             self._display.show_output()
@@ -48,13 +50,38 @@ class Tools:
         if not found:
             return
         parts = most_parts(found)
+        large = [path for path, _ in found]
+        rest = [path for path in s.inputs if path not in large]
         self.choose_tool(Tool.SPLIT)  # drops the plan or the result
-        s.inputs = [path for path, _ in found]
-        settings = replace(s.settings, split_cut="parts", split_parts=parts, split_keep="markdown")
-        save(s, self._display, self._backend, settings)
+        s.back_to_convert = rest  # given back on returning to Convert (audit v3, F1-02)
+        s.split_before = s.settings
+        s.inputs = large
+        # For this task only, never saved as the person's own choice.
+        s.settings = replace(
+            s.settings, split_cut="parts", split_parts=parts, split_keep="markdown"
+        )
         self._display.show_inputs()
         self._display.show_output()
         self._display.set_state(s.state)
+
+    def _give_back(self) -> None:
+        """Back in Convert after "Split the large PDFs": the rest of the list, and Split's own
+        choices as they were."""
+        s = self._session
+        if s.back_to_convert is None:
+            return
+        s.inputs = list(s.back_to_convert)
+        if s.split_before is not None:
+            before = s.split_before
+            s.settings = replace(
+                s.settings,
+                split_cut=before.split_cut,
+                split_parts=before.split_parts,
+                split_keep=before.split_keep,
+            )
+        s.back_to_convert = s.split_before = None
+        if s.inputs:  # told once the step on screen has changed (set_state shows it)
+            s.notice = s.catalog.text("gui.split.back_to_convert", count=len(s.inputs))
 
     def go_home(self) -> None:
         """Back to the start screen, outside the work; the inputs and a plan are kept."""

@@ -66,12 +66,15 @@ class InputsCard:
         self.deselect = button("link", self.inputs.clear_selection)
         for widget, key in (
             (self.remove, "gui.main.remove"),
-            (self.clear, "gui.main.clear"),
             (self.deselect, "gui.main.deselect"),
+            (self.clear, "gui.main.clear"),
         ):
             text(widget, key)
-            editing.addWidget(widget)
+        editing.addWidget(self.remove)
+        editing.addWidget(self.deselect)
+        # Clear All apart, at the other end: it empties the whole list (audit v3, F1-03).
         editing.addStretch(1)
+        editing.addWidget(self.clear)
         layout.addLayout(editing)
 
     def set_short(self, short: bool) -> None:

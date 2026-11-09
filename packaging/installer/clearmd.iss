@@ -93,9 +93,12 @@ Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
 spanish.WelcomeLabel1=Bienvenido al Asistente de Instalación de [name]
 spanish.FinishedHeadingLabel=Completando la Instalación de [name]
 #if Edition == "Light"
-; The light edition says where the other apps are (doubts board D1).
-english.FinishedLabel=Setup has finished installing [name] on your computer. It can be opened from its shortcut.%n%nWant the Modern App or the Mobile-Style App? They are in ClearMD-Setup-Full-{#AppVersion}.exe, on the same download page.
-spanish.FinishedLabel=El programa terminó de instalar [name] en tu equipo. Puedes abrirlo desde su acceso directo.%n%n¿Quieres la App Moderna o la App Estilo Móvil? Están en ClearMD-Setup-Full-{#AppVersion}.exe, en la misma página de descarga.
+; The light edition says where the other apps are (doubts board D1), and who needs them.
+english.FinishedLabel=[name] is installed. You find it in the Start menu as ClearMD.%n%nDo you use a screen reader, or want the Modern App or the Mobile-Style App? They are in ClearMD-Setup-Full-{#AppVersion}.exe, on the same download page.
+spanish.FinishedLabel=[name] quedó instalado. Lo encuentras en el menú Inicio como ClearMD.%n%n¿Usas un lector de pantalla, o quieres la App Moderna o la App Estilo Móvil? Están en ClearMD-Setup-Full-{#AppVersion}.exe, en la misma página de descarga.
+#else
+english.FinishedLabel=[name] is installed. You find it in the Start menu, in the ClearMD folder.
+spanish.FinishedLabel=[name] quedó instalado. Lo encuentras en el menú Inicio, en la carpeta ClearMD.
 #endif
 
 ; ---------------------------------------------------------------------------------------------
@@ -133,14 +136,16 @@ english.CompareCaption=What Each Part Is
 spanish.CompareCaption=Qué Es Cada Parte
 english.CompareDescription=Read this, then choose on the next page. You can run the installer again later to change your choice.
 spanish.CompareDescription=Léelo y elige en la página siguiente. Puedes volver a ejecutar el instalador más adelante para cambiar tu elección.
-english.CompareTtk=The Classic App (RECOMMENDED for most people: the lightest). One program file of about 37 MB. The first start takes a few seconds, because the program unpacks itself. Simpler drawing. Made with Tk.
-spanish.CompareTtk=La App Clásica (RECOMENDADA para la mayoría: la más liviana). Un solo archivo de unos 37 MB. El primer inicio tarda unos segundos, porque el programa se descomprime solo. Dibujo más sencillo. Hecha con Tk.
-english.CompareQt=The Modern App: it looks smoother, with sharper text and controls on high-resolution screens, and it opens quickly. The price is space: a folder of about 130 MB. Made with Qt, whose libraries can be replaced (LGPL).
-english.CompareFlet=The Mobile-Style App: drawn like phone apps, smooth, and it opens quickly; files are added with its two buttons (it cannot receive files dragged onto it). A folder of about 120 MB. Made with Flutter (flet).
-spanish.CompareFlet=La App Estilo Móvil: dibujada como las apps de teléfono, suave, y abre rápido; los archivos se añaden con sus dos botones (no recibe archivos arrastrados). Una carpeta de unos 120 MB. Hecha con Flutter (flet).
-spanish.CompareQt=La App Moderna: se ve más suave, con texto y controles más nítidos en pantallas de alta resolución, y abre rápido. El costo es el espacio: una carpeta de unos 130 MB. Hecha con Qt, cuyas bibliotecas se pueden reemplazar (LGPL).
+english.CompareTtk=The Classic App (RECOMMENDED for most people: the lightest). It opens in a couple of seconds and its drawing is simple. A screen reader cannot read it: if you use one, choose the Modern App. (Technical name: Tk.)
+spanish.CompareTtk=La App Clásica (RECOMENDADA para la mayoría: la más liviana). Abre en un par de segundos y su dibujo es sencillo. Un lector de pantalla no puede leerla: si usas uno, elige la App Moderna. (Nombre técnico: Tk.)
+english.CompareQt=The Modern App: it looks smoother, with sharper text and controls on high-resolution screens, and it works best with a screen reader. The price is space: about 130 MB. (Technical name: Qt.)
+english.CompareFlet=The Mobile-Style App: drawn like phone apps, smooth, and it opens quickly; files are added with its two buttons (it cannot receive files dragged onto it). About 120 MB. (Technical name: Flutter.)
+spanish.CompareFlet=La App Estilo Móvil: dibujada como las apps de teléfono, suave, y abre rápido; los archivos se añaden con sus dos botones (no recibe archivos arrastrados). Unos 120 MB. (Nombre técnico: Flutter.)
+spanish.CompareQt=La App Moderna: se ve más suave, con texto y controles más nítidos en pantallas de alta resolución, y es la que mejor funciona con un lector de pantalla. El costo es el espacio: unos 130 MB. (Nombre técnico: Qt.)
 english.CompareCli=The Command Line: no window. You type a command, for example clearmd-cli "C:\My documents". Good for many folders, scripts and automation. Needs typing. About 36 MB.
 spanish.CompareCli=La Línea de Comandos: sin ventana. Escribes un comando, por ejemplo clearmd-cli "C:\Mis documentos". Buena para muchas carpetas, scripts y automatización. Requiere escribir. Unos 36 MB.
+english.LaunchNow=Open ClearMD now
+spanish.LaunchNow=Abrir ClearMD ahora
 english.CompareAll=All of them do exactly the same conversions, with the same results.
 spanish.CompareAll=Todas hacen exactamente las mismas conversiones, con los mismos resultados.
 
@@ -247,6 +252,16 @@ Name: "{autodesktop}\ClearMD"; Filename: "{app}\ClearMD.exe"; Components: ttk; T
 Name: "{autodesktop}\{cm:ShortcutQt}"; Filename: "{app}\ClearMD-Qt\ClearMD-Qt.exe"; WorkingDir: "{app}\ClearMD-Qt"; Components: qt; Tasks: desktopicon
 Name: "{autodesktop}\{cm:ShortcutFlet}"; Filename: "{app}\ClearMD-Flet\ClearMD-Flet.exe"; WorkingDir: "{app}\ClearMD-Flet"; Components: flet; Tasks: desktopicon
 Name: "{autodesktop}\{cm:ShortcutCli}"; Filename: "{cmd}"; Parameters: "/k """"{app}\clearmd-cli.exe"" --help & echo. & echo Type: clearmd-cli ""<folder or file>"""""; WorkingDir: "{userdocs}"; Components: cli; Tasks: desktopicon
+#endif
+
+; ---------------------------------------------------------------------------------------------
+[Run]
+; "Open ClearMD now", ticked, on the last page (audit v3, F4-04): the first app chosen, in the
+; order of the cards. Never after a silent install (the CI's checks, a company's deployment).
+Filename: "{app}\ClearMD.exe"; Description: "{cm:LaunchNow}"; Components: ttk; Flags: nowait postinstall skipifsilent
+#if Edition == "Full"
+Filename: "{app}\ClearMD-Qt\ClearMD-Qt.exe"; WorkingDir: "{app}\ClearMD-Qt"; Description: "{cm:LaunchNow}"; Components: qt and not ttk; Flags: nowait postinstall skipifsilent
+Filename: "{app}\ClearMD-Flet\ClearMD-Flet.exe"; WorkingDir: "{app}\ClearMD-Flet"; Description: "{cm:LaunchNow}"; Components: flet and not ttk and not qt; Flags: nowait postinstall skipifsilent
 #endif
 
 ; ---------------------------------------------------------------------------------------------

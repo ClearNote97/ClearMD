@@ -125,6 +125,10 @@ class FletApp:
         """ "Copy Details" beside the message after an unexpected error; ``None`` hides it (036)."""
         self.message_line.show_details(label)
 
+    def show_undo(self, text: str | None) -> None:
+        """After Clear All: the line and "Undo" beside it; ``None`` hides both (039)."""
+        self.message_line.show_undo(text, self.shown.need_catalog().text("gui.main.undo"))
+
     def copy_text(self, text: str) -> None:
         self.page.copy_text(text)
 

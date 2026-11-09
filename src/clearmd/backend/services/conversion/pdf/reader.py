@@ -12,8 +12,9 @@ from clearmd.backend.services.conversion.pdf.decode import shift
 from clearmd.backend.services.conversion.pdf.lines.paging import build_page
 from clearmd.backend.services.conversion.pdf.model import Document, Page
 from clearmd.backend.services.conversion.pdf.pdfium.crop import pictured
-from clearmd.backend.services.conversion.pdf.pdfium.document import text_pages
+from clearmd.backend.services.conversion.pdf.pdfium.document import finite, text_pages
 from clearmd.backend.services.conversion.pdf.pdfium.fonts import MAX_PAGE_CHARS, Fonts, count
+from clearmd.backend.services.conversion.pdf.pdfium.hidden import hide_unseen
 from clearmd.backend.services.conversion.pdf.pdfium.page_chars import page_chars, tight_boxes
 from clearmd.backend.services.conversion.pdf.pdfium.page_objects import page_rules
 from clearmd.backend.services.conversion.pdf.pdfium.pictures import pictures, placed
@@ -43,6 +44,10 @@ def read(document: object, images: ImageSink | None = None) -> Document:
         if textpage is not None and raw.FPDFText_CountChars(textpage) > MAX_PAGE_CHARS:
             result.cut_pages += 1
         chars = None if textpage is None else page_chars(textpage, fonts)
+        if chars is not None and handle is not None:
+            width = finite(raw.FPDF_GetPageWidthF(handle))
+            if hide_unseen(chars, textpage, handle, width, height):  # ADR-0054
+                result.hidden_pages.append(done)
         while len(shifts) < len(fonts.codes):  # a font first met in the second pass: as read
             shifts.append(0)
             unmapped.append(False)
@@ -56,5 +61,7 @@ def read(document: object, images: ImageSink | None = None) -> Document:
             page.lines = [pictured(handle, line, images, budget) for line in page.lines]
             page.lines = placed(page.lines, pictures(document, handle, images, budget))
         page.height = height
+        if any(line.equation and not line.latex for line in page.lines):  # kept as symbols
+            result.equation_pages.append(done)
         result.pages.append(page)
     return result

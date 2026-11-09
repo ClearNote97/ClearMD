@@ -162,6 +162,7 @@ class FletView:
         for view in (self._frame.home, self._main, self._review, self._converting, self._results):
             view.apply_language(catalog)
         self._focus.watch(self._main.inputs.list)  # the rows are new: their arrows (032)
+        self._dialogs.apply_language(catalog)  # an open Welcome, in the language chosen on it
         self._header()
 
     def _header(self) -> None:

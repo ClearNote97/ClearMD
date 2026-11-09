@@ -1,6 +1,7 @@
 """Dropping the plan and the result: an edit (ADR-0029) and an unexpected error. Functions of
 their own: inputs, preferences, results and both kinds of work all reach for them."""
 
+from dataclasses import replace
 from datetime import datetime
 
 from clearmd.backend.schemas.models import BatchReport
@@ -19,10 +20,15 @@ def editable(session: Session, display: Display) -> bool:
     if session.state in WORKING:
         return False
     if session.state is not AppState.READY:
+        had_result = session.report is not None
         session.plan = None
         session.report = None
         session.state = AppState.READY
         display.view.forget_work()
+        if session.page in (2, 3, 4):  # an edit from Review or Results: back to step 1 (F1-01)
+            session.page = 1
+            if had_result:  # the files on disk stay as they are; the window says so
+                session.notice = session.catalog.text("gui.app.result_kept")
     return True
 
 
@@ -46,7 +52,12 @@ def unexpected(session: Session, display: Display, error: Exception) -> None:
         now = datetime.now()
         session.report = report = BatchReport(now, now, (), (), (), False, folders=folders)
         state = AppState.FINISHED_WITH_PROBLEMS
-        display.view.show_result(result_view(session.catalog, report, state))
+        # Never "0 converted" beside "what was converted is kept" (audit v3, F1-05).
+        stopped = session.catalog.text(
+            "gui.result.stopped_by_error", done=session.done, total=len(plan.conversions)
+        )
+        view = replace(result_view(session.catalog, report, state), counts=stopped, stats=())
+        display.view.show_result(view)
         session.page = 4
         display.set_state(state)
     else:

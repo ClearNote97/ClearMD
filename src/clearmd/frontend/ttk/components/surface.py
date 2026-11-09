@@ -21,6 +21,7 @@ class Surface(tk.Canvas):
         self._fonts = fonts
         self._palette: Palette | None = None
         self._texts = {"eyebrow": "", "title": "", "subtitle": ""}
+        self._warning = False
         self._ground: ImageTk.PhotoImage | None = None
         self._ground_key: tuple[int, int, str, int] | None = (
             None  # drawn again only when it changes
@@ -35,8 +36,12 @@ class Surface(tk.Canvas):
         self.configure(background=palette.ground)
         self._draw()
 
-    def show_header(self, *, eyebrow: str, title: str, subtitle: str) -> None:
+    def show_header(
+        self, *, eyebrow: str, title: str, subtitle: str, warning: bool = False
+    ) -> None:
+        """``warning``: the counter line in the warning colour (Results with problems, 039)."""
         self._texts = {"eyebrow": eyebrow, "title": title, "subtitle": subtitle}
+        self._warning = warning
         self._draw()
 
     def header(self) -> dict[str, str]:
@@ -73,7 +78,8 @@ class Surface(tk.Canvas):
         self.delete("all")
         x, y = GUTTER, GUTTER  # the header starts where the card does
         self.create_text(
-            x, y, text=self._texts["eyebrow"].upper(), fill=p.accent_text,
+            x, y, text=self._texts["eyebrow"].upper(),
+            fill=p.warning if self._warning else p.accent_text,
             font=self._fonts["eyebrow"], anchor="nw",
         )  # fmt: skip
         y += self._fonts["body"].metrics("linespace") + HALF

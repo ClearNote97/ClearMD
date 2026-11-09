@@ -4,9 +4,10 @@ Free code signing provided by [SignPath.io](https://about.signpath.io/), certifi
 
 ## What is signed
 
-The Windows executables of each [release](https://github.com/ClearNote97/ClearMD/releases):
-`ClearMD-<version>-windows.exe` (the desktop app) and `clearmd-cli-<version>-windows.exe` (the
-command line). They are built from this repository's source by GitHub Actions
+The Windows programs of each [release](https://github.com/ClearNote97/ClearMD/releases): the
+installers `ClearMD-Setup-<version>.exe` and `ClearMD-Setup-Full-<version>.exe`, and the programs
+inside every download (the three apps and `clearmd-cli`). The installers' uninstaller is not
+signed yet. They are built from this repository's source by GitHub Actions
 ([`release.yml`](./.github/workflows/release.yml)) and sent to SignPath from that same run; nothing
 built elsewhere is signed. The Linux archive is not signed.
 

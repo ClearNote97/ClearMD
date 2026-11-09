@@ -28,3 +28,10 @@ does not hold there.
 - **Gains:** the recommended app opens without unpacking; the start time is visible in every run.
 - **Costs:** one more build output to sign and check; the light installer's size is checked by its
   limit (≤ 45 MB).
+
+
+## Amendment (2026-11-09, the third audit, C-3)
+
+**Also a consequence, missed at first:** a change people can see updates every text that describes
+it. The installer still called the Classic App "one file that unpacks itself" and the download page
+said "delete the file" to uninstall. Both were rewritten, and a test forbids the old sentences.

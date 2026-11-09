@@ -71,8 +71,9 @@ class SplitChoice(ttk.Frame):
                 command=partial(self._commit, name),
             )  # fmt: skip
             number.pack(side="left", padx=(SPACE, 0))
-            for event in ("<Return>", "<KP_Enter>", "<FocusOut>"):
-                number.bind(event, lambda _event, n=name: self._commit(n))
+            for event in ("<Return>", "<KP_Enter>"):  # confirms the field, nothing else (039)
+                number.bind(event, partial(self._confirm, name))
+            number.bind("<FocusOut>", partial(self._left, name))
             unit = ttk.Label(group)
             unit.pack(side="left", padx=(HALF, 0))
             label(unit, after)
@@ -144,6 +145,14 @@ class SplitChoice(ttk.Frame):
         field.insert(0, str(value))
         if disabled:
             field.state(["disabled"])
+
+    def _confirm(self, name: str, _event: object) -> str:
+        """Enter in a number field confirms it; it never runs the window's primary action."""
+        self._commit(name)
+        return "break"
+
+    def _left(self, name: str, _event: object) -> None:
+        self._commit(name)  # leaving the field confirms it too
 
     def _commit(self, name: str) -> None:
         """The number typed (or stepped) in ``name``'s field, to the presenter; text that is not

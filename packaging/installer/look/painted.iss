@@ -4,25 +4,25 @@
 
 [CustomMessages]
 english.CardTtkTitle=Classic App
-english.CardTtkTag=RECOMMENDED · about 37 MB · made with Tk
-english.CardTtkBody=The lightest: one file. The first start takes a few seconds.
+english.CardTtkTag=RECOMMENDED · THE LIGHTEST
+english.CardTtkBody=Opens in a couple of seconds. Simple drawing.
 english.CardQtTitle=Modern App
-english.CardQtTag=about 130 MB · made with Qt
-english.CardQtBody=Smoother, sharper on high-resolution screens; opens quickly.
+english.CardQtTag=about 130 MB · BEST WITH A SCREEN READER
+english.CardQtBody=Smoother and sharper on high-resolution screens; the one that works best with a screen reader.
 english.CardFletTitle=Mobile-Style App
-english.CardFletTag=about 120 MB · made with Flutter (flet)
+english.CardFletTag=about 120 MB
 english.CardFletBody=Looks like a phone app; opens quickly. Add files with its buttons (no dragging).
 english.CardCliTitle=Command Line
 english.CardCliTag=FOR ADVANCED USERS · about 36 MB
 english.CardCliBody=No window: you type clearmd-cli "C:\My documents". For scripts.
 spanish.CardTtkTitle=App Clásica
-spanish.CardTtkTag=RECOMENDADA · unos 37 MB · hecha con Tk
-spanish.CardTtkBody=La más liviana: un solo archivo. El primer inicio tarda unos segundos.
+spanish.CardTtkTag=RECOMENDADA · LA MÁS LIVIANA
+spanish.CardTtkBody=Abre en un par de segundos. Dibujo sencillo.
 spanish.CardQtTitle=App Moderna
-spanish.CardQtTag=unos 130 MB · hecha con Qt
-spanish.CardQtBody=Más suave y nítida en pantallas de alta resolución; abre rápido.
+spanish.CardQtTag=unos 130 MB · MEJOR CON LECTOR DE PANTALLA
+spanish.CardQtBody=Más suave y nítida en pantallas de alta resolución; la que mejor funciona con un lector de pantalla.
 spanish.CardFletTitle=App Estilo Móvil
-spanish.CardFletTag=unos 120 MB · hecha con Flutter (flet)
+spanish.CardFletTag=unos 120 MB
 spanish.CardFletBody=Se ve como una app de teléfono; abre rápido. Los archivos se agregan con sus botones (no se arrastran).
 spanish.CardCliTitle=Línea de Comandos
 spanish.CardCliTag=PARA USUARIOS AVANZADOS · unos 36 MB

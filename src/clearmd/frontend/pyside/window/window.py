@@ -78,7 +78,7 @@ class PySideApp:
         self.rail, self.surface, self.actions = frame.rail, frame.surface, frame.actions
         self.home, self.main = frame.home, frame.main
         self.review, self.message = frame.review, frame.message
-        self.details = frame.details  # "Copy Details" (036)
+        self.details, self.undo = frame.details, frame.undo  # "Copy Details" (036), "Undo"
         self.converting, self.results = frame.converting, frame.results
         self.pickers = Pickers(
             self.window, self.presenter, self.shown, self.main.next_to, self.main.in_folder
@@ -130,6 +130,9 @@ class PySideApp:
 
     def show_details_button(self, label: str | None) -> None:
         self.view.show_details_button(label)
+
+    def show_undo(self, text: str | None) -> None:
+        self.view.show_undo(text)
 
     def copy_text(self, text: str) -> None:
         QGuiApplication.clipboard().setText(text)  # "Copy Details" (036)

@@ -42,13 +42,14 @@ class Inputs:
         delete.activated.connect(self._remove.click)
 
     def _enter(self) -> None:
-        """Enter presses the page's primary action; on a start tile it opens that tile, in a number
-        box it is the number done (feature 023)."""
+        """One keyboard rule (UX §6, audit v3 F1-10): Enter on a button presses that button; in a
+        number box it confirms the number; only otherwise it runs the page's primary action."""
         focused = QApplication.focusWidget()
         if isinstance(focused, QAbstractSpinBox):
             focused.interpretText()
-        elif isinstance(focused, QPushButton) and focused.objectName() == "tile":
-            focused.click()
+        elif isinstance(focused, QPushButton):
+            if focused.isEnabled():
+                focused.click()
         else:
             self._press_primary()
 

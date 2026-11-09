@@ -29,9 +29,21 @@ def _earlier_part(spec: SplitSpec, name: str) -> re.Pattern[str]:
 
 def earlier_parts(item: PlannedConversion, spec: SplitSpec) -> list[Path]:
     """The parts an earlier cut of this file left in its folder (ClearMD's own names only)."""
-    folder = item.target
+    return parts_in(item.target, spec)
+
+
+def parts_in(folder: Path, spec: SplitSpec) -> list[Path]:
+    """ClearMD's own parts in ``folder``: what makes a Split's folder a result (audit v3, B1-02).
+    An empty folder, or one with only other files, is not one."""
     if not os.path.isdir(folder) or os.path.islink(folder):
         return []
-    own = _earlier_part(spec, item.target.name)
+    own = _earlier_part(spec, folder.name)
     with os.scandir(folder) as entries:
         return [Path(entry.path) for entry in entries if own.fullmatch(entry.name)]
+
+
+def has_result(item: PlannedConversion) -> bool:
+    """Whether ``item`` already has a result: its file, or, for Split, its own parts."""
+    if item.split is None:
+        return item.target.exists()
+    return bool(parts_in(item.target, item.split))

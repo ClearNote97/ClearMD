@@ -14,7 +14,7 @@ from clearmd.backend.schemas.errors import ErrorCode, SkipReason
 from clearmd.backend.schemas.notes import NoteKind
 from clearmd.backend.services.split.markdown_cut import cut_markdown
 from clearmd.backend.services.split.words import count_words
-from clearmd.backend.use_cases.splitting import word_ranges
+from clearmd.backend.use_cases.split_ranges import word_ranges
 from clearmd.frontend.cli import main
 from clearmd.i18n import load_catalog
 

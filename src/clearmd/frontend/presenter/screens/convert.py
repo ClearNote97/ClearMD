@@ -25,7 +25,7 @@ def progress_view(
     return ProgressView(
         counter=catalog.text("gui.progress.counter", index=index, total=total),
         name=name,
-        fraction=done / total if total else 0.0,
+        fraction=_fraction(done, total, pages),
         time_left=(
             catalog.text("cli.time_left", duration=catalog.duration(left))
             if left is not None
@@ -35,3 +35,12 @@ def progress_view(
         long_file=line,
         icon=icon,
     )
+
+
+def _fraction(done: int, total: int, pages: tuple[int, int] | None) -> float:
+    """The files done, and how far the current one has got when it tells its pages: the bar
+    moves while a long PDF converts (audit v3, F3-06)."""
+    if not total:
+        return 0.0
+    within = pages[0] / pages[1] if pages is not None and pages[1] > 0 else 0.0
+    return min(1.0, (done + min(within, 1.0)) / total)

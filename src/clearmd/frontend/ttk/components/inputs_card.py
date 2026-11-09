@@ -61,10 +61,14 @@ class InputsCard:
         self.editing.pack(side="bottom", fill="x", pady=(HALF, 0), before=self.inputs)
         self.remove = ttk.Button(self.editing, style=LINK, command=self._remove_selected)
         self.remove.pack(side="left")
-        self.clear = ttk.Button(self.editing, style=LINK, command=on_clear)
-        self.clear.pack(side="left", padx=(SPACE, 0))
         self.deselect = ttk.Button(self.editing, style=LINK, command=self.inputs.clear_selection)
         self.deselect.pack(side="left", padx=(SPACE, 0))
+        # Clear All empties the whole list: apart, at the row's end, after a divider (audit v3
+        # F1-03), never beside Deselect All, which only drops the checks.
+        self.clear = ttk.Button(self.editing, style=LINK, command=on_clear)
+        self.clear.pack(side="right")
+        self.divider = ttk.Separator(self.editing, orient="vertical")
+        self.divider.pack(side="right", fill="y", padx=GAP, pady=HALF)
         label(self.deselect, "gui.main.deselect")
         label(self.remove, "gui.main.remove")
         label(self.clear, "gui.main.clear")

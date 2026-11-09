@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 from clearmd.frontend.design.metrics import SPACE
 from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.pyside.components.primitives import card, label
+from clearmd.frontend.pyside.components.tone_delegate import ToneDelegate
 from clearmd.frontend.pyside.layout.units import ICON, LIST_HEADER, ROW_HEIGHT
 from clearmd.frontend.pyside.visuals.images import icon
 
@@ -64,6 +65,7 @@ class FileList(QFrame):
         self._stack = QStackedLayout(self)
         self._stack.setContentsMargins(0, 0, 0, 0)  # Qt's default is off the grid
         self.tree = _Tree()
+        self.tree.setItemDelegate(ToneDelegate(self.tree))  # a selected row keeps its tone
         self.tree.setColumnCount(2 + columns)
         self.tree.setRootIsDecorated(False)
         self.tree.setUniformRowHeights(True)

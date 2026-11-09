@@ -21,7 +21,7 @@ def test_the_defaults_follow_adr_0012_and_0017() -> None:
     assert defaults.open_output_when_done is True
     assert defaults.on_existing_output == "ask"
     assert defaults.recursive is True
-    assert defaults.html_strategy == "full"
+    assert defaults.html_strategy == "article"  # the owner's decision on audit v3
     assert defaults.show_welcome is True
 
 

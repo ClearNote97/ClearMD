@@ -20,6 +20,7 @@ from clearmd.backend.schemas.settings import Settings
 from clearmd.frontend.presenter.ports import ApiBackend
 from clearmd.frontend.presenter.screens.help import help_sections
 from clearmd.frontend.pyside import PySideApp
+from clearmd.frontend.pyside.components.dialog import screen_room
 from clearmd.frontend.pyside.views.dialogs.help import HelpDialog
 from clearmd.frontend.pyside.views.dialogs.settings import SettingsDialog
 from clearmd.frontend.pyside.views.dialogs.welcome import WelcomeDialog
@@ -149,4 +150,10 @@ def test_ac_05_settings_show_every_wrapped_line_in_full(qt_window: Window, langu
     dialog = app.dialogs.current
     assert isinstance(dialog, SettingsDialog) and dialog.layout() is not None
     pump(app, seconds=0.1)
-    assert dialog.height() >= dialog.layout().totalHeightForWidth(dialog.width())  # type: ignore[union-attr]
+    layout = dialog.layout()
+    assert layout is not None
+    room = screen_room(dialog)  # never taller than the screen: the settings scroll (039)
+    assert dialog.height() >= min(layout.totalHeightForWidth(dialog.width()), room)
+    content = dialog.area.widget()
+    assert content is not None
+    assert content.height() >= dialog.area.rows.totalHeightForWidth(content.width())

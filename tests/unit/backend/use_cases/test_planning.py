@@ -174,14 +174,21 @@ def test_a_file_that_would_not_fit_in_memory_is_skipped_with_the_numbers(tmp_pat
 
 
 def test_a_file_that_may_take_too_long_is_planned_with_a_warning(tmp_path: Path) -> None:
-    (tmp_path / "slow.pdf").write_bytes(b"%PDF" + b"x" * MIB)
+    (tmp_path / "slow.txt").write_bytes(b"x" * MIB)  # about 0.03 s
     (tmp_path / "quick.txt").write_text("x", encoding="utf-8")
-    limits = Limits(time_per_file=3)  # 1 MiB of PDF: about 15 s (ADR-0030)
+    limits = Limits(time_per_file=0.01)
     plan = build_plan([tmp_path], detector=TableDetector(), limits=limits)
-    assert [item.source.name for item in plan.conversions] == ["quick.txt", "slow.pdf"]
     (warning,) = plan.warnings
-    assert warning.item.source.name == "slow.pdf"
-    assert warning.estimated_seconds > warning.limit_seconds == 3
+    assert warning.item.source.name == "slow.txt"
+    assert warning.estimated_seconds > warning.limit_seconds == 0.01
+
+
+def test_a_large_pdf_is_never_warned_about_before_it_starts(tmp_path: Path) -> None:
+    # A PDF reports its progress page by page and stops only when it makes none (audit v3,
+    # B4-01): a size estimate would warn of a stop that does not come.
+    (tmp_path / "slow.pdf").write_bytes(b"%PDF" + b"x" * MIB)
+    plan = build_plan([tmp_path], detector=TableDetector(), limits=Limits(time_per_file=0.001))
+    assert plan.warnings == ()
 
 
 def test_the_same_input_twice_is_converted_once(tmp_path: Path) -> None:

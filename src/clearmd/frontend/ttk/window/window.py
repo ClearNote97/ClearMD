@@ -28,6 +28,7 @@ from clearmd.frontend.ttk.window.closing import Closing
 from clearmd.frontend.ttk.window.dialog_host import DialogHost
 from clearmd.frontend.ttk.window.frame import build_frame
 from clearmd.frontend.ttk.window.inputs import Inputs
+from clearmd.frontend.ttk.window.note import Note
 from clearmd.frontend.ttk.window.pickers import Pickers
 from clearmd.frontend.ttk.window.primary_button import PrimaryButton
 from clearmd.frontend.ttk.window.scheduler import Scheduler
@@ -90,6 +91,7 @@ class TtkApp:
             frame,
         )
         self.pages = self.view.pages
+        self.note = Note(self.root, self.message, self.actions, self.presenter, self.shown)
         self.view.show_page(self.main)
         self.inputs = Inputs(
             self.root,
@@ -157,18 +159,16 @@ class TtkApp:
     def show_message(self, text: str) -> None:
         self.view.show_message(text)
 
+    def show_undo(self, text: str | None) -> None:
+        self.note.show_undo(text)
+
     def show_details_button(self, label: str | None) -> None:
-        """ "Copy Details" after an unexpected error; ``None`` hides it (feature 036)."""
-        self.actions.show_details(label, self.presenter.copy_details)
+        self.note.show_details_button(label)
 
     def copy_text(self, text: str) -> None:
-        """The system clipboard (feature 036); kept by Tk until another program takes it."""
-        self.root.clipboard_clear()
-        self.root.clipboard_append(text)
-        self.root.update()
+        self.note.copy_text(text)
 
-    def show_welcome(self, steps: tuple[str, ...]) -> None:
-        # Once the window is on screen: the presenter asks for it while starting.
+    def show_welcome(self, steps: tuple[str, ...]) -> None:  # once the window is on screen
         self.scheduler.after(0, lambda: self.dialogs.welcome(steps))
 
     def forget_work(self) -> None:
@@ -179,6 +179,7 @@ class TtkApp:
 
     def apply_language(self, catalog: Catalog) -> None:
         self.view.apply_language(catalog)
+        self.dialogs.apply_language(catalog)  # the Welcome switches while open (039)
 
     def close(self) -> None:
         self.closing.close()

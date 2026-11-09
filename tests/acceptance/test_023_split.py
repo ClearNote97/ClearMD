@@ -12,7 +12,7 @@ from support.pdf_builder import Text, build_pdf
 from clearmd.backend.api import Cut, Keep, SplitSpec, plan_batch, run_batch
 from clearmd.backend.schemas.errors import ErrorCode, SkipReason
 from clearmd.backend.schemas.models import BatchPlan, BatchReport, OutcomeStatus
-from clearmd.backend.use_cases.splitting import page_ranges
+from clearmd.backend.use_cases.split_ranges import page_ranges
 from clearmd.frontend.cli import main
 
 

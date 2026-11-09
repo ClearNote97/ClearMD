@@ -51,9 +51,20 @@ class Inputs:
         if self._shown.state is not None and Action.ADD in self._shown.state.enabled:
             self._presenter.add_paths(paths)
 
-    def enter(self, event: Any) -> None:
-        if self._presses.pressed(event):  # held down: one press, whatever the page (F-1)
-            self._press_primary()
+    def enter(self, event: Any) -> str | None:
+        """One keyboard rule (UX §6, audit v3 F2-03): Enter on a button presses that button; in
+        a field it confirms the field (its own binding); only otherwise the primary action."""
+        focused = self._root.focus_get()
+        if isinstance(focused, ttk.Entry):  # a field, a number field, a combo box
+            return None
+        if not self._presses.pressed(event):  # held down: one press, whatever the page (F-1)
+            return None
+        if isinstance(focused, ttk.Button) and focused is not self._primary:
+            if focused.instate(["!disabled"]):
+                focused.invoke()
+            return "break"
+        self._press_primary()
+        return None
 
     def space(self, event: Any) -> str | None:
         return None if self._presses.pressed(event) else "break"  # "break": the button stays

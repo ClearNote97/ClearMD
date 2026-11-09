@@ -14,7 +14,8 @@ from clearmd.frontend.ttk.visuals import marks
 
 _FALLBACK = ("#0F766E", "#5B6672", "#FFFFFF")  # accent, muted, on accent: before a palette
 
-Key = tuple[str, int, int, str, tuple[str, str, str]]  # icon, number, digits, box, colours
+# icon, number, digits, box, colours, the number's colour (a row's tone, kept when selected)
+Key = tuple[str, int, int, str, tuple[str, str, str], str]
 
 
 class RowPictures:
@@ -25,6 +26,7 @@ class RowPictures:
         self._tree = tree
         self._checks = checks
         self._colours = _FALLBACK
+        self._tones: dict[str, str] = {}  # a row's tag -> its number's colour (039, F3-03)
         self._cache: dict[Key, ImageTk.PhotoImage] = {}
         self._blank: dict[int, ImageTk.PhotoImage] = {}
         self._shown: dict[str, Key] = {}  # the picture each row shows now
@@ -32,6 +34,7 @@ class RowPictures:
     def use(self, palette: Palette) -> None:
         """Other colours: the rows on screen are painted again (the old pictures stay cached)."""
         self._colours = (palette.accent, palette.muted, palette.on_accent)
+        self._tones = {"danger": palette.danger, "warning": palette.warning}
         self._shown.clear()
 
     def forget(self) -> None:
@@ -41,16 +44,19 @@ class RowPictures:
     def blank(self, digits: int) -> ImageTk.PhotoImage:
         """A clear picture the size of a row's: rows not painted yet keep their place."""
         if digits not in self._blank:
-            size = self._picture(("unknown", 1, digits, "off", self._colours)).size
+            size = self._picture(("unknown", 1, digits, "off", self._colours, "")).size
             image = Image.new("RGBA", size, (0, 0, 0, 0))
             self._blank[digits] = ImageTk.PhotoImage(image, master=self._master)
         return self._blank[digits]
 
-    def paint(self, rows: Iterable[tuple[str, str, int, int, bool]]) -> None:
-        """``(item, icon, number, digits, selected)`` for each row to show as it is now."""
-        for item, icon, number, digits, selected in rows:
+    def paint(self, rows: Iterable[tuple[str, str, int, int, bool, str]]) -> None:
+        """``(item, icon, number, digits, selected, tag)`` for each row to show as it is now; a
+        "danger" or "warning" tag draws the number in that tone, which selection does not erase
+        (Tk draws a selected row's text in one colour)."""
+        for item, icon, number, digits, selected, tag in rows:
             box = ("on" if selected else "off") if self._checks else ""
-            key: Key = (icon, number, digits, box, self._colours)
+            tone = self._tones.get(tag, "")
+            key: Key = (icon, number, digits, box, self._colours, tone)
             if self._shown.get(item) == key:
                 continue
             if key not in self._cache:
@@ -65,6 +71,6 @@ class RowPictures:
         return key is not None and key[3] == "on"
 
     def _picture(self, key: Key) -> Image.Image:
-        icon, number, digits, box, (accent, muted, on_accent) = key
+        icon, number, digits, box, (accent, muted, on_accent), tone = key
         check = marks.checkbox(box, box=accent, border=muted, mark=on_accent) if box else None
-        return marks.numbered(number, marks.icon(icon), muted, digits=digits, check=check)
+        return marks.numbered(number, marks.icon(icon), tone or muted, digits=digits, check=check)

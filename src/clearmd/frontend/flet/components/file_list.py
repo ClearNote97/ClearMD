@@ -10,6 +10,7 @@ import flet as ft
 
 from clearmd.frontend.design.metrics import GAP, HALF, RADIUS, SPACE
 from clearmd.frontend.flet.components.primitives import card, label
+from clearmd.frontend.flet.components.row_tone import mark, tint
 from clearmd.frontend.flet.layout.units import CHECK_WIDTH, ICON, NUMBER_WIDTH, ROW_HEIGHT
 from clearmd.frontend.flet.visuals.images import icon_src
 from clearmd.frontend.flet.visuals.theme import role
@@ -32,12 +33,6 @@ def size(cell: ft.LayoutControl, column: int, widths: Sequence[int | None]) -> N
         cell.expand = True
     else:
         cell.width = width
-
-
-def tint(texts: Sequence[ft.Text], tone: str) -> None:
-    """A row's texts in its tone's colour, or the page's text colour."""
-    for text in texts:
-        text.color = role(tone or "text")
 
 
 @dataclass(frozen=True)
@@ -101,7 +96,7 @@ class FileList:
         for index, heading in enumerate(headings):
             cell = label("strong", heading)
             cell.color = role("muted")
-            self._size(cell, index)
+            size(cell, index, self._widths)
             cells.append(cell)
         self.header.controls = cells
         self.empty.value = empty
@@ -123,6 +118,10 @@ class FileList:
     def selected(self) -> list[Any]:
         """What the selected rows stand for (their payloads)."""
         return [row.payload for row in self.selected_rows()]
+
+    def holds(self, control: object) -> bool:
+        """Whether ``control`` is one of the list's own (a row's box): the list has the focus."""
+        return any(line.box is control for line in self.lines)
 
     def current(self) -> ListRow | None:
         chosen = self.selected_rows()
@@ -172,7 +171,7 @@ class FileList:
         name = ft.Row([picture, texts[0]], spacing=SPACE)
         cells: list[ft.LayoutControl] = [number, name, *texts[1:]]
         for column, cell in enumerate(cells[1:]):
-            self._size(cell, column)
+            size(cell, column, self._widths)
         if row.extra is not None:
             cells.append(row.extra)
         box = None
@@ -186,12 +185,10 @@ class FileList:
             height=ROW_HEIGHT,
             padding=ft.Padding.symmetric(horizontal=SPACE),
             border_radius=ft.BorderRadius.all(RADIUS // 2),
+            border=mark(row.tone),  # kept when selected (039)
             on_click=partial(self.click, index),  # flet passes no event to it
         )
         return Line(frame, box, tuple(texts), picture)
-
-    def _size(self, cell: ft.LayoutControl, column: int) -> None:
-        size(cell, column, self._widths)
 
     def _show_which(self) -> None:
         empty = not self._rows and bool(self.empty.value)

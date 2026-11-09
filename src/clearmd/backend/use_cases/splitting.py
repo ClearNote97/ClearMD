@@ -5,6 +5,8 @@ them. A part's Markdown is converted part by part, each within the time limit (A
 Overwriting replaces only the parts of an earlier cut; other files in the folder stay.
 """
 
+import contextlib
+import os
 from dataclasses import replace
 from pathlib import Path
 
@@ -31,7 +33,8 @@ from clearmd.backend.use_cases.ports import ConversionRunner, PageCutter
 from clearmd.backend.use_cases.relink import relinked
 from clearmd.backend.use_cases.split_formats import OWN_FORMAT_PARTS, split_file
 from clearmd.backend.use_cases.split_names import part_name
-from clearmd.backend.use_cases.split_notes import merged, over_size
+from clearmd.backend.use_cases.split_notes import merged, not_converted, over_size, part_markdown
+from clearmd.backend.use_cases.split_ranges import page_ranges, word_ranges
 
 STOPPING_CODES = frozenset({ErrorCode.TIMED_OUT, ErrorCode.OUT_OF_MEMORY})
 
@@ -77,44 +80,6 @@ def split_memory(limits: Limits, format_id: FormatId, size: int) -> int | None:
     return needed if needed > limits.worker_memory else None
 
 
-def page_ranges(pages: int, cut: Cut, size: int) -> tuple[tuple[int, int], ...]:
-    """The parts' first and last pages (1-based, inclusive). Into N parts: as even as possible,
-    the first ones a page longer; never more parts than pages, never an empty one."""
-    if pages <= 0:
-        return ()
-    if cut is Cut.PAGES:
-        return tuple((first, min(first + size - 1, pages)) for first in range(1, pages + 1, size))
-    count = min(size, pages)
-    base, extra = divmod(pages, count)
-    ranges = []
-    first = 1
-    for index in range(count):
-        length = base + (1 if index < extra else 0)
-        ranges.append((first, first + length - 1))
-        first += length
-    return tuple(ranges)
-
-
-def word_ranges(
-    words: tuple[int, ...], size: int
-) -> tuple[tuple[tuple[int, int], ...], tuple[int, ...]]:
-    """Whole pages, in order, up to ``size`` words a part (feature 024); a page larger than
-    ``size`` is a part alone. The ranges, and which parts are over the size."""
-    ranges: list[tuple[int, int]] = []
-    over: list[int] = []
-    total = 0
-    for page, count in enumerate(words, start=1):
-        if ranges and total + count <= size:
-            ranges[-1] = (ranges[-1][0], page)
-            total += count
-        else:
-            ranges.append((page, page))
-            total = count
-        if total > size and len(ranges) not in over:
-            over.append(len(ranges))
-    return tuple(ranges), tuple(over)
-
-
 def _pdf(
     item: PlannedConversion,
     spec: SplitSpec,
@@ -135,6 +100,7 @@ def _pdf(
     if not ranges:
         raise ConversionError(ErrorCode.CORRUPT_FILE, "the PDF has no pages")
     notes: list[tuple[int, ConversionNote]] = []
+    failed: list[int] = []
     for index, (first, last) in enumerate(ranges, start=1):
         name = part_name(spec, item.target.name, index, len(ranges))
         where[0] = f"part {index} of {len(ranges)} (pages {first}-{last}): "
@@ -144,12 +110,21 @@ def _pdf(
             part = replace(
                 item, source=pdf, target=stage.at(item.target / f"{name}.md"), split=None
             )
-            result = runner.convert(part, cancel)
+            result = part_markdown(runner, part, cancel)
+            if result is None:
+                failed.append(index)
+                continue  # its original part stays, to try again
             atomic_write(part.target, result.markdown, inside=item.output_root)
             notes.extend((first, note) for note in result.notes)
             if not spec.keep.original:
                 remove_regular_file(pdf, inside=item.output_root)
-    return len(ranges), merged(notes) + over_size(over)
+    converted = len(ranges) - len(failed) if spec.keep.markdown else 0
+    cleaned = sum(1 for _, note in notes if note.kind is NoteKind.PDF_RUNNING_REMOVED)
+    if cleaned < converted:  # never "headers left out" when some part kept them (audit v3, B3-03)
+        notes = [
+            (first, note) for first, note in notes if note.kind is not NoteKind.PDF_RUNNING_REMOVED
+        ]
+    return len(ranges), merged(notes) + over_size(over) + not_converted(failed)
 
 
 def _markdown(
@@ -179,6 +154,7 @@ def split_one(
     assert spec is not None
     where = [""]
     stage = PartStage(item, spec)
+    new_folder = not item.target.exists()
     try:
         if item.detection.format is FormatId.MARKDOWN:
             count, notes = _markdown(item, spec, cutter, cancel, stage)
@@ -200,4 +176,12 @@ def split_one(
         return ConversionOutcome(item, OutcomeStatus.FAILED, ErrorCode.WRITE_FAILED, detail)
     finally:
         stage.discard()  # nothing left after a commit; otherwise the new parts go
+        if new_folder:
+            _remove_if_empty(item.target)  # an empty folder is never a result (audit v3, B1-02)
     return ConversionOutcome(item, OutcomeStatus.CONVERTED, notes=notes, parts=count)
+
+
+def _remove_if_empty(folder: Path) -> None:
+    with contextlib.suppress(OSError):  # not empty, or already gone: nothing to do
+        if not os.path.islink(folder):
+            folder.rmdir()

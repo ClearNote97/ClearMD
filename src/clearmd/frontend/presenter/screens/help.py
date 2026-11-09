@@ -5,7 +5,9 @@ dropping is told only when the window can take dropped files."""
 from clearmd.frontend.presenter.state import Tool
 from clearmd.i18n import Catalog
 
-SECTIONS = ("markdown", "how", "tools", "formats", "where", "keyboard", "privacy", "language")
+SECTIONS = (
+    "markdown", "how", "tools", "formats", "where", "ai", "keyboard", "privacy", "language",
+)  # fmt: skip
 
 
 def help_sections(catalog: Catalog, *, drops: bool) -> tuple[tuple[str, str], ...]:

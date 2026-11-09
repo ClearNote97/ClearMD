@@ -45,6 +45,8 @@ class Document:
     decoded_fonts: int = 0  # fonts read back from moved codes (the summary tells it)
     unreadable: int = 0  # characters that could not be read (shown as "�")
     cut_pages: int = 0  # pages with more characters than any page holds: their first part kept
+    hidden_pages: list[int] = field(default_factory=list)  # with unseen text left out (ADR-0054)
+    equation_pages: list[int] = field(default_factory=list)  # equations kept as their symbols
 
 
 class Chars:

@@ -18,6 +18,15 @@ INPUTENC_CODECS = {
 # On a tie, ClearMD's audience (Spanish and English) means Western European: a short Spanish text
 # scores the same in cp1250 ("Cańón") as in cp1252 ("Cañón").
 PREFERRED_ON_TIE = ("cp1252", "latin_1", "iso8859_15", "mac_roman")
+# What a Western text saved by Windows (cp1252) holds beyond ASCII: the letters of Spanish, English,
+# French, Portuguese, German and Italian, and their typographic punctuation (audit v3, B1-01).
+WESTERN = frozenset(
+    "áéíóúýàèìòùâêîôûãõäëïöüÿñçœæåøßÁÉÍÓÚÝÀÈÌÒÙÂÊÎÔÛÃÕÄËÏÖÜŸÑÇŒÆÅØ"
+    "¿¡«»“”‘’‚„–—…€•·°ºª§©®™×÷±²³¼½¾£¥¢¤¦¨¯´¸¹µ¶ \u00a0†‡‰‹›ˆ˜šŠžŽƒ"
+)
+# Western text is mostly ASCII: when more than this share of its letters are not, it is another
+# script decoded wrongly (Cyrillic saved as cp1251 reads as "Ïðèâåò" in cp1252).
+MAX_NON_ASCII_LETTERS = 0.3
 _INPUTENC = re.compile(rb"\\usepackage\s*\[([^\]\n]{0,256})\]\s*\{inputenc\}")
 
 
@@ -57,6 +66,9 @@ def decode_source(data: bytes) -> SourceText:
             return SourceText(data.decode(codec), codec, guessed=False)
         except UnicodeDecodeError:
             pass
+    western = _as_western(data)
+    if western is not None:
+        return SourceText(western, "cp1252", guessed=True)
     candidates = list(charset_normalizer.from_bytes(data))
     if candidates:
         best = candidates[0]
@@ -64,3 +76,32 @@ def decode_source(data: bytes) -> SourceText:
         chosen = next((c for c in tied if c.encoding in PREFERRED_ON_TIE), best)
         return SourceText(str(chosen), chosen.encoding, guessed=True)
     return SourceText(data.decode("latin-1"), "latin-1", guessed=True)
+
+
+def _as_western(data: bytes) -> str | None:
+    """The text as Windows saves Western languages (cp1252), when it reads as such; else None.
+
+    A detector scores short texts badly ("Canción" came out as cp775, "José;Bogotá" as johab), so
+    the encoding ClearMD's audience uses most is tried first, and kept only when every character
+    beyond ASCII is a Western letter or punctuation mark, and most letters are plain ASCII.
+    """
+    try:
+        text = data.decode("cp1252")
+    except UnicodeDecodeError:
+        return None
+    letters = 0
+    beyond = 0
+    for char in text:
+        if char.isalpha():
+            letters += 1
+        if ord(char) < 0x80:
+            if ord(char) < 0x20 and char not in "\t\n\r\f":
+                return None  # a control character: binary or another encoding
+            continue
+        if char not in WESTERN:
+            return None
+        if char.isalpha():
+            beyond += 1
+    if letters and beyond / letters > MAX_NON_ASCII_LETTERS:
+        return None
+    return text

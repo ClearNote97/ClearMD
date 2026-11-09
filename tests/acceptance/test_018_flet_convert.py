@@ -147,12 +147,14 @@ def test_ac_03_the_result_tells_the_counts_the_problems_and_the_selected_ones_de
         ("Failed", "2"),
     ]
     assert len(app.results.problems.lines) == 2 and app.results.problems.lines[0].box is None
+    assert app.results.problems.current() is None and app.results.detail.value == ""  # (039)
+    click(app.results.problems.lines[0].frame)  # the user picks a problem: its detail below
     assert "password" in str(app.results.detail.value) and "a.pdf" in str(app.results.detail.value)
     click(app.results.problems.lines[1].frame)  # the detail follows the selected problem
     assert "c.pdf" in str(app.results.detail.value)
-    assert fake.opened == [Path("/docs/ClearMD_Output")]  # opened by itself
-    click(app.actions.primary)
-    assert len(fake.opened) == 2
+    assert fake.opened == []  # with problems it never opens over the list (039, F1-06)
+    click(app.actions.primary)  # Open Results Folder: the user's own choice
+    assert fake.opened == [Path("/docs/ClearMD_Output")]
 
 
 def test_ac_03_when_every_file_converts_the_result_says_so(

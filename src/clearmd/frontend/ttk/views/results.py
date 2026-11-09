@@ -12,7 +12,7 @@ from clearmd.frontend.presenter.models import ResultView, Tone
 from clearmd.frontend.ttk.components.file_list import Column, FileList, ListRow
 from clearmd.frontend.ttk.components.stats import Stats
 from clearmd.frontend.ttk.components.where_text import WhereText
-from clearmd.frontend.ttk.visuals.style_names import CARD, ON_PAGE, PAGE
+from clearmd.frontend.ttk.visuals.style_names import CARD, HINT, ON_PAGE, PAGE
 from clearmd.i18n import Catalog
 
 _TAGS = {Tone.DANGER: "danger", Tone.WARNING: "warning"}  # a row's tone, its colour (AC-03)
@@ -35,6 +35,11 @@ class ResultsView(ttk.Frame):
         self.stats = Stats(self, fonts=fonts)
         self.stats.pack(fill="x")
         self.where = WhereText(self, fonts=fonts)  # where the files are (feature 035, AC-06)
+        # What to do with the result (audit v3 F4-06): a muted line under it, wrapped.
+        self.with_ai = ttk.Label(self, style=HINT, justify="left")  # muted, on the page
+        self.with_ai.bind(
+            "<Configure>", lambda e: self.with_ai.configure(wraplength=max(e.width, 200))
+        )
 
         self.all_good = ttk.Frame(self, style=CARD, padding=3 * SPACE)
         self.all_good_text = ttk.Label(self.all_good, font=fonts["strong"], wraplength=640)
@@ -59,26 +64,33 @@ class ResultsView(ttk.Frame):
 
     def show(self, result: ResultView) -> None:
         tree = self.problems.tree
-        selected = tree.index(tree.selection()[0]) if tree.selection() else 0
+        selected = tree.index(tree.selection()[0]) if tree.selection() else None
         keep = len(tree.get_children()) == len(result.rows)  # the same result again (settings)
         self.stats.show(result.stats)
         for widget in (self.all_good, self.problems_title, self.problems, self.detail):
             widget.pack_forget()
         self.where.show(result.where, after=self.stats)
+        self.with_ai.configure(text=result.with_ai)
+        self.with_ai.pack_forget()
+        if result.with_ai:
+            after = self.where if result.where else self.stats
+            self.with_ai.pack(fill="x", pady=(SPACE, 0), after=after)
         if result.rows:
             self.problems_title.pack(anchor="w", pady=(GAP, 0))
             self.problems.pack(fill="both", expand=True, pady=(SPACE, 0))
             self.problems.show(
                 [
-                    ListRow(row.icon, row.name, (row.detail,), tag=_TAGS.get(row.tone, "warning"))
+                    ListRow(row.icon, row.name, (row.detail,), tag=_TAGS.get(row.tone, ""))
                     for row in result.rows
                 ]  # fmt: skip
             )
             self.detail.pack(side="bottom", fill="x", pady=(SPACE, 0), before=self.problems)
+            # Never pre-selected (audit v3 F3-03): the first row has the keyboard's focus and its
+            # detail shows; the user's own selection is kept when the same result comes back.
             children = tree.get_children()
-            row = children[selected if keep and selected < len(children) else 0]
-            tree.selection_set(row)
-            tree.focus(row)
+            if keep and selected is not None and selected < len(children):
+                tree.selection_set(children[selected])
+            tree.focus(children[selected if keep and selected is not None else 0])
             self._show_detail()
         else:
             # Nothing to show and nothing converted (an unexpected error, 038): the headline,
@@ -95,6 +107,7 @@ class ResultsView(ttk.Frame):
         for widget in (self.all_good, self.problems_title, self.problems, self.detail):
             widget.pack_forget()
         self.where.show("")
+        self.with_ai.pack_forget()
 
     def _show_detail(self) -> None:
         row = self.problems.current()

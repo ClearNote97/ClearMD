@@ -46,6 +46,7 @@ class Frame:
     converting: ConvertView
     results: ResultsView
     details: QPushButton
+    undo: QPushButton
 
 
 def build_frame(
@@ -89,6 +90,9 @@ def build_frame(
     details = button("", lambda: presenter.copy_details())
     details.hide()
     note.addWidget(details)
+    undo = button("", lambda: presenter.undo_clear())  # after Clear All (audit v3, F1-03)
+    undo.hide()
+    note.addWidget(undo)
     inside.addLayout(note)
     actions = ActionBar(on_primary=on_primary, on_offer=lambda: presenter.split_large())
     inside.addWidget(actions)
@@ -117,5 +121,5 @@ def build_frame(
         stack.addWidget(page)
     return Frame(
         panel, rail, surface, stack, actions, message, home, main, review, converting, results,
-        details,
+        details, undo,
     )  # fmt: skip

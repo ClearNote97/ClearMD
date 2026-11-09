@@ -97,7 +97,7 @@ def test_ac_03_every_text_comes_from_the_catalogs_in_the_chosen_language(
     assert app.surface.header()["title"] == es.text("gui.page.choose_title")
     to_review(app, tmp_path)
     (skipped,) = [row for row in app.last_plan.rows if row.name == "notas.md"]  # type: ignore[union-attr]
-    assert skipped.detail.startswith(es.text("skip.already_markdown"))
+    assert es.text("skip.already_markdown") in skipped.detail  # after its word (039: "Omitido:")
 
 
 def test_ac_04_the_presenter_imports_only_the_api_schemas_i18n_and_the_standard_library() -> None:

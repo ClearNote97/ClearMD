@@ -13,6 +13,7 @@ from clearmd.frontend.pyside.views.dialogs.settings import SettingsDialog
 from clearmd.frontend.pyside.views.dialogs.welcome import WelcomeDialog
 from clearmd.frontend.pyside.views.dialogs.what_next import WhatNextDialog
 from clearmd.frontend.pyside.window.shown import Shown
+from clearmd.i18n import Catalog
 
 
 class DialogHost:
@@ -72,7 +73,14 @@ class DialogHost:
             self._closed()
             self._presenter.dismiss_welcome(show_again=show_again)
 
-        self._open(WelcomeDialog(self._parent, self._shown.need_catalog(), steps, done))
+        catalog = self._shown.need_catalog()
+        language = self._presenter.choose_language
+        self._open(WelcomeDialog(self._parent, catalog, steps, done, on_language=language))
+
+    def apply_language(self, catalog: Catalog) -> None:
+        """An open Welcome speaks the language just chosen on it (audit v3, F4-05)."""
+        if isinstance(self.current, WelcomeDialog):
+            self.current.apply_language(catalog)
 
     def confirm_close(self, on_close_window: Callable[[], None]) -> None:
         """Closing during a task: asked once (audit v2, F1-01); another dialog gives way."""

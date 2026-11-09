@@ -13,6 +13,7 @@ from clearmd.frontend.flet.window.focus import Focus
 from clearmd.frontend.flet.window.page_port import PagePort
 from clearmd.frontend.flet.window.shown import Shown
 from clearmd.frontend.presenter import Action, Presenter
+from clearmd.i18n import Catalog
 
 
 class DialogHost:
@@ -80,7 +81,19 @@ class DialogHost:
             self._closed()
             self._sent(self._presenter.dismiss_welcome, show_again=show_again)
 
-        self._open(WelcomeDialog(self._shown.need_catalog(), steps, done))
+        self._open(
+            WelcomeDialog(
+                self._shown.need_catalog(),
+                steps,
+                done,
+                on_language=lambda language: self._sent(self._presenter.choose_language, language),
+            )
+        )
+
+    def apply_language(self, catalog: Catalog) -> None:
+        """An open Welcome redraws in the language just chosen on it (039, F4-05)."""
+        if isinstance(self.current, WelcomeDialog):
+            self.current.apply_language(catalog)
 
     def _open(self, dialog: Dialog) -> None:
         self.current = dialog

@@ -146,3 +146,5 @@ class ResultView:
     split_offer: str = ""  # "Split the Large PDFs (1)"; empty: none to offer (feature 025)
     # Where the results are, as text the user can read and copy (audit 2026-11-08, F3-11).
     where: str = ""
+    # What to do with the result: hand it to an AI (audit v3, F4-06); empty when nothing was made.
+    with_ai: str = ""

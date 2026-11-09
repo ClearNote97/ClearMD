@@ -20,6 +20,7 @@ The lessons are grouped by theme:
 | XI | What the second audit taught (2026-11-09) |
 | XII | Applying the second audit (2.11.0) |
 | XIII | What the third audit taught (2026-11-09) |
+| XIV | Applying the third audit (2.12.0) |
 
 Each lesson says what happened, then what a template should do. Within a part, the lessons that would have
 saved the most come first.
@@ -876,3 +877,73 @@ conciliators verified 78 findings: 61 confirmed, 17 partly true, none refuted. R
 - **For the template:** the reader of an audit is a person; the rule that governs the product
   governs the report about it.
 
+## Part XIV — Applying the third audit (2.12.0)
+
+The owner accepted the ten improvements and decided the five open questions (article mode by
+default, the empty file stays "failed", a report channel without an account, signed installers,
+an ADR on hidden PDF text). Written before the fourth audit.
+
+### XIV.1 Try the most likely encoding first, and keep it only if it reads well
+
+- A general detector scores short texts badly. Trying Windows' Western encoding first, and keeping
+  it only when every character beyond ASCII is a Western letter or mark and most letters are ASCII,
+  fixed every one-line case while Cyrillic and Japanese are still detected.
+- **For the template:** for a known audience, a cheap plausibility check before the general
+  detector; the fixtures are the shortest real inputs, in each language.
+
+### XIV.2 An output guarantee belongs where every converter's result passes
+
+- The pass that turns remote images, unsafe links and active HTML into text sits in the worker,
+  after every converter. One place covered markdown, a third party's, and ours.
+- **For the template:** find the one choke point every result crosses; enforce the promise there,
+  with a note, and test it with a hostile fixture per format.
+
+### XIV.3 A hidden-text filter must not move the reader's indices
+
+- The PDF reader asks PDFium for each character by its index. Hidden characters are turned into
+  spaces, not removed, so every later lookup still matches. A first rule (2 points off the page)
+  cut a rotated test line in half: the margin became an inch, and the ADR says why.
+- **For the template:** filter by replacing, not deleting, when other code addresses by position;
+  let the first failing test set the threshold, and write the threshold's reason down.
+
+### XIV.4 "All or nothing" splits into two guarantees
+
+- Keeping the earlier cut until the new one exists is one promise; keeping new parts that succeeded
+  is another. Mixing them threw away good work. A result is now defined by its own files, not by
+  its folder existing.
+- **For the template:** define "a result exists" by content you wrote, never by a container.
+
+### XIV.5 A message shown before a page change is lost
+
+- The windows clear their message line when the step changes, so a message sent before the change
+  vanished. The presenter now keeps a notice and shows it after the state is drawn.
+- **For the template:** in a presenter, messages tied to navigation are queued until the screen
+  they belong to is on.
+
+### XIV.6 A port change breaks every window at once: brief the window agents before it lands
+
+- Adding `show_undo` to the view's port made type-checking fail in three windows until each added
+  it. Brief B warned them, so no one "fixed" the lead's code.
+- **For the template:** when a shared interface grows, the brief names the new member and says the
+  type-check fails until it is implemented.
+
+### XIV.7 Never use `git stash` while other agents edit the same tree
+
+- Comparing old and new outputs with `git stash` would have taken the window agents' unsaved work
+  with it if they had written meanwhile. It came back intact, by luck.
+- **For the template:** compare against the old code in a separate worktree, never by stashing a
+  tree that several agents share.
+
+### XIV.8 Say the claim you can test
+
+- The installer first said the Modern App is "the one a screen reader can read". No one had tested
+  it with a screen reader; it now says "works best with one".
+- **For the template:** accessibility claims are comparative until a real assistive technology has
+  been tried.
+
+### XIV.9 Partial, said as partial
+
+- Not done: each Split part's opening line and headers computed on the whole PDF (B3-03), a Word
+  converter of our own (B3-01), a guessed encoding for Markdown read as-is by Merge, white-on-white
+  text, the uninstaller's signature, and Review's informative rows in flet (its rows have no tone).
+  They are listed in the spec for the fourth audit to check.

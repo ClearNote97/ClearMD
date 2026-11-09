@@ -10,6 +10,7 @@ from clearmd.backend.schemas.settings import Settings
 from clearmd.frontend.design.metrics import GAP, SPACE
 from clearmd.frontend.pyside.components.dialog import Dialog
 from clearmd.frontend.pyside.components.primitives import button, label
+from clearmd.frontend.pyside.components.scroll_body import ScrollBody
 from clearmd.frontend.pyside.views.dialogs.split_settings import SplitSettings
 from clearmd.i18n import Catalog
 
@@ -65,7 +66,8 @@ class SettingsDialog(Dialog):
             "merge_into": {v: text(f"gui.merge.{v}") for v in ("markdown", "pdf")},
         }
         self.controls: dict[str, QComboBox | QCheckBox] = {}
-        rows = QVBoxLayout()
+        self.area = ScrollBody()  # the settings scroll; Save and Cancel stay at the foot (F3-01)
+        rows = self.area.rows
         rows.setSpacing(GAP)
         for setting, key in self.ROWS:
             if setting == SPLIT_BEFORE:
@@ -98,7 +100,8 @@ class SettingsDialog(Dialog):
             row.addWidget(holder, 0, Qt.AlignmentFlag.AlignVCenter)
             rows.addLayout(row)
             self.controls[setting] = control
-        self.body.addLayout(rows)
+        rows.addStretch(1)  # any room left goes below the last setting, not between two
+        self.body.addWidget(self.area, 1)
         self._load(settings)
 
         restore = button("", self.restore)

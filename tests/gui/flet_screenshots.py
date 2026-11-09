@@ -135,6 +135,9 @@ async def screens(page: ft.Page, out: Path, theme: str, language: str) -> None:
     app.presenter.clear_inputs()
     app.presenter.add_paths([demo.INPUTS[0], demo.INPUTS[2], demo.INPUTS[4]])
     await shooter.shot("1-choose-merge")
+    if theme == "light":  # Clear All: the line and Undo (039), as Qt's 1-choose-cleared-*
+        app.presenter.clear_inputs()
+        await shooter.shot("1-choose-cleared")
     app.presenter.choose_tool(Tool.CONVERT)
     app.presenter.add_paths(demo.INPUTS)
     fake.plan = large_pdf_plan()  # Review offers to split the large PDF (025)

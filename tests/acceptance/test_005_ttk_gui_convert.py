@@ -89,9 +89,9 @@ def test_ac_11_the_result_tells_counts_problems_and_opens_the_folder(
         ("Failed", "1"),
     ]
     assert "password" in app.results.detail.cget("text")
-    assert fake.opened == [Path("/docs/ClearMD_Output")]  # opened by itself
+    assert fake.opened == []  # with a problem it does not open by itself (039, F1-06)
     app.actions.primary.invoke()
-    assert len(fake.opened) == 2
+    assert fake.opened == [Path("/docs/ClearMD_Output")]
 
 
 def test_ac_12_one_failed_file_never_stops_the_batch(

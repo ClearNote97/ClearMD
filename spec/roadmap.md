@@ -122,6 +122,7 @@ follows Choose → Review → Results in the three windows; the command line get
 - [x] **036 — Clear messages, a kind first run, progress and estimates** (audit 8–10, decision 3B, doubts board D2–D3): v2.10.0.
 - [x] **037 — A light installer and a full one** (audit 9, doubts board D1, ADR-0052): v2.10.0.
 - [x] **038 — Say only what is true, and start faster** (audit v2's ten improvements, ADR-0053): v2.11.0.
+- [x] **039 — Truth for the AI, care for the person** (audit v3's ten improvements, ADR-0054): v2.12.0.
 
 ## Out for now
 

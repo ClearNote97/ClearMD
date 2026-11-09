@@ -21,7 +21,7 @@ una IA; **Unir** varios en uno. Pensado primero para quienes nunca abren una ter
 
 ### [⬇️ Descargar ClearMD para Windows](https://github.com/ClearNote97/ClearMD/releases/latest)
 
-<sub>Abre la versión más reciente y toma <code>ClearMD-Setup-&lt;versión&gt;.exe</code> (unos 40 MB, la App Clásica): se instala y desinstala como cualquier programa de Windows. <code>ClearMD-Setup-Full-&lt;versión&gt;.exe</code> agrega la App Moderna, la App Estilo Móvil y la Línea de Comandos. Linux: el <code>.tar.gz</code> de la misma versión.</sub>
+<sub>Abre la versión más reciente y toma <code>ClearMD-Setup-&lt;versión&gt;.exe</code> (unos 30 MB, la App Clásica): se instala y desinstala como cualquier programa de Windows. <code>ClearMD-Setup-Full-&lt;versión&gt;.exe</code> agrega la App Moderna, la App Estilo Móvil y la Línea de Comandos. Linux: el <code>.tar.gz</code> de la misma versión.</sub>
 
 [Read in English](./README.md)
 
@@ -169,6 +169,7 @@ anteriores._
 | **036** Mensajes claros, página N de M, Copiar Detalles, nombres sencillos en el instalador | ✅ lista | v2.10.0 |
 | **037** Un instalador liviano (la App Clásica) y uno completo | ✅ lista | v2.10.0 |
 | **038** Decir solo lo que es verdad (codificaciones, N partes, tablas, mensajes) y abrir más rápido | ✅ lista | v2.11.0 |
+| **039** Verdad para la IA (texto oculto, imágenes de internet, textos cortos de Windows), cuidado para la persona, un instalador que dice la verdad | ✅ lista | v2.12.0 |
 
 El plan completo está en el [roadmap](./spec/roadmap.md). ClearMD tiene **línea de comandos** y la misma **app de
 escritorio** en tres toolkits, ttkbootstrap (`clearmd-ttk`), PySide6 (`clearmd-pyside`,
@@ -183,11 +184,13 @@ descarga `ClearMD-Setup-….exe` y ábrelo: instala la App Clásica, solo para t
 ClearMD desde el menú Inicio. A la mayoría no le hace falta nada más. `ClearMD-Setup-Full-….exe` te deja elegir, con su
 explicación: la App Clásica (la más liviana, la que viene marcada), la App Moderna (hecha con Qt), la App Estilo Móvil
 (hecha con flet), la Línea de Comandos, o todas.
+**Si usas un lector de pantalla**, descarga `ClearMD-Setup-Full-….exe` y elige la App Moderna: es la que mejor
+funciona con uno (la App Clásica no la pueden leer los lectores de pantalla).
 
 **O descarga la app** (nada que instalar): `ClearMD-…-windows.exe` para Windows o `ClearMD-…-linux.tar.gz` para
 Linux, y ábrela con doble clic.
-Windows puede advertir que la app no es reconocida, porque aún no está firmada: *Más información → Ejecutar de todas
-formas*. La firma está en camino: [Code signing policy](./CODE_SIGNING.md) (política de firma). Cada archivo se puede comprobar con el `SHA256SUMS.txt` de la versión ([cómo](./SECURITY.md#checking-a-download)). El primer inicio tarda unos segundos mientras la app se descomprime.
+Windows puede advertir que el programa no es reconocido, porque aún no está firmado: *Más información → Ejecutar de todas
+formas*. La firma está en camino: [Code signing policy](./CODE_SIGNING.md) (política de firma). Cada archivo se puede comprobar con el `SHA256SUMS.txt` de la versión ([cómo](./SECURITY.md#checking-a-download)). El primer inicio de la app de un solo archivo tarda unos segundos mientras se descomprime; la instalada abre en un par.
 La misma app dibujada con Qt es `ClearMD-Qt-…-windows.zip`: descomprímela y abre `ClearMD-Qt.exe` dentro de la carpeta
 (una carpeta y no un solo archivo: las librerías de Qt quedan reemplazables, como pide su licencia LGPL; en Linux viene
 en el archivo).

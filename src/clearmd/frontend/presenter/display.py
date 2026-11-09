@@ -35,6 +35,9 @@ class Display:
         label = s.catalog.text(f"gui.state.{state.value}")
         view = StateView(state, label, enabled, step_of(state), s.page, self.primary(), s.tool)
         self.view.show_state(view)
+        if s.notice is not None:  # after the step changed: a view clears messages on a change
+            notice, s.notice = s.notice, None
+            self.view.show_message(notice)
 
     def show_inputs(self) -> None:
         self.view.show_inputs(input_rows(self._session.inputs, self._session.tool))

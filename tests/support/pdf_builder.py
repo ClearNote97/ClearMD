@@ -21,6 +21,7 @@ class Text:
     sideways: bool = False  # turned a quarter, to read upwards (a table set sideways, 013)
     downwards: bool = False  # turned a quarter the other way, to read downwards
     scaled: bool = False  # set as "1 Tf" and scaled by its matrix, as many PDFs do (014)
+    invisible: bool = False  # drawn in render mode 3: no one sees it (ADR-0054)
 
 
 @dataclass(frozen=True)
@@ -74,7 +75,8 @@ def _stream(texts: Sequence[Text | Box]) -> bytes:
         )  # fmt: skip
         if item.scaled:
             matrix = b"%g 0 0 %g" % (item.size, item.size)
-        out += b"BT /%s %g Tf %s %g %g Tm (" % (
+        out += b"BT 3 Tr " if item.invisible else b""
+        out += (b"" if item.invisible else b"BT ") + b"/%s %g Tf %s %g %g Tm (" % (
             _FONTS[item.font].encode(),
             1 if item.scaled else item.size,
             matrix,

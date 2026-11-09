@@ -1,8 +1,56 @@
 **ClearMD — prepare your documents for AI, 100 % local: Convert, Split, Merge.** / **Prepara tus documentos para la IA, 100 % local: Convertir, Dividir, Unir.**
 
-Each file can be checked against `SHA256SUMS.txt` ([how](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)). / Cada archivo se puede comprobar con `SHA256SUMS.txt` ([cómo](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)).
+<!-- what-to-download:start -->
+### What to Download / Qué Descargar
 
-Most people need only `ClearMD-Setup-<version>.exe` (about 40 MB, the Classic App). `ClearMD-Setup-Full-<version>.exe` adds the Modern App, the Mobile-Style App and the Command Line. / A la mayoría le basta `ClearMD-Setup-<versión>.exe` (unos 40 MB, la App Clásica). `ClearMD-Setup-Full-<versión>.exe` agrega la App Moderna, la App Estilo Móvil y la Línea de Comandos.
+| File | What it is | To uninstall |
+|---|---|---|
+| `ClearMD-Setup-<version>.exe` | **Most people need only this one.** Installs the Classic App, the lightest (about 30 MB to download). / **A la mayoría le basta este.** Instala la App Clásica, la más liviana (unos 30 MB). | Windows Settings → Apps → ClearMD. / Configuración de Windows → Aplicaciones → ClearMD. |
+| `ClearMD-Setup-Full-<version>.exe` | Installs any of the three apps and the command line; choose on its second page. **If you use a screen reader, use this one and choose the Modern App.** / Instala cualquiera de las tres apps y la línea de comandos; eliges en su segunda página. **Si usas un lector de pantalla, usa este y elige la App Moderna.** | Windows Settings → Apps → ClearMD. / Configuración de Windows → Aplicaciones → ClearMD. |
+| `ClearMD-<version>-windows.exe` | The Classic App without installing: one program you open with a double click (its first start takes a few seconds). / La App Clásica sin instalar: un programa que abres con doble clic (su primer inicio tarda unos segundos). | Delete the file. / Borra el archivo. |
+| `ClearMD-Qt-<version>-windows.zip`, `ClearMD-Flet-<version>-windows.zip` | The Modern App and the Mobile-Style App without installing: right-click → *Extract All*, then open the program inside. / La App Moderna y la App Estilo Móvil sin instalar: clic derecho → *Extraer todo*, y abre el programa de adentro. | Delete the folder. / Borra la carpeta. |
+| `clearmd-cli-<version>-windows.exe` | The command line, for scripts. / La línea de comandos, para scripts. | Delete the file. / Borra el archivo. |
+| `ClearMD-<version>-linux.tar.gz` | The apps and the command line for Linux (x86-64). / Las apps y la línea de comandos para Linux (x86-64). | Delete the folder. / Borra la carpeta. |
+| `SHA256SUMS.txt`, `THIRD-PARTY-NOTICES.txt` | To check each download ([how](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)), and the licenses of the libraries inside. / Para comprobar cada descarga ([cómo](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)), y las licencias de las librerías incluidas. | — |
+
+- **Windows may warn that the program is not recognized** (it is not code-signed yet). Click
+  *More info → Run anyway*. / **Windows puede advertir que el programa no es reconocido** (aún no
+  está firmado). Pulsa *Más información → Ejecutar de todas formas*.
+  [Code signing policy](https://github.com/ClearNote97/ClearMD/blob/main/CODE_SIGNING.md).
+- Nothing leaves your computer: ClearMD never uses the internet. / Nada sale de tu computador:
+  ClearMD nunca usa internet.
+- Earlier versions: [the full history](https://github.com/ClearNote97/ClearMD/blob/main/packaging/RELEASE_NOTES.md). /
+  Versiones anteriores: [el historial completo](https://github.com/ClearNote97/ClearMD/blob/main/packaging/RELEASE_NOTES.md).
+<!-- what-to-download:end -->
+
+**New in 2.12.0 / Novedades de la 2.12.0** — the third audit's improvements / las mejoras de la tercera auditoría
+- **What reaches your AI is what you see.** Short notes and CSV files saved by Windows keep their
+  letters; text no one can see in a PDF is left out and the summary says so; pictures from the
+  internet and unsafe links in an e-mail or a web page become text, so opening the result notifies
+  no one; web pages convert only their article by default (Settings → Web Pages to change it). /
+  **Lo que llega a tu IA es lo que tú ves.** Las notas y los CSV cortos guardados por Windows
+  conservan sus letras; el texto que nadie ve en un PDF se omite y el resumen lo dice; las imágenes
+  de internet y los enlaces inseguros de un correo o una página web quedan como texto, así que
+  abrir el resultado no avisa a nadie; las páginas web convierten por defecto solo su artículo
+  (Ajustes → Páginas Web para cambiarlo).
+- **Warnings where the result may mislead:** equations kept as symbols (with their pages), Word
+  tables with merged cells, and Merge keeps each document's notes. / **Avisos donde el resultado
+  puede engañar:** ecuaciones que quedaron como símbolos (con sus páginas), tablas de Word con
+  celdas combinadas, y Unir conserva los avisos de cada documento.
+- **No work lost:** if one part of a Split stops, the other parts stay; "Clear All" can be undone;
+  "Split the large PDFs" gives you back the rest of your list. / **Sin perder trabajo:** si una
+  parte de una división se detiene, las demás se quedan; "Quitar Todo" se puede deshacer; "Dividir
+  los PDF grandes" te devuelve el resto de tu lista.
+- **A first use that guides you:** the installer can open ClearMD when it finishes and describes
+  each app truthfully; the Welcome changes the language at once; Help and Results say how to hand
+  the result to your AI; reporting a problem works without a GitHub account. / **Un primer uso que
+  acompaña:** el instalador puede abrir ClearMD al terminar y describe cada app con la verdad; la
+  Bienvenida cambia el idioma al instante; la Ayuda y Resultados dicen cómo entregarle el resultado
+  a tu IA; reportar un problema ya no exige cuenta de GitHub.
+- **Numbers, colours and keys you can trust:** each file is counted once, every row says in words
+  what happened, Enter presses the button you are on, and Settings always fits the screen. /
+  **Cifras, colores y teclas confiables:** cada archivo se cuenta una vez, cada fila dice con
+  palabras qué pasó, Enter pulsa el botón en el que estás, y Ajustes siempre cabe en la pantalla.
 
 **New in 2.11.0 / Novedades de la 2.11.0** — the second audit's improvements / las mejoras de la segunda auditoría
 - **What you get is true.** A text saved on Windows keeps its ñ and accents; "Split into 3 parts"
@@ -285,21 +333,3 @@ Most people need only `ClearMD-Setup-<version>.exe` (about 40 MB, the Classic Ap
 - Text in fonts without a character map is read back; what cannot be read, and scanned pages,
   are told in the summary. / El texto en fuentes sin mapa de caracteres se recupera; lo que no se
   puede leer, y las páginas escaneadas, se avisan en el resumen.
-
-| File | What |
-|---|---|
-| `ClearMD-…-windows.exe` | The desktop app for Windows: download it and double-click it. / La app de escritorio para Windows: descárgala y ábrela con doble clic. |
-| `clearmd-cli-…-windows.exe` | The command line for Windows. / La línea de comandos para Windows. |
-| `ClearMD-…-linux.tar.gz` | Both, for Linux (x86-64). / Ambas, para Linux (x86-64). |
-| `THIRD-PARTY-NOTICES.txt` | The licenses of the libraries inside. / Las licencias de las librerías incluidas. |
-
-- **Windows may warn that the app is not recognized** (it is not code-signed yet). Click
-  *More info → Run anyway*. / **Windows puede advertir que la app no es reconocida** (aún no está
-  firmada). Pulsa *Más información → Ejecutar de todas formas*.
-  [Code signing policy](https://github.com/ClearNote97/ClearMD/blob/main/CODE_SIGNING.md).
-- **Uninstall:** delete the file; nothing else is installed. / **Desinstalar:** borra el archivo;
-  no se instala nada más.
-- The first start takes a few seconds (the app unpacks itself). / El primer inicio tarda unos
-  segundos (la app se descomprime).
-- Nothing leaves your computer: ClearMD never uses the internet. / Nada sale de tu computador:
-  ClearMD nunca usa internet.

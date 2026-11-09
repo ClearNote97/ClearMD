@@ -20,6 +20,7 @@ from clearmd.backend.schemas.models import (
 from clearmd.backend.schemas.settings import Settings, SettingsWarning
 from clearmd.backend.schemas.split import Cut, Keep, SplitSpec
 from clearmd.backend.services import folders, settings_store
+from clearmd.backend.services.privacy import without_paths
 from clearmd.backend.services.rejections import (
     error_action,
     error_text,
@@ -61,6 +62,7 @@ __all__ = [
     "skip_reason",
     "skipped_line",
     "stopped_message",
+    "without_paths",
 ]
 
 

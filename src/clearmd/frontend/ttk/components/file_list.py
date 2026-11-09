@@ -135,8 +135,9 @@ class FileList(ttk.Frame):
         shown = max(self.tree.winfo_height() // 36 + 2, int(str(self.tree.cget("height"))) + 2)
         start, stop = (0, len(children)) if every else (max(first - 1, 0), first + shown)
         selected = set(self.tree.selection())
+        rows = self._items
         self.pictures.paint(
-            (item, self._items[item].icon, index + 1, self._digits, item in selected)
+            (item, rows[item].icon, index + 1, self._digits, item in selected, rows[item].tag)
             for index, item in enumerate(children[start:stop], start=start)
         )
 

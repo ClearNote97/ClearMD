@@ -38,6 +38,9 @@ def test_a_real_batch_through_the_window_writes_the_markdown(display: str, tmp_p
         assert output == tmp_path / "ClearMD_Output"
         assert len(list(output.rglob("*.md"))) == 4  # three documents and the summary
         assert set(app.results.problems.names()) == {"encrypted.pdf", "notas.md"}
+        # With a problem the folder does not open by itself (039, F1-06): Results stays seen.
+        assert backend.opened == []
+        app.actions.primary.invoke()  # Open Results Folder
         assert backend.opened == [output]
     finally:
         shut(app)

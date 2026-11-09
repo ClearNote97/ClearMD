@@ -11,7 +11,7 @@ import flet as ft
 
 from clearmd.frontend.design.metrics import SPACE
 from clearmd.frontend.flet.components.file_list import FileList
-from clearmd.frontend.flet.components.primitives import Wording, button, label
+from clearmd.frontend.flet.components.primitives import Wording, button, label, stretch
 from clearmd.frontend.flet.components.start_panel import StartPanel
 
 
@@ -49,8 +49,10 @@ class InputsCard:
         self.order_hint = label("muted")
         self.order_hint.visible = False
         wording.add(self.order_hint, "gui.main.order_hint")
+        # Clear All apart, alone at the row's right end, as Qt's: it empties the whole list (039).
+        self.apart = stretch()
         self.editing = ft.Row(
-            [self.remove, self.clear, self.deselect, self.order_hint],
+            [self.remove, self.deselect, self.order_hint, self.apart, self.clear],
             spacing=SPACE,
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
         )

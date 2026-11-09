@@ -11,7 +11,7 @@ from support.gui_fakes import FakeBackend, planned
 from support.pdf_builder import Text, build_pdf
 from support.presenter_fakes import make
 
-from clearmd.backend.api import Cut, Into, Keep, SplitSpec, plan_batch, run_batch
+from clearmd.backend.api import Cut, Into, Keep, SplitSpec, plan_batch, run_batch, without_paths
 from clearmd.backend.schemas.errors import ErrorCode
 from clearmd.backend.schemas.formats import FormatId
 from clearmd.backend.schemas.limits import Limits
@@ -23,7 +23,6 @@ from clearmd.backend.services.split.text_cut import balanced_cuts
 from clearmd.frontend.cli import main
 from clearmd.frontend.presenter.chrome.header import header_of
 from clearmd.frontend.presenter.intents.reset import unexpected
-from clearmd.frontend.presenter.screens.details import without_paths
 from clearmd.frontend.presenter.state import AppState
 from clearmd.i18n import load_catalog
 

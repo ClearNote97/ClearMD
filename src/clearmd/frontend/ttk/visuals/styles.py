@@ -129,7 +129,9 @@ def install(
     style.layout(
         "Treeview.Heading", [("Heading.ClearMD.cell", {"sticky": "nsew", "children": [inner]})]
     )
-    # A soft tint for the selection: the row's number, icon and text stay readable on it.
+    # A soft tint for the selection: the row's number, icon and text stay readable on it. Tk
+    # draws a selected row's text in this colour whatever its tag; the row's tone survives in
+    # its number, drawn in the tone's colour into the row's picture (audit v3 F3-03).
     style.map("Treeview", background=[("selected", p.shape)], foreground=[("selected", p.text)])
     style.configure("Horizontal.TProgressbar", thickness=8)
     # A number field (Split's sizes, feature 023): ttkbootstrap leaves the spin box to clam's

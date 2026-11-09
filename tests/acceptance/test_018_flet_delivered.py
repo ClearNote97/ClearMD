@@ -49,4 +49,6 @@ def test_ac_08_the_flet_window_converts_like_the_cli(flet_window: Window, tmp_pa
     tables = [[line for line in text.splitlines() if line.startswith("| `")] for text in summaries]
     assert tables[0] == tables[1] != []
     assert app.results.stats.figures()[0] == ("Converted", "3")  # and the window says so
+    assert app.results.problems.current() is None  # never chosen for the user (039)
+    app.results.problems.select(0)
     assert "password" in str(app.results.detail.value)  # the encrypted one, in its words

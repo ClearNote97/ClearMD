@@ -61,10 +61,9 @@ def test_ac_14_the_welcome_appears_until_dont_show_again(
     pump(app, until=lambda: app.dialog is not None)
     dialog = app.dialog
     assert isinstance(dialog, dialogs.welcome.WelcomeDialog)
-    texts = [str(child.cget("text")) for child in dialog.body.winfo_children()]
     catalog = load_catalog("en")  # the steps as the catalog says them (035: not counted wrong)
     steps = [catalog.text(f"gui.welcome.step{n}") for n in (1, 2, 3)]
-    assert [text for text in texts if text[:2] in {"1.", "2.", "3."}] == steps
+    assert [line.cget("text") for line in dialog.steps] == steps
     dialog.dont_show.set(True)
     dialog.close()
     assert backend.settings.show_welcome is False

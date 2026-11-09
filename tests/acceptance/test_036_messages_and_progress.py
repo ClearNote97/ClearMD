@@ -95,7 +95,10 @@ def test_ac_04_the_unexpected_error_hides_the_detail_behind_copy_details(languag
     )
     unexpected(presenter._session, presenter._display, error)
     message = view.last("message")
-    assert "FileNotFoundError" not in message and "github.com/ClearNote97/ClearMD/issues" in message
+    assert (
+        "FileNotFoundError" not in message
+        and "github.com/ClearNote97/ClearMD/discussions" in message
+    )
     assert view.last("details_button") == catalog.text("gui.app.copy_details")
     presenter.copy_details()
     copied = view.last("copied")
@@ -111,7 +114,7 @@ def test_ac_04_the_terminal_says_where_to_tell(language: str) -> None:
     text = (
         load_catalog(language).for_terminal().text("cli.unexpected_error", detail="KeyError: 'x'")
     )
-    assert "github.com/ClearNote97/ClearMD/issues" in text and "KeyError" in text
+    assert "github.com/ClearNote97/ClearMD/discussions" in text and "KeyError" in text
 
 
 class _Alive:
