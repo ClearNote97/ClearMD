@@ -178,6 +178,9 @@ class BatchReport:
     # Output roots whose Resumen_ClearMD.md could not be written (disk full, ...).
     unwritten_summaries: tuple[Path, ...] = ()
     unwritten_pdfs: tuple[Path, ...] = ()  # the PDF summary could not be written there
+    # A batch that stopped on an unexpected error: the output folders it may have written to,
+    # so that Results can still open them (audit 2026-11-09, F1-02).
+    folders: tuple[Path, ...] = ()
 
 
 def tool_of(items: Iterable[PlannedConversion]) -> str:

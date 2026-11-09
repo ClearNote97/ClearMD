@@ -83,6 +83,9 @@ def run(argv: Sequence[str] | None) -> int:
             return EXIT_USAGE
         print(catalog.text("cli.nothing_to_split" if split else "cli.nothing_to_convert"))
         return EXIT_OK
+    if merge is not None and len(plan.conversions) < 2:  # said before, no file blamed (B3-05)
+        print(catalog.text("cli.merge_needs_two"), file=err)
+        return EXIT_USAGE
     if args.dry_run:
         print_dry_run(catalog, plan)
         return EXIT_OK

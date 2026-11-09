@@ -12,7 +12,13 @@ from clearmd.backend.schemas.models import (
     SkippedItem,
     tool_of,
 )
-from clearmd.backend.services.rejections import skip_action, skip_reason, stopped_message
+from clearmd.backend.services.rejections import (
+    error_action,
+    error_text,
+    skip_action,
+    skip_reason,
+    stopped_message,
+)
 from clearmd.backend.services.summary.model import (
     DATE_FORMAT,
     FOLDERS,
@@ -149,7 +155,7 @@ class SummaryBuilder:
         return Entry(
             Mark.FAILED,
             *_converted_place(outcome, markdown),
-            self._catalog.error(outcome.error),
+            error_text(self._catalog, outcome),
             detail=detail,
         )
 
@@ -160,7 +166,7 @@ class SummaryBuilder:
             message=stopped_message(self._catalog, outcome),
             elapsed=self._catalog.clock(outcome.seconds),
             percent=outcome.share_done,
-            action=self._catalog.text(outcome.error.action_key),
+            action=error_action(self._catalog, outcome),
         )
         return Entry(Mark.STOPPED, *_converted_place(outcome, markdown), message)
 

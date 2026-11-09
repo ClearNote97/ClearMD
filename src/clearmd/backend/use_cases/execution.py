@@ -30,6 +30,7 @@ from clearmd.backend.use_cases.estimation import TimeLeft
 from clearmd.backend.use_cases.output_files import (
     UnsafeOutput,
     atomic_write,
+    other_image_folders,
     prepare_root,
     sweep_temporary_files,
     write_images,
@@ -78,6 +79,8 @@ def _convert_one(
     try:
         if item.images:  # first: a folder that cannot be written keeps the earlier Markdown
             write_images(item.target.parent / item.images, result.images, inside=item.output_root)
+            for other in other_image_folders(item):  # the other language's: never two copies
+                write_images(other, (), inside=item.output_root)
         atomic_write(item.target, result.markdown, inside=item.output_root)
     except OSError as error:  # this file only: disk full, name too long, locked, a folder...
         return ConversionOutcome(

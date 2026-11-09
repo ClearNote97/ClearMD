@@ -5,7 +5,8 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import TextIO
 
-from clearmd.backend.api import skipped_line
+from clearmd.backend.api import failed_line, skipped_line
+from clearmd.backend.schemas.errors import ErrorCode
 from clearmd.backend.schemas.models import BatchPlan, BatchReport, OutcomeStatus, tool_of
 from clearmd.backend.schemas.settings import SettingsWarning
 from clearmd.i18n import Catalog, printable
@@ -24,6 +25,10 @@ def print_summary(catalog: Catalog, report: BatchReport) -> None:
         kept=count[OutcomeStatus.KEPT],
     )
     print(line)
+    for outcome in report.outcomes:  # a merge that wrote nothing says why (audit v2, B3-05)
+        if outcome.error is ErrorCode.NOTHING_TO_MERGE:
+            print(failed_line(catalog, outcome, p(outcome.item.source.name)), file=sys.stderr)
+            break
     for root in output_roots(report):
         print(catalog.text("cli.results", path=p(root)))
     for root in report.unwritten_summaries:
@@ -84,4 +89,4 @@ def print_dry_run(catalog: Catalog, plan: BatchPlan) -> None:
         print(line)
     split = any(item.split is not None for item in plan.conversions)
     done = "cli.dry_run_split" if split else "cli.dry_run_done"
-    print(catalog.text(done, count=len(plan.conversions)))
+    print(catalog.plural(done, len(plan.conversions)))

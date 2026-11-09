@@ -62,7 +62,7 @@ def test_ac_02_per_user_only_in_the_local_programs_folder() -> None:
     assert "UninstallDisplayIcon={app}\\clearmd.ico" in setup
     assert "SetupIconFile={#Root}\\src\\clearmd\\frontend\\assets\\logo\\clearmd.ico" in setup
     files = sections(edition(read(ISS)))["Files"]
-    assert any("dist\\ClearMD.exe" in f and "Components: ttk" in f for f in files)
+    assert any("dist\\ClearMD-Classic\\*" in f and "Components: ttk" in f for f in files)
     assert any(
         "dist\\ClearMD-Qt\\*" in f and "recursesubdirs" in f and "Components: qt" in f
         for f in files

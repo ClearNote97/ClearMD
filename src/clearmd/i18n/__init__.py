@@ -69,8 +69,12 @@ class Catalog:
         return self._messages[key]
 
     def text(self, key: str, **values: object) -> str:
-        """The message ``key`` with its named placeholders filled. A missing key is a bug."""
-        return self._messages[key].format(**values)
+        """The message ``key`` with its named placeholders filled. A missing key is a bug.
+        ``{report}``, how to report a problem, is filled from ``report.how`` (one text for all)."""
+        message = self._messages[key]
+        if "{report}" in message and "report" not in values:
+            values["report"] = self._messages["report.how"]
+        return message.format(**values)
 
     def error(self, code: _HasCatalogKeys) -> str:
         """What happened and what to do, in one sentence pair (ADR-0013)."""

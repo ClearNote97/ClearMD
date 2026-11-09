@@ -73,7 +73,7 @@ def test_ac_06_both_executables_carry_the_product_name_and_version() -> None:
     assert f"prodvers=({number.replace('.', ', ')}, 0)" in text
     assert "StringStruct('OriginalFilename', 'ClearMD.exe')" in text
     spec = (ROOT / "packaging" / "clearmd.spec").read_text(encoding="utf-8")
-    assert spec.count("version=version_file(") == 2
+    assert spec.count("version=version_file(") == 3  # one-file app, its folder copy (0053), CLI
     check = next(step for step in steps() if "Product name and version" in step.splitlines()[0])
     assert "runner.os == 'Windows'" in check and "SIGNPATH" not in check
     assert "ProductName" in check and "ProductVersion" in check

@@ -23,6 +23,7 @@ from support.flet_acceptance import (
 from support.gui_fakes import FakeBackend
 
 from clearmd.backend.schemas.models import BatchPlan
+from clearmd.frontend.flet.views.dialogs.close_question import CloseQuestionDialog
 from clearmd.frontend.presenter import AppState
 
 
@@ -50,7 +51,10 @@ def test_ac_07_closing_while_converting_cancels_and_waits_for_the_summary(
     confirm(app)
     pump(app, until=lambda: app.presenter.state is AppState.CONVERTING)
     page = page_of(app)
-    page.close_button()  # the window's own close button
+    page.close_button()  # the window's own close button: it asks first (038)
+    question = app.dialogs.current
+    assert isinstance(question, CloseQuestionDialog) and not page.hidden
+    click(question.close)  # Close: cancel, hide, wait for the batch
     assert page.hidden and not page.destroyed and not app.closing.closed  # waiting for the batch
     pump(app, until=lambda: app.closing.closed, seconds=15)
     assert app.closing.closed and page.destroyed and marker.is_file() and cancelled == [True]

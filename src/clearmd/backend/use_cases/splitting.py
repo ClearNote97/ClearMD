@@ -18,7 +18,7 @@ from clearmd.backend.schemas.models import (
     OutcomeStatus,
     PlannedConversion,
 )
-from clearmd.backend.schemas.notes import ConversionNote
+from clearmd.backend.schemas.notes import ConversionNote, NoteItem, NoteKind
 from clearmd.backend.schemas.split import Cut, SplitSpec
 from clearmd.backend.use_cases.cancel import CancelToken
 from clearmd.backend.use_cases.output_files import (
@@ -187,6 +187,9 @@ def split_one(
         else:
             count, notes = _pdf(item, spec, runner, cutter, cancel, where, stage)
         stage.commit()
+        if spec.cut is Cut.PARTS and count < spec.size:  # said, never a silent "done" (B1-02)
+            item_note = NoteItem(f"{spec.size} → {count}")
+            notes = (*notes, ConversionNote(NoteKind.PARTS_FEWER, (item_note,)))
     except ConversionError as error:
         status = OutcomeStatus.STOPPED if error.code in STOPPING_CODES else OutcomeStatus.FAILED
         return ConversionOutcome(

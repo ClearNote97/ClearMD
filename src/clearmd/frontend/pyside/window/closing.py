@@ -1,4 +1,5 @@
-"""Closing the window (AC-10): while converting, cancel, hide and wait for the batch to end."""
+"""Closing the window (AC-10): while converting, ask once (audit v2, F1-01), then cancel, hide
+and wait for the batch to end."""
 
 import time
 
@@ -39,6 +40,11 @@ class Closing:
             event.accept()
             return
         event.ignore()
+        state = self._shown.state
+        step = close_policy.on_close(state.state if state is not None else None)
+        if step is close_policy.CloseStep.CANCEL_AND_WAIT and self._closing_since is None:
+            self._dialogs.confirm_close(self.close)  # Keep Working: the task goes on
+            return
         self.close()
 
     def close(self) -> None:

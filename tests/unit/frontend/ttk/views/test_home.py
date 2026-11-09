@@ -11,6 +11,7 @@ from clearmd.backend.schemas.settings import Settings
 from clearmd.frontend.presenter import AppState
 from clearmd.frontend.presenter.state import HOME, Tool
 from clearmd.frontend.ttk import TtkApp
+from clearmd.i18n import load_catalog
 
 
 def click_rail(app: TtkApp, step: int) -> None:
@@ -31,7 +32,8 @@ def test_the_window_opens_on_home_with_its_two_tiles_and_no_action_bar(app: TtkA
         "Convert to Markdown", "PDF, Word, Excel, PowerPoint, HTML and more",
     )  # fmt: skip
     assert app.home.tiles[Tool.SPLIT].texts()[0] == "Split a Document"
-    assert app.home.note.cget("text") == "The tools change files, never what is inside them."
+    note = load_catalog("en").text("gui.home.files_note")  # longer since 038: from the catalog
+    assert app.home.note.cget("text") == note
     assert not app.actions.winfo_manager()  # no primary action on Home
     assert app.rail.home_text() == "> Home"
     assert app.rail.step_texts() == ["Choose", "Review", "Convert", "Results"]

@@ -33,7 +33,7 @@ def ask(prompt: str) -> str | None:
 
 def ask_once(catalog: Catalog, plan: BatchPlan) -> Decision:
     """One question for the whole batch; any doubt means the safe answer: keep them."""
-    prompt = catalog.text("cli.ask_existing", count=len(plan.existing))
+    prompt = catalog.plural("cli.ask_existing", len(plan.existing))
     for _ in range(PROMPT_ATTEMPTS):
         answer = ask(prompt)
         if answer is None:
@@ -65,6 +65,6 @@ def decision(
     if on_existing == "skip" or not plan.existing:
         return lambda item: False
     if not is_interactive():
-        print(catalog.text("cli.decision_required", count=len(plan.existing)), file=stream)
+        print(catalog.plural("cli.decision_required", len(plan.existing)), file=stream)
         return None
     return ask_once(catalog, plan)

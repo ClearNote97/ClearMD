@@ -13,6 +13,7 @@ from support.pyside_acceptance import QUIET, drop, press, pump
 from clearmd.frontend.presenter import AppState
 from clearmd.frontend.presenter.state import HOME, Tool
 from clearmd.frontend.pyside import PySideApp
+from clearmd.i18n import load_catalog
 
 Window = Callable[..., PySideApp]
 
@@ -24,7 +25,7 @@ def test_the_window_opens_on_the_start_screen_with_its_two_tiles(window: Window)
     assert app.home.convert.title.text() == "Convert to Markdown"
     assert app.home.split.title.text() == "Split a Document"
     assert app.home.convert.body.text() and app.home.split.body.text()
-    assert app.home.note.text() == "The tools change files, never what is inside them."
+    assert app.home.note.text() == load_catalog("en").text("gui.home.files_note")
     assert not app.home.convert.icon.pixmap().isNull()
     assert not app.home.split.icon.pixmap().isNull()
     assert app.surface.title.text() == "What Do You Want to Do?"

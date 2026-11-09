@@ -49,7 +49,16 @@ def test_a_cell_wrapped_over_lines_stays_in_the_table() -> None:
     rows.insert(2, ["", "", "", "(continued)"])
     rows.insert(3, ["", "", "", "(and more)"])
     (table,) = find_tables(grid(rows))
-    assert len(table.rows) == 7
+    # One cell, as ADR-0034 promises (audit 2026-11-09, B3-01): its lines join the row above.
+    assert len(table.rows) == 5
+    assert table.rows[1][3].endswith("(continued) (and more)")
+
+
+def test_a_grouped_first_column_keeps_its_rows() -> None:
+    rows = [row[:] for row in DATA]
+    rows[2][0] = ""  # a year left blank under the one above: most cells filled, a row of its own
+    (table,) = find_tables(grid(rows))
+    assert len(table.rows) == len(DATA)
 
 
 def test_a_bulleted_list_set_with_tabs_is_no_table() -> None:

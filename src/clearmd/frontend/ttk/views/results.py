@@ -37,9 +37,9 @@ class ResultsView(ttk.Frame):
         self.where = WhereText(self, fonts=fonts)  # where the files are (feature 035, AC-06)
 
         self.all_good = ttk.Frame(self, style=CARD, padding=3 * SPACE)
-        message = ttk.Label(self.all_good, font=fonts["strong"], wraplength=640)
-        message.pack(anchor="w")
-        self._label(message, "gui.result.all_good")
+        self.all_good_text = ttk.Label(self.all_good, font=fonts["strong"], wraplength=640)
+        self.all_good_text.pack(anchor="w")
+        self._headline = ""  # in place of "every file was converted" when nothing was (038)
 
         self.problems_title = ttk.Label(self, style=ON_PAGE, font=fonts["strong"])
         self._label(self.problems_title, "gui.result.problems")
@@ -81,6 +81,11 @@ class ResultsView(ttk.Frame):
             tree.focus(row)
             self._show_detail()
         else:
+            # Nothing to show and nothing converted (an unexpected error, 038): the headline,
+            # never "every file was converted".
+            converted = bool(result.stats) and result.stats[0].value > 0
+            self._headline = "" if converted else result.headline
+            self._all_good_text()
             self.all_good.pack(fill="x", pady=(GAP, 0))
 
     def forget(self) -> None:
@@ -95,6 +100,11 @@ class ResultsView(ttk.Frame):
         row = self.problems.current()
         self.detail.configure(text=f"{row.name}: {row.values[0]}" if row else "")
 
+    def _all_good_text(self) -> None:
+        if self._catalog is not None:
+            text = self._headline or self._catalog.text("gui.result.all_good")
+            self.all_good_text.configure(text=text)
+
     def _wait(self) -> None:
         names = ("gui.result.stat_converted", "gui.result.stat_skipped", "gui.result.stat_failed")
         catalog = self._catalog
@@ -106,6 +116,7 @@ class ResultsView(ttk.Frame):
             self._wait()
         for widget, key in self._texts:
             widget.configure(text=catalog.text(key))
+        self._all_good_text()
         self.problems.apply_headings(
             catalog.text("gui.main.column_name"),
             [catalog.text("gui.result.column_what")],

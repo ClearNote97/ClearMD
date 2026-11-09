@@ -10,6 +10,7 @@ import re
 from dataclasses import dataclass
 
 from clearmd.backend.schemas.split import Cut
+from clearmd.backend.services.split.text_cut import balanced_cuts
 from clearmd.backend.services.split.words import count_words
 
 _FENCE = re.compile(r"^ {0,3}(```|~~~)")
@@ -79,17 +80,14 @@ def _into(blocks: list[_Block], count: int) -> list[list[_Block]]:
     """``count`` parts as even as possible by words, cut at headings (at blocks when there are
     too few headings); never an empty part."""
     sections = _sections(blocks)
-    units = sections if len(sections) >= count else [[block] for block in blocks]
+    words = [sum(block.words for block in section) for section in sections]
+    share = max(1, sum(words)) / count
+    # Headings when there are enough and none is much more than its share; blocks otherwise,
+    # so that "3 parts" are 3 parts of about the same size (audit 2026-11-09, B1-02).
+    even = len(sections) >= count and max(words, default=0) <= 2 * share
+    units = sections if even else [[block] for block in blocks]
     weights = [max(1, sum(block.words for block in unit)) for unit in units]
-    total = sum(weights)
-    cuts: list[int] = []
-    reached = 0
-    for index, weight in enumerate(weights[:-1], start=1):
-        reached += weight
-        target = total * (len(cuts) + 1) / count
-        if len(cuts) < count - 1 and reached >= target - weight / 2:
-            cuts.append(index)
-    bounds = [0, *cuts, len(units)]
+    bounds = [0, *balanced_cuts(weights, count), len(units)]
     return [
         [block for unit in units[start:end] for block in unit]
         for start, end in zip(bounds, bounds[1:], strict=False)

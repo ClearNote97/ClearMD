@@ -2,7 +2,14 @@
 
 from pathlib import Path
 
-from clearmd.backend.api import large_in_report, skip_action, skip_reason, stopped_message
+from clearmd.backend.api import (
+    error_action,
+    error_text,
+    large_in_report,
+    skip_action,
+    skip_reason,
+    stopped_message,
+)
 from clearmd.backend.schemas.formats import MERGE_DIR_NAME, RESULTS_DIR_NAME, SPLIT_DIR_NAME
 from clearmd.backend.schemas.models import BatchReport, ConversionOutcome, OutcomeStatus, tool_of
 from clearmd.frontend.presenter.icons import FOLDER, icon_for, icon_of_format
@@ -20,9 +27,9 @@ def result_view(catalog: Catalog, report: BatchReport, state: AppState) -> Resul
         count[outcome.status] += 1
         source = outcome.item.source
         if outcome.status is OutcomeStatus.FAILED and outcome.error is not None:
-            detail = f"{catalog.text('gui.result.word_failed')} {catalog.error(outcome.error)}"
+            detail = f"{catalog.text('gui.result.word_failed')} {error_text(catalog, outcome)}"
         elif outcome.status is OutcomeStatus.STOPPED and outcome.error is not None:
-            action = catalog.text(outcome.error.action_key)
+            action = error_action(catalog, outcome)
             word = catalog.text("gui.result.word_stopped")
             detail = f"{word} {stopped_message(catalog, outcome)} {action}"
         else:  # converted, and kept (the user's choice): not "what needs your attention"
@@ -72,6 +79,7 @@ def result_folders(report: BatchReport | None) -> tuple[Path, ...]:
     roots = dict.fromkeys(
         outcome.item.output_root for outcome in report.outcomes if outcome.status in _HAS_RESULT
     )
+    roots.update(dict.fromkeys(folder for folder in report.folders if folder.is_dir()))
     return tuple(roots)
 
 
@@ -84,6 +92,7 @@ def where_line(catalog: Catalog, report: BatchReport) -> str:
     folders = dict.fromkeys(
         _results_folder(outcome) for outcome in report.outcomes if outcome.status in _HAS_RESULT
     )
+    folders.update(dict.fromkeys(folder for folder in report.folders if folder.is_dir()))
     if not folders:
         return ""
     paths = "\n".join(str(folder) for folder in folders)

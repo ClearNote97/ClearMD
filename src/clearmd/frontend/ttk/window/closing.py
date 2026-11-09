@@ -1,4 +1,5 @@
-"""Closing the window (AC-10): while converting, cancel, hide and wait for the batch to end."""
+"""Closing the window (AC-10): while converting, ask once (038), then cancel, hide and wait for
+the batch to end; in every other state the window closes at once, without asking."""
 
 import time
 from typing import Any
@@ -29,16 +30,21 @@ class Closing:
         self._primary_button = primary_button
         self._closing_since: float | None = None  # closed while converting: waiting for the end
 
-    def close(self) -> None:
-        """Closing while converting cancels, hides the window and waits for the batch to end, so
-        the summary of what was done is still written (AC-10); then the window closes."""
+    def close(self, *, confirmed: bool = True) -> None:
+        """The window's X asks first while converting (``confirmed=False``, 038: Keep Working is
+        the default); a close the code asks for is already decided. Confirmed, it
+        cancels, hides the window and waits for the batch to end, so the summary of what was
+        done is still written (AC-10); then the window closes."""
         if self._closing_since is not None:
+            return
+        state = self._shown.state
+        step = close_policy.on_close(state.state if state is not None else None)
+        if step is close_policy.CloseStep.CANCEL_AND_WAIT and not confirmed:
+            self._dialogs.confirm_close(lambda: self.close(confirmed=True))
             return
         if self._dialogs.current is not None:
             self._dialogs.current.close()  # its answer counts ("Don't show again")
         self._presenter.shutdown()
-        state = self._shown.state
-        step = close_policy.on_close(state.state if state is not None else None)
         if step is close_policy.CloseStep.CANCEL_AND_WAIT:
             self._closing_since = time.monotonic()
             self._presenter.cancel()

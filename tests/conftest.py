@@ -54,10 +54,17 @@ def _no_pause_between_pages(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("clearmd.frontend.presenter.chrome.primary_gate.PRIMARY_PAUSE_SECONDS", 0.0)
 
 
+_WINDOW_TESTS = ("ttk", "pyside", "flet", "window", "gui", "frontend", "dialog", "tk_")
+
+
 @pytest.fixture(autouse=True)
-def _collect_on_the_main_thread() -> Iterator[None]:
+def _collect_on_the_main_thread(request: pytest.FixtureRequest) -> Iterator[None]:
     """Tk objects of a closed test window die here, on the main thread. Left to the garbage
     collector, they may be freed on a worker thread (planning, converting), which calls Tk from
-    there: it raises, or waits for a main loop that never runs (a plan that never arrived, CI)."""
+    there: it raises, or waits for a main loop that never runs (a plan that never arrived, CI).
+    Only after a test that can have made a window: a collection after each of the 3,600 tests
+    made the suite about 3.5 times slower (audit 2026-11-09, B2-02)."""
     yield
-    gc.collect()
+    path = str(request.node.path).replace("\\", "/").lower()
+    if "display" in request.fixturenames or any(word in path for word in _WINDOW_TESTS):
+        gc.collect()

@@ -4,6 +4,7 @@ precise reason (with the file's value and the limit when a limit is the reason) 
 or that there is nothing to do."""
 
 from clearmd.backend.schemas.errors import ErrorCode, SkipReason
+from clearmd.backend.schemas.formats import EXTENSIONS, MARKDOWN_EXTENSIONS, FormatId
 from clearmd.backend.schemas.models import ConversionOutcome, SkippedItem
 from clearmd.i18n import Catalog
 
@@ -29,6 +30,8 @@ def skip_reason(catalog: Catalog, item: SkippedItem) -> str:
 
 
 def skip_action(catalog: Catalog, item: SkippedItem) -> str:
+    if item.reason in _SPLIT_SKIPS and not splittable_path(item):
+        return catalog.text(f"skip_action.{item.reason.value}_other")
     return catalog.text(f"skip_action.{item.reason.value}")
 
 
@@ -59,4 +62,32 @@ def stopped_message(catalog: Catalog, outcome: ConversionOutcome) -> str:
 def failed_line(catalog: Catalog, outcome: ConversionOutcome, name: str) -> str:
     if outcome.error is None:
         raise ValueError("a failed outcome has an error code")
-    return catalog.text("cli.failed", name=name, message=catalog.error(outcome.error))
+    return catalog.text("cli.failed", name=name, message=error_text(catalog, outcome))
+
+
+# Only these formats can be split (features 023, 024, 027): advice to "split it" names Split for
+# them, and the original program for the others (audit 2026-11-09, B4-02).
+SPLITTABLE = frozenset({FormatId.PDF, FormatId.MARKDOWN, FormatId.TXT, FormatId.CSV, FormatId.XLSX})
+_SPLIT_ADVICE = frozenset({ErrorCode.TIMED_OUT, ErrorCode.OUT_OF_MEMORY, ErrorCode.WORKER_CRASHED})
+_SPLIT_SKIPS = frozenset({SkipReason.TOO_LARGE, SkipReason.TOO_MUCH_MEMORY})
+
+
+def error_action(catalog: Catalog, outcome: ConversionOutcome) -> str:
+    """What to do about a failure or a stop: "split it" only for a format Split takes."""
+    if outcome.error is None:
+        raise ValueError("a failed or stopped outcome has an error code")
+    key = outcome.error.action_key
+    if outcome.error in _SPLIT_ADVICE and outcome.item.detection.format not in SPLITTABLE:
+        key += "_other"
+    return catalog.text(key)
+
+
+def error_text(catalog: Catalog, outcome: ConversionOutcome) -> str:
+    """The failure's message and what to do about it."""
+    assert outcome.error is not None
+    return f"{catalog.text(outcome.error.message_key)} {error_action(catalog, outcome)}"
+
+
+def splittable_path(item: SkippedItem) -> bool:
+    suffix = item.path.suffix.lower()
+    return suffix in MARKDOWN_EXTENSIONS or EXTENSIONS.get(suffix) in SPLITTABLE

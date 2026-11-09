@@ -65,6 +65,7 @@ jobs:
           # The Qt window's folder keeps its place: SignPath returns the files where they were.
           path: |
             dist/ClearMD.exe
+            dist/ClearMD-Classic/ClearMD.exe
             dist/clearmd-cli.exe
             dist/ClearMD-Qt/ClearMD-Qt.exe
             dist/ClearMD-Flet/ClearMD-Flet.exe
@@ -84,7 +85,7 @@ jobs:
         if: runner.os == 'Windows' && vars.SIGNPATH_ORGANIZATION_ID != ''
         shell: pwsh
         run: |
-          foreach ($exe in "dist/ClearMD.exe", "dist/clearmd-cli.exe", "dist/ClearMD-Qt/ClearMD-Qt.exe", "dist/ClearMD-Flet/ClearMD-Flet.exe") {
+          foreach ($exe in "dist/ClearMD.exe", "dist/ClearMD-Classic/ClearMD.exe", "dist/clearmd-cli.exe", "dist/ClearMD-Qt/ClearMD-Qt.exe", "dist/ClearMD-Flet/ClearMD-Flet.exe") {
             $signature = Get-AuthenticodeSignature $exe
             if ($signature.Status -ne "Valid") { throw "$exe is not signed: $($signature.Status)" }
             "$exe signed by $($signature.SignerCertificate.Subject)"
@@ -94,7 +95,7 @@ jobs:
         shell: pwsh
         run: |
           $version = (Select-String -Path pyproject.toml -Pattern '^version = "(.+)"').Matches[0].Groups[1].Value
-          foreach ($exe in "dist/ClearMD.exe", "dist/clearmd-cli.exe", "dist/ClearMD-Qt/ClearMD-Qt.exe", "dist/ClearMD-Flet/ClearMD-Flet.exe") {
+          foreach ($exe in "dist/ClearMD.exe", "dist/ClearMD-Classic/ClearMD.exe", "dist/clearmd-cli.exe", "dist/ClearMD-Qt/ClearMD-Qt.exe", "dist/ClearMD-Flet/ClearMD-Flet.exe") {
             $info = (Get-Item $exe).VersionInfo
             if ($info.ProductName -ne "ClearMD" -or $info.ProductVersion -ne $version) {
               throw "$exe says '$($info.ProductName)' '$($info.ProductVersion)', not 'ClearMD' '$version'"

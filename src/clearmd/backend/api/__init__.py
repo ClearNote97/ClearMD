@@ -21,6 +21,8 @@ from clearmd.backend.schemas.settings import Settings, SettingsWarning
 from clearmd.backend.schemas.split import Cut, Keep, SplitSpec
 from clearmd.backend.services import folders, settings_store
 from clearmd.backend.services.rejections import (
+    error_action,
+    error_text,
     failed_line,
     skip_action,
     skip_reason,
@@ -43,6 +45,8 @@ __all__ = [
     "SplitSpec",
     "Strategy",
     "changed_since_result",
+    "error_action",
+    "error_text",
     "failed_line",
     "large_in_plan",
     "large_in_report",
@@ -135,12 +139,13 @@ def run_batch(
     ClearMD_Output folder, its Resumen_ClearMD.md (also when the batch was cancelled), and its
     Resumen_ClearMD.pdf when ``summary_pdf`` (ADR-0031). ``summary_markdown=False`` (with
     ``summary_pdf``): the PDF alone (feature 020); if it cannot be written, the Markdown is."""
-    if images:  # each document's images in "<name>_images" next to it, in the user's language
+    if images and plan.merge is None:  # Convert only: Split and Merge keep no images (B1-04)
         suffix = load_catalog(language).text("images.suffix")
         plan = replace(
             plan,
             conversions=tuple(
-                replace(item, images=f"{item.target.stem}{suffix}") for item in plan.conversions
+                replace(item, images=f"{item.target.stem}{suffix}") if item.split is None else item
+                for item in plan.conversions
             ),
         )
     plan = named(plan, language)

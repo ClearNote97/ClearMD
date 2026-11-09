@@ -1,10 +1,12 @@
 """One dialog at a time: help, settings, welcome, and Results' "What Next?"."""
 
 import tkinter as tk
+from collections.abc import Callable
 from typing import Any
 
 from clearmd.frontend.presenter import Action, Presenter
 from clearmd.frontend.ttk.components.dialog import Dialog
+from clearmd.frontend.ttk.views.dialogs.confirm_close import ConfirmCloseDialog
 from clearmd.frontend.ttk.views.dialogs.help import help_dialog
 from clearmd.frontend.ttk.views.dialogs.settings import SettingsDialog
 from clearmd.frontend.ttk.views.dialogs.welcome import WelcomeDialog
@@ -86,6 +88,18 @@ class DialogHost:
         dialog = WelcomeDialog(
             self._root, self._shown.need_catalog(), self._shown.palette, self._fonts, steps, done
         )
+        self._open(dialog)
+
+    def confirm_close(self, on_confirm: Callable[[], None]) -> None:
+        """Closing while a task runs: asked once (038); the open dialog gives way to it."""
+        if isinstance(self.current, ConfirmCloseDialog):
+            return
+        if self.current is not None:
+            self.current.close()  # its answer counts ("Don't show again")
+        dialog = ConfirmCloseDialog(
+            self._root, self._shown.need_catalog(), self._shown.palette, self._fonts,
+            on_confirm=on_confirm, on_close=self._closed,
+        )  # fmt: skip
         self._open(dialog)
 
     def _open(self, dialog: Dialog) -> None:

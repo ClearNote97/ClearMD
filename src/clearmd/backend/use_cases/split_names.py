@@ -4,6 +4,7 @@ import os
 import re
 from pathlib import Path
 
+from clearmd.backend.schemas.formats import PART_NAMES
 from clearmd.backend.schemas.models import PlannedConversion
 from clearmd.backend.schemas.split import SplitSpec
 
@@ -15,11 +16,15 @@ def part_name(spec: SplitSpec, name: str, index: int, total: int) -> str:
 
 
 def _earlier_part(spec: SplitSpec, name: str) -> re.Pattern[str]:
-    """Any part of an earlier cut of ``name``: ClearMD's own names only."""
-    pattern = re.escape(spec.part_name)
-    for field, value in (("name", re.escape(name)), ("index", r"\d+"), ("total", r"\d+")):
-        pattern = pattern.replace(re.escape("{" + field + "}"), value)
-    return re.compile(pattern + r"\.(?:pdf|md|txt|csv|xlsx)")
+    """Any part of an earlier cut of ``name``, in any language ClearMD speaks (audit v2, B3-04):
+    ClearMD's own names only."""
+    patterns = []
+    for template in dict.fromkeys((spec.part_name, *PART_NAMES)):
+        pattern = re.escape(template)
+        for field, value in (("name", re.escape(name)), ("index", r"\d+"), ("total", r"\d+")):
+            pattern = pattern.replace(re.escape("{" + field + "}"), value)
+        patterns.append(pattern)
+    return re.compile("(?:" + "|".join(patterns) + r")\.(?:pdf|md|txt|csv|xlsx)")
 
 
 def earlier_parts(item: PlannedConversion, spec: SplitSpec) -> list[Path]:

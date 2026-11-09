@@ -1,9 +1,13 @@
-"""One dialog at a time: help, settings, welcome, and Results' "What Next?"."""
+"""One dialog at a time: help, settings, welcome, Results' "What Next?", and the question when the
+window is closed during a task."""
+
+from collections.abc import Callable
 
 from PySide6.QtWidgets import QWidget
 
 from clearmd.frontend.presenter import Action, Presenter
 from clearmd.frontend.pyside.components.dialog import Dialog
+from clearmd.frontend.pyside.views.dialogs.confirm_close import ConfirmCloseDialog
 from clearmd.frontend.pyside.views.dialogs.help import HelpDialog
 from clearmd.frontend.pyside.views.dialogs.settings import SettingsDialog
 from clearmd.frontend.pyside.views.dialogs.welcome import WelcomeDialog
@@ -69,6 +73,21 @@ class DialogHost:
             self._presenter.dismiss_welcome(show_again=show_again)
 
         self._open(WelcomeDialog(self._parent, self._shown.need_catalog(), steps, done))
+
+    def confirm_close(self, on_close_window: Callable[[], None]) -> None:
+        """Closing during a task: asked once (audit v2, F1-01); another dialog gives way."""
+        if isinstance(self.current, ConfirmCloseDialog):
+            return
+        if self.current is not None:
+            self.current.close_dialog()
+        self._open(
+            ConfirmCloseDialog(
+                self._parent,
+                self._shown.need_catalog(),
+                on_close_window=on_close_window,
+                on_close=self._closed,
+            )
+        )
 
     def _open(self, dialog: Dialog) -> None:
         self.current = dialog

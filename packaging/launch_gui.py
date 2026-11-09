@@ -5,9 +5,11 @@ mark real stages (the toolkit and ClearMD imported, the window built), not a fin
 """
 
 try:
-    import pyi_splash  # only inside the executable
+    import pyi_splash  # only inside the one-file executable
 except ImportError:
     pyi_splash = None
+if pyi_splash is not None and not pyi_splash.is_alive():
+    pyi_splash = None  # the installed folder copy (ADR-0053) starts without a splash
 
 if pyi_splash is not None:
     pyi_splash.update_text("Loading · Cargando… 30 %")

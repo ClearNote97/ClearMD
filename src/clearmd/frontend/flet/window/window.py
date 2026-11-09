@@ -52,7 +52,7 @@ class FletApp:
         self.rail.show_version(self.presenter.version)
         page.listen(
             on_key=self.keys.pressed,
-            on_close=self.closing.close,
+            on_close=self.closing.request,  # the X: asks first while a task runs (038)
             on_resize=lambda width, _height: controls.fit_to_size(self.rail, width),
         )
 

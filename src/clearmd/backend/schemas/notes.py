@@ -35,6 +35,8 @@ class NoteKind(StrEnum):
     IMAGES_LEFT_OUT = "images_left_out"
     # Split by words (024): parts larger than the size, a page or a paragraph that cannot be cut.
     PARTS_OVER_SIZE = "parts_over_size"
+    # Split into N parts: the file allowed fewer (fewer pages, sheets or blocks than parts).
+    PARTS_FEWER = "parts_fewer"
 
     @property
     def key(self) -> str:

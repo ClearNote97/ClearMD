@@ -4,6 +4,28 @@ Each file can be checked against `SHA256SUMS.txt` ([how](https://github.com/Clea
 
 Most people need only `ClearMD-Setup-<version>.exe` (about 40 MB, the Classic App). `ClearMD-Setup-Full-<version>.exe` adds the Modern App, the Mobile-Style App and the Command Line. / A la mayoría le basta `ClearMD-Setup-<versión>.exe` (unos 40 MB, la App Clásica). `ClearMD-Setup-Full-<versión>.exe` agrega la App Moderna, la App Estilo Móvil y la Línea de Comandos.
 
+**New in 2.11.0 / Novedades de la 2.11.0** — the second audit's improvements / las mejoras de la segunda auditoría
+- **What you get is true.** A text saved on Windows keeps its ñ and accents; "Split into 3 parts"
+  gives 3 parts, or says why not; a table cell written over several lines stays one cell; an
+  equation ClearMD is unsure of stays as text; an empty file is "empty". / **Lo que recibes es
+  verdad.** Un texto guardado en Windows conserva sus eñes y tildes; "Dividir en 3 partes" da 3
+  partes, o dice por qué no; una celda de tabla escrita en varias líneas sigue siendo una celda;
+  una ecuación dudosa queda como texto; un archivo vacío es "vacío".
+- **Messages you can follow.** "Split it" only where Split can; one clear way to report a problem;
+  Copy Details hides more of your names and says honestly that you should check; cancelling is
+  never an "unexpected error", and after a real one you land on Results with your folder. /
+  **Mensajes que se pueden seguir.** "Divídelo" solo donde Dividir puede; una sola forma clara de
+  reportar un problema; Copiar Detalles oculta más de tus nombres y dice con honestidad que
+  revises; cancelar nunca es un "error inesperado", y tras uno real llegas a Resultados con tu
+  carpeta.
+- **Closing during a task asks once**; changing the language never leaves duplicate parts or
+  image folders. / **Cerrar durante una tarea pregunta una vez**; cambiar el idioma nunca deja
+  partes ni carpetas de imágenes duplicadas.
+- **Faster:** the windows open without loading the converters, and the installed Classic App is
+  a folder, so it no longer unpacks itself at every start. / **Más rápida:** las ventanas abren sin
+  cargar los convertidores, y la App Clásica instalada es una carpeta, así que ya no se desempaca
+  cada vez que se abre.
+
 **New in 2.10.0 / Novedades de la 2.10.0** — the rest of the audit's improvements / el resto de las mejoras de la auditoría
 - **A light installer.** `ClearMD-Setup-<version>.exe` installs the Classic App and weighs about
   what it installs; `ClearMD-Setup-Full-<version>.exe` has every part. The light one never

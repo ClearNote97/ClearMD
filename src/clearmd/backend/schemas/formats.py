@@ -83,3 +83,10 @@ STAGED_MARK = ".clearmd-part"  # a split part written aside until all are (audit
 def format_for_extension(extension: str) -> FormatId | None:
     """The format of a file extension such as ``".PDF"``, or ``None`` if it is not supported."""
     return EXTENSIONS.get(extension.lower())
+
+
+# The names ClearMD gives in every language it speaks (audit 2026-11-09, B3-04): a result written
+# in one language is recognised in the other, so changing the language never leaves copies.
+# A test keeps them equal to the catalogs' images.suffix and split.part_name.
+IMAGE_SUFFIXES = ("_images", "_imagenes")
+PART_NAMES = ("{name} - part {index} of {total}", "{name} - parte {index} de {total}")

@@ -1,48 +1,48 @@
-name: Bug report
-description: Something does not work as it should.
+name: Bug report / Reportar un problema
+description: Something does not work as it should. / Algo no funciona como debería.
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
-      value: Thank you for reporting it. Never attach a document with private content; make a small sample instead.
+      value: "Thank you for reporting it. Never attach a document with private content, nor the whole summary (it has your files' names); make a small sample instead. / Gracias por contarnos. Nunca adjuntes un documento con contenido privado ni el resumen completo (tiene los nombres de tus archivos); prepara un ejemplo pequeño."
   - type: input
     id: version
     attributes:
-      label: ClearMD version
-      description: In the Help window, or `clearmd --version`.
+      label: ClearMD version / Versión de ClearMD
+      description: In the Help window, or `clearmd --version`. / En la ventana de Ayuda, o `clearmd --version`.
       placeholder: "1.2.0"
     validations:
       required: true
   - type: dropdown
     id: app
     attributes:
-      label: Which app
-      options: ["Classic (ttk)", "Modern (Qt)", "flet", "Command line", "Installer"]
+      label: Which app / Qué app
+      options: ["Classic App / App Clásica (ttk)", "Modern App / App Moderna (Qt)", "Mobile-Style App / App Estilo Móvil (flet)", "Command Line / Línea de Comandos", "Installer / Instalador"]
     validations:
       required: true
   - type: dropdown
     id: system
     attributes:
-      label: System
+      label: System / Sistema
       options: ["Windows 11", "Windows 10", "Linux"]
     validations:
       required: true
   - type: textarea
     id: steps
     attributes:
-      label: Steps to reproduce
-      placeholder: "1. Add the file …\n2. Press Convert …"
+      label: Steps to reproduce / Pasos para que vuelva a pasar
+      placeholder: "1. Add the file … / Agrega el archivo …\n2. Press Convert … / Pulsa Convertir …"
     validations:
       required: true
   - type: textarea
     id: expected
     attributes:
-      label: What happened, and what you expected
+      label: What happened, and what you expected / Qué pasó y qué esperabas
     validations:
       required: true
   - type: textarea
     id: summary
     attributes:
-      label: Technical detail
-      description: If there was a summary, paste its "Technical Detail" section.
+      label: Technical detail / Detalle técnico
+      description: Paste what Copy Details copied, or the summary's "Technical Detail" line only. / Pega lo que copió Copiar Detalles, o solo la línea de "Detalle Técnico" del resumen.
       render: text

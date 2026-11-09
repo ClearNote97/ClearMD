@@ -108,6 +108,22 @@ gui_exe = EXE(  # noqa: F821
     upx=False,
 )
 
+# The installer's copy of the classic app (audit 2026-11-09, B2-05; ADR-0053): a folder, so it
+# does not unpack itself at every start (about 5 s on Windows). The one-file ClearMD above stays
+# the portable download; the installer takes dist/ClearMD-Classic/.
+gui_dir_exe = EXE(  # noqa: F821
+    PYZ(gui.pure),  # noqa: F821
+    gui.scripts,
+    [],
+    exclude_binaries=True,
+    name="ClearMD",
+    console=False,
+    icon=str(ASSETS / "clearmd.ico"),
+    version=version_file("ClearMD.exe"),
+    upx=False,
+)
+COLLECT(gui_dir_exe, gui.binaries, gui.datas, name="ClearMD-Classic", upx=False)  # noqa: F821
+
 cli = analysis("launch_cli.py")
 cli.datas = light(cli.datas)
 cli_exe = EXE(  # noqa: F821

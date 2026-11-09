@@ -49,7 +49,7 @@ EXPECTED_EN = "\n".join(
         "<summary>History</summary>",
         "",
         "<!-- clearmd:history -->",
-        "_No earlier batches here._",
+        "_No earlier tasks here._",
         "<!-- /clearmd:history -->",
         "",
         "</details>",

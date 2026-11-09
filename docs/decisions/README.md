@@ -70,3 +70,4 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 | [0050](./0050-one-worker-cost-ordered.md) | One worker, cost-ordered: no second lane, no parallel workers (measured) | accepted |
 | [0051](./0051-pypi-trusted-publishing.md) | PyPI with Trusted Publishing, off until the owner turns it on | accepted |
 | [0052](./0052-two-installer-editions.md) | Two installer editions from one script: a light one (the Classic App) and a full one | accepted |
+| [0053](./0053-installed-classic-app-as-a-folder.md) | The installed Classic App is a folder (the portable download stays one file) | accepted |

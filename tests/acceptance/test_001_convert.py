@@ -116,8 +116,9 @@ def test_ac_43_a_file_that_may_take_too_long_is_warned_about_and_still_tried(
 ) -> None:
     put(workdir, "sample.txt", "quick.txt")
     put(workdir, "sample.pdf", "manual.pdf")
-    # The PDF's estimate (~0.01 s, ADR-0030) exceeds this limit; the tiny text file's does not.
-    limits = replace(composition.default_limits(), time_per_file=0.005)
+    # The PDF's estimate (~0.003 s since audit v2's recalibration) exceeds this limit; the tiny
+    # text file's does not.
+    limits = replace(composition.default_limits(), time_per_file=0.001)
     monkeypatch.setattr(composition, "default_limits", lambda: limits)
     main([str(workdir)])
     err = capsys.readouterr().err

@@ -152,7 +152,7 @@ def test_ac_12_a_formula_outside_the_subset_keeps_its_starmath_source(workdir: P
     (formulas,) = copy_odt(workdir, "formulas.odt")
     assert main([str(formulas), "--quiet"]) == 0
     assert "Fuera: `boxed z`." in output(workdir, "formulas.md")
-    assert "shown as their StarMath source: `2`" in summary(workdir)
+    assert "kept exactly as written in the original: `2`" in summary(workdir)
 
 
 # --- Honesty -------------------------------------------------------------------------------------
@@ -180,7 +180,7 @@ def test_ac_15_notes_follow_the_language(workdir: Path) -> None:
     assert main([str(revisions), "--lang", "es", "--quiet"]) == 0
     text = summary(workdir)
     assert "## Necesita Tu Atención" in text
-    assert "`1` (comentarios), `1` (cambios rastreados)" in text
+    assert "`1` (comentarios), `1` (control de cambios)" in text
 
 
 # --- Safety --------------------------------------------------------------------------------------

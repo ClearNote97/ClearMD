@@ -53,9 +53,10 @@ jobs:
       - name: Tests
         env:
           PYTHONUTF8: "1" # the runner's console is not UTF-8 on Windows
-        run: uv run pytest -q -rfE --tb=short --junitxml=pytest-report.xml
-      - name: Keep the report of a failed run
-        if: failure()
+        run: uv run pytest -q -rfE --tb=short --durations=15 --junitxml=pytest-report.xml
+      # Always kept (audit 2026-11-09, B2-02): each test's time, to see what makes the run long.
+      - name: Keep the report
+        if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: pytest-${{ matrix.os }}-${{ matrix.python }}

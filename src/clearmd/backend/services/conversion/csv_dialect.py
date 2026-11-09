@@ -2,24 +2,16 @@
 
 Excel in Spanish (and most of Europe and Latin America) saves "CSV" with semicolons; markitdown
 reads commas only and would make one column. A file whose lines split evenly on ``;``, a tab or
-``|``, and not on commas, is rewritten with commas (UTF-8) before markitdown reads it.
+``|``, and not on commas, is rewritten with commas before markitdown reads it (decoded once,
+as every plain text is, by the shared decoder: audit 2026-11-09, B1-01).
 """
 
 import csv
 import io
 from collections import Counter
 
-from charset_normalizer import from_bytes
-
 SEPARATORS = (",", ";", "\t", "|")
 SAMPLE_LINES = 50
-
-
-def _decoded(data: bytes) -> str:
-    """As markitdown decodes it: the most likely encoding, BOM removed."""
-    best = from_bytes(data).best()
-    text = str(best) if best is not None else data.decode("utf-8", errors="ignore")
-    return text.lstrip("﻿")
 
 
 def _score(lines: list[str], separator: str) -> tuple[float, int]:
@@ -43,13 +35,12 @@ def separator(text: str) -> str:
     return best
 
 
-def with_commas(data: bytes) -> bytes | None:
-    """``data`` rewritten with commas, or ``None`` when it already uses them."""
-    text = _decoded(data)
+def with_commas(text: str) -> str:
+    """``text`` rewritten with commas when it uses another separator; as it is otherwise."""
     found = separator(text)
     if found == ",":
-        return None
+        return text
     out = io.StringIO()
     writer = csv.writer(out, lineterminator="\n")
     writer.writerows(csv.reader(io.StringIO(text, newline=""), delimiter=found))
-    return out.getvalue().encode("utf-8")
+    return out.getvalue()

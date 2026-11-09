@@ -207,8 +207,9 @@ Name: "addpath"; Description: "{cm:TaskAddPath}"; Components: cli; Flags: unchec
 Source: "{#Root}\src\clearmd\frontend\assets\logo\clearmd.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Root}\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Root}\dist\installer\THIRD-PARTY-NOTICES.txt"; DestDir: "{app}"; Flags: ignoreversion
-; The classic app: one file.
-Source: "{#Root}\dist\ClearMD.exe"; DestDir: "{app}"; Components: ttk; Flags: ignoreversion
+; The classic app: a folder since 2.11 (ADR-0053), its program and its _internal\ files, so it
+; does not unpack itself at every start. The one-file ClearMD.exe stays the portable download.
+Source: "{#Root}\dist\ClearMD-Classic\*"; DestDir: "{app}"; Components: ttk; Flags: ignoreversion recursesubdirs createallsubdirs
 #if Edition == "Full"
 ; The modern app: a folder. Its Qt libraries stay plain files (LGPL: the user may replace them).
 ; recursesubdirs + createallsubdirs copy the whole tree, keeping its folders.
@@ -255,6 +256,7 @@ Name: "{autodesktop}\{cm:ShortcutCli}"; Filename: "{cmd}"; Parameters: "/k """"{
 ; not do that by itself). Each entry is removed only when its component is unticked (Check:).
 ; The folders named here are ClearMD's own; nothing else in the install folder is named.
 Type: files; Name: "{app}\ClearMD.exe"; Check: NotTtk
+Type: filesandordirs; Name: "{app}\_internal"; Check: NotTtk
 Type: files; Name: "{group}\ClearMD.lnk"; Check: NotTtk
 Type: files; Name: "{autodesktop}\ClearMD.lnk"; Check: NotTtk
 #if Edition == "Full"

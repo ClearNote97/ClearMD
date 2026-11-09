@@ -25,8 +25,18 @@ def header_of(catalog: Catalog, state: StateView, scan: str | None) -> Header:
     eyebrow = catalog.text("gui.steps.counter", step=state.page, total=len(STEPS))
     if state.state is not AppState.READY:
         eyebrow = f"{eyebrow} · {state.label}"
+    subtitle = catalog.text(f"gui.page.{step}_subtitle")
+    if step == "convert" and state.state in _WORKING_OR_DONE:  # never "nothing is written yet"
+        subtitle = catalog.text(f"gui.page.convert_subtitle_{_WORKING_OR_DONE[state.state]}")
     return Header(
-        eyebrow=eyebrow,
-        title=catalog.text(f"gui.page.{step}_title"),
-        subtitle=scan or catalog.text(f"gui.page.{step}_subtitle"),
+        eyebrow=eyebrow, title=catalog.text(f"gui.page.{step}_title"), subtitle=scan or subtitle
     )
+
+
+# Step 3's subtitle follows the work (audit 2026-11-09, F1-07): before, during, after.
+_WORKING_OR_DONE = {
+    AppState.CONVERTING: "working",
+    AppState.FINISHED: "done",
+    AppState.FINISHED_WITH_PROBLEMS: "done",
+    AppState.CANCELLED: "done",
+}

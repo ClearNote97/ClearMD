@@ -35,7 +35,7 @@ def primary_of(
                 return text("gui.nav.merge_one_left")
             return text("gui.nav.nothing")
         if report is not None:
-            return text("gui.nav.done")
+            return text("gui.nav.done", more=text("gui.result.again"))
         if not inputs:  # what is missing first, as Choose says it (feature 011)
             return text("gui.nav.need_inputs_first")
         return text("gui.nav.need_plan")
@@ -60,7 +60,7 @@ def primary_of(
     elif state in WORKING:
         hint = why()
     elif report is not None:  # a batch ran and wrote nothing (review of 011)
-        hint = text("gui.nav.nothing_written")
+        hint = text("gui.nav.nothing_written", more=text("gui.result.again"))
     elif not inputs:
         hint = text("gui.nav.need_inputs_first")
     else:

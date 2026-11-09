@@ -1,4 +1,5 @@
-"""Closing the window (AC-07): while converting, cancel, hide and wait for the batch to end."""
+"""Closing the window (AC-07): while converting, ask first (038), then cancel, hide and wait for
+the batch to end."""
 
 import time
 
@@ -29,6 +30,17 @@ class Closing:
         self._primary_button = primary_button
         self._closing_since: float | None = None  # closed while converting: waiting for the end
         self.closed = False
+
+    def request(self) -> None:
+        """The window's close button: while a task runs it asks first (038, F1-01); otherwise it
+        closes as ``close`` does. Cancel, on the action bar, never asks."""
+        state = self._shown.state
+        step = close_policy.on_close(state.state if state is not None else None)
+        if step is close_policy.CloseStep.CANCEL_AND_WAIT and not self.closed:
+            if self._closing_since is None:
+                self._dialogs.ask_close(self.close)
+            return
+        self.close()
 
     def close(self) -> None:
         """The window's close button (or ``FletApp.close``). Closing while converting cancels,

@@ -57,7 +57,7 @@ class TtkApp:
             self.root, self.presenter, self.shown, self.scheduler, self.dialogs, self.primary_button
         )
         self.rail.show_version(self.presenter.version)
-        self.root.protocol("WM_DELETE_WINDOW", self.close)
+        self.root.protocol("WM_DELETE_WINDOW", lambda: self.closing.close(confirmed=False))  # 038
 
     def _build(self) -> None:
         self.icons = toolkit.set_icons(self.root)

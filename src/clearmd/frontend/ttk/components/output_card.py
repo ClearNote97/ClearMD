@@ -145,6 +145,8 @@ class OutputCard:
         else:
             self.pictures.pack(side="right")
             self._summary.pack(in_=self._output, fill="x", pady=(GAP, 0))
+            for button in self.summary_buttons[:3]:
+                button.pack_configure(padx=(GAP, 0))  # Convert: its own row, as before
 
     def _place_summary(self) -> None:
         """For Split and Merge, the summary at the title's right, or under it when the card is
@@ -152,12 +154,16 @@ class OutputCard:
         if self._tool is Tool.CONVERT:
             return
         width = self._output.winfo_width()
-        needed = self._title.winfo_reqwidth() + GAP + self._summary.winfo_reqwidth()
+        buttons = self.summary_buttons[:3]  # beside the title, SPACE apart (038: longer words)
+        tight = self._summary.winfo_reqwidth() - 3 * (GAP - SPACE) * (self._narrow is not False)
+        needed = self._title.winfo_reqwidth() + GAP + tight
         narrow = width > 1 and needed > width
         if narrow == self._narrow:
             return
         self._narrow = narrow
         self._summary.pack_forget()
+        for button in buttons:
+            button.pack_configure(padx=(GAP if narrow else SPACE, 0))
         if narrow:
             self._summary.pack(in_=self._output, fill="x", pady=(SPACE, 0), after=self._heading)
         else:

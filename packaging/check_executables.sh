@@ -30,12 +30,29 @@ if [[ "$written" -ne "$expected" ]]; then
 fi
 echo "command line: $written of $expected converted"
 
-if [[ "$(uname -s)" == "Linux" ]]; then
-  HOME="$work" timeout 120 xvfb-run -a "$dist/ClearMD" --smoke
-else
-  HOME="$work" timeout 120 "$dist/ClearMD$suffix" --smoke
+# Each window's time from launch to closed by --smoke (audit 2026-11-09, F2-02): printed, so a
+# slower start shows in every run; over SLOW_SECONDS it fails.
+SLOW_SECONDS=30
+smoke() {
+  local program="$1" label="$2" started ended
+  started=$(date +%s%N)
+  if [[ "$(uname -s)" == "Linux" ]]; then
+    HOME="$work" timeout 120 xvfb-run -a "$program" --smoke
+  else
+    HOME="$work" timeout 120 "$program" --smoke
+  fi
+  ended=$(date +%s%N)
+  local ms=$(( (ended - started) / 1000000 ))
+  echo "$label: opened and closed in $ms ms"
+  if (( ms > SLOW_SECONDS * 1000 )); then
+    echo "$label took over $SLOW_SECONDS s to open and close" >&2
+    exit 1
+  fi
+}
+smoke "$dist/ClearMD$suffix" "window"
+if [[ -d "$dist/ClearMD-Classic" ]]; then  # the installer's copy, a folder (ADR-0053)
+  smoke "$dist/ClearMD-Classic/ClearMD$suffix" "window (classic, folder)"
 fi
-echo "window: opened and closed"
 
 # A light executable (feature 010): each program under this size (MB: millions of bytes), and
 # none of the libraries it leaves out inside.
@@ -68,12 +85,7 @@ QT_MAX_MB=225
 qt_dir="$dist/ClearMD-Qt"
 if [[ -d "$qt_dir" ]]; then
   qt="$qt_dir/ClearMD-Qt$suffix"
-  if [[ "$(uname -s)" == "Linux" ]]; then
-    HOME="$work" timeout 120 xvfb-run -a "$qt" --smoke
-  else
-    HOME="$work" timeout 120 "$qt" --smoke
-  fi
-  echo "window (PySide6): opened and closed"
+  smoke "$qt" "window (PySide6)"
   listing=$(cd "$here" && uv run --no-default-groups --group build pyi-archive_viewer -r "$qt")
   if [[ -z "$listing" ]]; then
     echo "$qt could not be listed" >&2

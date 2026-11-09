@@ -14,7 +14,6 @@ from clearmd.backend.schemas.models import (
     DetectionMethod,
     PlannedConversion,
 )
-from clearmd.backend.services.worker.child import worker_main
 from clearmd.backend.services.worker.processes import (
     JOIN_SECONDS,
     kill_children,
@@ -115,6 +114,10 @@ class WorkerRunner:
         self._stop()
         parent_end, child_end = self._context.Pipe()
         memory_cap = self._limits.worker_memory + VIRTUAL_HEADROOM
+        # Imported here: the worker's converters (PDFium, openpyxl...) are never loaded by the
+        # windows or the command line themselves (ADR-0015; audit 2026-11-09, B2-04).
+        from clearmd.backend.services.worker.child import worker_main  # noqa: PLC0415
+
         process = self._context.Process(
             target=worker_main,
             args=(child_end, self._factory_path, memory_cap, self._limits.max_result_chars),

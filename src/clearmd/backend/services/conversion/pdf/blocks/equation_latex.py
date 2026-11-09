@@ -3,6 +3,7 @@
 ``to_latex`` is read here, at call time: a test that replaces it patches this module.
 """
 
+import re
 from dataclasses import dataclass
 
 from clearmd.backend.services.conversion.pdf.decode import LINE_END, SKIPPED, SOFT_HYPHENS, decoded
@@ -73,4 +74,19 @@ def latex_of(group: list[Line], found: Found, box: tuple[float, float, float, fl
         if low - 1 <= bar.at <= high_edge + 1
         and left_edge <= (bar.left + bar.right) / 2 <= right_edge
     ]  # fmt: skip
-    return to_latex(glyphs, bars) or ""
+    latex = to_latex(glyphs, bars) or ""
+    return "" if incoherent(latex) else latex
+
+
+# Shapes a real formula never has (audit 2026-11-09, B3-02): a fraction over a bare "1" under a
+# limit, a script that ends on an operator. Unsure, so not a formula said with confidence
+# (ADR-0036): the equation is kept as its text.
+_INCOHERENT = (
+    re.compile(r"\\underset\{[^{}]*\}\{\\frac\{"),  # a fraction squeezed under a subscript
+    re.compile(r"\\frac\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}\{1\}"),  # over a bare 1
+    re.compile(r"[_^]\{[^{}]*[+\-=]\}"),  # a script ending on an operator: "^{t+}"
+)
+
+
+def incoherent(latex: str) -> bool:
+    return any(pattern.search(latex) for pattern in _INCOHERENT)

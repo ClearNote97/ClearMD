@@ -32,9 +32,11 @@ from markitdown.converters import (
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.schemas.formats import FormatId
 from clearmd.backend.schemas.models import ConversionResult, Detection
+from clearmd.backend.schemas.notes import ConversionNote, NoteItem, NoteKind
 from clearmd.backend.services.conversion.csv_dialect import with_commas
 from clearmd.backend.services.conversion.images import ImageSink, epub_images, take_data_images
 from clearmd.backend.services.conversion.safe_files import open_regular_file
+from clearmd.backend.services.conversion.tex.source import decode_source
 
 _CORRUPT: tuple[type[BaseException], ...] = (
     zipfile.BadZipFile,
@@ -78,6 +80,7 @@ def map_exception(error: Exception) -> ConversionError:
 
 _OLE = b"\xd0\xcf\x11\xe0"
 _ZIPPED = frozenset({FormatId.DOCX, FormatId.PPTX})
+PLAIN_TEXT = frozenset({FormatId.TXT, FormatId.CSV})
 
 
 def _open_regular_file(source: Path) -> BinaryIO:
@@ -127,12 +130,19 @@ class MarkItDownConverter:
                 raise ConversionError(ErrorCode.PASSWORD_PROTECTED, "an encrypted OLE file")
             opened.seek(0)
             stream: BinaryIO = opened
-            if detection.format is FormatId.CSV:  # semicolons, tabs: rewritten with commas
-                rewritten = with_commas(opened.read())
-                opened.seek(0)
-                if rewritten is not None:
-                    stream = io.BytesIO(rewritten)
-                    hint = StreamInfo(extension=".csv", filename=source.name, charset="utf-8")
+            notes: tuple[ConversionNote, ...] = ()
+            if detection.format in PLAIN_TEXT:  # one decoder for every tool (audit v2, B1-01)
+                decoded = decode_source(opened.read())
+                text = decoded.text
+                if not text.strip():  # spaces and line breaks only: an empty file (B1-06)
+                    raise ConversionError(ErrorCode.EMPTY_FILE, "no text")
+                if detection.format is FormatId.CSV:  # semicolons, tabs: rewritten with commas
+                    text = with_commas(text)
+                stream = io.BytesIO(text.encode("utf-8"))
+                hint = StreamInfo(extension=hint.extension, filename=source.name, charset="utf-8")
+                if decoded.guessed:
+                    item = NoteItem(f"{source.name} ({decoded.encoding})")
+                    notes = (ConversionNote(NoteKind.ENCODING_GUESSED, (item,)),)
             try:
                 result = converter.convert(stream, hint, **options)
             except Exception as error:
@@ -140,4 +150,4 @@ class MarkItDownConverter:
         markdown = take_data_images(result.markdown, images)
         if images is not None and detection.format is FormatId.EPUB:
             markdown = epub_images(source, markdown, images)
-        return ConversionResult(markdown)  # markitdown reports nothing it skipped
+        return ConversionResult(markdown, notes)  # markitdown reports nothing else it skipped

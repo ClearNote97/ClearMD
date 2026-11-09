@@ -108,14 +108,15 @@ def test_ac_09_the_ttk_program_and_the_cli_still_carry_no_qt() -> None:
     assert 'name="ClearMD"' in spec and 'name="clearmd-cli"' in spec
     assert '"PySide6"' in spec and '"shiboken6"' in spec and "*OTHER_TOOLKITS" in spec
     assert "not module.startswith(OTHER_GUIS)" in spec
-    assert "COLLECT(" not in spec and "exclude_binaries" not in spec
+    # One folder since ADR-0053: the installer's copy of the classic app, never a Qt one.
+    assert spec.count("COLLECT(") == 1 and 'name="ClearMD-Classic"' in spec
     assert "clearmd.frontend.pyside" in spec  # the ttk spec leaves the Qt window out
 
 
 def test_ac_09_the_check_starts_the_qt_window_and_caps_its_folder() -> None:
     check = read(PACKAGING / "check_executables.sh")
     assert 'qt_dir="$dist/ClearMD-Qt"' in check
-    assert 'xvfb-run -a "$qt" --smoke' in check and '"$qt" --smoke' in check
+    assert 'smoke "$qt" "window (PySide6)"' in check and 'xvfb-run -a "$program" --smoke' in check
     cap = re.search(r"^QT_MAX_MB=(\d+)$", check, re.MULTILINE)
     assert cap is not None and 150 <= int(cap.group(1)) <= 400
     assert "MAX_MB=50" in check  # the single-file programs keep their own cap

@@ -90,7 +90,9 @@ def test_ac_03_every_page_says_what_is_missing_and_never_cut(app: TtkApp) -> Non
     wrap = int(str(app.actions.hint.cget("wraplength")) or 0)
     assert 0 < wrap <= app.actions.hint.winfo_width()  # a long hint takes two lines
     spanish = load_catalog("es")
-    assert spanish.text("gui.nav.need_inputs_first") and spanish.text("gui.nav.nothing_written")
+    assert spanish.text("gui.nav.need_inputs_first") and spanish.text(
+        "gui.nav.nothing_written", more=spanish.text("gui.result.again")
+    )
 
 
 def test_ac_04_screenshots_in_both_themes_and_languages() -> None:

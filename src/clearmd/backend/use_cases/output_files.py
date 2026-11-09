@@ -16,13 +16,14 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from clearmd.backend.schemas.formats import (
+    IMAGE_SUFFIXES,
     MERGE_DIR_NAME,
     RESULTS_DIR_NAME,
     SPLIT_DIR_NAME,
     STAGED_MARK,
     TEMP_SUFFIX,
 )
-from clearmd.backend.schemas.models import ExtractedImage
+from clearmd.backend.schemas.models import ExtractedImage, PlannedConversion
 
 # The process umask, read once at import (single-threaded then): results get normal permissions.
 _UMASK = os.umask(0)
@@ -162,3 +163,13 @@ def read_regular_file(path: Path, max_bytes: int = 16 * 1024**2) -> str | None:
     if _is_link(status) or not stat.S_ISREG(status.st_mode) or status.st_size > max_bytes:
         raise UnsafeOutput(f"not a small regular file: {path}")
     return path.read_text(encoding="utf-8")
+
+
+def other_image_folders(item: PlannedConversion) -> list[Path]:
+    """The image folders this document would have in ClearMD's other languages (B3-04)."""
+    folders = []
+    for suffix in IMAGE_SUFFIXES:
+        folder = item.target.parent / f"{item.target.stem}{suffix}"
+        if folder.name != item.images and os.path.lexists(folder):
+            folders.append(folder)
+    return folders

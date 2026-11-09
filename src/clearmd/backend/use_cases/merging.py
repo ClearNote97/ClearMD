@@ -177,6 +177,13 @@ def _write(
                     for index, (item, piece) in enumerate(pieces, start=1)
                 )
                 atomic_write(target, text + "\n", inside=root)
+    except Cancelled:  # during the last step, too: cancelled, never an error (audit v2, B1-03)
+        return [
+            replace(outcome, status=OutcomeStatus.CANCELLED)
+            if outcome.status is OutcomeStatus.CONVERTED
+            else outcome
+            for outcome in outcomes
+        ]
     except ConversionError as error:
         problem = (error.code, error.detail)
     except OSError as error:

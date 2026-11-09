@@ -1,8 +1,12 @@
 """Dropping the plan and the result: an edit (ADR-0029) and an unexpected error. Functions of
 their own: inputs, preferences, results and both kinds of work all reach for them."""
 
+from datetime import datetime
+
+from clearmd.backend.schemas.models import BatchReport
 from clearmd.frontend.presenter.display import Display
 from clearmd.frontend.presenter.screens.details import details_text
+from clearmd.frontend.presenter.screens.results import result_view
 from clearmd.frontend.presenter.session import Session
 from clearmd.frontend.presenter.state import WORKING, AppState
 from clearmd.frontend.presenter.version import app_version
@@ -26,12 +30,27 @@ def unexpected(session: Session, display: Display, error: Exception) -> None:
     """A calm message; the technical line only behind "Copy Details", without paths (D3)."""
     detail = printable(f"{type(error).__name__}: {error}")
     message = session.catalog.text("gui.app.unexpected_error")
-    session.details = details_text(session.catalog, app_version(), display.view, detail)
+    chosen = [
+        *session.inputs,
+        *(i.source for i in (session.plan.conversions if session.plan else ())),
+    ]
+    names = [part for path in chosen for part in (path.name, path.stem)]
+    session.details = details_text(session.catalog, app_version(), display.view, detail, names)
     session.cancel = None
+    plan = session.plan if session.state is AppState.CONVERTING else None
     session.plan = None
     session.report = None
     display.view.forget_work()
-    display.set_state(AppState.READY)
+    if plan is not None:  # Results, with the folders that may hold what was written (F1-02)
+        folders = tuple(dict.fromkeys(item.output_root for item in plan.conversions))
+        now = datetime.now()
+        session.report = report = BatchReport(now, now, (), (), (), False, folders=folders)
+        state = AppState.FINISHED_WITH_PROBLEMS
+        display.view.show_result(result_view(session.catalog, report, state))
+        session.page = 4
+        display.set_state(state)
+    else:
+        display.set_state(AppState.READY)
     display.view.show_message(message)  # after the state: a view may clear it on a step change
     display.view.show_details_button(session.catalog.text("gui.app.copy_details"))
 

@@ -164,6 +164,7 @@ _Plus the failed and skipped files with a plain-words reason, and the history of
 | **035** Honest signals, a Help that guides, the full reason and where the files are | ✅ done | v2.10.0 |
 | **036** Clear messages, page N of M, Copy Details, plain installer names | ✅ done | v2.10.0 |
 | **037** A light installer (the Classic App) and a full one | ✅ done | v2.10.0 |
+| **038** Say only what is true (encodings, N parts, tables, messages) and start faster | ✅ done | v2.11.0 |
 
 Full plan in the [roadmap](./spec/roadmap.md). ClearMD has a **command line** and the same **desktop app** in three toolkits,
 ttkbootstrap (`clearmd-ttk`), PySide6 (`clearmd-pyside`, [screenshots](./docs/screenshots/016/)) and flet

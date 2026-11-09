@@ -26,6 +26,7 @@ from clearmd.backend.schemas.models import BatchPlan, OutcomeStatus, SkippedItem
 from clearmd.frontend.presenter import AppState
 from clearmd.frontend.presenter.models import ProgressView
 from clearmd.frontend.pyside import PySideApp
+from clearmd.frontend.pyside.views.dialogs.confirm_close import ConfirmCloseDialog
 
 Window = Callable[..., PySideApp]
 
@@ -163,7 +164,10 @@ def test_ac_07_closing_while_converting_cancels_and_waits_for_the_summary(
     to_review(app, tmp_path)
     confirm(app)
     pump(app, until=lambda: app.presenter.state is AppState.CONVERTING)
-    app.window.close()  # the window's own close button
+    app.window.close()  # the window's own close button: asked first (feature 038)
+    dialog = app.dialogs.current
+    assert isinstance(dialog, ConfirmCloseDialog)
+    dialog.close_window.click()  # Close
     assert not app.window.isVisible() and not app.closing.closed  # hidden, waiting for the batch
     pump(app, until=lambda: app.closing.closed, seconds=15)
     assert app.closing.closed and marker.is_file() and cancelled == [True]

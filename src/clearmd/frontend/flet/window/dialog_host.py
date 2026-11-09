@@ -4,6 +4,7 @@ from collections.abc import Callable
 from typing import Any
 
 from clearmd.frontend.flet.components.dialog import Dialog
+from clearmd.frontend.flet.views.dialogs.close_question import CloseQuestionDialog
 from clearmd.frontend.flet.views.dialogs.help import HelpDialog
 from clearmd.frontend.flet.views.dialogs.settings import SettingsDialog
 from clearmd.frontend.flet.views.dialogs.welcome import WelcomeDialog
@@ -35,6 +36,18 @@ class DialogHost:
                     on_close=self._closed,
                 )
             )
+
+    def ask_close(self, close_window: Callable[[], None]) -> None:
+        """The window's X while a task runs (038): ask once; another dialog gives way to it."""
+        if isinstance(self.current, CloseQuestionDialog):
+            return
+        if self.current is not None:
+            self.current.close_dialog()
+        self._open(
+            CloseQuestionDialog(
+                self._shown.need_catalog(), on_close_window=close_window, on_close=self._closed
+            )
+        )
 
     def show_help(self) -> None:
         """The "?" window: always available (UX §4)."""

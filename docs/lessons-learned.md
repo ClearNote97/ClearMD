@@ -18,6 +18,7 @@ The lessons are grouped by theme:
 | IX | What the audit boards taught (2026-11-08) |
 | X | Applying an audit (2.9.0 – 2.10.0) |
 | XI | What the second audit taught (2026-11-09) |
+| XII | Applying the second audit (2.11.0) |
 
 Each lesson says what happened, then what a template should do. Within a part, the lessons that would have
 saved the most come first.
@@ -693,3 +694,70 @@ were confirmed, 6 partly true, and none was refuted. Report:
 - Running the three most valuable findings and the measurement that answered the owner's
   question ("is this slowness normal?") took minutes and gave certainty.
 - **For the template:** make both part of the conciliator's brief.
+
+---
+
+## Part XII — Applying the second audit (2.11.0)
+
+The owner accepted the ten improvements of the second audit and the conciliator's answers to its
+disagreements. Written before the third audit.
+
+### XII.1 When a promise fails, fix the code and soften the text
+
+- "Copy Details" promised to hide file names and did not always do it. The code now hides more:
+  quoted names, the names of the chosen files, and folders with spaces. The text now promises
+  less: "we tried to hide them; check before you send it".
+- **For the template:** a privacy or safety promise in the interface is worded as an effort, and
+  a test feeds it the hard cases.
+
+### XII.2 One fragment, many messages
+
+- How to report a problem was said in four places, each a little differently. One catalog entry
+  (`report.how`) is now inserted wherever a message names it (`{report}`).
+- **For the template:** shared sentences live once in the catalog, and the catalog fills them in.
+
+### XII.3 A test can enshrine a bug against its own ADR
+
+- A table test asserted that a cell wrapped over three lines made three rows. That is exactly
+  what ADR-0034 forbids. The test was amended to say what the ADR promises, and a second test now
+  keeps a grouped first column as rows of their own.
+- **For the template:** when a fix breaks an old test, read the test against the spec before
+  "fixing" the code back.
+
+### XII.4 Architecture first, then recalibrate, and write down the limit
+
+- Estimating PDFs by pages would have loaded PDFium in the windows, against ADR-0015 and against
+  the start-up improvement of the same round. The estimates were recalibrated with real
+  measurements instead, and the limitation is written down.
+- **For the template:** when two improvements pull apart, keep the architectural rule and record
+  the trade-off.
+
+### XII.5 Lazy imports need a test, and a profile
+
+- The windows were loading PDFium and openpyxl through a chain of five imports. Moving two
+  imports into functions removed them all, and the command line now starts in 0.40 s instead of
+  0.56 s. A test now checks, for every interface, that no converter library is loaded at start.
+- **For the template:** profile once (`-X importtime`), then guard the result with a test.
+
+### XII.6 A one-file and a folder build from one analysis
+
+- PyInstaller can build both the portable one-file app and the installer's folder from one
+  analysis. In the folder copy the splash module exists but is not initialised, so the launcher
+  must check `is_alive()`.
+- **For the template:** build in the dev container before trusting CI with a packaging change.
+  The first local build caught the splash crash in minutes.
+
+### XII.7 Toolkit agents see presenter gaps
+
+- The flet agent noticed that after an unexpected error the Results page did not write where the
+  folders were: the presenter had not told it. The fix took one line.
+- **For the template:** ask toolkit agents to report observations outside their area, even when
+  their own part is done.
+
+### XII.8 Partial is said as partial
+
+- Some recommendations were done only in part:
+  - result names that depend on the batch;
+  - a note on rebuilt equations (incoherent ones are now kept as text);
+  - PDF estimates by pages (recalibrated instead).
+- They are listed as such for the third audit to check, never reported as done.

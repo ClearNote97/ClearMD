@@ -2,7 +2,7 @@
 
 from typing import TextIO
 
-from clearmd.backend.api import failed_line, stopped_message
+from clearmd.backend.api import error_action, failed_line, stopped_message
 from clearmd.backend.schemas.errors import ErrorCode
 from clearmd.backend.schemas.events import BatchEvent, ConversionFinished, ConversionStarted
 from clearmd.backend.schemas.models import OutcomeStatus
@@ -43,7 +43,7 @@ class Progress:
                     message=stopped_message(self._catalog, outcome),
                     elapsed=self._catalog.clock(outcome.seconds),
                     percent=outcome.share_done,
-                    action=self._catalog.text(outcome.error.action_key),
+                    action=error_action(self._catalog, outcome),
                 )
             else:
                 line = failed_line(self._catalog, outcome, name)

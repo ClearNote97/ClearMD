@@ -20,7 +20,8 @@ def splash_text(text: str) -> None:
         import pyi_splash  # type: ignore[import-not-found,import-untyped,unused-ignore]  # frozen
     except ImportError:
         return
-    pyi_splash.update_text(text)
+    if pyi_splash.is_alive():  # the installed folder copy has no splash (ADR-0053)
+        pyi_splash.update_text(text)
 
 
 def close_splash() -> None:
@@ -29,4 +30,5 @@ def close_splash() -> None:
         import pyi_splash  # type: ignore[import-not-found,import-untyped,unused-ignore]  # frozen only
     except ImportError:
         return
-    pyi_splash.close()
+    if pyi_splash.is_alive():
+        pyi_splash.close()

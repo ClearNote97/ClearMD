@@ -2,6 +2,7 @@
 
 import importlib
 import inspect
+import os
 import signal
 from multiprocessing.connection import Connection
 from pathlib import Path
@@ -63,6 +64,13 @@ def apply_memory_cap(limit: int) -> None:
     resource.setrlimit(resource.RLIMIT_AS, (limit, limit))
 
 
+def _is_empty(source: str) -> bool:
+    try:
+        return os.path.getsize(source) == 0
+    except OSError:
+        return False  # told by the converter that opens it
+
+
 def handle(registry: _Registry, request: Job, max_result_chars: int) -> Response:
     if not isinstance(request, ConvertRequest | DetectRequest):  # Split and Merge (023-026)
         return handle_pages(request, max_result_chars)
@@ -76,6 +84,8 @@ def handle(registry: _Registry, request: Job, max_result_chars: int) -> Response
         return Detected(detection.format.value if detection is not None else None)
     format_id = FormatId(request.format)
     detection = Detection(format_id, DetectionMethod(request.method))
+    if _is_empty(request.source):  # empty, not "damaged" (audit 2026-11-09, B1-06)
+        return Failed(ErrorCode.EMPTY_FILE.value, "0 bytes")
     try:
         converter = registry.for_format(format_id, Strategy(request.strategy))
         # The images, only when asked and only to a converter that keeps them (012): TeX and

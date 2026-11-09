@@ -18,7 +18,10 @@ GIB = 1024**3
 # formats the MiB are the uncompressed text parts (XML/XHTML), not images: a docx of photos is fast.
 SECONDS_PER_MIB: Mapping[FormatId, float] = MappingProxyType(
     {
-        FormatId.PDF: 15.0,  # PDFium + cleaning (ADR-0030): 6 s/MiB plain, 14 s/MiB compressed
+        # PDFium + cleaning (ADR-0030): synthetic dense text 6-14 s/MiB, but real documents
+        # 0-1.2 s/MiB and scanned or photo PDFs ~0.03 (audit 2026-11-09, B2-01): the bytes of a
+        # PDF are mostly pictures. A middle value; the stop limit counts progress, not this.
+        FormatId.PDF: 4.0,
         FormatId.XLSX: 0.3,  # ClearMD's own converter (ADR-0032): 22 s for a 100k x 20 sheet
         FormatId.PPTX: 1.2,
         FormatId.DOCX: 0.6,
@@ -44,7 +47,9 @@ MEMORY_PER_MIB: Mapping[FormatId, float] = MappingProxyType(
         FormatId.XLSX: 4.0,  # ClearMD's own converter (ADR-0032): ~320 MiB for 100k x 20
         FormatId.CSV: 13.7,
         FormatId.DOCX: 11.7,
-        FormatId.PDF: 16.0,  # PDFium (ADR-0030): 9 plain, 19 compressed text
+        # PDFium (ADR-0030): 9 plain, 19 compressed synthetic text, but a 232 MiB photo PDF
+        # peaked at 731 MiB (3.2 per MiB, audit B2-01). The worker's own limit still stops one.
+        FormatId.PDF: 6.0,
         FormatId.HTML: 7.0,
         FormatId.PPTX: 6.7,
         FormatId.TXT: 3.9,

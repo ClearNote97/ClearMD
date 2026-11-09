@@ -30,13 +30,20 @@ def csv_rows(text: str) -> list[str]:
 
 
 def balanced_cuts(weights: list[int], count: int) -> list[int]:
-    """Where to cut ``weights`` into ``count`` runs as even as possible (never an empty run)."""
+    """Where to cut ``weights`` into ``count`` runs as even as possible (never an empty run).
+    With at least ``count`` units there are always ``count`` runs: when the weight is at the end,
+    the remaining boundaries are cut (audit 2026-11-09, B1-02)."""
     total = sum(weights)
     cuts: list[int] = []
     reached = 0
+    units = len(weights)
     for index, weight in enumerate(weights[:-1], start=1):
         reached += weight
-        if len(cuts) < count - 1 and reached >= total * (len(cuts) + 1) / count - weight / 2:
+        wanted = count - 1 - len(cuts)
+        if wanted <= 0:
+            break
+        even = reached >= total * (len(cuts) + 1) / count - weight / 2
+        if even or units - index <= wanted:  # no boundary left to spare
             cuts.append(index)
     return cuts
 

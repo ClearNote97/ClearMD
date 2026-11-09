@@ -6,7 +6,7 @@ from collections.abc import Callable
 
 import flet as ft
 
-from clearmd.frontend.design.metrics import GAP, SPACE
+from clearmd.frontend.design.metrics import GAP, HALF, SPACE
 from clearmd.frontend.flet.components.merge_block import MergeBlock
 from clearmd.frontend.flet.components.primitives import (
     Choice,
@@ -42,9 +42,14 @@ class OutputCard:
         wording.add(self.images.radios["omit"], "gui.main.images_omit")
         wording.add(self.images.radios["folder"], "gui.main.images_folder")
         self._images_title = images_title
-        self._beside = ft.Row(spacing=GAP)  # Split's and Merge's summary, in the images' place
+        # Split's and Merge's summary, in the images' place: it takes the room left and wraps its
+        # choices under its title when a narrow window or a longer label needs it (038).
+        self._beside = ft.Row(
+            spacing=GAP, wrap=True, run_spacing=HALF, alignment=ft.MainAxisAlignment.END
+        )
+        self._stretch = stretch()
         heading = ft.Row(
-            [title, stretch(), images_title, self.images.control, self._beside],
+            [title, self._stretch, images_title, self.images.control, self._beside],
             spacing=SPACE,
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
         )
@@ -87,6 +92,8 @@ class OutputCard:
         # so the list keeps its rows at 1080 x 720 (as Qt's; feature 032).
         summary = [self._summary_title, self.summary.control]
         self._below.controls, self._beside.controls = (summary, []) if converting else ([], summary)
-        self._below.visible = converting
+        self._below.visible = self._stretch.visible = converting
+        self._beside.visible = not converting
+        self._beside.expand = not converting
         self.split.show(choice)
         self.merge.show(choice)

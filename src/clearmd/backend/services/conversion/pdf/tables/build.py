@@ -34,6 +34,7 @@ def table_of(run: list[Row]) -> Table | None:
         return None
     if _a_list(matched) or any(_prose(matched, column) for column in range(len(columns))):
         return None
+    matched = joined_continuations(matched)
     return Table(
         top=max(row.top for row in run),
         bottom=min(row.bottom for row in run),
@@ -55,3 +56,21 @@ def _prose(rows: list[list[str]], column: int) -> bool:
     cells = [cells[column] for cells in rows if cells[column]]
     running = [c for c in cells if c[0].islower() and len(c.split()) >= PROSE_WORDS]
     return len(cells) >= MIN_ROWS and len(running) >= PROSE_SHARE * len(cells)
+
+
+def joined_continuations(rows: list[list[str]]) -> list[list[str]]:
+    """A cell written over several lines stays one cell (ADR-0034; audit 2026-11-09, B3-01): a
+    line whose first cell is empty and that fills at most half the columns goes on the row above,
+    each piece after its column's text. A row with most cells filled is a row of its own (a
+    grouped first column)."""
+    joined: list[list[str]] = []
+    for cells in rows:
+        filled = sum(1 for cell in cells if cell)
+        if joined and not cells[0] and 0 < filled <= max(1, len(cells) // 2):
+            above = joined[-1]
+            for index, cell in enumerate(cells):
+                if cell:
+                    above[index] = f"{above[index]} {cell}".strip()
+            continue
+        joined.append(list(cells))
+    return joined

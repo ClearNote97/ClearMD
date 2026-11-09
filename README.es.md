@@ -168,6 +168,7 @@ anteriores._
 | **035** Señales honestas, una Ayuda que orienta, el motivo completo y dónde están los archivos | ✅ lista | v2.10.0 |
 | **036** Mensajes claros, página N de M, Copiar Detalles, nombres sencillos en el instalador | ✅ lista | v2.10.0 |
 | **037** Un instalador liviano (la App Clásica) y uno completo | ✅ lista | v2.10.0 |
+| **038** Decir solo lo que es verdad (codificaciones, N partes, tablas, mensajes) y abrir más rápido | ✅ lista | v2.11.0 |
 
 El plan completo está en el [roadmap](./spec/roadmap.md). ClearMD tiene **línea de comandos** y la misma **app de
 escritorio** en tres toolkits, ttkbootstrap (`clearmd-ttk`), PySide6 (`clearmd-pyside`,
