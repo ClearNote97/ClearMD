@@ -19,6 +19,7 @@ The lessons are grouped by theme:
 | X | Applying an audit (2.9.0 – 2.10.0) |
 | XI | What the second audit taught (2026-11-09) |
 | XII | Applying the second audit (2.11.0) |
+| XIII | What the third audit taught (2026-11-09) |
 
 Each lesson says what happened, then what a template should do. Within a part, the lessons that would have
 saved the most come first.
@@ -761,3 +762,117 @@ disagreements. Written before the third audit.
   - a note on rebuilt equations (incoherent ones are now kept as text);
   - PDF estimates by pages (recalibrated instead).
 - They are listed as such for the third audit to check, never reported as done.
+
+### XII.9 A layout test only counts on the platform with the widest font
+
+- The Qt test that the longer "Process Summary" label is whole passed in the Linux container and
+  failed in CI on Windows, whose fonts are wider. The fix let the label keep its natural width
+  and let its choices wrap instead.
+- **For the template:** a "nothing is cut" test runs on Windows in CI before a release, and
+  locally it is checked with a font larger than the target's.
+
+## Part XIII — What the third audit taught (2026-11-09)
+
+The third audit used new agents from scratch on version 2.11.0. Each board had five experts,
+four of them looking from angles not used before: security and privacy, fidelity of the content
+for an AI, accessibility, and first use and installation. "Claridad es cariño" stayed on both
+boards. Three conciliators worked in a chain, all bound by "Claridad es cariño": truth (verify
+and reproduce), value for the person, and doctrine with a plain synthesis. The score stayed at
+7 out of 10 because the look went deeper, not because the product got worse. Of the second
+audit's ten recommendations, two were fully resolved and eight partly; none got worse. The
+conciliators verified 78 findings: 61 confirmed, 17 partly true, none refuted. Report:
+[`audit/2026-11-09-audit-boards-v3.md`](./audit/2026-11-09-audit-boards-v3.md).
+
+### Product
+
+#### XIII.1 A fix is only done when its test uses the hard case
+
+- **What happened.** Release 2.11 added a test for Windows-encoded text and the improvement was
+  counted as done. The test used a long sentence, which the decoder happens to guess right. A
+  short note in cp1252 ("Canción, mañana") still comes out as "Canci¾n, ma±ana", and a short CSV
+  of names can come out in Korean characters.
+- **For the template:**
+  - Before calling a fix done, ask: "would this test fail with the old code, and with a shorter
+    or harder input?"
+  - For text, the fixtures are one-line files in cp1252 with accents in each target language.
+
+#### XIII.2 A change that people can see updates every text that describes it
+
+- ADR-0053 installed the Classic App as a folder. The installer still called it "one file that
+  unpacks", and the download page still said "to uninstall, delete the file". Four auditors found
+  the same stale sentence.
+- **For the template:** every ADR that changes packaging, start-up or installation lists, under
+  Consequences, "review the installer's texts, the release notes and the README", and a test
+  forbids the old sentences.
+
+#### XIII.3 For an AI tool, the output promise is enforced in one place
+
+- An email or a web page converted by a third-party converter can keep remote images (a read
+  receipt for the sender) and raw HTML, against "everything stays on your computer".
+- **For the template:** one common pass after every converter, ours or not, enforces what the
+  output may contain (no remote images, no raw HTML, notes kept), with one test over every
+  format.
+
+#### XIII.4 A warning uses the same rule that acts
+
+- A large PDF was warned "may take more than 10 minutes and stop", while the real stop rule (no
+  progress) lets it finish in about 2. The warning pushed people to Split, which cleared the rest
+  of their list.
+- **For the template:** a warning is computed from the rule that actually stops the work. A
+  report after an error never shows "0" for things that were done.
+
+#### XIII.5 "All or nothing" must not throw away good work
+
+- Split stages its parts and keeps the old ones until the new ones exist (from the first audit).
+  But if one part stops, every good part is discarded, and the empty folder then counts as "an
+  existing result".
+- **For the template:** separate "never destroy the old result before the new one exists" from
+  "keep whatever new work succeeded". An empty folder is never a result.
+
+#### XIII.6 Accessibility depends on which file is downloaded
+
+- A screen reader cannot read the Classic App, which is the only one in the light installer. The
+  advice "use the Qt app" did not say which installer brings it.
+- **For the template:** with several editions, the accessibility note names the file to
+  download.
+
+### Running an audit
+
+#### XIII.7 Five experts per board give depth, and duplicates
+
+- New lenses found what the old ones could not: remote images in the output, the screen-reader
+  gap, fidelity measured on real tables. They also repeated each other: four auditors found the
+  installer's sentence.
+- **For the template:** keep the rule "agreement confirms the fact, it does not raise the
+  severity"; it worked.
+
+#### XIII.8 Three conciliators with separate roles, the last one for doctrine
+
+- Truth reproduced the most important failure itself. Value ranked by what a person feels.
+  Doctrine caught two recommendations of the first two that went against decisions the owner had
+  already taken (keeping the worker alive between tasks, confirming every Cancel), and corrected
+  a third (the screen-reader line must point to the full installer).
+- **For the template:** keep a doctrine conciliator with access to the earlier audits. Pass the
+  owner's "do not do" decisions to every board and conciliator as explicit constraints, or they
+  come back.
+
+#### XIII.9 A merge between two auditors is confirmed by the receiver
+
+- Comparing what was dropped between rounds found a real loss: a keyboard shortcut (Ctrl+0) that
+  each auditor thought the other kept.
+- **For the template:** when two auditors merge findings, the one who receives it confirms it,
+  not the one who gives it up.
+
+#### XIII.10 A finding measured on a private document needs a public twin
+
+- Some measurements used the owner's private documents. They cannot become fixed tests.
+- **For the template:** each such finding gets a public or synthetic equivalent before it turns
+  into a test.
+
+#### XIII.11 "Claridad es cariño" binds the conciliators too
+
+- The owner asked that the conciliators also write with care. Their synthesis came out in short
+  paragraphs, with what improved, what is still not true and what to decide, in plain words.
+- **For the template:** the reader of an audit is a person; the rule that governs the product
+  governs the report about it.
+
