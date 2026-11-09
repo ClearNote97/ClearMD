@@ -9,6 +9,7 @@ The exception mapping was confirmed against the fixtures (T04): a truncated docx
 ``BadZipFile``. PDF is ClearMD's own since feature 008 (ADR-0030).
 """
 
+import io
 import zipfile
 from collections.abc import Mapping
 from pathlib import Path
@@ -31,6 +32,7 @@ from markitdown.converters import (
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.schemas.formats import FormatId
 from clearmd.backend.schemas.models import ConversionResult, Detection
+from clearmd.backend.services.conversion.csv_dialect import with_commas
 from clearmd.backend.services.conversion.images import ImageSink, epub_images, take_data_images
 from clearmd.backend.services.conversion.safe_files import open_regular_file
 
@@ -115,7 +117,14 @@ class MarkItDownConverter:
         # With an images folder (012): docx and pptx pictures come back as data: URIs, made
         # files by the sink; an EPUB's are read from its package.
         options = {"keep_data_uris": True} if images is not None else {}
-        with _open_regular_file(source) as stream:
+        with _open_regular_file(source) as opened:
+            stream: BinaryIO = opened
+            if detection.format is FormatId.CSV:  # semicolons, tabs: rewritten with commas
+                rewritten = with_commas(opened.read())
+                opened.seek(0)
+                if rewritten is not None:
+                    stream = io.BytesIO(rewritten)
+                    hint = StreamInfo(extension=".csv", filename=source.name, charset="utf-8")
             try:
                 result = converter.convert(stream, hint, **options)
             except Exception as error:

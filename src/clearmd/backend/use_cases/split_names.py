@@ -6,7 +6,6 @@ from pathlib import Path
 
 from clearmd.backend.schemas.models import PlannedConversion
 from clearmd.backend.schemas.split import SplitSpec
-from clearmd.backend.use_cases.output_files import remove_regular_file
 
 
 def part_name(spec: SplitSpec, name: str, index: int, total: int) -> str:
@@ -23,12 +22,11 @@ def _earlier_part(spec: SplitSpec, name: str) -> re.Pattern[str]:
     return re.compile(pattern + r"\.(?:pdf|md|txt|csv|xlsx)")
 
 
-def remove_earlier_parts(item: PlannedConversion, spec: SplitSpec) -> None:
+def earlier_parts(item: PlannedConversion, spec: SplitSpec) -> list[Path]:
+    """The parts an earlier cut of this file left in its folder (ClearMD's own names only)."""
     folder = item.target
     if not os.path.isdir(folder) or os.path.islink(folder):
-        return
+        return []
     own = _earlier_part(spec, item.target.name)
     with os.scandir(folder) as entries:
-        old = [Path(entry.path) for entry in entries if own.fullmatch(entry.name)]
-    for path in old:
-        remove_regular_file(path, inside=item.output_root)
+        return [Path(entry.path) for entry in entries if own.fullmatch(entry.name)]

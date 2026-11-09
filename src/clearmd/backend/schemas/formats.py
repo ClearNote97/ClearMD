@@ -77,6 +77,7 @@ MERGE_DIR_NAME = "OutputUnif"  # merged files (ADR-0019, feature 026)
 SUMMARY_NAME = "Resumen_ClearMD.md"
 PDF_SUMMARY_NAME = "Resumen_ClearMD.pdf"  # with the summary format "Markdown + PDF" (ADR-0031)
 TEMP_SUFFIX = ".clearmd-tmp"
+STAGED_MARK = ".clearmd-part"  # a split part written aside until all are (audit 2026-11-08)
 
 
 def format_for_extension(extension: str) -> FormatId | None:

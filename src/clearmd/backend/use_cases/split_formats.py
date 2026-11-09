@@ -14,8 +14,9 @@ from clearmd.backend.use_cases.output_files import (
     atomic_write_bytes,
     remove_regular_file,
 )
+from clearmd.backend.use_cases.part_stage import PartStage
 from clearmd.backend.use_cases.ports import ConversionRunner, PageCutter
-from clearmd.backend.use_cases.split_names import part_name, remove_earlier_parts
+from clearmd.backend.use_cases.split_names import part_name
 from clearmd.backend.use_cases.split_notes import over_size
 
 OWN_FORMAT_PARTS = frozenset({FormatId.TXT, FormatId.CSV, FormatId.XLSX})
@@ -37,22 +38,24 @@ def split_file(
     runner: ConversionRunner,
     cutter: PageCutter,
     cancel: CancelToken,
+    stage: PartStage,
 ) -> tuple[int, tuple[ConversionNote, ...]]:
     parts, over = _parts(item, spec, cutter, cancel)
     if not parts:
         raise ConversionError(ErrorCode.NOTHING_TO_MEASURE, "an empty file")
-    remove_earlier_parts(item, spec)
     suffix = "." + item.detection.format.value
     notes: list[ConversionNote] = []
     for index, data in enumerate(parts, start=1):
         name = part_name(spec, item.target.name, index, len(parts))
-        path = item.target / f"{name}{suffix}"
+        path = stage.at(item.target / f"{name}{suffix}")
         if isinstance(data, bytes):
             atomic_write_bytes(path, data, inside=item.output_root)
         else:  # LF endings, UTF-8: the line breaks themselves are kept
             atomic_write(path, data, inside=item.output_root)
         if spec.keep.markdown:
-            part = replace(item, source=path, target=item.target / f"{name}.md", split=None)
+            part = replace(
+                item, source=path, target=stage.at(item.target / f"{name}.md"), split=None
+            )
             result = runner.convert(part, cancel)
             atomic_write(part.target, result.markdown, inside=item.output_root)
             notes.extend(result.notes)

@@ -7,7 +7,7 @@ from pathlib import Path
 from clearmd.backend.schemas.models import BatchPlan, BatchReport
 from clearmd.frontend.presenter.models import Primary
 from clearmd.frontend.presenter.screens.results import result_folders
-from clearmd.frontend.presenter.state import HOME, WORKING, AppState
+from clearmd.frontend.presenter.state import HOME, WORKING, AppState, Tool
 from clearmd.i18n import Catalog
 
 
@@ -18,9 +18,12 @@ def primary_of(
     inputs: Sequence[Path],
     plan: BatchPlan | None,
     report: BatchReport | None,
+    tool: Tool = Tool.CONVERT,
 ) -> Primary:
     text = catalog.text
     ready = state is AppState.WAITING_DECISION and bool(plan and plan.conversions)
+    if tool is Tool.MERGE and plan is not None and len(plan.conversions) < 2:
+        ready = False  # Merge joins two documents at least: said before, not at the end (B4-01)
 
     def why() -> str:
         if state is AppState.ANALYZING:
@@ -28,6 +31,8 @@ def primary_of(
         if state is AppState.CONVERTING:
             return text("gui.nav.converting")
         if state is AppState.WAITING_DECISION:
+            if tool is Tool.MERGE and plan is not None and plan.conversions:
+                return text("gui.nav.merge_one_left")
             return text("gui.nav.nothing")
         if report is not None:
             return text("gui.nav.done")
@@ -42,6 +47,8 @@ def primary_of(
             return Primary(text("gui.nav.next"), False, why())
         if not inputs:
             return Primary(text("gui.nav.next"), False, text("gui.nav.need_inputs"))
+        if tool is Tool.MERGE and len(inputs) == 1 and not inputs[0].is_dir():
+            return Primary(text("gui.nav.next"), False, text("gui.nav.merge_needs_two"))
         return Primary(text("gui.nav.next"), True)
     if page == 2:
         return Primary(text("gui.nav.next"), ready, "" if ready else why())

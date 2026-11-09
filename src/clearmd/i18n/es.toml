@@ -70,6 +70,7 @@ cut_not_for_markdown = "Markdown no tiene páginas para cortar cada N"
 no_pages_to_cut = "no tiene páginas para cortar cada N"
 cut_by_sheets = "un libro de Excel se corta por hojas enteras"
 not_for_pdf_merge = "no es un PDF (un PDF se arma solo con PDF)"
+already_included = "ya viene dentro de una carpeta que elegiste (se usa una sola vez)"
 
 [skip_action]
 output_folder = "ClearMD no convierte sus propios resultados."
@@ -93,6 +94,7 @@ cut_not_for_markdown = "Elige En N partes o Partes de unas N palabras."
 no_pages_to_cut = "Elige En N partes o Partes de unas N palabras."
 cut_by_sheets = "Elige En N partes: las hojas se agrupan."
 not_for_pdf_merge = "Elige Un Markdown para unirlo también."
+already_included = "No hace falta hacer nada."
 
 [stop]
 timed_out = "Superó el límite de tiempo ({limit})."
@@ -140,7 +142,7 @@ yes_letter = "s"
 cancelling = "Cancelando… se está escribiendo el resumen."
 converted_with_notes = "ℹ {name} — convertido con notas (ver el resumen)"
 cancelled_before_start = "Cancelado antes de escribir nada."
-summary_not_written = "⚠ No se pudo escribir el resumen en {path} (¿el disco está lleno?)."
+summary_not_written = "⚠ No se pudo escribir el resumen en {path}. Comprueba que la carpeta existe y que puedes guardar archivos en ella."
 unexpected_error = "Ocurrió algo inesperado y ClearMD se detuvo: {detail}. Tus archivos no se modificaron; por favor repórtalo."
 time_left = "faltan {duration}"
 warning_slow = "⚠ {name} — podría tardar más de {limit} ({estimate}) y detenerse"
@@ -356,7 +358,7 @@ current = "Convirtiendo Ahora"
 
 [gui.result]
 kept = "su resultado ya existía y se conservó."
-no_summary = "no se pudo escribir el resumen ahí. Comprueba que el disco tiene espacio."
+no_summary = "no se pudo escribir el resumen ahí. Comprueba que la carpeta existe y que puedes guardar archivos en ella."
 cannot_open = "ClearMD no pudo abrir {path}. Ábrela desde tu explorador de archivos."
 stat_converted = "Convertidos"
 stat_skipped = "Omitidos"
@@ -443,6 +445,8 @@ unexpected_error = "Algo inesperado salió mal: {detail}. Tus documentos origina
 [gui.nav]
 next = "Siguiente"
 need_inputs = "Agrega al menos un archivo o una carpeta."
+merge_needs_two = "Agrega al menos dos documentos para unirlos."
+merge_one_left = "Solo queda un documento para unir: vuelve al paso 1 y agrega otro."
 need_plan = "Pulsa Siguiente en Elegir para ver qué va a pasar."
 analyzing = "Buscando documentos… el plan se abre en Revisar."
 nothing = "Aquí no hay nada para convertir. Vuelve a Elegir."
@@ -594,6 +598,8 @@ split = "Dividir los PDF Muy Grandes ({count})"
 [merge]
 # A merged file's name, without extension (feature 026): {stamp} is "2026-11-08 10-30".
 name = "Unidos {stamp}"
+# La línea visible que abre cada documento en un Markdown unido (auditoría 2026-11-08).
+heading = "Documento {index} de {total}: {name}"
 
 [gui.merge]
 # Paso 1 de Unir (feature 026).

@@ -2,12 +2,16 @@
 
 Into Markdown: each document is converted as Convert converts it, each with its own time limit
 (a Markdown file is read as it is); the texts are joined in the list's order, each after a
-comment naming its source. Into PDF: the PDFs' pages are copied whole, in order, in the worker.
-A document that fails is left out and told; fewer than two documents write nothing.
+comment naming its source and a visible line ("Document 2 of 3: b.pdf"). Into PDF: the PDFs'
+pages are copied whole, in order, in the worker. A document that fails is left out and told;
+fewer than two documents write nothing. A merged file never replaces another: "(2)" is added
+(audit 2026-11-08).
 """
 
+import os
 from collections.abc import Callable
 from dataclasses import replace
+from pathlib import Path
 
 from clearmd.backend.schemas.errors import Cancelled, ConversionError, ErrorCode, SkipReason
 from clearmd.backend.schemas.events import BatchEvent, ConversionFinished, ConversionStarted
@@ -24,6 +28,7 @@ from clearmd.backend.schemas.models import (
 from clearmd.backend.use_cases.cancel import CancelToken
 from clearmd.backend.use_cases.output_files import atomic_write, atomic_write_bytes, prepare_root
 from clearmd.backend.use_cases.ports import Clock, ConversionRunner, PageCutter
+from clearmd.backend.use_cases.relink import relinked
 
 STOPPING = frozenset({ErrorCode.TIMED_OUT, ErrorCode.OUT_OF_MEMORY})
 
@@ -57,6 +62,21 @@ def source_marker(item: PlannedConversion) -> str:
     return f"<!-- ClearMD: {name} -->\n\n"
 
 
+def heading(spec: MergeSpec, index: int, total: int, item: PlannedConversion) -> str:
+    """The visible line that opens a document in a merged Markdown, in italics."""
+    name = item.source.name.replace("*", "\\*")
+    return "*" + spec.heading.format(index=index, total=total, name=name) + "*\n\n"
+
+
+def free_target(target: Path) -> Path:
+    """``target``, or "name (2).md", "name (3).md"... when a file is already there."""
+    candidate, number = target, 1
+    while os.path.lexists(candidate):
+        number += 1
+        candidate = target.with_name(f"{target.stem} ({number}){target.suffix}")
+    return candidate
+
+
 def _failed(item: PlannedConversion, error: ConversionError) -> ConversionOutcome:
     status = OutcomeStatus.STOPPED if error.code in STOPPING else OutcomeStatus.FAILED
     return ConversionOutcome(item, status, error.code, error.detail, limit=error.limit)
@@ -66,8 +86,10 @@ def _piece(
     item: PlannedConversion, runner: ConversionRunner, cutter: PageCutter, cancel: CancelToken
 ) -> str:
     if item.detection.format is FormatId.MARKDOWN:
-        return cutter.read_text(item, cancel)
-    return runner.convert(item, cancel).markdown
+        text = cutter.read_text(item, cancel)
+    else:
+        text = runner.convert(item, cancel).markdown
+    return relinked(text, item.source.parent, item.target.parent)  # images show from OutputUnif
 
 
 def execute_merge(
@@ -127,32 +149,48 @@ def _write(
     spec = plan.merge
     assert spec is not None
     joined = {item.source for item, _ in pieces}
+    if not plan.conversions:
+        return outcomes
+    root = plan.conversions[0].output_root
+    target = spec.target
     problem: tuple[ErrorCode, str] | None = None
-    if cancel.is_set():
-        problem = (ErrorCode.NOTHING_TO_MERGE, "cancelled before the merge was written")
-    elif len(pieces) < 2:
-        problem = (ErrorCode.NOTHING_TO_MERGE, f"{len(pieces)} document(s) to merge")
-    else:
-        root = plan.conversions[0].output_root
-        try:
-            prepare_root(root, MERGE_DIR_NAME)
+    try:  # the folder always: the summary is written there even when nothing is merged (B4-01)
+        prepare_root(root, MERGE_DIR_NAME)
+        if cancel.is_set():
+            return [  # a cancelled merge is told as cancelled, not as a failure (B1-07)
+                replace(outcome, status=OutcomeStatus.CANCELLED)
+                if outcome.status is OutcomeStatus.CONVERTED
+                else outcome
+                for outcome in outcomes
+            ]
+        if len(pieces) < 2:
+            problem = (ErrorCode.NOTHING_TO_MERGE, f"{len(pieces)} document(s) to merge")
+        else:
+            target = free_target(spec.target)
             if spec.into is Into.PDF:
                 data = cutter.merge_pdfs([item for item, _ in pieces], cancel)
-                atomic_write_bytes(spec.target, data, inside=root)
+                atomic_write_bytes(target, data, inside=root)
             else:
-                text = "\n\n".join(
-                    source_marker(item) + piece.strip("\n") for item, piece in pieces
+                total = len(pieces)
+                text = "\n\n---\n\n".join(
+                    source_marker(item) + heading(spec, index, total, item) + piece.strip("\n")
+                    for index, (item, piece) in enumerate(pieces, start=1)
                 )
-                atomic_write(spec.target, text + "\n", inside=root)
-        except ConversionError as error:
-            problem = (error.code, error.detail)
-        except OSError as error:
-            problem = (ErrorCode.WRITE_FAILED, f"{type(error).__name__}: {error}")
+                atomic_write(target, text + "\n", inside=root)
+    except ConversionError as error:
+        problem = (error.code, error.detail)
+    except OSError as error:
+        problem = (ErrorCode.WRITE_FAILED, f"{type(error).__name__}: {error}")
     if problem is None:
-        return outcomes
-    return [
+        return [
+            replace(outcome, item=replace(outcome.item, target=target))
+            if outcome.item.source in joined
+            else outcome
+            for outcome in outcomes
+        ]
+    return [  # every document gets the reason: the ones joined, and the ones that were fine
         replace(outcome, status=OutcomeStatus.FAILED, error=problem[0], detail=problem[1])
-        if outcome.item.source in joined and outcome.status is OutcomeStatus.CONVERTED
+        if outcome.status is OutcomeStatus.CONVERTED
         else outcome
         for outcome in outcomes
     ]

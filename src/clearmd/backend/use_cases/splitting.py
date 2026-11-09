@@ -26,9 +26,11 @@ from clearmd.backend.use_cases.output_files import (
     atomic_write_bytes,
     remove_regular_file,
 )
+from clearmd.backend.use_cases.part_stage import PartStage
 from clearmd.backend.use_cases.ports import ConversionRunner, PageCutter
+from clearmd.backend.use_cases.relink import relinked
 from clearmd.backend.use_cases.split_formats import OWN_FORMAT_PARTS, split_file
-from clearmd.backend.use_cases.split_names import part_name, remove_earlier_parts
+from clearmd.backend.use_cases.split_names import part_name
 from clearmd.backend.use_cases.split_notes import merged, over_size
 
 STOPPING_CODES = frozenset({ErrorCode.TIMED_OUT, ErrorCode.OUT_OF_MEMORY})
@@ -106,6 +108,7 @@ def _pdf(
     cutter: PageCutter,
     cancel: CancelToken,
     where: list[str],
+    stage: PartStage,
 ) -> tuple[int, tuple[ConversionNote, ...]]:
     over: tuple[int, ...] = ()
     if spec.cut is Cut.WORDS:
@@ -117,15 +120,16 @@ def _pdf(
         ranges = page_ranges(cutter.count_pages(item, cancel), spec.cut, spec.size)
     if not ranges:
         raise ConversionError(ErrorCode.CORRUPT_FILE, "the PDF has no pages")
-    remove_earlier_parts(item, spec)
     notes: list[tuple[int, ConversionNote]] = []
     for index, (first, last) in enumerate(ranges, start=1):
         name = part_name(spec, item.target.name, index, len(ranges))
         where[0] = f"part {index} of {len(ranges)} (pages {first}-{last}): "
-        pdf = item.target / f"{name}.pdf"
+        pdf = stage.at(item.target / f"{name}.pdf")
         atomic_write_bytes(pdf, cutter.cut(item, first, last, cancel), inside=item.output_root)
         if spec.keep.markdown:
-            part = replace(item, source=pdf, target=item.target / f"{name}.md", split=None)
+            part = replace(
+                item, source=pdf, target=stage.at(item.target / f"{name}.md"), split=None
+            )
             result = runner.convert(part, cancel)
             atomic_write(part.target, result.markdown, inside=item.output_root)
             notes.extend((first, note) for note in result.notes)
@@ -135,33 +139,40 @@ def _pdf(
 
 
 def _markdown(
-    item: PlannedConversion, spec: SplitSpec, cutter: PageCutter, cancel: CancelToken
+    item: PlannedConversion,
+    spec: SplitSpec,
+    cutter: PageCutter,
+    cancel: CancelToken,
+    stage: PartStage,
 ) -> tuple[int, tuple[ConversionNote, ...]]:
     """A Markdown file's parts, cut at its headings in the worker; always Markdown (024)."""
     parts, over = cutter.markdown_parts(item, spec.cut.value, spec.size, cancel)
     if not parts:
         raise ConversionError(ErrorCode.NOTHING_TO_MEASURE, "an empty Markdown file")
-    remove_earlier_parts(item, spec)
     for index, text in enumerate(parts, start=1):
         name = part_name(spec, item.target.name, index, len(parts))
-        atomic_write(item.target / f"{name}.md", text, inside=item.output_root)
+        text = relinked(text, item.source.parent, item.target)  # its images still show
+        atomic_write(stage.at(item.target / f"{name}.md"), text, inside=item.output_root)
     return len(parts), over_size(over)
 
 
 def split_one(
     item: PlannedConversion, runner: ConversionRunner, cutter: PageCutter, cancel: CancelToken
 ) -> ConversionOutcome:
-    """Cut ``item.source`` and write its parts into ``item.target``; ``Cancelled`` propagates."""
+    """Cut ``item.source`` and write its parts into ``item.target``; ``Cancelled`` propagates.
+    The earlier parts are replaced only when every new one is written (``PartStage``)."""
     spec = item.split
     assert spec is not None
     where = [""]
+    stage = PartStage(item, spec)
     try:
         if item.detection.format is FormatId.MARKDOWN:
-            count, notes = _markdown(item, spec, cutter, cancel)
+            count, notes = _markdown(item, spec, cutter, cancel, stage)
         elif item.detection.format in OWN_FORMAT_PARTS:  # text, CSV, Excel (feature 027)
-            count, notes = split_file(item, spec, runner, cutter, cancel)
+            count, notes = split_file(item, spec, runner, cutter, cancel, stage)
         else:
-            count, notes = _pdf(item, spec, runner, cutter, cancel, where)
+            count, notes = _pdf(item, spec, runner, cutter, cancel, where, stage)
+        stage.commit()
     except ConversionError as error:
         status = OutcomeStatus.STOPPED if error.code in STOPPING_CODES else OutcomeStatus.FAILED
         return ConversionOutcome(
@@ -170,4 +181,6 @@ def split_one(
     except OSError as error:
         detail = f"{where[0]}{type(error).__name__}: {error}"
         return ConversionOutcome(item, OutcomeStatus.FAILED, ErrorCode.WRITE_FAILED, detail)
+    finally:
+        stage.discard()  # nothing left after a commit; otherwise the new parts go
     return ConversionOutcome(item, OutcomeStatus.CONVERTED, notes=notes, parts=count)

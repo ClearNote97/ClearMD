@@ -21,3 +21,6 @@ class MergeSpec:
     # language ("Merged 2026-11-08 10-30").
     target: Path = Path()
     stamp: str = ""
+    # The visible line that opens each document in a merged Markdown (audit 2026-11-08, B3-08),
+    # in the user's language.
+    heading: str = "Document {index} of {total}: {name}"

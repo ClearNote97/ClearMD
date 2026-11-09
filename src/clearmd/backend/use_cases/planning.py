@@ -35,7 +35,7 @@ from clearmd.backend.use_cases.paths import (
     target_for,
 )
 from clearmd.backend.use_cases.ports import FormatDetector
-from clearmd.backend.use_cases.scanning import Candidate, scan
+from clearmd.backend.use_cases.scanning import Candidate, first_time, scan
 from clearmd.backend.use_cases.scheduling import order_by_cost
 from clearmd.backend.use_cases.splitting import split_cost, split_detection, split_skip
 
@@ -52,6 +52,10 @@ def _relative_dir(candidate: Candidate) -> Path:
 
 def _label(candidate: Candidate, detection: Detection) -> str:
     return candidate.path.suffix.lstrip(".").lower() or detection.format.value
+
+
+def item_left_out(candidate: Candidate, reason: SkipReason, root: Path) -> SkippedItem:
+    return SkippedItem(candidate.path, reason, output_root=root, **_found(candidate))
 
 
 def _found(candidate: Candidate) -> dict[str, Any]:
@@ -95,10 +99,14 @@ def build_plan(
         )
         for item in scanned.skipped
     ]
+    seen: set[str] = set()
     for candidate in scanned.candidates:
         if cancel is not None and cancel.is_set():  # cancelled: what is left is not examined
             break
         root = output_root_for(candidate.input, is_dir=candidate.input_is_dir, override=output_root)
+        if not first_time(candidate.path, seen):
+            skipped.append(item_left_out(candidate, SkipReason.ALREADY_INCLUDED, root))
+            continue
         detection = split_detection(candidate.path) if split or merge else None
         detection = detection or detector.detect(candidate.path)
         if detection is None:
@@ -113,9 +121,7 @@ def build_plan(
             continue
         reason = split_skip(detection, split) if split else merge_skip(detection, merge)
         if reason is not None:  # a tool that does not take it (features 023, 024, 026)
-            skipped.append(
-                SkippedItem(candidate.path, reason, output_root=root, **_found(candidate))
-            )
+            skipped.append(item_left_out(candidate, reason, root))
             continue
         if split is not None:
             cost = split_cost(limits, candidate.size, split)

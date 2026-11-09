@@ -32,10 +32,11 @@ def _merge_named(plan: BatchPlan, language: str) -> BatchPlan:
     merge = plan.merge
     if merge is None or not plan.conversions:
         return plan
-    name = load_catalog(language).text("merge.name", stamp=merge.stamp)
+    catalog = load_catalog(language)
+    name = catalog.text("merge.name", stamp=merge.stamp)
     target = merge.target.with_name(name + merge.target.suffix)
     return replace(
         plan,
         conversions=tuple(replace(item, target=target) for item in plan.conversions),
-        merge=replace(merge, target=target),
+        merge=replace(merge, target=target, heading=catalog.text_template("merge.heading")),
     )

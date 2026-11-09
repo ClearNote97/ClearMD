@@ -20,7 +20,7 @@ class Display:
 
     def primary(self) -> Primary:
         s = self._session
-        return primary_of(s.catalog, s.page, s.state, s.inputs, s.plan, s.report)
+        return primary_of(s.catalog, s.page, s.state, s.inputs, s.plan, s.report, s.tool)
 
     def set_state(self, state: AppState) -> None:
         s = self._session

@@ -4,6 +4,7 @@ Untrusted input: symbolic links are never followed, ClearMD_Output folders are n
 hidden items are left out. A skipped folder is reported once, never file by file.
 """
 
+import os
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -191,3 +192,13 @@ def scan(
             break
         scanner.add_input(source)
     return ScanResult(tuple(scanner.candidates), tuple(scanner.skipped), tuple(scanner.errors))
+
+
+def first_time(path: Path, seen: set[str]) -> bool:
+    """Whether ``path`` is a real file not met yet in this plan: a folder and a file inside it,
+    chosen together, give that file once (audit 2026-11-08, B1-11)."""
+    key = os.path.normcase(os.path.realpath(path))
+    if key in seen:
+        return False
+    seen.add(key)
+    return True

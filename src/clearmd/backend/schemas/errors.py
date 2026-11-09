@@ -57,6 +57,8 @@ class SkipReason(StrEnum):
     NO_PAGES_TO_CUT = "no_pages_to_cut"  # text and CSV have no pages (feature 027)
     CUT_BY_SHEETS = "cut_by_sheets"  # Excel is cut by whole sheets only (feature 027)
     NOT_FOR_PDF_MERGE = "not_for_pdf_merge"  # one PDF can only be made of PDFs (feature 026)
+    # A file chosen again through a folder that holds it: used once (audit 2026-11-08, B1-11).
+    ALREADY_INCLUDED = "already_included"
 
     @property
     def key(self) -> str:

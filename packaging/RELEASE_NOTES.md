@@ -2,6 +2,23 @@
 
 Each file can be checked against `SHA256SUMS.txt` ([how](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)). / Cada archivo se puede comprobar con `SHA256SUMS.txt` ([cómo](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)).
 
+**New in 2.9.0 / Novedades de la 2.9.0** — the first round of the audit's improvements / la primera ronda de mejoras de la auditoría
+- **Your earlier work is never lost.** Splitting again replaces the earlier parts only when
+  every new one is ready; a second merge in the same minute gets its own file, "(2)". / **Tu
+  trabajo anterior nunca se pierde.** Volver a dividir reemplaza las partes anteriores solo
+  cuando todas las nuevas están listas; una segunda unión en el mismo minuto tiene su propio
+  archivo, "(2)".
+- **Merge tells you in time.** It asks for two documents before it starts, always leaves its
+  summary with the reason, and each document of a merged Markdown opens with a visible line,
+  "Document 2 of 3: …". / **Unir te avisa a tiempo.** Pide dos documentos antes de empezar,
+  siempre deja su resumen con el motivo, y cada documento de un Markdown unido abre con una
+  línea visible, "Documento 2 de 3: …".
+- **What you get is right.** A file chosen twice (alone and inside its folder) is done once;
+  a CSV saved by Excel with semicolons keeps its columns; splitting or merging a Markdown keeps
+  its images. / **Lo que recibes está bien.** Un archivo elegido dos veces (solo y dentro de su
+  carpeta) se procesa una vez; un CSV guardado por Excel con punto y coma conserva sus
+  columnas; dividir o unir un Markdown conserva sus imágenes.
+
 **New in 2.8.1 / Novedades de la 2.8.1**
 - **What Next?** shows the three tools as small tiles (the one you just used first, "Again") and
   one box, "Keep the files you chose": one click opens the tool you want, with or without your

@@ -31,7 +31,9 @@ Step 1 of Merge:
   each within the time limit; Markdown files are taken as they are. The documents are joined
   in the list's order into `ClearMD_Output/OutputUnif/Merged <date time>.md`. Each document
   starts with a comment naming its source (`<!-- ClearMD: name.pdf -->`), which a Markdown
-  viewer does not show. Nothing else is added.
+  viewer does not show. Nothing else is added. *Amended by feature 034: a visible line follows
+  the comment ("Document 2 of 3: b.pdf"), the documents are separated by a rule, and a merged
+  file never replaces another (" (2)").*
 - [x] **AC-02** **Into one PDF:** the PDFs' pages are copied whole, in order, into
   `OutputUnif/Merged <date time>.pdf`. Any file that is not a PDF is left out with a reason
   (choose One Markdown).

@@ -19,6 +19,7 @@ from clearmd.backend.schemas.formats import (
     MERGE_DIR_NAME,
     RESULTS_DIR_NAME,
     SPLIT_DIR_NAME,
+    STAGED_MARK,
     TEMP_SUFFIX,
 )
 from clearmd.backend.schemas.models import ExtractedImage
@@ -99,6 +100,7 @@ def remove_regular_file(target: Path, *, inside: Path) -> None:
         target.unlink()
 
 
+_STAGED_PART = re.compile(r"\..+" + re.escape(STAGED_MARK) + r"\.[A-Za-z]+")
 _OWN_IMAGE = re.compile(r"image-\d{3,4}\.(?:png|jpg|gif|bmp|webp)")
 
 
@@ -130,7 +132,7 @@ def write_images(folder: Path, images: Sequence[ExtractedImage], *, inside: Path
 
 
 def sweep_temporary_files(root: Path) -> None:
-    """Remove temporary files left by a power cut or a forced stop.
+    """Remove temporary files (and a split's staged parts) left by a power cut or a forced stop.
 
     Walks with ``lstat`` only: a link or junction planted in the tree is never entered.
     """
@@ -145,7 +147,9 @@ def sweep_temporary_files(root: Path) -> None:
                 if stat.S_ISDIR(status.st_mode):
                     if folder != root or entry.name in _RESULT_FOLDERS:
                         pending.append(Path(entry.path))
-                elif stat.S_ISREG(status.st_mode) and entry.name.endswith(TEMP_SUFFIX):
+                elif stat.S_ISREG(status.st_mode) and (
+                    entry.name.endswith(TEMP_SUFFIX) or _STAGED_PART.fullmatch(entry.name)
+                ):
                     Path(entry.path).unlink(missing_ok=True)
 
 

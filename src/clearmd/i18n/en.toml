@@ -70,6 +70,7 @@ cut_not_for_markdown = "Markdown has no pages to cut every N"
 no_pages_to_cut = "it has no pages to cut every N"
 cut_by_sheets = "an Excel workbook is cut by whole sheets"
 not_for_pdf_merge = "not a PDF (one PDF is made of PDFs only)"
+already_included = "already inside a folder you chose (used once)"
 
 [skip_action]
 output_folder = "ClearMD does not convert its own results."
@@ -93,6 +94,7 @@ cut_not_for_markdown = "Choose Into N parts or Parts of about N words."
 no_pages_to_cut = "Choose Into N parts or Parts of about N words."
 cut_by_sheets = "Choose Into N parts: the sheets are grouped."
 not_for_pdf_merge = "Choose One Markdown to merge it too."
+already_included = "Nothing to do."
 
 [stop]
 timed_out = "Exceeded the time limit ({limit})."
@@ -140,7 +142,7 @@ yes_letter = "y"
 cancelling = "Cancelling… the summary is being written."
 converted_with_notes = "ℹ {name} — converted with notes (see the summary)"
 cancelled_before_start = "Cancelled before anything was written."
-summary_not_written = "⚠ The summary in {path} could not be written (is the disk full?)."
+summary_not_written = "⚠ The summary in {path} could not be written. Check that the folder exists and that you can save files in it."
 unexpected_error = "Something unexpected went wrong and ClearMD stopped: {detail}. Your files were not changed; please report this."
 time_left = "{duration} left"
 warning_slow = "⚠ {name} — may take more than {limit} ({estimate}) and be stopped"
@@ -356,7 +358,7 @@ current = "Now Converting"
 
 [gui.result]
 kept = "its result already existed and was kept."
-no_summary = "the summary could not be written there. Check that the disk has free space."
+no_summary = "the summary could not be written there. Check that the folder exists and that you can save files in it."
 cannot_open = "ClearMD could not open {path}. Open it from your file browser."
 stat_converted = "Converted"
 stat_skipped = "Skipped"
@@ -443,6 +445,8 @@ unexpected_error = "Something unexpected went wrong: {detail}. Your original doc
 [gui.nav]
 next = "Next"
 need_inputs = "Add at least one file or folder."
+merge_needs_two = "Add at least two documents to merge them."
+merge_one_left = "Only one document is left to merge: go back to step 1 and add another."
 need_plan = "Press Next on Choose to see what will happen."
 analyzing = "Looking for documents… the plan opens on Review."
 nothing = "Nothing here can be converted. Go back to Choose."
@@ -594,6 +598,8 @@ split = "Split the Large PDFs ({count})"
 [merge]
 # A merged file's name, without extension (feature 026): {stamp} is "2026-11-08 10-30".
 name = "Merged {stamp}"
+# The visible line that opens each document in a merged Markdown (audit 2026-11-08).
+heading = "Document {index} of {total}: {name}"
 
 [gui.merge]
 # Step 1 of Merge (feature 026).

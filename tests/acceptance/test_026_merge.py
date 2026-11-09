@@ -47,7 +47,9 @@ def test_ac_01_into_one_markdown_in_the_lists_order(workdir: Path) -> None:
     markers = ["<!-- ClearMD: a.md -->", "<!-- ClearMD: b.pdf -->", "<!-- ClearMD: c.txt -->"]
     positions = [text.index(marker) for marker in markers]
     assert positions == sorted(positions)  # the list's order, not the cost's
-    assert text.startswith("<!-- ClearMD: a.md -->\n\n# Alpha\n\nalpha text\n\n")  # as it is
+    assert text.startswith(
+        "<!-- ClearMD: a.md -->\n\n*Document 1 of 3: a.md*\n\n# Alpha\n\nalpha text\n\n"
+    )  # as it is, after its visible line (amended by 034)
     assert "Beta page" in text
 
 

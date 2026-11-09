@@ -117,6 +117,7 @@ follows Choose → Review → Results in the three windows; the command line get
 - [x] **031 — Ready for PyPI** (ADR-0051): v2.7.0: metadata, PyPI's page, the build checked on every tag, Trusted Publishing off until the owner turns it on.
 - [x] **032 — Merge's order and "What Next?"**: v2.8.0: move a document up or down in Merge; Results offers to go back Home; the start screen alike in the three windows.
 - [x] **033 — "What Next?" as the three tools**: v2.8.1: the three tools as small tiles and one "Keep the files" box.
+- [x] **034 — Never lose or misreport work** (audit 2026-11-08, improvements 1–3): v2.9.0: parts written aside, merges never overwritten, Merge's summary and two documents, once per file, CSV separators, images kept.
 
 ## Out for now
 
