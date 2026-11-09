@@ -49,16 +49,18 @@ def test_ac_05_the_bar_moves_inside_a_long_file() -> None:
 
 
 def test_ac_05_split_the_large_pdfs_gives_the_list_back() -> None:
+    import os
     from dataclasses import replace
 
     from clearmd.backend.schemas.models import PlanWarning
     from clearmd.frontend.presenter.state import Tool
 
-    big = PlanWarning(replace(planned("big.pdf"), cost=2400.0), 2400.0, 600.0)
-    small = planned("a.docx")
+    docs = Path(os.path.abspath("/docs"))  # "C:\\docs" on Windows, as the window makes it
+    big = PlanWarning(replace(planned("big.pdf", folder=docs), cost=2400.0), 2400.0, 600.0)
+    small = planned("a.docx", folder=docs)
     plan = BatchPlan((big.item, small), (), (), (big,))
     presenter, view, fake, _ = make(FakeBackend(plan=plan))
-    presenter.add_paths([Path("/docs/big.pdf"), Path("/docs/a.docx")])
+    presenter.add_paths([docs / "big.pdf", docs / "a.docx"])
     presenter.analyze()
     view.drain()
     presenter.split_large()
