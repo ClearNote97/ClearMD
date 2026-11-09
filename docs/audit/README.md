@@ -11,3 +11,5 @@ External reviews of the product, kept so their decisions can be traced. Each aud
   new agents and the first audit's lessons applied.
 - [`2026-11-09-audit-boards-v3.md`](./2026-11-09-audit-boards-v3.md): the third audit, on 2.11.0, with
   five experts per board and three conciliators (truth, "Claridad es cariño", doctrine).
+- [`2026-11-09-audit-boards-v4.md`](./2026-11-09-audit-boards-v4.md): the fourth audit, on 2.12.0, with
+  the same method as the third and the owner's decisions passed to every auditor as constraints.

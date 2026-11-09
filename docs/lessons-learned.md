@@ -21,6 +21,7 @@ The lessons are grouped by theme:
 | XII | Applying the second audit (2.11.0) |
 | XIII | What the third audit taught (2026-11-09) |
 | XIV | Applying the third audit (2.12.0) |
+| XV | What the fourth audit taught (2026-11-09) |
 
 Each lesson says what happened, then what a template should do. Within a part, the lessons that would have
 saved the most come first.
@@ -947,3 +948,81 @@ an ADR on hidden PDF text). Written before the fourth audit.
   converter of our own (B3-01), a guessed encoding for Markdown read as-is by Merge, white-on-white
   text, the uninstaller's signature, and Review's informative rows in flet (its rows have no tone).
   They are listed in the spec for the fourth audit to check.
+
+## Part XV — What the fourth audit taught (2026-11-09)
+
+The fourth audit used new agents from scratch on 2.12.0, with the third's method: five experts per
+board and three conciliators bound by "Claridad es cariño". The owner's decisions were passed to
+every auditor as constraints. The score stayed at 7: the release made larger promises, and the
+hardest cases still break some of them. Of the third audit's ten recommendations, four were fully
+resolved and six partly; none got worse. Of the owner's five decisions, one was fully kept, three
+partly, and one waits for SignPath. The conciliators verified 26 groups of findings: 22 confirmed,
+4 partly true, none refuted. Report: [`audit/2026-11-09-audit-boards-v4.md`](./audit/2026-11-09-audit-boards-v4.md).
+
+### Product
+
+#### XV.1 A success headline needs a useful result
+
+- A scanned PDF or an empty presentation gave a blank Markdown, and the summary said "converted".
+  The empty-input rule (an empty file "failed") was applied to inputs only.
+- **For the template:** a result with no text after cleaning is "failed", with its reason, in
+  every tool. A rule about inputs is checked against outputs too.
+
+#### XV.2 The hardest case of a text is the shortest one
+
+- One-line fixtures fixed sentences, but two to five bytes ("Sí", "¿Qué?") still decode wrongly.
+- **For the template:** for every promise about text, the fixture set starts at two bytes, with
+  "¿" and "¡", before it grows to a line.
+
+#### XV.3 One door for every result, and one test that walks every tool
+
+- The output guarantee sat in the worker, so Convert and Split went through it, but Merge's joined
+  text did not, and unusual image syntax slipped past the regular expressions.
+- **For the template:** the guarantee is applied where the file is written, not where it is made,
+  and a test runs every tool with the same hostile fixture.
+
+#### XV.4 One source for a channel, and a test that forbids the others
+
+- The report channel was updated in three messages and missed in a fourth ("Copy Details"), which
+  still sent people to a page that needs an account.
+- **For the template:** a contact or a promise lives in one catalog key, and a test fails when any
+  other text names an older address.
+
+### Applying an audit
+
+#### XV.5 When the code follows an ADR to the letter and still fails, amend the ADR
+
+- The hidden-text filter turns off on a page with any picture, as ADR-0054 says; a letterhead's
+  logo is enough to let hidden text through. The fix starts with the decision, not the code.
+- **For the template:** check a new ADR's rule against the most common real document (a letter
+  with a logo), not only the case it was written for.
+
+#### XV.6 Disagreements settled outside the top ten get a list and a test
+
+- The cheap measures against two runs sweeping each other's temporary files were agreed in the
+  third audit but were not in its top ten, and were lost.
+- **For the template:** every settled disagreement goes to a pending list with its test, whatever
+  its rank.
+
+#### XV.7 An acceptance criterion is checked on every path that reaches it
+
+- "Never lose the list" held for the main path but not for one reached through a check box after
+  Split.
+- **For the template:** list the paths into each criterion and give each one a test.
+
+### Running an audit
+
+#### XV.8 Constraints from the owner work; conciliators must keep the citations
+
+- Passing the owner's decisions to every auditor removed the recommendations that came back each
+  round. The first conciliator lost two ADR citations while regrouping findings.
+- **For the template:** a conciliator keeps every ADR citation of the findings it merges, and the
+  doctrine conciliator checks the owner's decisions one by one, in the code.
+
+#### XV.9 A verified list that fits in one reading
+
+- About 25 groups can be read at once; a top recommendation that bundles six problems must be
+  acceptable in parts.
+- **For the template:** cap the verified list at a reading, and make every recommendation
+  divisible.
+
