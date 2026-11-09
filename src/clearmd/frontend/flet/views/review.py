@@ -1,4 +1,7 @@
-"""Step 2, Review: what happens to each file, before anything is written (AC-07, AC-08)."""
+"""Step 2, Review: what happens to each file, before anything is written (AC-07, AC-08); under
+the list, the selected row's full reason, what to do and its folder (feature 035, AC-05)."""
+
+from pathlib import PurePath
 
 import flet as ft
 
@@ -6,10 +9,16 @@ from clearmd.frontend.design.metrics import GAP
 from clearmd.frontend.flet.components.file_list import FileList, ListRow
 from clearmd.frontend.flet.components.primitives import Choice, Wording, card, label
 from clearmd.frontend.flet.components.stats import Stats
-from clearmd.frontend.presenter.models import PlanView, RowKind
+from clearmd.frontend.presenter.models import PlanRow, PlanView, RowKind
 from clearmd.i18n import Catalog
 
 _ATTENTION = frozenset({RowKind.SKIPPED, RowKind.MISSING})
+_FIRST = _ATTENTION | {RowKind.EXISTS}  # the row selected when the plan is shown
+
+
+def folder_name(location: str) -> str:
+    """The list's folder column: the last folder's name (the full path is in the detail line)."""
+    return PurePath(location).name or location
 
 
 class ReviewView:
@@ -22,7 +31,9 @@ class ReviewView:
         self._asks = False
         self._plan_id = -1
         self.stats = Stats()
-        self.files = FileList(2, widths=(240, 220))
+        self.files = FileList(2, widths=(240, 220), on_selection=self._show_detail)
+        self.detail = label("onPage")  # never cut: the reason, what to do, the folder in full
+        self.detail.selectable = True
         question = label("strong")
         self._wording.add(question, "gui.plan.existing_question")
         self.answer = Choice(("keep", "overwrite", "changed"))  # changed: feature 028
@@ -32,7 +43,7 @@ class ReviewView:
         self.existing = card([question, self.answer.control])
         self.existing.visible = False
         self.control = ft.Column(
-            [self.stats.control, self.files.control, self.existing],
+            [self.stats.control, self.files.control, self.detail, self.existing],
             spacing=GAP,
             expand=True,
             horizontal_alignment=ft.CrossAxisAlignment.STRETCH,  # full-width cards, as in Qt
@@ -43,11 +54,14 @@ class ReviewView:
         rows = sorted(plan.rows, key=lambda row: row.kind not in _ATTENTION)
         self.files.show_rows(
             [
-                ListRow(row.icon, row.name, (row.location, row.detail),
-                        warning=row.kind in _ATTENTION)
+                ListRow(row.icon, row.name, (folder_name(row.location), row.detail),
+                        tone="warning" if row.kind in _ATTENTION else "", payload=row)
                 for row in rows
             ]
         )  # fmt: skip
+        first = next((index for index, row in enumerate(rows) if row.kind in _FIRST), 0)
+        self.files.select(first)
+        self._show_detail()
         if plan.plan_id != self._plan_id:  # another plan: the answer starts over
             self.answer.set("keep")
         self._plan_id = plan.plan_id
@@ -57,9 +71,19 @@ class ReviewView:
     def forget(self) -> None:
         self._wait()
         self.files.show_rows([])
+        self.detail.value = ""
         self.existing.visible = False
         self._asks = False
         self._plan_id = -1
+
+    def _show_detail(self) -> None:
+        """The selected row in full: its name and why, what to do; its folder on the next line."""
+        current = self.files.current()
+        row = current.payload if current is not None else None
+        if isinstance(row, PlanRow):
+            self.detail.value = f"{row.name}: {row.detail}\n{row.location}"
+        else:
+            self.detail.value = ""
 
     def overwrite_answer(self) -> bool | str | None:
         """Keep: False; Replace: True; only if the original changed: "changed" (028). ``None``:

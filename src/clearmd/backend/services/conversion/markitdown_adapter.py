@@ -76,6 +76,10 @@ def map_exception(error: Exception) -> ConversionError:
     return ConversionError(_code_for(error), _describe(error))
 
 
+_OLE = b"\xd0\xcf\x11\xe0"
+_ZIPPED = frozenset({FormatId.DOCX, FormatId.PPTX})
+
+
 def _open_regular_file(source: Path) -> BinaryIO:
     try:
         return open_regular_file(source)
@@ -118,6 +122,10 @@ class MarkItDownConverter:
         # files by the sink; an EPUB's are read from its package.
         options = {"keep_data_uris": True} if images is not None else {}
         with _open_regular_file(source) as opened:
+            if detection.format in _ZIPPED and opened.read(4) == _OLE:
+                # an encrypted Word or PowerPoint file is an OLE file, not a ZIP (B1-07a)
+                raise ConversionError(ErrorCode.PASSWORD_PROTECTED, "an encrypted OLE file")
+            opened.seek(0)
             stream: BinaryIO = opened
             if detection.format is FormatId.CSV:  # semicolons, tabs: rewritten with commas
                 rewritten = with_commas(opened.read())

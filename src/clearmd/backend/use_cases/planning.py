@@ -35,9 +35,14 @@ from clearmd.backend.use_cases.paths import (
     target_for,
 )
 from clearmd.backend.use_cases.ports import FormatDetector
-from clearmd.backend.use_cases.scanning import Candidate, first_time, scan
+from clearmd.backend.use_cases.scanning import Candidate, first_time, scan, unsupported_reason
 from clearmd.backend.use_cases.scheduling import order_by_cost
-from clearmd.backend.use_cases.splitting import split_cost, split_detection, split_skip
+from clearmd.backend.use_cases.splitting import (
+    split_cost,
+    split_detection,
+    split_memory,
+    split_skip,
+)
 
 
 def _relative_dir(candidate: Candidate) -> Path:
@@ -54,8 +59,17 @@ def _label(candidate: Candidate, detection: Detection) -> str:
     return candidate.path.suffix.lstrip(".").lower() or detection.format.value
 
 
-def item_left_out(candidate: Candidate, reason: SkipReason, root: Path) -> SkippedItem:
-    return SkippedItem(candidate.path, reason, output_root=root, **_found(candidate))
+def item_left_out(
+    candidate: Candidate,
+    reason: SkipReason,
+    root: Path,
+    measured: tuple[float, float] | None = None,
+) -> SkippedItem:
+    """A file left out; ``measured``: what it needs and the limit, when a limit left it out."""
+    needed, limit = measured if measured is not None else (None, None)
+    return SkippedItem(
+        candidate.path, reason, measured=needed, limit=limit, output_root=root, **_found(candidate)
+    )
 
 
 def _found(candidate: Candidate) -> dict[str, Any]:
@@ -110,21 +124,19 @@ def build_plan(
         detection = split_detection(candidate.path) if split or merge else None
         detection = detection or detector.detect(candidate.path)
         if detection is None:
-            skipped.append(
-                SkippedItem(
-                    candidate.path,
-                    SkipReason.UNSUPPORTED_FORMAT,
-                    output_root=root,
-                    **_found(candidate),
-                )
-            )
+            skipped.append(item_left_out(candidate, unsupported_reason(candidate.path), root))
             continue
         reason = split_skip(detection, split) if split else merge_skip(detection, merge)
         if reason is not None:  # a tool that does not take it (features 023, 024, 026)
             skipped.append(item_left_out(candidate, reason, root))
             continue
         if split is not None:
-            cost = split_cost(limits, candidate.size, split)
+            needed = split_memory(limits, detection.format, candidate.size)
+            if needed is not None:  # an Excel workbook too heavy to cut (B2-01)
+                memory = (needed, limits.worker_memory)
+                skipped.append(item_left_out(candidate, SkipReason.TOO_MUCH_MEMORY, root, memory))
+                continue
+            cost = split_cost(limits, candidate.size, split, detection.format)
             target = split_target_for(candidate.path, root, _relative_dir(candidate))
             drafts.append((candidate, detection, root, cost, Strategy.FULL))
             requests.append(NameRequest(candidate.path, target, _label(candidate, detection)))
@@ -136,16 +148,7 @@ def build_plan(
                 unsafe = unsafe_reason(archive, limits)
                 if unsafe is not None:
                     reason, measured, limit = unsafe
-                    skipped.append(
-                        SkippedItem(
-                            candidate.path,
-                            reason,
-                            measured=measured,
-                            limit=limit,
-                            output_root=root,
-                            **_found(candidate),
-                        )
-                    )
+                    skipped.append(item_left_out(candidate, reason, root, (measured, limit)))
                     continue
                 size = archive.text_bytes
                 # markitdown's docx pre-processing reads every entry into memory (review of 001).
@@ -157,18 +160,11 @@ def build_plan(
             # In article mode the reason says so, and what to do: --html full (ADR-0025: never
             # handed to markitdown behind the user's back, where the guarantee does not hold).
             article = strategy is not Strategy.FULL
-            skipped.append(
-                SkippedItem(
-                    candidate.path,
-                    SkipReason.TOO_MUCH_MEMORY_FOR_ARTICLE
-                    if article
-                    else SkipReason.TOO_MUCH_MEMORY,
-                    measured=needed,
-                    limit=limits.worker_memory,
-                    output_root=root,
-                    **_found(candidate),
-                )
+            reason = (
+                SkipReason.TOO_MUCH_MEMORY_FOR_ARTICLE if article else SkipReason.TOO_MUCH_MEMORY
             )
+            memory = (needed, limits.worker_memory)
+            skipped.append(item_left_out(candidate, reason, root, memory))
             continue
         target = target_for(candidate.path, root, _relative_dir(candidate))
         cost = limits.estimated_seconds(detection.format, size, strategy)

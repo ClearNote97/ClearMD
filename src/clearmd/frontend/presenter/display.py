@@ -49,4 +49,4 @@ class Display:
         if s.current is None:
             return
         elapsed = self._clock() - s.started_at
-        self.view.show_progress(progress_view(s.catalog, s.current, s.done, elapsed))
+        self.view.show_progress(progress_view(s.catalog, s.current, s.done, elapsed, s.pages))

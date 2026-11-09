@@ -7,7 +7,7 @@ from typing import Any
 from clearmd.frontend.design.palette import LIGHT, PALETTES
 from clearmd.frontend.presenter import AppState, Presenter
 from clearmd.frontend.presenter.chrome.header import header_of
-from clearmd.frontend.presenter.chrome.secondary import SecondaryKind, ready_line, secondary_of
+from clearmd.frontend.presenter.chrome.secondary import SecondaryKind, secondary_of
 from clearmd.frontend.presenter.models import (
     InputRow,
     OutputChoice,
@@ -18,7 +18,7 @@ from clearmd.frontend.presenter.models import (
 )
 from clearmd.frontend.presenter.state import HOME, WORKING
 from clearmd.frontend.ttk.visuals.look import Look
-from clearmd.frontend.ttk.window import controls, home_chrome, offer
+from clearmd.frontend.ttk.window import controls, home_chrome, offer, ready
 from clearmd.frontend.ttk.window.dialog_host import DialogHost
 from clearmd.frontend.ttk.window.frame import Frame
 from clearmd.frontend.ttk.window.primary_button import PrimaryButton
@@ -67,13 +67,16 @@ class TtkView:
             self._shown.scan = None
         if previous is not None and previous.page != state.page:
             self._message.configure(text="")  # a message belongs to the page it was given on
+            self._actions.show_details(None)  # and so does its "Copy Details" (036)
             self._primary_button.page_shown()
             home_chrome.calm_focus(self._root)
         converting = state.state is AppState.CONVERTING
         if converting and (previous is None or previous.state is not AppState.CONVERTING):
             self._converting.clear()
         elif state.state is AppState.WAITING_DECISION:
-            self._show_ready()
+            ready.show_ready(
+                self._converting, self._shown, self._presenter, self._review, self._main
+            )
         home = state.page == HOME
         self.show_page(self._home if home else self.pages[state.page - 1])
         self._rail.show_page(state.page)
@@ -100,12 +103,6 @@ class TtkView:
         }
         command = commands.get(second.kind)
         self._actions.show_secondary(second.text or None, command, strong=second.strong)
-
-    def _show_ready(self) -> None:
-        """Convert's card before the batch: how many are ready, and where they go."""
-        count = ready_line(self._shown.catalog, self._shown.last_plan)
-        if count is not None:
-            self._converting.show_ready(count, str(self._main.output_label.cget("text")))
 
     def show_inputs(self, rows: tuple[InputRow, ...]) -> None:
         self._main.show_inputs(rows)
@@ -144,6 +141,7 @@ class TtkView:
     def forget_work(self) -> None:
         self._shown.last_plan = None
         self._shown.last_result = None
+        self._actions.show_details(None)
         self._review.forget()
         self._converting.forget(str(self._main.output_label.cget("text")))
         self._results.forget()

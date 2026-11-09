@@ -9,7 +9,7 @@ import flet as ft
 
 from clearmd.frontend.design.metrics import GAP, RADIUS, SPACE
 from clearmd.frontend.flet.components.action_bar import ActionBar
-from clearmd.frontend.flet.components.primitives import label
+from clearmd.frontend.flet.components.message_line import MessageLine
 from clearmd.frontend.flet.components.rail import Rail
 from clearmd.frontend.flet.components.surface import Surface
 from clearmd.frontend.flet.views.choose import ChooseView
@@ -33,6 +33,7 @@ class Frame:
     home: HomeView  # the start screen, the page before them (feature 023)
     actions: ActionBar
     message: ft.Text
+    message_line: MessageLine  # the message and "Copy Details" beside it (036)
     main: ChooseView
     review: ReviewView
     converting: ConvertView
@@ -70,12 +71,16 @@ def build_frame(
     home.control.visible = False
     review, converting, results = ReviewView(), ConvertView(), ResultsView()
     pages = tuple(view.control for view in (main, review, converting, results))
-    message = label("message")
-    message.visible = False  # until there is one
+    message_line = MessageLine(on_details=lambda: presenter.copy_details())  # 036
+    message = message_line.text
     actions = ActionBar(on_primary=on_primary, on_offer=lambda: presenter.split_large())
     panel = ft.Container(
         content=ft.Column(
-            [ft.Column([home.control, *pages], spacing=0, expand=True), message, actions.control],
+            [
+                ft.Column([home.control, *pages], spacing=0, expand=True),
+                message_line.control,
+                actions.control,
+            ],
             spacing=SPACE,
             expand=True,
         ),
@@ -98,5 +103,6 @@ def build_frame(
         expand=True,
     )
     return Frame(
-        root, rail, surface, panel, pages, home, actions, message, main, review, converting, results
-    )
+        root, rail, surface, panel, pages, home, actions, message, message_line, main, review,
+        converting, results,
+    )  # fmt: skip

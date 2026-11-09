@@ -147,6 +147,11 @@ class ConversionOutcome:
             return 99
         return max(1, min(99, round(100 * self.seconds / self.item.cost)))
 
+    @property
+    def worth_a_look(self) -> bool:
+        """A note the user should read; what ClearMD only tidied up is not (audit 2026-11-08)."""
+        return any(not note.kind.informs for note in self.notes)
+
 
 @dataclass(frozen=True)
 class OutputRootReport:

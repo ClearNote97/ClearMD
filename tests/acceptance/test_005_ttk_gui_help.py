@@ -41,10 +41,12 @@ def test_ac_13_help_is_always_one_click_away(
     assert app.rail.help.instate(["!disabled"])  # even while converting
     app.rail.help.invoke()
     assert app.dialog is not None
-    shown = " ".join(str(child.cget("text")) for child in app.dialog.body.winfo_children())
+    assert isinstance(app.dialog, dialogs.help.HelpDialog)  # the presenter's sections (035)
+    shown = " ".join(f"{t.cget('text')} {b.cget('text')}" for t, b in app.dialog.sections)
     catalog = load_catalog(language)
-    for section in ("how", "formats", "where", "privacy", "language"):
+    for section in ("formats", "where", "privacy", "language"):
         assert catalog.text(f"gui.help.{section}") in shown
+    assert catalog.text("gui.help.how_title") in shown
     assert "Settings" in shown and "Ajustes" in shown  # where to switch, in both languages
     app.dialog.close()
     held.gate.set()
@@ -60,11 +62,9 @@ def test_ac_14_the_welcome_appears_until_dont_show_again(
     dialog = app.dialog
     assert isinstance(dialog, dialogs.welcome.WelcomeDialog)
     texts = [str(child.cget("text")) for child in dialog.body.winfo_children()]
-    assert [text for text in texts if text[:2] in {"1.", "2.", "3."}] == [
-        "1. Choose a tool, then files or a folder",
-        "2. Review what will be done",
-        "3. Done, your folder opens",
-    ]
+    catalog = load_catalog("en")  # the steps as the catalog says them (035: not counted wrong)
+    steps = [catalog.text(f"gui.welcome.step{n}") for n in (1, 2, 3)]
+    assert [text for text in texts if text[:2] in {"1.", "2.", "3."}] == steps
     dialog.dont_show.set(True)
     dialog.close()
     assert backend.settings.show_welcome is False

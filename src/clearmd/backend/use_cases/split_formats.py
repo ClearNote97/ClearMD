@@ -41,8 +41,8 @@ def split_file(
     stage: PartStage,
 ) -> tuple[int, tuple[ConversionNote, ...]]:
     parts, over = _parts(item, spec, cutter, cancel)
-    if not parts:
-        raise ConversionError(ErrorCode.NOTHING_TO_MEASURE, "an empty file")
+    if not any(isinstance(part, bytes) or part.strip() for part in parts):  # nothing in it
+        raise ConversionError(ErrorCode.EMPTY_FILE, "an empty file")
     suffix = "." + item.detection.format.value
     notes: list[ConversionNote] = []
     for index, data in enumerate(parts, start=1):

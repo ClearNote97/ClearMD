@@ -14,7 +14,7 @@ action = "Open it in its original program; if it opens, save a new copy and try 
 
 [error.conversion_failed]
 message = "This file could not be converted."
-action = "See the technical detail in the summary."
+action = "Open it in its own program and save it again; if it still fails, tell us and attach the summary."
 
 [error.permission_denied]
 message = "ClearMD cannot write in this folder."
@@ -26,11 +26,11 @@ action = "Close it in any program that has it open (for example Excel) and check
 
 [error.write_failed]
 message = "ClearMD could not save the result of this file."
-action = "Check that the disk has free space and that the file and folder names are not too long, or choose another output folder."
+action = "If the result is open in another program, close it. Otherwise check that the disk has free space and that the names are not too long, or choose another output folder."
 
 [error.timed_out]
-message = "Converting this file took too long, so it was stopped."
-action = "Try splitting it into smaller files."
+message = "Converting this file stopped moving, so it was stopped."
+action = "Try splitting it into smaller parts with Split."
 
 [error.out_of_memory]
 message = "This file needs more memory than ClearMD allows."
@@ -42,22 +42,26 @@ action = "Fix the documents that failed, or add more, and merge again."
 
 [error.nothing_to_measure]
 message = "This PDF has no text to measure: its pages are probably scanned images."
-action = "Split it every N pages instead."
+action = "Split it with \"Every N pages\" instead."
 
 [error.worker_crashed]
 message = "The converter stopped unexpectedly on this file."
-action = "Try again; if it happens again, the file may be damaged."
+action = "Open it in its own program and save it again, or split it into parts; if it keeps happening, tell us."
+
+[error.empty_file]
+message = "This file is empty: there is nothing to split."
+action = "Check that it is the right file."
 
 [skip]
 output_folder = "ClearMD's output folder"
-symlink = "symbolic link"
+symlink = "a shortcut (not the real file)"
 hidden = "hidden file"
 lock_file = "Office temporary file"
 too_large = "too large ({measured}; limit {limit})"
 already_markdown = "already Markdown"
 zip_archive = "ZIP archive"
 archive_too_large = "would decompress to {measured}; limit {limit}"
-archive_ratio = "grows {measured} times when decompressed; limit {limit} (possible zip bomb)"
+archive_ratio = "grows {measured} times when opened; limit {limit} (not opened, for safety)"
 archive_entries = "holds {measured} files; limit {limit}"
 unsupported_format = "format not supported by ClearMD"
 existing_output = "result already exists (kept)"
@@ -71,10 +75,12 @@ no_pages_to_cut = "it has no pages to cut every N"
 cut_by_sheets = "an Excel workbook is cut by whole sheets"
 not_for_pdf_merge = "not a PDF (one PDF is made of PDFs only)"
 already_included = "already inside a folder you chose (used once)"
+old_office = "an old Word, Excel or PowerPoint file (.doc, .xls, .ppt)"
+image = "a picture: ClearMD reads no text inside pictures"
 
 [skip_action]
 output_folder = "ClearMD does not convert its own results."
-symlink = "Convert the original file."
+symlink = "Choose the original file."
 hidden = "Make it visible to convert it."
 lock_file = "It is deleted when the document closes."
 too_large = "Split it into smaller files."
@@ -84,20 +90,22 @@ archive_too_large = "If you trust it, save a new copy from its program."
 archive_ratio = "If you trust it, save a new copy from its program."
 archive_entries = "If you trust it, save a new copy from its program."
 unsupported_format = "See the supported formats in the help."
-existing_output = "Choose overwrite to replace it (CLI: --overwrite)."
+existing_output = "To make a new one, choose \"Replace them with new ones\" on Review."
 unreadable = "Check that it exists and that you can open it."
 too_deep = "Move it to a shallower folder."
 too_much_memory = "Split it into smaller files."
-too_much_memory_for_article = "Convert it with --html full (markitdown's whole page, without this mode's guarantee)."
+too_much_memory_for_article = "Choose \"The whole page\" in Settings → Web Pages."
 not_splittable = "Convert it instead, or save it as PDF first."
-cut_not_for_markdown = "Choose Into N parts or Parts of about N words."
-no_pages_to_cut = "Choose Into N parts or Parts of about N words."
-cut_by_sheets = "Choose Into N parts: the sheets are grouped."
-not_for_pdf_merge = "Choose One Markdown to merge it too."
+cut_not_for_markdown = "Choose \"Into N parts\" or \"Parts of about N words\"."
+no_pages_to_cut = "Choose \"Into N parts\" or \"Parts of about N words\"."
+cut_by_sheets = "Choose \"Into N parts\": the sheets are grouped."
+not_for_pdf_merge = "Choose \"One Markdown\" to merge it too."
 already_included = "Nothing to do."
+old_office = "Open it in Word, Excel or PowerPoint and save it as .docx, .xlsx or .pptx; then choose it again."
+image = "If it is a photo of a document, ClearMD cannot read its text."
 
 [stop]
-timed_out = "Exceeded the time limit ({limit})."
+timed_out = "It went {limit} without moving."
 out_of_memory = "Exceeded the memory limit ({limit})."
 
 [cli.help]
@@ -143,7 +151,7 @@ cancelling = "Cancelling… the summary is being written."
 converted_with_notes = "ℹ {name} — converted with notes (see the summary)"
 cancelled_before_start = "Cancelled before anything was written."
 summary_not_written = "⚠ The summary in {path} could not be written. Check that the folder exists and that you can save files in it."
-unexpected_error = "Something unexpected went wrong and ClearMD stopped: {detail}. Your files were not changed; please report this."
+unexpected_error = "Something unexpected went wrong and ClearMD stopped: {detail}. Your files were not changed. If it happens again, copy these lines into a new issue at github.com/ClearNote97/ClearMD/issues (check them first: they may include file names)."
 time_left = "{duration} left"
 warning_slow = "⚠ {name} — may take more than {limit} ({estimate}) and be stopped"
 cannot_open = "ClearMD could not open {path}. Open it from your file browser."
@@ -187,6 +195,8 @@ where_title = "Where Your Files Are"
 where = "Your Markdown files are in the {folder} folder, next to this summary."
 attention = "Needs Your Attention"
 left_out = "Left Out"
+# Converted with only good news: what ClearMD tidied up (audit 2026-11-08).
+cleaned = "What ClearMD Tidied Up"
 history_empty = "No earlier batches here."
 col_document = "Document"
 col_folder = "Folder"
@@ -211,6 +221,8 @@ count.converted.one = "{count} converted"
 count.converted.other = "{count} converted"
 count.skipped.one = "{count} skipped"
 count.skipped.other = "{count} skipped"
+count.kept.one = "{count} kept"
+count.kept.other = "{count} kept"
 count.failed.one = "{count} failed"
 count.failed.other = "{count} failed"
 count.stopped.one = "{count} stopped"
@@ -316,9 +328,9 @@ cancelled = "Cancelled"
 [gui.welcome]
 step1 = "1. Choose a tool, then files or a folder"
 step2 = "2. Review what will be done"
-step3 = "3. Done, your folder opens"
+step3 = "3. Confirm, and see where your files are"
 title = "Welcome to ClearMD"
-intro = "Convert, split or merge your documents in three steps:"
+intro = "Convert, split or merge your documents like this:"
 dont_show = "Don't show this again"
 start = "Start"
 
@@ -349,6 +361,7 @@ ready = "✓ Ready to convert · {format}"
 exists = "↻ Its result already exists · {format}: choose below"
 
 [gui.progress]
+pages = "Page {done} of {total}: still moving."
 counter = "{index} of {total}"
 long_file = "Large files can take a few minutes."
 cancelling = "Cancelling… the current file stops now."
@@ -363,6 +376,13 @@ cannot_open = "ClearMD could not open {path}. Open it from your file browser."
 stat_converted = "Converted"
 stat_skipped = "Skipped"
 stat_failed = "Failed"
+stat_kept = "Kept"
+# The word that opens each row of Results: its kind never depends on the colour alone (audit).
+word_failed = "Failed:"
+word_stopped = "Stopped:"
+word_skipped = "Left out:"
+where.one = "Your files are in:\n{paths}"
+where.other = "Your files are in these folders:\n{paths}"
 stat_stopped = "Stopped"
 open = "Open Results Folder"
 again = "What Next?"
@@ -420,13 +440,19 @@ split_keep = "Keep"
 
 [gui.help]
 title = "How to Use ClearMD"
+# Help (audit 2026-11-08): built by presenter/screens/help.py; {next}, {convert}, {split} and
+# {merge} are the buttons' real names, and {drop} the sentence about dropping when the window can.
+markdown_title = "What Markdown Is"
+markdown = "Plain text, ordered with headings, lists and tables, that AIs read better than a PDF or a Word file. A .md file opens in Notepad or any text editor."
 how_title = "How to Use It"
-how_buttons = "1. Add files or a folder with the two buttons.\n2. Press Convert and review what will happen.\n3. Confirm: the results are written and their folder opens."
-how = "1. Add files or a folder, or drop them on the window.\n2. Press Convert and review what will happen.\n3. Confirm: the results are written and their folder opens."
+how = "1. On Home, choose a tool: Convert, Split or Merge.\n2. Add files or a folder with the buttons{drop}, and press {next}.\n3. Review what will happen to each file and press {next}.\n4. Press {convert}, {split} or {merge}: only then are the results written.\n5. Results shows where they are and lets you choose what is next."
+how_drop = ", or drop them on the window"
+tools_title = "The Three Tools"
+tools = "Convert: turns each document into Markdown (folder OutputMD).\nSplit: cuts a PDF, Markdown, text, CSV or Excel file into smaller parts, for example to fit an AI (folder OutputSep).\nMerge: joins several documents, in the list's order, into one Markdown or one PDF (folder OutputUnif)."
 formats_title = "What It Converts"
-formats = "PDF, Word (.docx), PowerPoint (.pptx), Excel (.xlsx), OpenDocument text (.odt), LaTeX (.tex), web pages (.html), CSV, EPUB, Jupyter notebooks (.ipynb), plain text (.txt), e-mails (.eml), Rich Text (.rtf) and subtitles (.srt, .vtt)."
+formats = "PDF, Word (.docx), PowerPoint (.pptx), Excel (.xlsx), OpenDocument text (.odt), LaTeX (.tex), web pages (.html), CSV, EPUB, Jupyter notebooks (.ipynb), plain text (.txt), e-mails (.eml), Rich Text (.rtf) and subtitles (.srt, .vtt).\nIt does not read text inside images or scanned pages. Old Word, Excel and PowerPoint files (.doc, .xls, .ppt) are opened in their program and saved as .docx, .xlsx or .pptx."
 where_title = "Where the Results Go"
-where = "In a ClearMD_Output folder next to each file or folder you chose, or in the folder you pick. Each document becomes a .md file, and a summary says what happened to each one."
+where = "In a ClearMD_Output folder next to each file or folder you chose, or in the folder you set in Settings. Inside, each tool has its folder, and a summary (Resumen_ClearMD) says what happened to each file. Your originals are never changed."
 privacy_title = "Your Privacy"
 privacy = "100 % local: ClearMD never uses the internet. Your documents never leave your computer."
 language_title = "Language · Idioma"
@@ -440,7 +466,14 @@ keyboard = "Ctrl+1 … Ctrl+4 opens a step · Enter runs the main action · Spac
 title = "ClearMD"
 subtitle = "Documents to Markdown, on your computer"
 local = "100 % local · nothing leaves your computer"
-unexpected_error = "Something unexpected went wrong: {detail}. Your original documents were not changed, and what was already converted is kept. Please report this."
+unexpected_error = "Something unexpected went wrong. Your original documents were not changed, and what was already converted is kept. If it happens again, press Copy Details and paste them into a new issue at github.com/ClearNote97/ClearMD/issues (you need a free GitHub account)."
+copy_details = "Copy Details"
+details_copied = "Copied. Paste them into your issue at github.com/ClearNote97/ClearMD/issues. We replaced the names of your files and folders with <file>; still, read them before you send them."
+details_text = "ClearMD {version} · {window} · {system}\nFor whoever helps you: {detail}"
+file_placeholder = "file"
+window_ttk = "Classic App (ttk)"
+window_qt = "Modern App (Qt)"
+window_flet = "Mobile-Style App (flet)"
 
 [gui.nav]
 next = "Next"
@@ -469,6 +502,14 @@ cancel = "Cancel"
 
 [gui.convert]
 ready = "Ready to convert: {count}"
+existing_keep.one = "1 already exists and is kept as it is."
+existing_keep.other = "{count} already exist and are kept as they are."
+existing_replace.one = "1 already exists and will be replaced."
+existing_replace.other = "{count} already exist and will be replaced."
+existing_changed.one = "1 already exists: it is replaced only if its original changed."
+existing_changed.other = "{count} already exist: they are replaced only if their original changed."
+existing_ask.one = "1 already exists: choose on Review whether to keep or replace it."
+existing_ask.other = "{count} already exist: choose on Review whether to keep or replace them."
 
 [gui.steps]
 choose = "Choose"
@@ -635,3 +676,15 @@ into_pdf = "into one PDF"
 "gui.convert.ready" = "Ready to merge: {count}"
 "gui.result.stat_converted" = "Merged"
 "gui.result.all_good" = "Every document was merged. The file is in the ClearMD_Output folder, in OutputUnif."
+
+[terminal]
+# What the terminal says in place of the window (audit 2026-11-08): command-line options instead
+# of buttons. The same keys, its words (Catalog.for_terminal).
+"skip_action.existing_output" = "Use --overwrite to replace it."
+"skip_action.too_much_memory_for_article" = "Convert it with --html full (the whole page, without this mode's guarantee)."
+"skip_action.cut_not_for_markdown" = "Use --split-parts or --split-words."
+"skip_action.no_pages_to_cut" = "Use --split-parts or --split-words."
+"skip_action.cut_by_sheets" = "Use --split-parts: the sheets are grouped."
+"skip_action.not_for_pdf_merge" = "Use --merge markdown to merge it too."
+"error.nothing_to_measure.action" = "Split it with --split-pages instead."
+"error.timed_out.action" = "Try splitting it into smaller parts with --split-parts."

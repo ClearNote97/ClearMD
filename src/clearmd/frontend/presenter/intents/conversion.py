@@ -4,7 +4,12 @@ from collections.abc import Callable
 from functools import partial
 
 from clearmd.backend.api import CancelToken, changed_since_result
-from clearmd.backend.schemas.events import BatchEvent, ConversionFinished, ConversionStarted
+from clearmd.backend.schemas.events import (
+    BatchEvent,
+    ConversionFinished,
+    ConversionProgress,
+    ConversionStarted,
+)
 from clearmd.backend.schemas.models import BatchReport, OutcomeStatus, PlannedConversion
 from clearmd.frontend.presenter.background import Background
 from clearmd.frontend.presenter.display import Display
@@ -76,6 +81,9 @@ class Conversion:
                 self._background.later(
                     generation, lambda: self._started(event.index, event.total, name, left, icon)
                 )
+            elif isinstance(event, ConversionProgress):
+                pages = (event.done, event.pages)
+                self._background.later(generation, lambda: setattr(s, "pages", pages))
             elif isinstance(event, ConversionFinished):
                 self._background.later(generation, self._finished_one)
 
@@ -110,6 +118,7 @@ class Conversion:
     def _started(self, index: int, total: int, name: str, left: float | None, icon: str) -> None:
         s = self._session
         s.current = (index, total, name, left, icon)
+        s.pages = None
         s.started_at = self._clock()
         self._display.show_progress()
 

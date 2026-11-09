@@ -21,7 +21,7 @@ one. Built first for people who never open a terminal._
 
 ### [⬇️ Download ClearMD for Windows](https://github.com/ClearNote97/ClearMD/releases/latest)
 
-<sub>Open the newest release and take <code>ClearMD-Setup-&lt;version&gt;.exe</code>: it installs and uninstalls like any Windows program. Linux: the <code>.tar.gz</code> of the same release.</sub>
+<sub>Open the newest release and take <code>ClearMD-Setup-&lt;version&gt;.exe</code> (about 40 MB, the Classic App): it installs and uninstalls like any Windows program. <code>ClearMD-Setup-Full-&lt;version&gt;.exe</code> adds the Modern App, the Mobile-Style App and the Command Line. Linux: the <code>.tar.gz</code> of the same release.</sub>
 
 [Leer en español](./README.es.md)
 
@@ -161,6 +161,9 @@ _Plus the failed and skipped files with a plain-words reason, and the history of
 | **032** Merge's order (move up/down), "What Next?" with Go Back Home, the start screen alike | ✅ done | v2.8.0 |
 | **033** "What Next?" as the three tools and one box for the files | ✅ done | v2.8.1 |
 | **034** Never lose or misreport work: earlier parts and merges kept, CSV columns, images | ✅ done | v2.9.0 |
+| **035** Honest signals, a Help that guides, the full reason and where the files are | ✅ done | v2.10.0 |
+| **036** Clear messages, page N of M, Copy Details, plain installer names | ✅ done | v2.10.0 |
+| **037** A light installer (the Classic App) and a full one | ✅ done | v2.10.0 |
 
 Full plan in the [roadmap](./spec/roadmap.md). ClearMD has a **command line** and the same **desktop app** in three toolkits,
 ttkbootstrap (`clearmd-ttk`), PySide6 (`clearmd-pyside`, [screenshots](./docs/screenshots/016/)) and flet
@@ -172,10 +175,10 @@ checked by CI.
 ## ▶️ How to run
 
 **Install it on Windows** (recommended): from the [latest release](https://github.com/ClearNote97/ClearMD/releases/latest),
-download `ClearMD-Setup-….exe` and open it. It installs for your user only (no administrator) and lets you choose:
-the classic app (the lightest, the default), the modern app (Qt), the flet app, the command line, or all of them,
-each explained;
-then open ClearMD from the Start menu.
+download `ClearMD-Setup-….exe` and open it: it installs the Classic App, for your user only (no administrator); then
+open ClearMD from the Start menu. Most people need nothing else. `ClearMD-Setup-Full-….exe` lets you choose, each
+explained: the Classic App (the lightest, the default), the Modern App (made with Qt), the Mobile-Style App (made with
+flet), the Command Line, or all of them.
 
 **Or download the app** (nothing to install): `ClearMD-…-windows.exe` for Windows or `ClearMD-…-linux.tar.gz` for
 Linux, then open it with a double click.

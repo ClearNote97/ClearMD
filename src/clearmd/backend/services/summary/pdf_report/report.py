@@ -29,8 +29,9 @@ class PdfReport:
         blocks.band(canvas, content)
         blocks.headline(canvas, content)
         text = self._catalog.text
-        blocks.heading(canvas, text("summary.where_title"))
-        blocks.paragraph(canvas, [Run(text(content.where_key, folder=f"{content.folder}/"))])
+        if content.has_files:
+            blocks.heading(canvas, text("summary.where_title"))
+            blocks.paragraph(canvas, [Run(text(content.where_key, folder=f"{content.folder}/"))])
         if content.attention:
             blocks.heading(canvas, text("summary.attention"))
             for entry in content.attention:
@@ -39,6 +40,7 @@ class PdfReport:
             blocks.heading(canvas, text(content.done_key))
             table(self._catalog, canvas, content)
         for key, entries in (
+            ("summary.cleaned", content.cleaned),
             ("summary.left_out", content.left_out),
             ("summary.kept", content.kept),
             ("summary.cancelled", content.cancelled),

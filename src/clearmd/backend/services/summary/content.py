@@ -73,8 +73,9 @@ class SummaryBuilder:
         attention = (
             [self._failed(o, markdown) for o in by[OutcomeStatus.FAILED]]
             + [self._stopped(o, markdown) for o in by[OutcomeStatus.STOPPED]]
-            + [self._noted(o, markdown) for o in converted if o.notes]
+            + [self._noted(o, markdown) for o in converted if o.worth_a_look]
         )
+        cleaned = [o for o in converted if o.notes and not o.worth_a_look]
         total = len(converted) + sum(
             len(by[kind])
             for kind in (OutcomeStatus.FAILED, OutcomeStatus.STOPPED, OutcomeStatus.CANCELLED)
@@ -97,6 +98,9 @@ class SummaryBuilder:
                 for o in by[OutcomeStatus.CANCELLED]
             ),
             tool=self._tool,
+            cleaned=tuple(
+                Entry(None, *_converted_place(o, markdown), notes=o.notes) for o in cleaned
+            ),
         )
 
     def _headline(
@@ -128,10 +132,11 @@ class SummaryBuilder:
     ) -> str:
         totals = self._catalog.totals(
             len(by[OutcomeStatus.CONVERTED]),
-            len(report.skipped) + len(by[OutcomeStatus.KEPT]),
+            len(report.skipped),
             len(by[OutcomeStatus.FAILED]),
             len(by[OutcomeStatus.STOPPED]),
             tool=self._tool,
+            kept=len(by[OutcomeStatus.KEPT]),
         )
         parts = [report.started_at.strftime(DATE_FORMAT), f"ClearMD {self._version}", totals]
         if report.cancelled:

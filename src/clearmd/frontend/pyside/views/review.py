@@ -1,5 +1,9 @@
-"""Step 2, Review: what happens to each file, before anything is written (AC-07, AC-08)."""
+"""Step 2, Review: what happens to each file, before anything is written (AC-07, AC-08); under the
+list, the selected row's reason and what to do, and its folder, in full (035, AC-05)."""
 
+from pathlib import PurePath
+
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QButtonGroup,
     QLabel,
@@ -11,7 +15,7 @@ from PySide6.QtWidgets import (
 
 from clearmd.frontend.design.metrics import GAP
 from clearmd.frontend.design.palette import Palette
-from clearmd.frontend.presenter.models import PlanView, RowKind
+from clearmd.frontend.presenter.models import PlanRow, PlanView, RowKind
 from clearmd.frontend.pyside.components.file_list import FileList, ListRow
 from clearmd.frontend.pyside.components.fold_row import FoldRow
 from clearmd.frontend.pyside.components.primitives import card, label, radio_button
@@ -19,6 +23,12 @@ from clearmd.frontend.pyside.components.stats import Stats
 from clearmd.i18n import Catalog
 
 _ATTENTION = frozenset({RowKind.SKIPPED, RowKind.MISSING})
+_PROBLEM = _ATTENTION | {RowKind.EXISTS}  # selected first: what the user should read
+
+
+def _folder(location: str) -> str:
+    """The last folder's name only: the full path is in the detail line."""
+    return PurePath(location).name or location
 
 
 class ReviewView(QWidget):
@@ -38,6 +48,14 @@ class ReviewView(QWidget):
         self.layout_.addWidget(self.stats)
         self.files = FileList(2, widths=(240, 220))
         self.layout_.addWidget(self.files, 1)
+        self.detail = label("onPage", wrap=True)  # the selected row in full: nothing cut
+        self.detail.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+            | Qt.TextInteractionFlag.TextSelectableByKeyboard
+        )
+        self.layout_.addWidget(self.detail)
+        self.files.selection_changed.connect(self._show_detail)
+        self._shown: list[PlanRow] = []
         self.existing, existing_layout = card()
         question = label("strong")
         self._text(question, "gui.plan.existing_question")
@@ -60,13 +78,17 @@ class ReviewView(QWidget):
     def show(self, plan: PlanView) -> None:  # type: ignore[override]  # the presenter's, not QWidget's
         self.stats.show_stats(plan.stats)
         rows = sorted(plan.rows, key=lambda row: row.kind not in _ATTENTION)
+        self._shown = rows
         self.files.show_rows(
             [
-                ListRow(row.icon, row.name, (row.location, row.detail),
+                ListRow(row.icon, row.name, (_folder(row.location), row.detail),
                         warning=row.kind in _ATTENTION)
                 for row in rows
             ]
         )  # fmt: skip
+        first = next((i for i, row in enumerate(rows) if row.kind in _PROBLEM), 0)
+        self.files.select(first)
+        self._show_detail()
         if plan.plan_id != self._plan_id:  # another plan: the answer starts over
             self.keep.setChecked(True)
         self._plan_id = plan.plan_id
@@ -78,9 +100,20 @@ class ReviewView(QWidget):
     def forget(self) -> None:
         self._wait()
         self.files.show_rows([])
+        self._shown = []
+        self.detail.setText("")
         self.existing.hide()
         self._asks = False
         self._plan_id = -1
+
+    def _show_detail(self) -> None:
+        chosen = self.files.selected_indexes()
+        index = chosen[0] if chosen else -1
+        if 0 <= index < len(self._shown):
+            row = self._shown[index]
+            self.detail.setText(f"{row.name}: {row.detail}\n{row.location}")
+        else:
+            self.detail.setText("")
 
     def overwrite_answer(self) -> bool | str | None:
         """Keep: False, Replace: True, only if the original changed: "changed"; ``None`` when

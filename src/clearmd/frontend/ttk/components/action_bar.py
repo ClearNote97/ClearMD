@@ -27,10 +27,28 @@ class ActionBar(ttk.Frame):
         self._secondary_command: Callable[[], None] | None = None
         self.offer = ttk.Button(self, style=SOFT, command=self._offer)  # feature 025
         self._offer_command: Callable[[], None] | None = None
+        # After an unexpected error, under its message: "Copy Details" (feature 036, D3).
+        self.details = ttk.Button(self, style=SOFT, command=self._details)
+        self._details_command: Callable[[], None] | None = None
 
     def _secondary(self) -> None:
         if self._secondary_command is not None:
             self._secondary_command()
+
+    def _details(self) -> None:
+        if self._details_command is not None:
+            self._details_command()
+
+    def show_details(self, label: str | None, command: Callable[[], None] | None = None) -> None:
+        """ "Copy Details" at the bar's left, or none (``label`` is None)."""
+        if label is None:
+            self.details.pack_forget()
+            return
+        if command is not None:
+            self._details_command = command
+        self.details.configure(text=label)
+        if not self.details.winfo_manager():
+            self.details.pack(side="left", before=self.hint)
 
     def _offer(self) -> None:
         if self._offer_command is not None:

@@ -117,9 +117,9 @@ def test_problems_are_listed_in_the_results(display: str, tmp_path: Path) -> Non
         confirm(app)
         pump(app, until=lambda: app.presenter.state is AppState.FINISHED_WITH_PROBLEMS)
         assert app.results.problems.names() == ["a.pdf"]
-        assert app.results.detail.cget("text") == (
-            "a.pdf: This file is password-protected. Remove the password and try again."
-        )
+        row = app.last_result.rows[0] if app.last_result else None
+        assert row is not None and row.detail.startswith("Failed:")  # a word first (035)
+        assert app.results.detail.cget("text") == f"a.pdf: {row.detail}"
         assert not app.results.all_good.winfo_ismapped()
         app.actions.primary.invoke()
         assert fake.opened

@@ -59,6 +59,12 @@ class FakeView:
     def show_scan(self, text: str) -> None:
         self._record("scan", text)
 
+    def show_details_button(self, label: str | None) -> None:
+        self._record("details_button", label)
+
+    def copy_text(self, text: str) -> None:
+        self._record("copied", text)
+
     def show_plan(self, plan: Any) -> None:
         self._record("plan", plan)
 

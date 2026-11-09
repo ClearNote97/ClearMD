@@ -1,4 +1,5 @@
-"""Step 4, Results: the figures, and what needs attention (AC-11)."""
+"""Step 4, Results: the figures, where the files are (selectable text, feature 035), and what
+needs attention, each row in its tone (AC-11)."""
 
 import flet as ft
 
@@ -6,8 +7,10 @@ from clearmd.frontend.design.metrics import GAP, SPACE
 from clearmd.frontend.flet.components.file_list import FileList, ListRow
 from clearmd.frontend.flet.components.primitives import Wording, card, label
 from clearmd.frontend.flet.components.stats import Stats
-from clearmd.frontend.presenter.models import ResultView
+from clearmd.frontend.presenter.models import ResultView, Tone
 from clearmd.i18n import Catalog
+
+_TONES = {Tone.DANGER: "danger", Tone.WARNING: "warning"}  # a row's tone, as a colour role
 
 
 class ResultsView:
@@ -18,6 +21,10 @@ class ResultsView:
         self._wording = Wording()
         self._catalog: Catalog | None = None
         self.stats = Stats()
+        # Where the files are: text to read and copy, always shown when there is a place (035).
+        self.where = label("onPage")
+        self.where.selectable = True
+        self.where.visible = False
         message = label("strong")
         self._wording.add(message, "gui.result.all_good")
         self.all_good = card([message], padding=3 * SPACE)
@@ -26,8 +33,8 @@ class ResultsView:
         self.problems = FileList(1, widths=(240,), on_selection=self._show_detail)
         self.detail = label("onPage")
         self.control = ft.Column(
-            [self.stats.control, self.all_good, self.problems_title, self.problems.control,
-             self.detail],
+            [self.stats.control, self.where, self.all_good, self.problems_title,
+             self.problems.control, self.detail],
             spacing=GAP,
             expand=True,
             horizontal_alignment=ft.CrossAxisAlignment.STRETCH,  # full-width cards, as in Qt
@@ -40,10 +47,13 @@ class ResultsView:
         selected = rows.index(current) if current in rows else 0
         keep = len(rows) == len(result.rows)  # the same result again (settings)
         self.stats.show_stats(result.stats)
+        self.where.value = result.where
+        self.where.visible = bool(result.where)
         if result.rows:
             self.problems.show_rows(
-                [ListRow(row.icon, row.name, (row.detail,), warning=True) for row in result.rows]
-            )
+                [ListRow(row.icon, row.name, (row.detail,), tone=_TONES.get(row.tone, "warning"))
+                 for row in result.rows]
+            )  # fmt: skip
             self._showing(True)
             self.problems.select(selected if keep and selected < len(result.rows) else 0)
         else:
@@ -52,6 +62,7 @@ class ResultsView:
     def forget(self) -> None:
         self._wait()
         self.problems.show_rows([])
+        self.where.value, self.where.visible = "", False
         self._showing(None)
 
     def _showing(self, problems: bool | None) -> None:

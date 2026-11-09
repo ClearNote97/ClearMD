@@ -12,6 +12,8 @@
 #      shortcuts and PATH entry are removed; the modern app still opens.
 #   4. A silent uninstall that keeps the settings: nothing left, the settings file is untouched.
 #   5. A silent install and uninstall with /REMOVESETTINGS: the settings folder is removed too.
+#   6. A first install in Spanish writes language = "es" (audit C-1) and names its shortcuts in
+#      Spanish; an existing settings file is never touched.
 # Any failed check stops the script with exit code 1 and prints "FAILED: <what>".
 
 param(
@@ -20,6 +22,9 @@ param(
   # An older build of the same script (the workflow compiles it): installed first, then replaced.
   [Parameter(Mandatory)][string]$OldInstaller,
   [Parameter(Mandatory)][string]$OldVersion,
+  # Feature 037 (ADR-0052): the light edition, and the real 2.8.1 installer to update over.
+  [string]$LightInstaller = '',
+  [string]$ReleasedInstaller = '',
   [string]$Root = (Split-Path -Parent $PSScriptRoot)
 )
 
@@ -41,7 +46,8 @@ $SettingsFile = Join-Path $SettingsFolder 'settings.toml'
 $SettingsText = "language = `"en`"`ntheme = `"dark`"`n"
 
 # The shortcut file name of each part, and what it must open.
-$Shortcut = @{ ttk = 'ClearMD.lnk'; qt = 'ClearMD (Qt).lnk'; flet = 'ClearMD (flet).lnk'; cli = 'ClearMD (command line).lnk' }
+# The names the doubts board chose (2026-11-09, D2); the runner installs in English.
+$Shortcut = @{ ttk = 'ClearMD.lnk'; qt = 'ClearMD Modern App.lnk'; flet = 'ClearMD Mobile-Style App.lnk'; cli = 'ClearMD Command Line.lnk' }
 $Program = @{ ttk = 'ClearMD.exe'; qt = 'ClearMD-Qt\ClearMD-Qt.exe'; flet = 'ClearMD-Flet\ClearMD-Flet.exe'; cli = 'clearmd-cli.exe' }
 
 function Step([string]$Title) { Write-Host ""; Write-Host "== $Title" }
@@ -56,6 +62,56 @@ function Invoke-Setup([string[]]$Choice, [string]$Setup = $Installer) {
   $process = Start-Process -FilePath $Setup -ArgumentList $arguments -Wait -PassThru
   $label = if ($Choice.Count -gt 0) { $Choice -join ' ' } else { 'the default choice' }
   Expect ($process.ExitCode -eq 0) "the silent install ($label) exits with 0 (it was $($process.ExitCode))"
+}
+
+function Invoke-SetupCode([string[]]$Choice, [string]$Setup) {
+  $arguments = @($Choice) + '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/CURRENTUSER'
+  return (Start-Process -FilePath $Setup -ArgumentList $arguments -Wait -PassThru).ExitCode
+}
+
+function Assert-NoOldNames {
+  foreach ($name in 'ClearMD (Qt).lnk', 'ClearMD (flet).lnk', 'ClearMD (command line).lnk') {
+    Expect (-not (Test-Path (Join-Path $StartMenu $name))) "no shortcut with the old name $name"
+  }
+}
+
+function Assert-Editions {
+  if (-not $LightInstaller) { return }
+  $lightMB = (Get-Item $LightInstaller).Length / 1MB
+  $fullMB = (Get-Item $Installer).Length / 1MB
+  Write-Host ("light: {0:N1} MB, full: {1:N1} MB" -f $lightMB, $fullMB)
+  Expect ($lightMB -le 45) "the light installer weighs at most 45 MB (it is $([math]::Round($lightMB, 1)) MB)"
+  Expect ($fullMB -le 190) "the full installer weighs at most 190 MB (it is $([math]::Round($fullMB, 1)) MB)"
+
+  Step 'L1. The light edition: a silent install gives the Classic App alone'
+  Invoke-Setup @() $LightInstaller
+  Assert-Layout @('ttk')
+  Assert-Targets @('ttk')
+  Invoke-Smoke 'ttk'
+  Invoke-Uninstall
+  Assert-Gone
+
+  if (-not $ReleasedInstaller) { return }
+  Step 'L2. Over 2.8.1 with every part: the light edition stops and changes nothing'
+  Invoke-Setup @('/COMPONENTS=ttk,qt,flet,cli', '/TASKS=addpath') $ReleasedInstaller
+  $code = Invoke-SetupCode @() $LightInstaller
+  Expect ($code -ne 0) "the light installer refuses (exit code $code)"
+  Expect (Test-Path (Join-Path $Install 'ClearMD-Qt')) 'the Modern App is still there'
+  Expect (Test-Path (Join-Path $Install 'ClearMD-Flet')) 'the Mobile-Style App is still there'
+  Expect ((Get-ItemProperty -Path $UninstallKey).DisplayVersion -eq '2.8.1') 'the version is still 2.8.1'
+  Step 'L3. The full edition over 2.8.1: the new names, no old shortcut left'
+  Invoke-Setup @('/COMPONENTS=ttk,qt,flet,cli', '/TASKS=addpath')
+  Assert-Layout @('ttk', 'qt', 'flet', 'cli')
+  Assert-NoOldNames
+  Invoke-Uninstall
+  Assert-Gone
+
+  Step 'L4. The light edition over 2.8.1 with the Classic App alone: it updates'
+  Invoke-Setup @() $ReleasedInstaller
+  Invoke-Setup @() $LightInstaller
+  Assert-Layout @('ttk')
+  Invoke-Uninstall
+  Assert-Gone
 }
 
 function Invoke-Uninstall([string[]]$Extra = @()) {
@@ -251,6 +307,21 @@ try {
   Invoke-Uninstall @('/REMOVESETTINGS')
   Assert-Gone
   Expect (-not (Test-Path $SettingsFolder)) 'the settings folder is removed with /REMOVESETTINGS'
+
+  Step '6. A first install in Spanish: the app will open in Spanish; existing settings stay'
+  Expect (-not (Test-Path $SettingsFile)) 'no settings file before the Spanish install'
+  Invoke-Setup @('/LANG=spanish', '/COMPONENTS=ttk,qt')
+  Expect (Test-Path $SettingsFile) 'the Spanish install wrote a settings file'
+  Expect ((Get-Content -Raw -Encoding utf8 $SettingsFile) -match 'language = "es"') 'it sets the language to Spanish'
+  Expect (Test-Path (Join-Path $StartMenu 'ClearMD App Moderna.lnk')) 'the modern app shortcut has its Spanish name'
+  Expect (-not (Test-Path (Join-Path $StartMenu $Shortcut['qt']))) 'and not its English one'
+  Write-Settings
+  Invoke-Setup @('/LANG=spanish')
+  Expect ((Get-Content -Raw -Encoding utf8 $SettingsFile) -eq $SettingsText) 'a later Spanish install leaves existing settings as they are'
+  Invoke-Uninstall @('/REMOVESETTINGS')
+  Assert-Gone
+
+  Assert-Editions
 
   Write-Host ""
   Write-Host 'ALL INSTALLER CHECKS PASSED'

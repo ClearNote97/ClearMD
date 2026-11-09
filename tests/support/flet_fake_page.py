@@ -27,6 +27,8 @@ class FakePage:
         self.asked: list[tuple[str, str, str | None]] = []  # (picker, title, start folder)
         self.extensions: list[str] = []
         self.hidden = self.destroyed = False
+        self.clipboard: list[str] = []  # what "Copy Details" copied (036)
+        self.clipboard_fails = False  # a clipboard that raises, as a busy one may
         self.refreshes = 0  # whole-page refreshes
         self.narrowed: list[ft.Control] = []  # every control sent alone (a progress tick)
         self._narrowing: list[ft.Control] = []
@@ -101,6 +103,11 @@ class FakePage:
         on_resize: Callable[[float, float], None],
     ) -> None:
         self._on_key, self._on_close, self._on_resize = on_key, on_close, on_resize
+
+    def copy_text(self, text: str) -> None:
+        if self.clipboard_fails:
+            raise OSError("the clipboard is busy")
+        self.clipboard.append(text)
 
     def hide(self) -> None:
         self.hidden = True

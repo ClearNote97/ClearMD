@@ -1,10 +1,12 @@
-"""Step 4, Results: the figures, and what needs attention (AC-11)."""
+"""Step 4, Results: the figures, where the results are (as text to read and copy, feature 035),
+and what needs attention, each row in its own tone (AC-11; 035 AC-03, AC-06)."""
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel, QPushButton, QRadioButton, QVBoxLayout, QWidget
 
 from clearmd.frontend.design.metrics import GAP, SPACE
 from clearmd.frontend.design.palette import Palette
-from clearmd.frontend.presenter.models import ResultView
+from clearmd.frontend.presenter.models import ResultView, Tone
 from clearmd.frontend.pyside.components.file_list import FileList, ListRow
 from clearmd.frontend.pyside.components.primitives import card, label
 from clearmd.frontend.pyside.components.stats import Stats
@@ -24,6 +26,13 @@ class ResultsView(QWidget):
         self._catalog: Catalog | None = None
         self.stats = Stats()
         self.layout_.addWidget(self.stats)
+        self.where = label("onPage", wrap=True)  # where the files are: selectable, copyable
+        self.where.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+            | Qt.TextInteractionFlag.TextSelectableByKeyboard
+        )
+        self.where.hide()
+        self.layout_.addWidget(self.where)
         self.all_good, good_layout = card(padding=3 * SPACE)
         message = label("strong", wrap=True)
         self._text(message, "gui.result.all_good")
@@ -47,9 +56,20 @@ class ResultsView(QWidget):
         selected = rows.index(current) if current in rows else 0
         keep = len(rows) == len(result.rows)  # the same result again (settings)
         self.stats.show_stats(result.stats)
+        self.where.setText(result.where)
+        self.where.setVisible(bool(result.where))
         if result.rows:
             self.problems.show_rows(
-                [ListRow(row.icon, row.name, (row.detail,), warning=True) for row in result.rows]
+                [
+                    ListRow(
+                        row.icon,
+                        row.name,
+                        (row.detail,),
+                        warning=row.tone is not Tone.DANGER,
+                        danger=row.tone is Tone.DANGER,
+                    )
+                    for row in result.rows
+                ]
             )
             self._showing(True)
             self.problems.select(selected if keep and selected < len(result.rows) else 0)
@@ -60,6 +80,8 @@ class ResultsView(QWidget):
     def forget(self) -> None:
         self._wait()
         self.problems.show_rows([])
+        self.where.setText("")
+        self.where.hide()
         self._showing(None)
 
     def _showing(self, problems: bool | None) -> None:

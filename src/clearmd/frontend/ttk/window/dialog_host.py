@@ -14,9 +14,16 @@ from clearmd.frontend.ttk.window.shown import Shown
 
 class DialogHost:
     def __init__(
-        self, root: tk.Misc, fonts: dict[str, Any], presenter: Presenter, shown: Shown
+        self,
+        root: tk.Misc,
+        fonts: dict[str, Any],
+        presenter: Presenter,
+        shown: Shown,
+        *,
+        drops: bool = False,
     ) -> None:
         self._root = root
+        self._drops = drops  # files dropped from the system reach this window (Help says so)
         self._fonts = fonts
         self._presenter = presenter
         self._shown = shown
@@ -48,6 +55,7 @@ class DialogHost:
                     self._fonts,
                     self._closed,
                     version=self._presenter.version,
+                    drops=self._drops,
                 )  # fmt: skip
             )
 

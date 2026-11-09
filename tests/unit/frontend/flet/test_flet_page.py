@@ -150,3 +150,22 @@ def test_hide_and_destroy() -> None:
     assert stub.window.visible is False and stub.updates == 1
     page.destroy()
     assert stub.tasks == [stub.window.destroy]  # flet's program ends; ``ft.run`` returns
+
+
+class FakeClipboard:
+    copied: list[str] = []
+
+    async def set(self, value: str) -> None:
+        self.copied.append(value)
+
+
+def test_copy_text_sets_flets_clipboard_on_the_loop(monkeypatch: pytest.MonkeyPatch) -> None:
+    """flet 1.0.5: the clipboard is a page service whose ``set`` is a coroutine (036)."""
+    monkeypatch.setattr(ft, "Clipboard", FakeClipboard)  # the one flet_page makes
+    FakeClipboard.copied = []
+    stub = StubPage()
+    page = FletPage(stub.as_page())
+    page.copy_text("ClearMD 2.9 · flet · <file>.pdf")
+    assert FakeClipboard.copied == []  # set later, on the page's loop
+    stub.run_tasks()
+    assert FakeClipboard.copied == ["ClearMD 2.9 · flet · <file>.pdf"]

@@ -1,4 +1,6 @@
-"""A numbered list of files with their icons, in a card (ADR-0027): inputs, the plan, the result."""
+"""A numbered list of files with their icons, in a card (ADR-0027): inputs, the plan, the result.
+Its scroll bar shows whenever rows are hidden, and its pictures are drawn for the rows on screen
+only, so a thousand rows appear at once (feature 035, AC-07)."""
 
 import tkinter as tk
 from collections.abc import Sequence
@@ -10,6 +12,7 @@ from PIL import ImageTk
 
 from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.ttk.components.file_list_keys import ListKeys
+from clearmd.frontend.ttk.components.row_pictures import RowPictures
 from clearmd.frontend.ttk.visuals import marks
 from clearmd.frontend.ttk.visuals.style_names import CARD, MUTED
 
@@ -26,7 +29,7 @@ class ListRow:
     icon: str
     name: str
     values: tuple[str, ...]  # one per extra column
-    tag: str = ""  # "warning" draws the row in the warning colour
+    tag: str = ""  # "warning" or "danger" draws the row in that colour (035: a row's tone)
     payload: Any = None  # what the row stands for (a path), returned by ``selected``
 
 
@@ -51,17 +54,20 @@ class FileList(ttk.Frame):
         self._palette: Palette | None = None
         self._rows: tuple[ListRow, ...] = ()
         self._items: dict[str, ListRow] = {}
-        self._pictures: dict[str, tuple[ImageTk.PhotoImage, ImageTk.PhotoImage]] = {}
+        self._digits = 1
+        self._painting: str | None = None
         self._header_boxes: dict[str, ImageTk.PhotoImage] = {}
         keys = [f"c{i}" for i in range(len(self._columns))]
         self.tree = ttk.Treeview(self, columns=keys, height=height, selectmode="extended")
         self.tree.column("#0", width=300, stretch=False)  # the extra columns take what is left
         for key, column in zip(keys, self._columns, strict=True):
             self.tree.column(key, width=column.width, stretch=column.stretch, anchor="w")
-        scroll = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
-        self.tree.configure(yscrollcommand=scroll.set)
+        self.scroll = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=self._scrolled)
+        # The bar first: a narrow list keeps it, the rows take what is left (035, AC-07).
+        self.scroll.pack(side="right", fill="y")
         self.tree.pack(side="left", fill="both", expand=True)
-        scroll.pack(side="left", fill="y")
+        self.pictures = RowPictures(self, self.tree, checks=checks)
         self.empty = ttk.Label(self.tree, style=MUTED, anchor="center", justify="center")
         self.tree.bind("<<TreeviewSelect>>", lambda _event: self._sync_boxes(), add="+")
         self.shortcuts = ListKeys(self.tree, checks=checks)
@@ -82,19 +88,14 @@ class FileList(ttk.Frame):
             return
         self._palette = palette
         self.tree.tag_configure("warning", foreground=palette.warning)
+        self.tree.tag_configure("danger", foreground=palette.danger)
         self._header_boxes = {
             state: ImageTk.PhotoImage(self._box(state, palette), master=self)
             for state in ("off", "on", "some")
             if self.checks
         }
-        children = self.tree.get_children()
-        selected = [children.index(item) for item in self.tree.selection()]
-        focus = children.index(self.tree.focus()) if self.tree.focus() in children else None
-        self.show(self._rows)  # the row pictures carry the palette's colour: drawn again
-        children = self.tree.get_children()
-        self.tree.selection_set([children[i] for i in selected if i < len(children)])
-        if focus is not None and focus < len(children):
-            self.tree.focus(children[focus])
+        self.pictures.use(palette)  # the rows stay: only those on screen are painted again
+        self._sync_boxes()
 
     # --- Rows ----------------------------------------------------------------------------------
 
@@ -103,31 +104,15 @@ class FileList(ttk.Frame):
         focused = self.tree.focus()
         place = items.index(focused) if focused in items else 0  # kept after the rebuild
         self._rows = tuple(rows)
-        self.tree.delete(*self.tree.get_children())
+        self.tree.delete(*items)
         self._items.clear()
-        self._pictures.clear()
-        palette = self._palette
-        colour = palette.muted if palette else "#5B6672"
-        digits = len(str(len(self._rows)))
-        for number, row in enumerate(self._rows, start=1):
-            icon = marks.icon(row.icon)
-            off, on = (
-                ImageTk.PhotoImage(
-                    marks.numbered(
-                        number,
-                        icon,
-                        colour,
-                        digits=digits,
-                        check=self._box(state) if self.checks else None,
-                    ),
-                    master=self,
-                )
-                for state in ("off", "on")
-            )
+        self.pictures.forget()
+        self._digits = len(str(len(self._rows)))
+        blank = self.pictures.blank(self._digits)
+        for row in self._rows:
             item = self.tree.insert(
-                "", "end", text=f"  {row.name}", image=off, values=row.values, tags=(row.tag,)
+                "", "end", text=f"  {row.name}", image=blank, values=row.values, tags=(row.tag,)
             )
-            self._pictures[item] = (off, on)
             self._items[item] = row
         self._sync_boxes()
         if self._rows:
@@ -135,6 +120,25 @@ class FileList(ttk.Frame):
             self.empty.place_forget()
         else:
             self.empty.place(relx=0.5, rely=0.55, anchor="center")
+
+    def _scrolled(self, first: float, last: float) -> None:
+        self.scroll.set(first, last)
+        if self._painting is None:  # the rows now on screen get their pictures
+            self._painting = self.after_idle(self._paint_visible)
+
+    def _paint_visible(self, *, every: bool = False) -> None:
+        self._painting = None
+        children = self.tree.get_children()
+        if not children:
+            return
+        first = int(float(self.tree.yview()[0]) * len(children))
+        shown = max(self.tree.winfo_height() // 36 + 2, int(str(self.tree.cget("height"))) + 2)
+        start, stop = (0, len(children)) if every else (max(first - 1, 0), first + shown)
+        selected = set(self.tree.selection())
+        self.pictures.paint(
+            (item, self._items[item].icon, index + 1, self._digits, item in selected)
+            for index, item in enumerate(children[start:stop], start=start)
+        )
 
     # --- Selection by checkboxes (feature 007) ------------------------------------------------
 
@@ -147,18 +151,16 @@ class FileList(ttk.Frame):
     def _sync_boxes(self) -> None:
         """Each row's box shows whether it is selected; the header's, all, none or some."""
         selected = set(self.tree.selection())
-        for item, (off, on) in self._pictures.items():
-            if self.tree.exists(item):
-                self.tree.item(item, image=on if item in selected else off)
+        self._paint_visible()  # only the rows on screen; the others when they come into view
         if self._header_boxes:
-            total = len(self._pictures)
+            total = len(self._items)
             state = "off" if not selected else "on" if len(selected) == total else "some"
             self.tree.heading("#0", image=self._header_boxes[state])
 
     def checked(self) -> list[bool]:
         """Whether each row's box is checked (for tests)."""
-        return [str(self.tree.item(item, "image")[0]) == str(self._pictures[item][1])
-                for item in self.tree.get_children()]  # fmt: skip
+        self._paint_visible(every=True)
+        return [self.pictures.checked(item) for item in self.tree.get_children()]
 
     def names(self) -> list[str]:
         """The names as listed (for tests)."""

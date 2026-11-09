@@ -21,6 +21,7 @@ class FletPage:
     def __init__(self, page: ft.Page) -> None:
         self._page = page
         self._picker = ft.FilePicker()  # a service of the page: made while the page is current
+        self._clipboard = ft.Clipboard()  # flet 1.0.5: a service too, its ``set`` a coroutine
         window = page.window
         # The shared sizes are the page's; flet's window counts its frame too (layout/units.py).
         window.width, window.height = START_WIDTH + FRAME_WIDTH, START_HEIGHT + FRAME_HEIGHT
@@ -69,6 +70,15 @@ class FletPage:
             loop.call_soon_threadsafe(loop.call_later, seconds, run)
         except RuntimeError:  # the loop is gone: the window has closed, nothing to draw
             return
+
+    def copy_text(self, text: str) -> None:
+        """flet 1.0.5's clipboard is a page service whose ``set`` is a coroutine: it runs as a
+        task on the page's loop (a failure there is flet's to log, after the message changed)."""
+
+        async def copy() -> None:
+            await self._clipboard.set(text)
+
+        self._page.run_task(copy)
 
     def pick_files(
         self, title: str, extensions: Sequence[str], done: Callable[[list[str]], None]

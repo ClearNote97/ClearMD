@@ -109,7 +109,7 @@ def test_ac_09_a_zip_bomb_is_skipped_before_converting(
     assert main([str(bomb), str(good)]) == 0
     # The check that failed, with the file's value and the limit, and what to do (UX §3).
     assert "Skipped: contract.docx — grows" in (err := capsys.readouterr().err)
-    assert "limit 100 (possible zip bomb). If you trust it, save a new copy" in err
+    assert "limit 100 (not opened, for safety). If you trust it, save a new copy" in err
     assert not (workdir / "ClearMD_Output" / "OutputMD" / "contract.md").exists()
     assert (workdir / "ClearMD_Output" / "OutputMD" / "good.md").is_file()
 

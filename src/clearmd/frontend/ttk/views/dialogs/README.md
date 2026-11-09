@@ -2,7 +2,7 @@
 
 | Module | Role |
 |---|---|
-| `help.py` | `help_dialog`: how to use it, formats, where results go, privacy. |
+| `help.py` | `help_dialog`: the presenter's Help sections (035), in a body that scrolls. |
 | `welcome.py` | `WelcomeDialog`: the three steps and "Don't show again". |
 | `settings.py` | `SettingsDialog`: the settings of ADR-0012; its rows scroll in a short window. |
 | `split_settings.py` | `SplitSettings`: the Split group of the settings (023, 024). |

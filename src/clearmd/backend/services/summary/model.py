@@ -62,10 +62,16 @@ class SummaryContent:
     kept: tuple[Entry, ...]
     cancelled: tuple[Entry, ...]
     tool: str = "convert"  # or "split" (023), "merge" (026): what the batch did
+    cleaned: tuple[Entry, ...] = ()  # converted, with only good news to tell (audit 2026-11-08)
 
     @property
     def folder(self) -> str:
         return FOLDERS[self.tool]
+
+    @property
+    def has_files(self) -> bool:
+        """Whether there are files to point at: "where" is said only then (audit B4-04)."""
+        return bool(self.converted or self.kept)
 
     @property
     def where_key(self) -> str:

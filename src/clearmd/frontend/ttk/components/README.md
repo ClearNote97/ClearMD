@@ -4,6 +4,8 @@
 |---|---|
 | `rail.py`, `rail_art.py` | The dark rail (state, events) and what it draws: Home, then the steps. |
 | `file_list.py`, `file_list_keys.py` | The numbered file list and its keyboard and mouse. |
+| `row_pictures.py` | The list's row pictures, drawn for the rows on screen only and cached (035). |
+| `where_text.py` | Results' "where the files are": read-only text to select and copy (035). |
 | `inputs_card.py`, `output_card.py` | The two halves of the Choose step. |
 | `split_choice.py` | Split's choices in the output card: the cut, its number, what to keep (023). |
 | `order_controls.py` | Merge's order: Move Up / Move Down on the selected row, and the hint (032). |

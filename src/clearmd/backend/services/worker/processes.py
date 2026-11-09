@@ -14,13 +14,14 @@ import psutil
 
 from clearmd.backend.schemas.errors import Cancelled, ConversionError, ErrorCode
 from clearmd.backend.schemas.limits import Limits
-from clearmd.backend.services.worker.protocol import Failed, Ready, Response
+from clearmd.backend.services.worker.protocol import Failed, Progress, Ready, Response
 from clearmd.backend.use_cases.cancel import CancelToken
 
 POLL_SECONDS = 0.1
 JOIN_SECONDS = 5.0
 # Loading Python and the converters' libraries; generous for packaged apps and antivirus scans.
 STARTUP_SECONDS = 120.0
+CEILING = 6  # a file still moving after six times the limit (an hour) stops all the same
 
 
 def kill_children(process: BaseProcess) -> None:
@@ -86,14 +87,21 @@ def wait_for_response(
     stop: Callable[[], None],
     crashed: Callable[[BaseProcess], ConversionError],
 ) -> Response:
-    """The worker's answer to the request just sent, under the time and memory limits."""
-    started = time.monotonic()
+    """The worker's answer to the request just sent, under the time and memory limits. The time
+    limit counts from the last progress the worker sent (audit 2026-11-08, 3B): a long file that
+    keeps moving finishes; one that stops moving for ``time_per_file`` stops. A ceiling of
+    ``CEILING`` times the limit holds even while it moves."""
+    started = moving = time.monotonic()
     while True:
         if connection.poll(POLL_SECONDS):
             try:
-                response: Response = connection.recv()
+                response: Response | Progress = connection.recv()
             except EOFError:
                 raise crashed(process) from None
+            if isinstance(response, Progress):
+                moving = time.monotonic()
+                cancel.progress(response.done, response.total)
+                continue
             if isinstance(response, Failed):
                 limit = None
                 if response.code == ErrorCode.OUT_OF_MEMORY.value:
@@ -104,12 +112,12 @@ def wait_for_response(
         if cancel.is_set():
             stop()
             raise Cancelled
-        elapsed = time.monotonic() - started
-        if elapsed > limits.time_per_file:
+        now = time.monotonic()
+        if now - moving > limits.time_per_file or now - started > CEILING * limits.time_per_file:
             stop()
             raise ConversionError(
                 ErrorCode.TIMED_OUT,
-                f"stopped after {limits.time_per_file:g} s",
+                f"no progress for {now - moving:.0f} s, {now - started:.0f} s in all",
                 limit=limits.time_per_file,
             )
         rss = memory_of(process)

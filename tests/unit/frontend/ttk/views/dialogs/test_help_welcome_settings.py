@@ -16,7 +16,8 @@ def test_help_opens_from_the_rail_and_esc_closes_it(app: TtkApp) -> None:
     pump(app, seconds=0.2)
     assert app.dialog is not None
     assert app.dialog.title() == "How to Use ClearMD"
-    texts = [child.cget("text") for child in app.dialog.body.winfo_children()]
+    assert isinstance(app.dialog, dialogs.help.HelpDialog)  # the sections scroll since 035
+    texts = [title.cget("text") for title, _ in app.dialog.sections]
     assert "Your Privacy" in texts and "What It Converts" in texts
     app.dialog.focus_force()
     pump(app, seconds=0.1)

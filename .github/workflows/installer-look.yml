@@ -41,9 +41,12 @@ jobs:
           pwsh -NoProfile -File packaging/installer/inno_version.ps1
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup 6.7 or newer is needed (see above)" }
           foreach ($look in "plain", "brand", "painted") {
-            & $iscc /Q "/DAppVersion=0.12.0" "/DLook=$look" "/O$PWD\looks" "/FClearMD-Setup-0.12.0-$look" packaging\installer\clearmd.iss
+            & $iscc /Q "/DAppVersion=0.12.0" "/DEdition=Full" "/DLook=$look" "/O$PWD\looks" "/FClearMD-Setup-0.12.0-$look" packaging\installer\clearmd.iss
             if ($LASTEXITCODE -ne 0) { throw "The $look look did not compile" }
           }
+          # The light edition (feature 037), in the painted look.
+          & $iscc /Q "/DAppVersion=0.12.0" "/DEdition=Light" "/DLook=painted" "/O$PWD\looks" "/FClearMD-Setup-0.12.0-light" packaging\installer\clearmd.iss
+          if ($LASTEXITCODE -ne 0) { throw "The light edition did not compile" }
           Get-ChildItem looks
       - name: Photograph every page (light and dark Windows)
         shell: pwsh
@@ -54,6 +57,8 @@ jobs:
               if ($LASTEXITCODE -ne 0) { throw "Photographing $look ($theme) failed" }
             }
           }
+          pwsh -NoProfile -File packaging/installer/look/shoot.ps1 -Setup "looks\ClearMD-Setup-0.12.0-light.exe" -Out "shots\light-edition" -Theme light
+          if ($LASTEXITCODE -ne 0) { throw "Photographing the light edition failed" }
           # The Spanish texts (titles in Title Case), in the painted look.
           pwsh -NoProfile -File packaging/installer/look/shoot.ps1 -Setup "looks\ClearMD-Setup-0.12.0-painted.exe" -Out "shots\painted-light-es" -Theme light -Lang spanish
           if ($LASTEXITCODE -ne 0) { throw "Photographing painted (Spanish) failed" }

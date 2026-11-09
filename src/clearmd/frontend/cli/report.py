@@ -15,13 +15,13 @@ def print_summary(catalog: Catalog, report: BatchReport) -> None:
     count = {status: 0 for status in OutcomeStatus}
     for outcome in report.outcomes:
         count[outcome.status] += 1
-    skipped = len(report.skipped) + count[OutcomeStatus.KEPT]
     line = catalog.totals(
         count[OutcomeStatus.CONVERTED],
-        skipped,
+        len(report.skipped),
         count[OutcomeStatus.FAILED],
         count[OutcomeStatus.STOPPED],
         tool=tool_of(outcome.item for outcome in report.outcomes),
+        kept=count[OutcomeStatus.KEPT],
     )
     print(line)
     for root in output_roots(report):

@@ -46,7 +46,7 @@ def test_every_skip_reason_has_an_action_in_every_language(
         (SkippedItem(Path("a.docx"), SkipReason.ARCHIVE_TOO_LARGE, measured=3 * GIB, limit=GIB),
          "would decompress to 3.0 GB; limit 1.0 GB"),
         (SkippedItem(Path("a.docx"), SkipReason.ARCHIVE_RATIO, measured=4210.4, limit=100),
-         "grows 4,210 times when decompressed; limit 100 (possible zip bomb)"),
+         "grows 4,210 times when opened; limit 100 (not opened, for safety)"),
         (SkippedItem(Path("a.docx"), SkipReason.ARCHIVE_ENTRIES, measured=80_000, limit=50_000),
          "holds 80,000 files; limit 50,000"),
         (SkippedItem(Path("d"), SkipReason.TOO_DEEP, is_dir=True, measured=140, limit=100),
@@ -79,7 +79,7 @@ def test_a_stop_says_the_limit_it_reached() -> None:
     item = _planned()
     timed = ConversionOutcome(item, OutcomeStatus.STOPPED, ErrorCode.TIMED_OUT, limit=600)
     memory = ConversionOutcome(item, OutcomeStatus.STOPPED, ErrorCode.OUT_OF_MEMORY, limit=4 * GIB)
-    assert stopped_message(EN, timed) == "Exceeded the time limit (10 min)."
+    assert stopped_message(EN, timed) == EN.text("stop.timed_out", limit="10 min")
     assert stopped_message(EN, memory) == "Exceeded the memory limit (4.0 GB)."
     assert "10 min" in stopped_message(ES, timed)
 

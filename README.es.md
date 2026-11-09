@@ -21,7 +21,7 @@ una IA; **Unir** varios en uno. Pensado primero para quienes nunca abren una ter
 
 ### [⬇️ Descargar ClearMD para Windows](https://github.com/ClearNote97/ClearMD/releases/latest)
 
-<sub>Abre la versión más reciente y toma <code>ClearMD-Setup-&lt;versión&gt;.exe</code>: se instala y desinstala como cualquier programa de Windows. Linux: el <code>.tar.gz</code> de la misma versión.</sub>
+<sub>Abre la versión más reciente y toma <code>ClearMD-Setup-&lt;versión&gt;.exe</code> (unos 40 MB, la App Clásica): se instala y desinstala como cualquier programa de Windows. <code>ClearMD-Setup-Full-&lt;versión&gt;.exe</code> agrega la App Moderna, la App Estilo Móvil y la Línea de Comandos. Linux: el <code>.tar.gz</code> de la misma versión.</sub>
 
 [Read in English](./README.md)
 
@@ -165,6 +165,9 @@ anteriores._
 | **032** Orden en Unir (subir/bajar), "¿Qué Sigue?" con Volver al Inicio, la pantalla de inicio igual en las tres | ✅ lista | v2.8.0 |
 | **033** "¿Qué Sigue?" con las tres herramientas y una casilla para los archivos | ✅ lista | v2.8.1 |
 | **034** Nunca perder ni falsear el trabajo: partes y uniones anteriores a salvo, columnas de CSV, imágenes | ✅ lista | v2.9.0 |
+| **035** Señales honestas, una Ayuda que orienta, el motivo completo y dónde están los archivos | ✅ lista | v2.10.0 |
+| **036** Mensajes claros, página N de M, Copiar Detalles, nombres sencillos en el instalador | ✅ lista | v2.10.0 |
+| **037** Un instalador liviano (la App Clásica) y uno completo | ✅ lista | v2.10.0 |
 
 El plan completo está en el [roadmap](./spec/roadmap.md). ClearMD tiene **línea de comandos** y la misma **app de
 escritorio** en tres toolkits, ttkbootstrap (`clearmd-ttk`), PySide6 (`clearmd-pyside`,
@@ -175,9 +178,10 @@ escritorio** en tres toolkits, ttkbootstrap (`clearmd-ttk`), PySide6 (`clearmd-p
 ## ▶️ Cómo correr
 
 **Instálala en Windows** (recomendado): desde la [última versión](https://github.com/ClearNote97/ClearMD/releases/latest),
-descarga `ClearMD-Setup-….exe` y ábrelo. Instala solo para tu usuario (sin administrador) y te deja elegir, con su
-explicación: la app clásica (la más liviana, la que viene marcada), la app moderna (Qt), la app flet, la línea de
-comandos, o todas; luego abre ClearMD desde el menú Inicio.
+descarga `ClearMD-Setup-….exe` y ábrelo: instala la App Clásica, solo para tu usuario (sin administrador); luego abre
+ClearMD desde el menú Inicio. A la mayoría no le hace falta nada más. `ClearMD-Setup-Full-….exe` te deja elegir, con su
+explicación: la App Clásica (la más liviana, la que viene marcada), la App Moderna (hecha con Qt), la App Estilo Móvil
+(hecha con flet), la Línea de Comandos, o todas.
 
 **O descarga la app** (nada que instalar): `ClearMD-…-windows.exe` para Windows o `ClearMD-…-linux.tar.gz` para
 Linux, y ábrela con doble clic.

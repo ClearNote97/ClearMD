@@ -96,7 +96,7 @@ def test_ac_01_a_pdf_without_text_fails_with_what_to_do(workdir: Path) -> None:
     outcome = run_batch(plan, overwrite=lambda item: True).outcomes[0]
     assert outcome.error is ErrorCode.NOTHING_TO_MEASURE
     action = load_catalog("en").text(ErrorCode.NOTHING_TO_MEASURE.action_key)
-    assert "every N pages" in action
+    assert "Every N pages" in action
 
 
 def test_ac_02_markdown_is_cut_at_headings_and_never_inside_a_fence() -> None:

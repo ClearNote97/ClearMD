@@ -40,6 +40,15 @@ class NoteKind(StrEnum):
     def key(self) -> str:
         return f"note.{self.value}"
 
+    @property
+    def informs(self) -> bool:
+        """Good news, not a problem: what ClearMD cleaned (audit 2026-11-08, B3-02)."""
+        return self in INFORMATION
+
+
+# Notes that tell what ClearMD tidied up: told in a calm section, never as "needs attention".
+INFORMATION = frozenset({NoteKind.PDF_RUNNING_REMOVED, NoteKind.PDF_TEXT_DECODED})
+
 
 class NoteReason(StrEnum):
     """Why something was not done; shown next to its subject."""

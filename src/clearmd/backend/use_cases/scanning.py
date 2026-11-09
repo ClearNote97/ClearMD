@@ -202,3 +202,18 @@ def first_time(path: Path, seen: set[str]) -> bool:
         return False
     seen.add(key)
     return True
+
+
+OLD_OFFICE = frozenset({".doc", ".xls", ".ppt", ".dot", ".xlt", ".pot", ".pps"})
+IMAGES = frozenset({".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tif", ".tiff", ".webp", ".heic"})
+
+
+def unsupported_reason(path: Path) -> SkipReason:
+    """Why a file ClearMD cannot read is left out, as precisely as its name tells: an old Office
+    file and a picture each have a way forward of their own (audit 2026-11-08, C-2)."""
+    suffix = path.suffix.lower()
+    if suffix in OLD_OFFICE:
+        return SkipReason.OLD_OFFICE
+    if suffix in IMAGES:
+        return SkipReason.IMAGE
+    return SkipReason.UNSUPPORTED_FORMAT

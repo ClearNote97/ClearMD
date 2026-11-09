@@ -32,6 +32,17 @@ class ConversionStarted:
 
 
 @dataclass(frozen=True)
+class ConversionProgress:
+    """How far the current file has got: "page 40 of 120" (audit 2026-11-08, 3B)."""
+
+    index: int
+    total: int
+    item: PlannedConversion
+    done: int
+    pages: int
+
+
+@dataclass(frozen=True)
 class ConversionFinished:
     index: int
     total: int
@@ -43,4 +54,11 @@ class BatchFinished:
     report: BatchReport
 
 
-type BatchEvent = ScanProgress | PlanReady | ConversionStarted | ConversionFinished | BatchFinished
+type BatchEvent = (
+    ScanProgress
+    | PlanReady
+    | ConversionStarted
+    | ConversionProgress
+    | ConversionFinished
+    | BatchFinished
+)

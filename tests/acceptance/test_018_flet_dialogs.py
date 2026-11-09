@@ -31,6 +31,7 @@ from clearmd.frontend.flet.views.dialogs.help import HelpDialog
 from clearmd.frontend.flet.views.dialogs.settings import SettingsDialog
 from clearmd.frontend.flet.views.dialogs.welcome import WelcomeDialog
 from clearmd.frontend.presenter.ports import ApiBackend
+from clearmd.frontend.presenter.screens.help import help_sections
 from clearmd.i18n import load_catalog
 
 
@@ -61,9 +62,9 @@ def test_ac_05_help_is_always_one_click_away(
     assert isinstance(dialog, HelpDialog) and dialog.control in page_of(app).dialogs
     shown = " ".join(dialog.texts())
     catalog = load_catalog(language)
-    for section in ("how_buttons", "formats", "where", "privacy", "language"):
-        assert catalog.text(f"gui.help.{section}") in shown
-    assert catalog.text("gui.help.how") not in shown  # flet takes no dropped files (AC-02)
+    for title, text in help_sections(catalog, drops=False):  # the presenter's, in order (035)
+        assert title in shown and text in shown
+    assert catalog.text("gui.help.how_drop") not in shown  # flet takes no dropped files (AC-02)
     assert "Settings" in shown and "Ajustes" in shown  # where to switch, in both languages
     assert f"{app.presenter.version}" in shown  # the version is in the help too
     escape(app)  # Esc closes a dialog
@@ -78,10 +79,9 @@ def test_ac_05_the_welcome_appears_until_dont_show_again(flet_window: Window) ->
     pump(app, until=lambda: app.dialogs.current is not None)
     dialog = app.dialogs.current
     assert isinstance(dialog, WelcomeDialog)
+    catalog = load_catalog("en")
     assert [text for text in dialog.texts() if text[:2] in {"1.", "2.", "3."}] == [
-        "1. Choose a tool, then files or a folder",
-        "2. Review what will be done",
-        "3. Done, your folder opens",
+        catalog.text(f"gui.welcome.step{number}") for number in (1, 2, 3)
     ]
     dialog.dont_show.value = True
     page_of(app).press("Enter")  # Enter runs the dialog's default action: Start

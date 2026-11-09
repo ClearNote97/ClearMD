@@ -1,7 +1,9 @@
-"""Step 2, Review: what happens to each file, before anything is written (AC-07, AC-08)."""
+"""Step 2, Review: what happens to each file, before anything is written (AC-07, AC-08); under
+the list, the selected row in full: why, what to do, and its whole folder (feature 035, AC-05)."""
 
 import tkinter as tk
 import tkinter.font as tkfont
+from pathlib import PurePath
 from tkinter import ttk
 from typing import Any
 
@@ -11,11 +13,12 @@ from clearmd.frontend.presenter.models import PlanView, RowKind
 from clearmd.frontend.ttk.components.file_list import Column, FileList, ListRow
 from clearmd.frontend.ttk.components.flow_row import FlowRow
 from clearmd.frontend.ttk.components.stats import Stats
-from clearmd.frontend.ttk.visuals.style_names import CARD, PAGE
+from clearmd.frontend.ttk.visuals.style_names import CARD, ON_PAGE, PAGE
 from clearmd.i18n import Catalog
 
 KEEP, OVERWRITE, CHANGED = "keep", "overwrite", "changed"  # changed: feature 028
 _ATTENTION = frozenset({RowKind.SKIPPED, RowKind.MISSING})
+_FIRST = frozenset({RowKind.SKIPPED, RowKind.MISSING, RowKind.EXISTS})  # selected at first
 
 
 class ReviewView(ttk.Frame):
@@ -45,6 +48,14 @@ class ReviewView(ttk.Frame):
             checks=False,  # a list to read: nothing on Review acts on a selection (014)
         )
         self.files.pack(fill="both", expand=True, pady=(GAP, 0))
+        # The selected row in full: nothing cut without another way to read it (035, AC-05).
+        self.detail = ttk.Label(self, style=ON_PAGE, justify="left")
+        self.detail.bind(
+            "<Configure>", lambda event: self.detail.configure(wraplength=max(event.width, 200))
+        )
+        self.files.tree.bind("<<TreeviewSelect>>", lambda _event: self._show_detail(), add="+")
+        self._see: str | None = None
+        self.files.tree.bind("<Map>", lambda _event: self.after_idle(self._see_first), add="+")
 
         self.existing = ttk.Frame(self, style=CARD, padding=GAP)
         question = ttk.Label(self.existing, font=fonts["strong"])
@@ -70,8 +81,8 @@ class ReviewView(ttk.Frame):
         rows = sorted(plan.rows, key=lambda row: row.kind not in _ATTENTION)
         self.files.show(
             [
-                ListRow(row.icon, row.name, (row.location, row.detail),
-                        tag="warning" if row.kind in _ATTENTION else "")
+                ListRow(row.icon, row.name, (_last_folder(row.location), row.detail),
+                        tag="warning" if row.kind in _ATTENTION else "", payload=row)
                 for row in rows
             ]
         )  # fmt: skip
@@ -81,8 +92,20 @@ class ReviewView(ttk.Frame):
         if not same:
             self.decision.set(KEEP)
         self.existing.pack_forget()
+        self.detail.pack_forget()
         if self._asks:
             self.existing.pack(side="bottom", fill="x", pady=(GAP, 0), before=self.files)
+        if rows:  # under the list, above the question
+            self.detail.pack(side="bottom", fill="x", pady=(SPACE, 0), before=self.files)
+            first = next((i for i, row in enumerate(rows) if row.kind in _FIRST), 0)
+            if not same or not self.files.tree.selection():
+                item = self.files.tree.get_children()[first]
+                self.files.tree.selection_set(item)
+                self.files.tree.focus(item)
+                self._see = item  # once the list is on screen: hidden, it has no rows to show
+                if self.files.tree.winfo_ismapped():
+                    self.after_idle(self._see_first)  # once the detail and question are laid out
+        self._show_detail()
 
     def forget(self) -> None:
         """The plan was dropped (an edit): nothing of it stays on screen (code review of 007);
@@ -90,8 +113,25 @@ class ReviewView(ttk.Frame):
         self._wait()
         self.files.show([])
         self.existing.pack_forget()
+        self.detail.pack_forget()
         self._asks = False
         self._plan_id = -1
+
+    def _see_first(self) -> None:
+        """Show the row selected at first: from the top, so rows above it are not hidden."""
+        if self._see is not None and self.files.tree.exists(self._see):
+            self.files.tree.yview_moveto(0)
+            self.files.tree.see(self._see)
+        self._see = None
+
+    def _show_detail(self) -> None:
+        current = self.files.current()
+        row = current.payload if current is not None else None
+        if row is None or self._catalog is None:
+            self.detail.configure(text="")
+            return
+        folder = self._catalog.text("gui.main.column_location")
+        self.detail.configure(text=f"{row.name}: {row.detail}\n{folder}: {row.location}")
 
     def overwrite_answer(self) -> bool | str | None:
         """The answer about existing results, when the plan asks it (setting "ask"): replace
@@ -125,3 +165,8 @@ class ReviewView(ttk.Frame):
 
     def _label(self, widget: Any, key: str) -> None:
         self._texts.append((widget, key))
+
+
+def _last_folder(location: str) -> str:
+    """The list's folder column: the last folder's name (the whole path is in the detail)."""
+    return PurePath(location).name or location

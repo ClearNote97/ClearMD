@@ -10,6 +10,7 @@ forwards every `View` call to the one that does it. None of them receives the wh
 | `view.py` | What the `View` calls do to the widgets (`PySideView`). |
 | `frame.py` | The widgets and their arrangement (rail, surface, step views, action bar). |
 | `controls.py` | Which widgets a state enables; the compact and short layouts. |
+| `secondary.py` | The action bar's secondary button for a state: Back, Cancel or "What Next?". |
 | `offer.py` | Which "Split the Large PDFs (N)" the action bar offers on Review and Results (025). |
 | `shown.py` | What the window shows now (state, plan, result, language, theme, scan). |
 | `dialog_host.py` | One dialog at a time: help, settings, welcome, Convert more. |

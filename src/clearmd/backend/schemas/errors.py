@@ -23,6 +23,8 @@ class ErrorCode(StrEnum):
     NOTHING_TO_MEASURE = "nothing_to_measure"
     # Merge: fewer than two documents could be joined, so nothing was written (feature 026).
     NOTHING_TO_MERGE = "nothing_to_merge"
+    # Split: a text, CSV or Markdown file with nothing in it (audit 2026-11-08, B1-07b).
+    EMPTY_FILE = "empty_file"
 
     @property
     def message_key(self) -> str:
@@ -59,6 +61,8 @@ class SkipReason(StrEnum):
     NOT_FOR_PDF_MERGE = "not_for_pdf_merge"  # one PDF can only be made of PDFs (feature 026)
     # A file chosen again through a folder that holds it: used once (audit 2026-11-08, B1-11).
     ALREADY_INCLUDED = "already_included"
+    OLD_OFFICE = "old_office"  # .doc, .xls, .ppt: saved again as .docx... (audit, C-2)
+    IMAGE = "image"  # a picture: ClearMD reads no text inside images
 
     @property
     def key(self) -> str:

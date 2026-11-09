@@ -5,6 +5,7 @@ from pathlib import Path
 from support.gui_fakes import FakeBackend, planned
 from support.presenter_fakes import converted
 
+from clearmd.backend.schemas.errors import ErrorCode
 from clearmd.backend.schemas.models import (
     BatchPlan,
     OutcomeStatus,
@@ -12,6 +13,7 @@ from clearmd.backend.schemas.models import (
 from clearmd.backend.schemas.settings import Settings
 from clearmd.frontend.presenter import Action, AppState
 from clearmd.frontend.presenter.models import Stat, Tone
+from clearmd.i18n import load_catalog
 
 
 def test_a_clean_batch_finishes_and_opens_the_folder() -> None:
@@ -39,8 +41,11 @@ def test_failures_never_stop_the_batch_and_say_what_to_do() -> None:
     assert view.last("state").state is AppState.FINISHED_WITH_PROBLEMS
     assert result.counts == "1 converted · 0 skipped · 1 failed · 1 stopped"
     details = {row.name: row.detail for row in result.rows}
-    assert details["a.pdf"] == "This file is password-protected. Remove the password and try again."
-    assert details["b.pdf"].startswith("Exceeded the time limit (10 min).")
+    catalog = load_catalog("en")
+    failed = catalog.error(ErrorCode.PASSWORD_PROTECTED)
+    assert details["a.pdf"] == f"{catalog.text('gui.result.word_failed')} {failed}"
+    word = catalog.text("gui.result.word_stopped")
+    assert details["b.pdf"].startswith(f"{word} {catalog.text('stop.timed_out', limit='10 min')}")
     assert result.stats == (
         Stat("Converted", 1, Tone.ACCENT),
         Stat("Skipped", 0, Tone.NEUTRAL),

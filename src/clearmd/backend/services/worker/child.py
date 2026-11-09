@@ -12,6 +12,7 @@ from clearmd.backend.schemas.formats import FormatId, Strategy
 from clearmd.backend.schemas.models import Detection, DetectionMethod
 from clearmd.backend.schemas.notes import ConversionNote, NoteItem, NoteKind
 from clearmd.backend.services.conversion.images import ImageSink
+from clearmd.backend.services.conversion.progress import listen
 from clearmd.backend.services.conversion.registry import DocumentConverter
 from clearmd.backend.services.worker.pages import handle_pages
 from clearmd.backend.services.worker.power import keep_full_speed
@@ -22,6 +23,7 @@ from clearmd.backend.services.worker.protocol import (
     DetectRequest,
     Failed,
     Job,
+    Progress,
     Ready,
     Request,
     Response,
@@ -112,6 +114,7 @@ def worker_main(
     if memory_cap is not None:
         apply_memory_cap(memory_cap)
     registry = load_factory(factory_path)
+    listen(lambda done, total: connection.send(Progress(done, total)))  # 3B
     connection.send(Ready())
     while True:
         try:

@@ -49,15 +49,20 @@ class Catalog:
     def for_tool(self, tool: str) -> "Catalog":
         """This catalog as a tool speaks (feature 023): Split's own words, under
         ``tool.split.<key>``, in place of Convert's; Convert is the catalog itself."""
-        prefix = f"tool.{tool}."
+        return self._overlaid(f"tool.{tool}.")
+
+    def for_terminal(self) -> "Catalog":
+        """This catalog as the command line speaks (audit 2026-11-08, B4-05): its options in
+        place of the window's buttons, under ``terminal.<key>``."""
+        return self._overlaid("terminal.")
+
+    def _overlaid(self, prefix: str) -> "Catalog":
         overrides = {
             key.removeprefix(prefix): text
             for key, text in self._messages.items()
             if key.startswith(prefix)
         }
-        if not overrides:
-            return self
-        return Catalog(self.language, {**self._messages, **overrides})
+        return Catalog(self.language, {**self._messages, **overrides}) if overrides else self
 
     def text_template(self, key: str) -> str:
         """The raw message, placeholders unfilled."""
@@ -109,12 +114,22 @@ class Catalog:
         return self.text(f"{key}.{form}", count=self.count(number), **values)
 
     def totals(
-        self, converted: int, skipped: int, failed: int, stopped: int = 0, *, tool: str = "convert"
+        self,
+        converted: int,
+        skipped: int,
+        failed: int,
+        stopped: int = 0,
+        *,
+        tool: str = "convert",
+        kept: int = 0,
     ) -> str:
-        """ "2 converted · 1 skipped · 0 failed", singular and plural; stopped only when any.
-        A Split batch counts what was split (feature 023)."""
-        parts = [
-            self.plural(f"summary.count.{_DONE[tool]}", converted),
+        """ "2 converted · 1 skipped · 0 failed", singular and plural; kept and stopped only when
+        any. A Split batch counts what was split (feature 023). Kept is the user's choice, never
+        a skip (audit 2026-11-08)."""
+        parts = [self.plural(f"summary.count.{_DONE[tool]}", converted)]
+        if kept:
+            parts.append(self.plural("summary.count.kept", kept))
+        parts += [
             self.plural("summary.count.skipped", skipped),
             self.plural("summary.count.failed", failed),
         ]

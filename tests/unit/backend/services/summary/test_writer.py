@@ -33,7 +33,7 @@ EXPECTED_EN = "\n".join(
         "## Needs Your Attention",
         "- ❌ `contract.pdf` in `project` — This file is password-protected. Remove the password and try again.",  # noqa: E501 (the summary as written)
         "  <details><summary>Technical Detail</summary>PDFPasswordIncorrect</details>",
-        "- ⏹️ `manual.pdf` in `project` — Exceeded the time limit (10 min). Estimated progress: 67% after 10:00. Try splitting it into smaller files.",  # noqa: E501 (the summary as written)
+        "- ⏹️ `manual.pdf` in `project` — It went 10 min without moving. Estimated progress: 67% after 10:00. Try splitting it into smaller parts with Split.",  # noqa: E501 (the summary as written)
         "",
         "## Converted",
         "| Document | Folder | Result | Format | Time |",

@@ -14,7 +14,7 @@ action = "Ábrelo en su programa original; si abre, guarda una copia nueva e int
 
 [error.conversion_failed]
 message = "No se pudo convertir este archivo."
-action = "Revisa el detalle técnico en el resumen."
+action = "Ábrelo en su programa original y guárdalo de nuevo; si sigue fallando, avísanos y adjunta el resumen."
 
 [error.permission_denied]
 message = "ClearMD no puede escribir en esta carpeta."
@@ -26,11 +26,11 @@ action = "Ciérralo en cualquier programa que lo tenga abierto (por ejemplo Exce
 
 [error.write_failed]
 message = "ClearMD no pudo guardar el resultado de este archivo."
-action = "Comprueba que el disco tenga espacio libre y que los nombres de archivo y carpeta no sean demasiado largos, o elige otra carpeta de salida."
+action = "Si el resultado está abierto en otro programa, ciérralo. Si no, comprueba que el disco tenga espacio libre y que los nombres no sean demasiado largos, o elige otra carpeta de salida."
 
 [error.timed_out]
-message = "La conversión de este archivo tardó demasiado y se detuvo."
-action = "Prueba dividiéndolo en archivos más pequeños."
+message = "La conversión de este archivo dejó de avanzar, así que se detuvo."
+action = "Prueba dividiéndolo con Dividir en partes más pequeñas."
 
 [error.out_of_memory]
 message = "Este archivo necesita más memoria de la que ClearMD permite."
@@ -42,22 +42,26 @@ action = "Arregla los documentos que fallaron, o agrega más, y vuelve a unir."
 
 [error.nothing_to_measure]
 message = "Este PDF no tiene texto para medir: sus páginas seguramente son imágenes escaneadas."
-action = "Divídelo mejor cada N páginas."
+action = "Divídelo mejor con «Cada N páginas»."
 
 [error.worker_crashed]
 message = "El conversor se detuvo de forma inesperada con este archivo."
-action = "Inténtalo de nuevo; si vuelve a pasar, puede que el archivo esté dañado."
+action = "Ábrelo en su programa y guárdalo de nuevo, o divídelo en partes; si sigue pasando, avísanos."
+
+[error.empty_file]
+message = "Este archivo está vacío: no hay nada que dividir."
+action = "Revisa que sea el archivo correcto."
 
 [skip]
 output_folder = "carpeta de resultados de ClearMD"
-symlink = "enlace simbólico"
+symlink = "acceso directo (no es el archivo real)"
 hidden = "archivo oculto"
 lock_file = "archivo temporal de Office"
 too_large = "demasiado grande ({measured}; límite {limit})"
 already_markdown = "ya es Markdown"
 zip_archive = "archivo ZIP"
 archive_too_large = "descomprimido ocuparía {measured}; límite {limit}"
-archive_ratio = "crece {measured} veces al descomprimirse; límite {limit} (posible bomba ZIP)"
+archive_ratio = "crece {measured} veces al abrirse; límite {limit} (por seguridad no se abre)"
 archive_entries = "contiene {measured} archivos; límite {limit}"
 unsupported_format = "formato no soportado por ClearMD"
 existing_output = "el resultado ya existe (se conserva)"
@@ -71,10 +75,12 @@ no_pages_to_cut = "no tiene páginas para cortar cada N"
 cut_by_sheets = "un libro de Excel se corta por hojas enteras"
 not_for_pdf_merge = "no es un PDF (un PDF se arma solo con PDF)"
 already_included = "ya viene dentro de una carpeta que elegiste (se usa una sola vez)"
+old_office = "un Word, Excel o PowerPoint antiguo (.doc, .xls, .ppt)"
+image = "una imagen: ClearMD no lee el texto dentro de las imágenes"
 
 [skip_action]
 output_folder = "ClearMD no convierte sus propios resultados."
-symlink = "Convierte el archivo original."
+symlink = "Elige el archivo original."
 hidden = "Hazlo visible para convertirlo."
 lock_file = "Se borra al cerrar el documento."
 too_large = "Divídelo en archivos más pequeños."
@@ -84,20 +90,22 @@ archive_too_large = "Si es confiable, guarda una copia nueva desde su programa."
 archive_ratio = "Si es confiable, guarda una copia nueva desde su programa."
 archive_entries = "Si es confiable, guarda una copia nueva desde su programa."
 unsupported_format = "Revisa los formatos compatibles en la ayuda."
-existing_output = "Elige sobrescribir para reemplazarlo (CLI: --overwrite)."
+existing_output = "Para hacer uno nuevo, elige «Reemplazarlos por nuevos» en Revisar."
 unreadable = "Verifica que exista y que puedas abrirlo."
 too_deep = "Muévelo a una carpeta menos profunda."
 too_much_memory = "Divídelo en archivos más pequeños."
-too_much_memory_for_article = "Conviértelo con --html full (la página completa de markitdown, sin la garantía de este modo)."
+too_much_memory_for_article = "Elige «La página completa» en Ajustes → Páginas Web."
 not_splittable = "Conviértelo, o guárdalo primero como PDF."
-cut_not_for_markdown = "Elige En N partes o Partes de unas N palabras."
-no_pages_to_cut = "Elige En N partes o Partes de unas N palabras."
-cut_by_sheets = "Elige En N partes: las hojas se agrupan."
-not_for_pdf_merge = "Elige Un Markdown para unirlo también."
+cut_not_for_markdown = "Elige «En N partes» o «Partes de unas N palabras»."
+no_pages_to_cut = "Elige «En N partes» o «Partes de unas N palabras»."
+cut_by_sheets = "Elige «En N partes»: las hojas se agrupan."
+not_for_pdf_merge = "Elige «Un Markdown» para unirlo también."
 already_included = "No hace falta hacer nada."
+old_office = "Ábrelo en Word, Excel o PowerPoint y guárdalo como .docx, .xlsx o .pptx; luego vuelve a elegirlo."
+image = "Si es una foto de un documento, ClearMD no puede leer su texto."
 
 [stop]
-timed_out = "Superó el límite de tiempo ({limit})."
+timed_out = "Pasó {limit} sin avanzar."
 out_of_memory = "Superó el límite de memoria ({limit})."
 
 [cli.help]
@@ -143,7 +151,7 @@ cancelling = "Cancelando… se está escribiendo el resumen."
 converted_with_notes = "ℹ {name} — convertido con notas (ver el resumen)"
 cancelled_before_start = "Cancelado antes de escribir nada."
 summary_not_written = "⚠ No se pudo escribir el resumen en {path}. Comprueba que la carpeta existe y que puedes guardar archivos en ella."
-unexpected_error = "Ocurrió algo inesperado y ClearMD se detuvo: {detail}. Tus archivos no se modificaron; por favor repórtalo."
+unexpected_error = "Algo inesperado salió mal y ClearMD se detuvo: {detail}. Tus archivos no se modificaron. Si vuelve a pasar, copia estas líneas en un issue nuevo en github.com/ClearNote97/ClearMD/issues (revísalas antes: pueden incluir nombres de archivos)."
 time_left = "faltan {duration}"
 warning_slow = "⚠ {name} — podría tardar más de {limit} ({estimate}) y detenerse"
 cannot_open = "ClearMD no pudo abrir {path}. Ábrela desde tu explorador de archivos."
@@ -187,6 +195,8 @@ where_title = "Dónde Están Tus Archivos"
 where = "Tus archivos Markdown están en la carpeta {folder}, junto a este resumen."
 attention = "Necesita Tu Atención"
 left_out = "No Incluidos"
+# Convertidos con solo buenas noticias: lo que ClearMD ordenó (auditoría 2026-11-08).
+cleaned = "Lo que ClearMD Limpió"
 history_empty = "No hay lotes anteriores aquí."
 col_document = "Documento"
 col_folder = "Carpeta"
@@ -211,6 +221,8 @@ count.converted.one = "{count} convertido"
 count.converted.other = "{count} convertidos"
 count.skipped.one = "{count} omitido"
 count.skipped.other = "{count} omitidos"
+count.kept.one = "{count} conservado"
+count.kept.other = "{count} conservados"
 count.failed.one = "{count} con error"
 count.failed.other = "{count} con error"
 count.stopped.one = "{count} detenido"
@@ -316,9 +328,9 @@ cancelled = "Cancelado"
 [gui.welcome]
 step1 = "1. Elige una herramienta, luego archivos o una carpeta"
 step2 = "2. Revisa lo que se va a hacer"
-step3 = "3. Listo, tu carpeta se abre"
+step3 = "3. Confirma, y ves dónde quedaron tus archivos"
 title = "Te Damos la Bienvenida a ClearMD"
-intro = "Convierte, divide o une tus documentos en tres pasos:"
+intro = "Convierte, divide o une tus documentos así:"
 dont_show = "No volver a mostrar"
 start = "Empezar"
 
@@ -349,6 +361,7 @@ ready = "✓ Listo para convertir · {format}"
 exists = "↻ Su resultado ya existe · {format}: elige abajo"
 
 [gui.progress]
+pages = "Página {done} de {total}: sigue avanzando."
 counter = "{index} de {total}"
 long_file = "Los archivos grandes pueden tardar unos minutos."
 cancelling = "Cancelando… el archivo actual se detiene ya."
@@ -362,7 +375,14 @@ no_summary = "no se pudo escribir el resumen ahí. Comprueba que la carpeta exis
 cannot_open = "ClearMD no pudo abrir {path}. Ábrela desde tu explorador de archivos."
 stat_converted = "Convertidos"
 stat_skipped = "Omitidos"
-stat_failed = "Fallidos"
+stat_failed = "Con Error"
+stat_kept = "Conservados"
+# La palabra que abre cada fila de Resultados: el tipo no depende solo del color (auditoría).
+word_failed = "Con error:"
+word_stopped = "Detenido:"
+word_skipped = "Omitido:"
+where.one = "Tus archivos están en:\n{paths}"
+where.other = "Tus archivos están en estas carpetas:\n{paths}"
 stat_stopped = "Detenidos"
 open = "Abrir Carpeta de Resultados"
 again = "¿Qué Sigue?"
@@ -420,13 +440,20 @@ split_keep = "Guardar"
 
 [gui.help]
 title = "Cómo Usar ClearMD"
+# La Ayuda (auditoría 2026-11-08): la arma presenter/screens/help.py; {next}, {convert}, {split}
+# y {merge} son los nombres reales de los botones, y {drop} la frase de soltar cuando la ventana
+# lo permite.
+markdown_title = "Qué Es Markdown"
+markdown = "Texto simple, ordenado con títulos, listas y tablas, que las IA leen mejor que un PDF o un Word. Un archivo .md se abre con el Bloc de notas o con cualquier editor de texto."
 how_title = "Cómo se Usa"
-how_buttons = "1. Agrega archivos o una carpeta con los dos botones.\n2. Pulsa Convertir y revisa lo que va a pasar.\n3. Confirma: se escriben los resultados y se abre su carpeta."
-how = "1. Agrega archivos o una carpeta, o suéltalos en la ventana.\n2. Pulsa Convertir y revisa lo que va a pasar.\n3. Confirma: se escriben los resultados y se abre su carpeta."
+how = "1. En el Inicio, elige una herramienta: Convertir, Dividir o Unir.\n2. Agrega archivos o una carpeta con los botones{drop}, y pulsa {next}.\n3. Revisa lo que va a pasar con cada archivo y pulsa {next}.\n4. Pulsa {convert}, {split} o {merge}: solo entonces se escriben los resultados.\n5. En Resultados ves dónde quedaron y eliges qué sigue."
+how_drop = ", o suéltalos en la ventana"
+tools_title = "Las Tres Herramientas"
+tools = "Convertir: pasa cada documento a Markdown (carpeta OutputMD).\nDividir: corta un PDF, Markdown, texto, CSV o Excel en partes más pequeñas, por ejemplo para que quepan en una IA (carpeta OutputSep).\nUnir: junta varios documentos, en el orden de la lista, en un solo Markdown o un solo PDF (carpeta OutputUnif)."
 formats_title = "Qué Convierte"
-formats = "PDF, Word (.docx), PowerPoint (.pptx), Excel (.xlsx), texto OpenDocument (.odt), LaTeX (.tex), páginas web (.html), CSV, EPUB, cuadernos Jupyter (.ipynb), texto plano (.txt), correos (.eml), texto enriquecido (.rtf) y subtítulos (.srt, .vtt)."
+formats = "PDF, Word (.docx), PowerPoint (.pptx), Excel (.xlsx), texto OpenDocument (.odt), LaTeX (.tex), páginas web (.html), CSV, EPUB, cuadernos Jupyter (.ipynb), texto plano (.txt), correos (.eml), texto enriquecido (.rtf) y subtítulos (.srt, .vtt).\nNo lee el texto dentro de imágenes ni de páginas escaneadas. Los Word, Excel y PowerPoint antiguos (.doc, .xls, .ppt) se abren en su programa y se guardan como .docx, .xlsx o .pptx."
 where_title = "Dónde Quedan los Resultados"
-where = "En una carpeta ClearMD_Output junto a cada archivo o carpeta que elegiste, o en la carpeta que indiques. Cada documento queda como un archivo .md, y un resumen dice qué pasó con cada uno."
+where = "En una carpeta ClearMD_Output junto a cada archivo o carpeta que elegiste, o en la carpeta que indiques en Ajustes. Dentro, cada herramienta usa su carpeta, y un resumen (Resumen_ClearMD) dice qué pasó con cada archivo. Tus originales nunca se modifican."
 privacy_title = "Tu Privacidad"
 privacy = "100 % local: ClearMD nunca usa internet. Tus documentos nunca salen de tu computador."
 language_title = "Idioma · Language"
@@ -440,7 +467,14 @@ keyboard = "Ctrl+1 … Ctrl+4 abre un paso · Enter ejecuta la acción principal
 title = "ClearMD"
 subtitle = "Documentos a Markdown, en tu computador"
 local = "100 % local · nada sale de tu equipo"
-unexpected_error = "Algo inesperado salió mal: {detail}. Tus documentos originales no se modificaron y lo que ya se convirtió se conserva. Por favor repórtalo."
+unexpected_error = "Algo inesperado salió mal. Tus documentos originales no se modificaron y lo que ya se convirtió se conserva. Si vuelve a pasar, pulsa Copiar Detalles y pégalos en un issue nuevo en github.com/ClearNote97/ClearMD/issues (necesitas una cuenta gratuita de GitHub)."
+copy_details = "Copiar Detalles"
+details_copied = "Copiado. Pégalos en tu issue en github.com/ClearNote97/ClearMD/issues. Cambiamos los nombres de tus archivos y carpetas por <archivo>; aun así, léelos antes de enviarlos."
+details_text = "ClearMD {version} · {window} · {system}\nPara quien te dé soporte: {detail}"
+file_placeholder = "archivo"
+window_ttk = "App Clásica (ttk)"
+window_qt = "App Moderna (Qt)"
+window_flet = "App Estilo Móvil (flet)"
 
 [gui.nav]
 next = "Siguiente"
@@ -469,6 +503,14 @@ cancel = "Cancelar"
 
 [gui.convert]
 ready = "Listos para convertir: {count}"
+existing_keep.one = "1 ya existe y se conserva tal como está."
+existing_keep.other = "{count} ya existen y se conservan tal como están."
+existing_replace.one = "1 ya existe y se reemplazará."
+existing_replace.other = "{count} ya existen y se reemplazarán."
+existing_changed.one = "1 ya existe: se reemplaza solo si su original cambió."
+existing_changed.other = "{count} ya existen: se reemplazan solo si su original cambió."
+existing_ask.one = "1 ya existe: elige en Revisar si se conserva o se reemplaza."
+existing_ask.other = "{count} ya existen: elige en Revisar si se conservan o se reemplazan."
 
 [gui.steps]
 choose = "Elegir"
@@ -635,3 +677,15 @@ into_pdf = "en un solo PDF"
 "gui.convert.ready" = "Listos para unir: {count}"
 "gui.result.stat_converted" = "Unidos"
 "gui.result.all_good" = "Todos los documentos se unieron. El archivo está en la carpeta ClearMD_Output, en OutputUnif."
+
+[terminal]
+# Lo que dice la terminal en lugar de la ventana (auditoría 2026-11-08): opciones de la línea de
+# comandos en vez de botones. Las mismas claves, sus palabras (Catalog.for_terminal).
+"skip_action.existing_output" = "Usa --overwrite para reemplazarlo."
+"skip_action.too_much_memory_for_article" = "Conviértelo con --html full (la página completa, sin la garantía de este modo)."
+"skip_action.cut_not_for_markdown" = "Usa --split-parts o --split-words."
+"skip_action.no_pages_to_cut" = "Usa --split-parts o --split-words."
+"skip_action.cut_by_sheets" = "Usa --split-parts: las hojas se agrupan."
+"skip_action.not_for_pdf_merge" = "Usa --merge markdown para unirlo también."
+"error.nothing_to_measure.action" = "Divídelo mejor con --split-pages."
+"error.timed_out.action" = "Prueba dividiéndolo en partes más pequeñas con --split-parts."

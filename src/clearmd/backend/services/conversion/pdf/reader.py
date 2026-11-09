@@ -17,6 +17,7 @@ from clearmd.backend.services.conversion.pdf.pdfium.fonts import MAX_PAGE_CHARS,
 from clearmd.backend.services.conversion.pdf.pdfium.page_chars import page_chars, tight_boxes
 from clearmd.backend.services.conversion.pdf.pdfium.page_objects import page_rules
 from clearmd.backend.services.conversion.pdf.pdfium.pictures import pictures, placed
+from clearmd.backend.services.conversion.progress import report
 
 MAX_CROPS = 500  # equations cropped in a document: past it, the others are written as text
 
@@ -36,7 +37,9 @@ def read(document: object, images: ImageSink | None = None) -> Document:
     result = Document([], decoded_fonts=sum(1 for distance in shifts if distance))
     # The pixels pictures and equations may take in the whole document, and the equations cropped.
     budget = [MAX_DOCUMENT_PIXELS, MAX_CROPS]
-    for textpage, height, handle in text_pages(document):
+    total = max(raw.FPDF_GetPageCount(document), 0)
+    for done, (textpage, height, handle) in enumerate(text_pages(document), start=1):
+        report(done, total)  # "page 40 of 120", and the time limit counts from here (3B)
         if textpage is not None and raw.FPDFText_CountChars(textpage) > MAX_PAGE_CHARS:
             result.cut_pages += 1
         chars = None if textpage is None else page_chars(textpage, fonts)

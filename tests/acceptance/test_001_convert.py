@@ -15,6 +15,7 @@ from support import WINDOWS, put
 
 from clearmd.backend.api import composition
 from clearmd.frontend.cli import main
+from clearmd.i18n import load_catalog
 
 
 def test_ac_01_a_file_converts_into_clearmd_output(
@@ -135,11 +136,11 @@ def test_ac_23_and_ac_44_a_file_over_the_time_limit_is_stopped_not_failed(
     monkeypatch.setattr(composition, "default_limits", lambda: limits)
     assert main([str(workdir / "quick.txt"), str(workdir / "manual.pdf")]) == 1
     captured = capsys.readouterr()
-    assert "⏹ Stopped: manual.pdf — Exceeded the time limit" in captured.err
+    assert "⏹ Stopped: manual.pdf — It went" in captured.err and "without moving" in captured.err
     assert "after 0:00" in captured.err
     assert not (workdir / "ClearMD_Output" / "OutputMD" / "manual.md").exists()
     assert (workdir / "ClearMD_Output" / "OutputMD" / "quick.md").is_file()
-    assert "Try splitting it into smaller files." in captured.err
+    assert load_catalog("en").for_terminal().text("error.timed_out.action") in captured.err
     assert "stopped" in captured.out
 
 

@@ -48,7 +48,12 @@ def test_ac_03_review_shows_the_figures_and_the_skipped_first_with_what_to_do(
         ("Already Exist", "0"),
     ]
     first = app.review.files.rows()[0]
-    assert first.name == "notes.md" and first.warning and first.values[1]  # what to do about it
+    assert (
+        first.name == "notes.md" and first.tone == "warning" and first.values[1]
+    )  # what to do about it
+    assert app.review.files.current() == first  # selected at first: its reason below (035)
+    assert app.review.files.lines[0].texts[0].color == role("text")  # the selection's colour
+    app.review.files.clear_selection()
     assert app.review.files.lines[0].texts[0].color == role("warning")
     assert not (tmp_path / "ClearMD_Output").exists()  # nothing is written yet
     assert len(app.review.files.lines) == 3

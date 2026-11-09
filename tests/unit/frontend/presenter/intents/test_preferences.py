@@ -12,6 +12,7 @@ from clearmd.backend.schemas.models import (
     SkippedItem,
 )
 from clearmd.backend.schemas.settings import Settings, SettingsProblem, SettingsWarning
+from clearmd.i18n import load_catalog
 
 
 def test_texts_follow_the_language_setting() -> None:
@@ -51,11 +52,8 @@ def test_restore_defaults_saves_the_defaults() -> None:
 def test_the_welcome_shows_once_until_dismissed() -> None:
     _, view, fake, _ = make()
     steps = view.last("welcome")
-    assert steps == (
-        "1. Choose a tool, then files or a folder",
-        "2. Review what will be done",
-        "3. Done, your folder opens",
-    )
+    english = load_catalog("en")
+    assert steps == tuple(english.text(f"gui.welcome.step{n}") for n in (1, 2, 3))
     presenter, _, _, _ = make(fake)
     presenter.dismiss_welcome(show_again=False)
     assert fake.saved[-1].show_welcome is False

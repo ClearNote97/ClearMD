@@ -11,7 +11,12 @@ from dataclasses import replace
 from pathlib import Path
 
 from clearmd.backend.schemas.errors import Cancelled, ConversionError, ErrorCode
-from clearmd.backend.schemas.events import BatchEvent, ConversionFinished, ConversionStarted
+from clearmd.backend.schemas.events import (
+    BatchEvent,
+    ConversionFinished,
+    ConversionProgress,
+    ConversionStarted,
+)
 from clearmd.backend.schemas.formats import SPLIT_DIR_NAME
 from clearmd.backend.schemas.models import (
     BatchPlan,
@@ -157,10 +162,15 @@ def _timed_conversion(
     seconds_left = estimate.seconds_left(pending) if has_previous else None
     on_event(ConversionStarted(index, total, item, seconds_left))
     began = clock.now()
+    cancel.on_progress(
+        lambda done, pages: on_event(ConversionProgress(index, total, item, done, pages))
+    )
     try:
         outcome = _convert_one(item, runner, cancel, cutter)
     except Cancelled:
         outcome = ConversionOutcome(item, OutcomeStatus.CANCELLED)
+    finally:
+        cancel.on_progress(None)
     seconds = (clock.now() - began).total_seconds()
     estimate.record(estimated=item.cost, measured=seconds)
     return replace(outcome, seconds=seconds)

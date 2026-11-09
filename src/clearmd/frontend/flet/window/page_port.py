@@ -64,6 +64,9 @@ class PagePort(Protocol):
     ) -> None:
         """The keyboard, the window's close button (which only asks) and its size."""
 
+    def copy_text(self, text: str) -> None:
+        """Put ``text`` on the system clipboard ("Copy Details", feature 036)."""
+
     def hide(self) -> None: ...
 
     def destroy(self) -> None:

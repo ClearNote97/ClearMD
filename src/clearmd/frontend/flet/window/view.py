@@ -103,7 +103,8 @@ class FletView:
         self._actions.show_offer(offer)
 
     def _show_ready(self) -> None:
-        count = ready_line(self._shown.catalog, self._shown.last_plan)
+        decided = self._presenter.settings.on_existing_output, self._review.overwrite_answer()
+        count = ready_line(self._shown.catalog, self._shown.last_plan, *decided)  # 035
         if count is not None:
             self._converting.show_ready(count, str(self._main.output_label.value or ""))
 
@@ -147,8 +148,7 @@ class FletView:
 
     def _show_message(self, text: str) -> None:
         """Without a message its line takes no room: the page keeps it (024: Split's block)."""
-        self._frame.message.value = text
-        self._frame.message.visible = bool(text)
+        self._frame.message_line.show(text)  # no message: no "Copy Details" either (036)
 
     def apply_theme(self, name: str) -> None:
         """The two themes are always the page's; the mode says which one is on screen."""

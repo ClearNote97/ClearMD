@@ -11,10 +11,17 @@ def progress_view(
     current: tuple[int, int, str, float | None, str],
     done: int,
     elapsed: float,
+    pages: tuple[int, int] | None = None,
 ) -> ProgressView:
-    """``current``: index, total, name, seconds left, icon; ``elapsed``: seconds on this file."""
+    """``current``: index, total, name, seconds left, icon; ``elapsed``: seconds on this file;
+    ``pages``: how far it has got, when its converter tells (audit 2026-11-08, 3B)."""
     index, total, name, left, icon = current
     long_file = elapsed >= LONG_FILE_SECONDS
+    line = catalog.text("gui.progress.long_file") if long_file else None
+    if long_file and pages is not None:  # the file moves: say how far, not only "be patient"
+        line = catalog.text(
+            "gui.progress.pages", done=catalog.count(pages[0]), total=catalog.count(pages[1])
+        )
     return ProgressView(
         counter=catalog.text("gui.progress.counter", index=index, total=total),
         name=name,
@@ -25,6 +32,6 @@ def progress_view(
             else None
         ),
         elapsed=catalog.clock(elapsed) if long_file else None,
-        long_file=catalog.text("gui.progress.long_file") if long_file else None,
+        long_file=line,
         icon=icon,
     )

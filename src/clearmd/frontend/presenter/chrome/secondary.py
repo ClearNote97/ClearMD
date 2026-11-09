@@ -4,7 +4,7 @@ Convert more on Results once there is a result; and the line Convert shows befor
 from dataclasses import dataclass
 from enum import StrEnum
 
-from clearmd.frontend.presenter.models import PlanView, StateView
+from clearmd.frontend.presenter.models import PlanView, RowKind, StateView
 from clearmd.frontend.presenter.state import Action, AppState
 from clearmd.i18n import Catalog
 
@@ -34,8 +34,30 @@ def secondary_of(catalog: Catalog, state: StateView, *, has_result: bool) -> Sec
     return Secondary(SecondaryKind.NONE)
 
 
-def ready_line(catalog: Catalog | None, plan: PlanView | None) -> str | None:
-    """Convert's card before the batch: how many files are ready (``None``: nothing to say)."""
+def ready_line(
+    catalog: Catalog | None,
+    plan: PlanView | None,
+    setting: str = "ask",
+    answer: bool | str | None = None,
+) -> str | None:
+    """Convert's card before the batch (``None``: nothing to say): how many files will really be
+    written, with the decision about existing results already taken (audit 2026-11-08, 2C):
+    ``setting`` is Settings' "When a Result Already Exists", ``answer`` Review's choice."""
     if plan is None or catalog is None or not plan.stats:
         return None
-    return catalog.text("gui.convert.ready", count=plan.stats[0].value)
+    new = sum(1 for row in plan.rows if row.kind is RowKind.CONVERT)
+    existing = sum(1 for row in plan.rows if row.kind is RowKind.EXISTS)
+    if not existing:
+        return catalog.text("gui.convert.ready", count=plan.stats[0].value)
+    choice = setting if setting != "ask" else answer
+    if choice in (True, "overwrite"):
+        how, written = "replace", new + existing
+    elif choice == "changed":
+        how, written = "changed", new
+    elif choice in (False, "keep"):
+        how, written = "keep", new
+    else:
+        how, written = "ask", new
+    lines = [catalog.text("gui.convert.ready", count=written)]
+    lines.append(catalog.plural(f"gui.convert.existing_{how}", existing))
+    return "\n".join(lines)

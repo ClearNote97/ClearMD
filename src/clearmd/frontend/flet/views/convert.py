@@ -20,8 +20,13 @@ class ConvertView:
         self._wording = Wording()
         self._catalog: Catalog | None = None
         self.ready_count = label("bigText")
+        # What happens to the results that already exist, when some do (feature 035, AC-08).
+        self.ready_existing = label("onPage")
+        self.ready_existing.visible = False
         self.ready_where = label("muted")
-        self.ready = card([self.ready_count, self.ready_where], padding=3 * SPACE)
+        self.ready = card(
+            [self.ready_count, self.ready_existing, self.ready_where], padding=3 * SPACE
+        )
         self.counter = label("bigText")
         now = label("muted")
         self._wording.add(now, "gui.progress.current")
@@ -54,9 +59,14 @@ class ConvertView:
         self._fade(True)
 
     def show_ready(self, count: str, where: str) -> None:
+        """``count``: the presenter's ready line; a second line says what happens to the results
+        that already exist."""
         self.progress_card.visible = False
         self._fade(False)
-        self.ready_count.value = count
+        first, _, rest = count.partition("\n")
+        self.ready_count.value = first
+        self.ready_existing.value = rest
+        self.ready_existing.visible = bool(rest)
         self.ready_where.value = where
         self.ready.visible = True
 
@@ -65,6 +75,7 @@ class ConvertView:
         self._fade(True)
         catalog = self._catalog
         self.ready_count.value = catalog.text("gui.convert.ready", count="—") if catalog else "—"
+        self.ready_existing.value, self.ready_existing.visible = "", False
         self.ready_where.value = where
         self.ready.visible = True
 

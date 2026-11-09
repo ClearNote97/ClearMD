@@ -182,7 +182,7 @@ def test_l13_a_time_limit_is_shown_exactly(limit: float, shown: str) -> None:
         Path("a.pdf"), Path("o"), Path("o/a.md"), DETECTION, exists=False, cost=1.0
     )
     outcome = ConversionOutcome(item, OutcomeStatus.STOPPED, ErrorCode.TIMED_OUT, limit=limit)
-    assert f"({shown})" in stopped_message(load_catalog("en"), outcome)
+    assert f"went {shown} without moving" in stopped_message(load_catalog("en"), outcome)
 
 
 def test_m8_a_failure_inside_trafilatura_falls_back_to_the_full_page(

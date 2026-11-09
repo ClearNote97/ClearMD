@@ -23,7 +23,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     except (SystemExit, KeyboardInterrupt):
         raise
     except Exception as error:  # the last net: a message, never a traceback (UX contract)
-        catalog = load_catalog(resolve_language(requested_language(argv), DEFAULT_LANGUAGE))
+        catalog = load_catalog(
+            resolve_language(requested_language(argv), DEFAULT_LANGUAGE)
+        ).for_terminal()
         detail = p(f"{type(error).__name__}: {error}")
         print(catalog.text("cli.unexpected_error", detail=detail), file=sys.stderr)
         return EXIT_FAILED

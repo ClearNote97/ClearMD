@@ -129,6 +129,7 @@ jobs:
         shell: bash
         env:
           ISCC: ${{ steps.inno.outputs.iscc }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           # A tag v0.12.0 gives 0.12.0; a branch gives 0.0.0-<branch with / as ->, as the zip names do.
@@ -137,11 +138,17 @@ jobs:
           # The license pack of the installer: the same notices as the zip (packaging/notices.py).
           uv run --no-default-groups --group build python packaging/notices.py > dist/installer/THIRD-PARTY-NOTICES.txt
           # MSYS_NO_PATHCONV: Git Bash must not rewrite the compiler's /D option into a path.
-          MSYS_NO_PATHCONV=1 "$(cygpath -u "$ISCC")" "/DAppVersion=$version" packaging/installer/clearmd.iss
+          # Two editions of one script (feature 037, ADR-0052): the light one (ClearMD-Setup-<v>.exe,
+          # the Classic App alone, what most people need) and the full one (ClearMD-Setup-Full-<v>.exe).
+          MSYS_NO_PATHCONV=1 "$(cygpath -u "$ISCC")" "/DAppVersion=$version" "/DEdition=Light" packaging/installer/clearmd.iss
+          MSYS_NO_PATHCONV=1 "$(cygpath -u "$ISCC")" "/DAppVersion=$version" "/DEdition=Full" packaging/installer/clearmd.iss
           # AC-04: the same script compiled as an older version, into its own folder, so that the
           # check can install it first and then replace it with the current one (check_installer.ps1).
           mkdir -p dist/installer-old
-          MSYS_NO_PATHCONV=1 "$(cygpath -u "$ISCC")" "/DAppVersion=0.0.1" "/O$(cygpath -w "$PWD/dist/installer-old")" packaging/installer/clearmd.iss
+          MSYS_NO_PATHCONV=1 "$(cygpath -u "$ISCC")" "/DAppVersion=0.0.1" "/DEdition=Full" "/O$(cygpath -w "$PWD/dist/installer-old")" packaging/installer/clearmd.iss
+          # The real 2.8.1 installer (the last one before the new names and the editions): the check
+          # updates over it, so a leftover shortcut or a light install over other parts is caught.
+          gh release download v2.8.1 -D dist/installer-old -p "ClearMD-Setup-2.8.1.exe"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           ls -la dist/installer dist/installer-old
       - name: Installer checks (silent install, use, uninstall, nothing left)
@@ -149,7 +156,9 @@ jobs:
         shell: pwsh
         run: |
           pwsh -NoProfile -File packaging/check_installer.ps1 `
-            -Installer "dist/installer/ClearMD-Setup-${{ steps.installer.outputs.version }}.exe" `
+            -Installer "dist/installer/ClearMD-Setup-Full-${{ steps.installer.outputs.version }}.exe" `
+            -LightInstaller "dist/installer/ClearMD-Setup-${{ steps.installer.outputs.version }}.exe" `
+            -ReleasedInstaller "dist/installer-old/ClearMD-Setup-2.8.1.exe" `
             -Version "${{ steps.installer.outputs.version }}" `
             -OldInstaller "dist/installer-old/ClearMD-Setup-0.0.1.exe" `
             -OldVersion "0.0.1"

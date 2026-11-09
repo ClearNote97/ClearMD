@@ -120,8 +120,11 @@ class ProgressView:
 class ResultRow:
     name: str
     location: str
-    detail: str  # what happened and what to do
+    detail: str  # what happened and what to do, after a word saying which ("Failed:")
     icon: str
+    # DANGER for a failure or a stop, WARNING for what was left out: a tone of its own, and a
+    # word in ``detail``, so it never depends on the colour alone (audit 2026-11-08, F3-03).
+    tone: Tone = Tone.WARNING
 
 
 @dataclass(frozen=True)
@@ -141,3 +144,5 @@ class ResultView:
     folders: tuple[Path, ...]  # the ClearMD_Output folders of the batch
     stats: tuple[Stat, ...] = ()
     split_offer: str = ""  # "Split the Large PDFs (1)"; empty: none to offer (feature 025)
+    # Where the results are, as text the user can read and copy (audit 2026-11-08, F3-11).
+    where: str = ""

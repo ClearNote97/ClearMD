@@ -139,6 +139,15 @@ class Failed:
     detail: str
 
 
+@dataclass(frozen=True)
+class Progress:
+    """How far the current job has got (audit 2026-11-08, 3B): sent before its answer, any
+    number of times, at most once a second."""
+
+    done: int
+    total: int
+
+
 type PageJob = (
     CountPagesRequest
     | CutRequest

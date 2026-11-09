@@ -69,6 +69,7 @@ class FletApp:
         self.root: ft.Container = frame.root
         self.rail, self.surface, self.actions = frame.rail, frame.surface, frame.actions
         self.main, self.review, self.message = frame.main, frame.review, frame.message
+        self.message_line = frame.message_line
         self.converting, self.results, self.panel = frame.converting, frame.results, frame.panel
         self.pages, self.home = frame.pages, frame.home
         self.pickers = Pickers(self.page, self.presenter, self.shown, self.main.mode)
@@ -119,6 +120,13 @@ class FletApp:
 
     def show_message(self, text: str) -> None:
         self.view.show_message(text)
+
+    def show_details_button(self, label: str | None) -> None:
+        """ "Copy Details" beside the message after an unexpected error; ``None`` hides it (036)."""
+        self.message_line.show_details(label)
+
+    def copy_text(self, text: str) -> None:
+        self.page.copy_text(text)
 
     def show_welcome(self, steps: tuple[str, ...]) -> None:
         # Once the window is on screen: the presenter asks for it while starting.

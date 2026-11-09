@@ -18,6 +18,7 @@ from support.pyside_acceptance import QUIET, Held, confirm, converted, pump, to_
 from clearmd.backend.api import load_settings, settings_path
 from clearmd.backend.schemas.settings import Settings
 from clearmd.frontend.presenter.ports import ApiBackend
+from clearmd.frontend.presenter.screens.help import help_sections
 from clearmd.frontend.pyside import PySideApp
 from clearmd.frontend.pyside.views.dialogs.help import HelpDialog
 from clearmd.frontend.pyside.views.dialogs.settings import SettingsDialog
@@ -50,8 +51,8 @@ def test_ac_05_help_is_always_one_click_away(
     assert isinstance(dialog, HelpDialog) and dialog.isVisible()
     shown = " ".join(label.text() for label in dialog.findChildren(QLabel))
     catalog = load_catalog(language)
-    for section in ("how", "formats", "where", "privacy", "language"):
-        assert catalog.text(f"gui.help.{section}") in shown
+    for title, text in help_sections(catalog, drops=True):  # the presenter's sections (035)
+        assert title in shown and text in shown
     assert "Settings" in shown and "Ajustes" in shown  # where to switch, in both languages
     assert f"{app.presenter.version}" in shown  # the version is in the help too
     escape(app)  # Esc closes a dialog
@@ -67,11 +68,9 @@ def test_ac_05_the_welcome_appears_until_dont_show_again(qt_window: Window) -> N
     dialog = app.dialogs.current
     assert isinstance(dialog, WelcomeDialog)
     texts = [label.text() for label in dialog.findChildren(QLabel)]
-    assert [text for text in texts if text[:2] in {"1.", "2.", "3."}] == [
-        "1. Choose a tool, then files or a folder",
-        "2. Review what will be done",
-        "3. Done, your folder opens",
-    ]
+    catalog = load_catalog("en")
+    steps = [catalog.text(f"gui.welcome.step{n}") for n in (1, 2, 3)]
+    assert [text for text in texts if text[:2] in {"1.", "2.", "3."}] == steps
     dialog.dont_show.setChecked(True)
     dialog.close_dialog()
     assert backend.settings.show_welcome is False

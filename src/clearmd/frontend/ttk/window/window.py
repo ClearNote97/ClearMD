@@ -49,7 +49,9 @@ class TtkApp:
         self.look.use(self.shown.palette)  # the styles exist before the widgets that use them
         self.scheduler = Scheduler(self.root)
         self.presenter = Presenter(self, backend)  # it never calls the view while it is built
-        self.dialogs = DialogHost(self.root, self.fonts, self.presenter, self.shown)
+        self.dialogs = DialogHost(
+            self.root, self.fonts, self.presenter, self.shown, drops=self.drops
+        )
         self._build()
         self.closing = Closing(
             self.root, self.presenter, self.shown, self.scheduler, self.dialogs, self.primary_button
@@ -154,6 +156,16 @@ class TtkApp:
 
     def show_message(self, text: str) -> None:
         self.view.show_message(text)
+
+    def show_details_button(self, label: str | None) -> None:
+        """ "Copy Details" after an unexpected error; ``None`` hides it (feature 036)."""
+        self.actions.show_details(label, self.presenter.copy_details)
+
+    def copy_text(self, text: str) -> None:
+        """The system clipboard (feature 036); kept by Tk until another program takes it."""
+        self.root.clipboard_clear()
+        self.root.clipboard_append(text)
+        self.root.update()
 
     def show_welcome(self, steps: tuple[str, ...]) -> None:
         # Once the window is on screen: the presenter asks for it while starting.

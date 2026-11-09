@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QWidget
 from clearmd.frontend.design.palette import LIGHT, PALETTES
 from clearmd.frontend.presenter import AppState, Presenter
 from clearmd.frontend.presenter.chrome.header import header_of
-from clearmd.frontend.presenter.chrome.secondary import SecondaryKind, ready_line, secondary_of
+from clearmd.frontend.presenter.chrome.secondary import ready_line
 from clearmd.frontend.presenter.models import (
     InputRow,
     OutputChoice,
@@ -23,6 +23,7 @@ from clearmd.frontend.pyside.window.dialog_host import DialogHost
 from clearmd.frontend.pyside.window.frame import Frame
 from clearmd.frontend.pyside.window.offer import offer_of
 from clearmd.frontend.pyside.window.primary_button import PrimaryButton
+from clearmd.frontend.pyside.window.secondary import show_secondary
 from clearmd.frontend.pyside.window.shown import Shown
 from clearmd.i18n import Catalog
 
@@ -47,6 +48,7 @@ class PySideView:
         self._stack = frame.stack
         self._actions = frame.actions
         self._message = frame.message
+        self._details = frame.details
         self._home = frame.home
         self._panel = frame.panel
         self._main = frame.main
@@ -61,7 +63,7 @@ class PySideView:
             self._shown.scan = None
         page_changed = previous is not None and previous.page != state.page
         if page_changed:
-            self._message.setText("")  # a message belongs to the page it was given on
+            self.show_message("")  # a message belongs to the page it was given on
             self._primary_button.page_shown()
         converting = state.state is AppState.CONVERTING
         if converting and (previous is None or previous.state is not AppState.CONVERTING):
@@ -75,7 +77,7 @@ class PySideView:
         if page_changed:
             self._primary_button.pause()
             self.rest_focus()
-        self._show_secondary(state)
+        show_secondary(self._actions, self._shown, state, self._presenter, self._dialogs.what_next)
         self._show_offer()
         self._header()
         controls.apply_enabled(
@@ -87,24 +89,16 @@ class PySideView:
         the page's panel; Tab goes on to its first control."""
         self._panel.setFocus(Qt.FocusReason.OtherFocusReason)
 
-    def _show_secondary(self, state: StateView) -> None:
-        """Back on Review and Convert, Cancel while working, Convert more on Results."""
-        second = secondary_of(
-            self._shown.need_catalog(), state, has_result=self._shown.last_result is not None
-        )
-        commands = {
-            SecondaryKind.CANCEL: self._presenter.cancel,
-            SecondaryKind.BACK: lambda: self._presenter.go_to(second.back_to),
-            SecondaryKind.AGAIN: self._dialogs.what_next,
-        }
-        command = commands.get(second.kind)
-        self._actions.show_secondary(second.text or None, command, strong=second.strong)
-
     def _show_offer(self) -> None:
         self._actions.show_offer(offer_of(self._shown))
 
     def _show_ready(self) -> None:
-        count = ready_line(self._shown.catalog, self._shown.last_plan)
+        count = ready_line(  # with the decision about existing results taken (035, AC-08)
+            self._shown.catalog,
+            self._shown.last_plan,
+            self._presenter.settings.on_existing_output,
+            self._review.overwrite_answer(),
+        )
         if count is not None:
             self._converting.show_ready(count, self._main.output_label.text())
 
@@ -140,10 +134,18 @@ class PySideView:
         self._review.forget()
         self._converting.forget(self._main.output_label.text())
         self._results.forget()
+        self._details.hide()
         self._show_offer()
 
     def show_message(self, text: str) -> None:
         self._message.setText(text)
+        if not text:  # "Copy Details" goes with the message it explains (036)
+            self._details.hide()
+
+    def show_details_button(self, text: str | None) -> None:
+        self._details.setText(text or "")
+        self._details.setAccessibleName(text or "")
+        self._details.setVisible(bool(text))
 
     def apply_theme(self, theme: str) -> None:
         self._shown.palette = PALETTES.get(theme, LIGHT)

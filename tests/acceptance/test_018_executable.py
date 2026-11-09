@@ -5,6 +5,8 @@ spec, the launcher, the workflow, the packaging and the installer say what the c
 import re
 from pathlib import Path
 
+from support.inno import edition
+
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGING = ROOT / "packaging"
 RELEASE = ROOT / ".github" / "workflows" / "release.yml"
@@ -60,11 +62,11 @@ def test_ac_09_ci_builds_starts_and_releases_it_on_windows_and_linux() -> None:
 
 
 def test_ac_10_the_installer_offers_the_flet_app_as_a_fourth_part() -> None:
-    script = read(ISS)
+    script = edition(read(ISS))
     assert 'Name: "flet"; Description: "{cm:CompFlet}"; Types: fletonly full' in script
     assert 'Name: "fletonly"; Description: "{cm:TypeFlet}"' in script
     assert 'Source: "{#Root}\\dist\\ClearMD-Flet\\*"; DestDir: "{app}\\ClearMD-Flet"' in script
-    assert '"{group}\\ClearMD (flet)"' in script
+    assert '"{group}\\{cm:ShortcutFlet}"' in script
     assert 'Name: "{app}\\ClearMD-Flet"; Check: NotFlet' in script
     painted = read(PAINTED)
     assert "CustomMessage('CardFletTitle')" in painted

@@ -71,7 +71,9 @@ def _titles() -> list[str]:
     text = read(ISS) + read(PAINTED)
     titles = [x.split("=", 1)[1] for x in text.splitlines() if names.match(x)]
     titles += [x.split("=", 1)[1] for x in text.splitlines() if x.startswith("spanish.Welcome")]
-    titles += [x.split("=", 1)[1] for x in text.splitlines() if x.startswith("spanish.Finished")]
+    titles += [
+        x.split("=", 1)[1] for x in text.splitlines() if x.startswith("spanish.FinishedHeading")
+    ]
     return titles
 
 

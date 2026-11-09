@@ -28,6 +28,11 @@ class ConvertView(ttk.Frame):
         self.ready = ttk.Frame(self, style=CARD, padding=3 * SPACE)
         self.ready_count = ttk.Label(self.ready, font=fonts["title"])
         self.ready_count.pack(anchor="w")
+        # What happens to the results that already exist (035, AC-08): the second line, wrapped.
+        self.ready_existing = ttk.Label(self.ready, font=fonts["strong"], justify="left")
+        self.ready_existing.bind(
+            "<Configure>", lambda e: self.ready_existing.configure(wraplength=max(e.width, 200))
+        )
         self.ready_where = ttk.Label(self.ready, style=MUTED, wraplength=640, justify="left")
         self.ready_where.pack(anchor="w", pady=(SPACE, 0))
         self.ready.pack(fill="x")
@@ -54,7 +59,13 @@ class ConvertView(ttk.Frame):
         """The batch has not started: what is ready, and where the results go."""
         self.progress_card.pack_forget()
         self._fade(False)
-        self.ready_count.configure(text=count)
+        first, _, existing = count.partition("\n")
+        self.ready_count.configure(text=first)
+        self.ready_existing.configure(text=existing)
+        if existing:
+            self.ready_existing.pack(fill="x", pady=(SPACE, 0), after=self.ready_count)
+        else:
+            self.ready_existing.pack_forget()
         self.ready_where.configure(text=where)
         self.ready.pack(fill="x")
 
@@ -65,6 +76,7 @@ class ConvertView(ttk.Frame):
         self._fade(True)
         ready = self._catalog.text("gui.convert.ready", count="—") if self._catalog else "—"
         self.ready_count.configure(text=ready)
+        self.ready_existing.pack_forget()
         self.ready_where.configure(text=where)
         self.ready.pack(fill="x")
 

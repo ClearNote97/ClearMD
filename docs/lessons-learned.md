@@ -16,6 +16,7 @@ The lessons are grouped by theme:
 | VII | Operational efficiency: agents, environment, CI |
 | VIII | Releasing to non-technical users |
 | IX | What the audit boards taught (2026-11-08) |
+| X | Applying an audit (2.9.0 – 2.10.0) |
 
 Each lesson says what happened, then what a template should do. Within a part, the lessons that would have
 saved the most come first.
@@ -25,6 +26,9 @@ saved the most come first.
 > - before the external audit by three boards (backend, frontend, conciliator), to bring Parts I–VIII up to
 >   2.8.1;
 > - after the audit, to add Part IX.
+>
+> On 2026-11-09, after the audit's improvements (2.9.0 and 2.10.0), Part X was added before the
+> second audit, and Part XI after it.
 >
 > The full report is in [`audit/2026-11-08-audit-boards.md`](./audit/2026-11-08-audit-boards.md).
 
@@ -545,3 +549,59 @@ core lesson is that the happy path was well protected, and trust broke at the ed
     run lost 6 of 9 agents to a DNS outage. With a retry per agent, the rerun lost none.
   - Keep the private corpus out of reports. Auditors were told not to quote private documents, yet two file
     names still leaked into evidence strings. Scan the report before publishing it.
+
+---
+
+## Part X — Applying an audit (2.9.0 – 2.10.0)
+
+The owner accepted the ten improvements and three decisions. The lead did the backend, the
+presenter and the texts. Three toolkit agents did the windows, and a doubts board settled the
+questions about people. Lessons from turning findings into releases:
+
+### X.1 Plan releases by the files that features share, not by the findings' numbers
+
+- **What happened.** The plan was three releases (improvements 1–3, 4–7, 8–10). Features 035,
+  036 and 037 all changed the two catalogs and the installer script. Splitting them by hand,
+  with no local Windows to test the installer, was riskier than shipping them together.
+  2.10.0 carries all three. The doubts board's real safeguard was kept: a full manual release
+  run on the branch before the tag.
+- **For the template:** split the text catalogs by area (`i18n/<lang>/<area>.toml`), so that two
+  features rarely touch the same file. When a release must carry less than the working tree
+  holds, commit through a temporary index (`GIT_INDEX_FILE`). The agents keep working in the
+  tree, and the branch's CI (`workflow_dispatch`) tests exactly what will be tagged.
+
+### X.2 A rule moved into the presenter breaks fakes that encoded the old world
+
+- Merge now needs two documents before it starts. Two ttk tests used the fake backend's default
+  plan, which had one document, and failed only on CI. A fake's defaults are assumptions:
+  tests that depend on a rule should pass their data explicitly.
+
+### X.3 Copies of interface text in tests still break
+
+- Three tests broke again when the texts were made honest: "possible zip bomb", "exceeded the
+  time limit", "every N pages". Lesson V.2 stands, and a template should enforce it with a meta
+  test that bans literal catalog sentences in test files.
+
+### X.4 Ask a board when the question is about people, then record the deviation
+
+- Three doubts went to a small board, each a choice a user would feel: a light installer, the
+  windows' names, and what an unexpected error shows. The board gave exact strings, risks,
+  checks and its dissent. The lead followed it, except on how to group the releases, and wrote
+  that down (`docs/audit/2026-11-09-doubts-board-1.md`).
+
+### X.5 Give agents a measurable budget
+
+- The ttk agent was asked for "1,000 rows without freezing". It measured 4.56 s, cached the row
+  pictures and drew only visible rows, and reached 0.05 s. A theme switch went from 7.98 s to
+  0.53 s. A number in the brief turned a vague wish into a test.
+
+### X.6 Patterns worth keeping
+
+- **Time limits count from the last progress, under a ceiling.** A long file that keeps moving
+  finishes, and a stuck one stops. The window can say "page N of M".
+- **Anything sent to a public page is cleaned first.** "Copy Details" replaces every path with
+  `<file>.ext`, because issues are public and paths carry people's names.
+- **Some toolkits cannot confirm success.** flet's clipboard is asynchronous: a failure inside it
+  never reaches the presenter. Write the limit down rather than promise "Copied" without it.
+- **Regenerate screenshots after the version bump.** The windows' shots showed the old version
+  until they were taken again (lesson VII.2, met again).

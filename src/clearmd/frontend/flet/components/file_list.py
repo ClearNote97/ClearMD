@@ -20,7 +20,7 @@ class ListRow:
     icon: str
     name: str
     values: tuple[str, ...]  # one per extra column
-    warning: bool = False  # drawn in the warning colour
+    tone: str = ""  # its texts' colour role ("warning", "danger"; "": the page's text), 035
     payload: Any = None  # what the row stands for (a path), returned by ``selected``
     extra: ft.LayoutControl | None = None  # a last cell of its own (Merge's ▲ ▼, feature 032)
 
@@ -32,6 +32,12 @@ def size(cell: ft.LayoutControl, column: int, widths: Sequence[int | None]) -> N
         cell.expand = True
     else:
         cell.width = width
+
+
+def tint(texts: Sequence[ft.Text], tone: str) -> None:
+    """A row's texts in its tone's colour, or the page's text colour."""
+    for text in texts:
+        text.color = role(tone or "text")
 
 
 @dataclass(frozen=True)
@@ -147,6 +153,7 @@ class FileList:
         for index, line in enumerate(self.lines):
             chosen = index in selected
             line.frame.bgcolor = role("selected") if chosen else None
+            tint(line.texts, "" if chosen else self._rows[index].tone)
             if line.box is not None:
                 line.box.value = chosen
         if self._on_selection is not None:
@@ -160,8 +167,7 @@ class FileList:
         for text in texts:
             text.max_lines, text.overflow = 1, ft.TextOverflow.ELLIPSIS
             text.tooltip = text.value
-            if row.warning:
-                text.color = role("warning")
+        tint(texts, row.tone)
         texts[0].expand = True
         name = ft.Row([picture, texts[0]], spacing=SPACE)
         cells: list[ft.LayoutControl] = [number, name, *texts[1:]]

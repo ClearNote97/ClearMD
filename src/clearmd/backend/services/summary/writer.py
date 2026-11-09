@@ -87,11 +87,12 @@ class MarkdownSummaryWriter:
         if content.attention_line:
             headline += f" {content.attention_line}"
         lines = [f"# {text('summary.title')}", "", headline, "", content.batch_line, ""]
-        lines += [
-            f"## {text('summary.where_title')}",
-            text(content.where_key, folder=_code(content.folder + "/")),
-            "",
-        ]
+        if content.has_files:
+            lines += [
+                f"## {text('summary.where_title')}",
+                text(content.where_key, folder=_code(content.folder + "/")),
+                "",
+            ]
         lines += self._section("summary.attention", self._attention(content.attention))
         if content.converted:
             lines += [
@@ -107,6 +108,7 @@ class MarkdownSummaryWriter:
                 ),
                 "",
             ]
+        lines += self._section("summary.cleaned", self._attention(content.cleaned))
         lines += self._section("summary.left_out", (self._line(e) for e in content.left_out))
         kept = (f"{self._line(e)} → {_code(e.result)}" for e in content.kept)
         lines += self._section("summary.kept", kept)

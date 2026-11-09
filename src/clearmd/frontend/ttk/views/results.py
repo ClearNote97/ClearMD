@@ -1,4 +1,5 @@
-"""Step 4, Results: the figures, each problem in plain words, Open results folder (AC-11, AC-12)."""
+"""Step 4, Results: the figures, where the files are (text to read and copy, 035), each problem in
+plain words with its tone, Open results folder (AC-11, AC-12)."""
 
 import tkinter as tk
 import tkinter.font as tkfont
@@ -7,11 +8,14 @@ from typing import Any
 
 from clearmd.frontend.design.metrics import GAP, SPACE
 from clearmd.frontend.design.palette import Palette
-from clearmd.frontend.presenter.models import ResultView
+from clearmd.frontend.presenter.models import ResultView, Tone
 from clearmd.frontend.ttk.components.file_list import Column, FileList, ListRow
 from clearmd.frontend.ttk.components.stats import Stats
+from clearmd.frontend.ttk.components.where_text import WhereText
 from clearmd.frontend.ttk.visuals.style_names import CARD, ON_PAGE, PAGE
 from clearmd.i18n import Catalog
+
+_TAGS = {Tone.DANGER: "danger", Tone.WARNING: "warning"}  # a row's tone, its colour (AC-03)
 
 
 class ResultsView(ttk.Frame):
@@ -30,6 +34,7 @@ class ResultsView(ttk.Frame):
 
         self.stats = Stats(self, fonts=fonts)
         self.stats.pack(fill="x")
+        self.where = WhereText(self, fonts=fonts)  # where the files are (feature 035, AC-06)
 
         self.all_good = ttk.Frame(self, style=CARD, padding=3 * SPACE)
         message = ttk.Label(self.all_good, font=fonts["strong"], wraplength=640)
@@ -59,11 +64,15 @@ class ResultsView(ttk.Frame):
         self.stats.show(result.stats)
         for widget in (self.all_good, self.problems_title, self.problems, self.detail):
             widget.pack_forget()
+        self.where.show(result.where, after=self.stats)
         if result.rows:
             self.problems_title.pack(anchor="w", pady=(GAP, 0))
             self.problems.pack(fill="both", expand=True, pady=(SPACE, 0))
             self.problems.show(
-                [ListRow(row.icon, row.name, (row.detail,), tag="warning") for row in result.rows]
+                [
+                    ListRow(row.icon, row.name, (row.detail,), tag=_TAGS.get(row.tone, "warning"))
+                    for row in result.rows
+                ]  # fmt: skip
             )
             self.detail.pack(side="bottom", fill="x", pady=(SPACE, 0), before=self.problems)
             children = tree.get_children()
@@ -80,6 +89,7 @@ class ResultsView(ttk.Frame):
         self._wait()
         for widget in (self.all_good, self.problems_title, self.problems, self.detail):
             widget.pack_forget()
+        self.where.show("")
 
     def _show_detail(self) -> None:
         row = self.problems.current()
@@ -103,6 +113,7 @@ class ResultsView(ttk.Frame):
         )
 
     def apply_palette(self, palette: Palette) -> None:
+        self.where.apply_palette(palette)
         self.stats.apply_palette(palette)
         self.problems.apply_palette(palette)
 

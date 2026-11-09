@@ -2,6 +2,41 @@
 
 Each file can be checked against `SHA256SUMS.txt` ([how](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)). / Cada archivo se puede comprobar con `SHA256SUMS.txt` ([cómo](https://github.com/ClearNote97/ClearMD/blob/main/SECURITY.md#checking-a-download)).
 
+Most people need only `ClearMD-Setup-<version>.exe` (about 40 MB, the Classic App). `ClearMD-Setup-Full-<version>.exe` adds the Modern App, the Mobile-Style App and the Command Line. / A la mayoría le basta `ClearMD-Setup-<versión>.exe` (unos 40 MB, la App Clásica). `ClearMD-Setup-Full-<versión>.exe` agrega la App Moderna, la App Estilo Móvil y la Línea de Comandos.
+
+**New in 2.10.0 / Novedades de la 2.10.0** — the rest of the audit's improvements / el resto de las mejoras de la auditoría
+- **A light installer.** `ClearMD-Setup-<version>.exe` installs the Classic App and weighs about
+  what it installs; `ClearMD-Setup-Full-<version>.exe` has every part. The light one never
+  touches the other parts: if you have them, it tells you which file to use. / **Un instalador
+  liviano.** `ClearMD-Setup-<versión>.exe` instala la App Clásica y pesa más o menos lo que
+  instala; `ClearMD-Setup-Full-<versión>.exe` trae todas las partes. El liviano nunca toca las
+  otras partes: si las tienes, te dice qué archivo usar.
+- **Honest signals.** What ClearMD only tidied up (headers removed) is no longer "needs your
+  attention"; what you chose to keep is "Kept", with its folder; every row of Results says what
+  happened to it in words. / **Señales honestas.** Lo que ClearMD solo ordenó (encabezados
+  quitados) ya no "necesita tu atención"; lo que elegiste conservar es "Conservados", con su
+  carpeta; cada fila de Resultados dice con palabras qué le pasó.
+- **Where your files are**, written on Results; **the full reason** of each file on Review; step 3
+  says how many files will really be written. / **Dónde están tus archivos**, escrito en
+  Resultados; **el motivo completo** de cada archivo en Revisar; el paso 3 dice cuántos archivos
+  se escribirán de verdad.
+- **A Help that guides**: the three tools, the real buttons, what Markdown is. / **Una Ayuda que
+  orienta**: las tres herramientas, los botones reales, qué es Markdown.
+- **Clear messages**: no command-line options or library names in the window; an encrypted Word
+  file is "protected", an empty file is "empty"; old .doc, .xls and .ppt files and pictures say
+  what to do; an unexpected error offers **Copy Details** (your file names hidden). / **Mensajes
+  claros**: sin opciones de terminal ni nombres de librerías en la ventana; un Word cifrado está
+  "protegido", un archivo vacío está "vacío"; los .doc, .xls y .ppt antiguos y las imágenes dicen
+  qué hacer; un error inesperado ofrece **Copiar Detalles** (sin los nombres de tus archivos).
+- **Page N of M** while a long PDF converts, and a file is stopped only when it stops moving. /
+  **Página N de M** mientras convierte un PDF largo, y un archivo solo se detiene si deja de
+  avanzar.
+- The installer speaks plainly: Classic App, Modern App, Mobile-Style App; a Spanish install opens
+  the app in Spanish. The classic window's list shows its scroll bar and stays quick with
+  thousands of files. / El instalador habla claro: App Clásica, App Moderna, App Estilo Móvil; una
+  instalación en español abre la app en español. La lista de la ventana clásica muestra su barra
+  y sigue rápida con miles de archivos.
+
 **New in 2.9.0 / Novedades de la 2.9.0** — the first round of the audit's improvements / la primera ronda de mejoras de la auditoría
 - **Your earlier work is never lost.** Splitting again replaces the earlier parts only when
   every new one is ready; a second merge in the same minute gets its own file, "(2)". / **Tu

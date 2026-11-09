@@ -8,7 +8,6 @@ dropped.
 
 import time
 from collections.abc import Callable, Sequence
-from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 from clearmd.backend.schemas.settings import Settings
@@ -19,6 +18,7 @@ from clearmd.frontend.presenter.intents.conversion import Conversion
 from clearmd.frontend.presenter.intents.inputs import Inputs
 from clearmd.frontend.presenter.intents.navigation import Navigation
 from clearmd.frontend.presenter.intents.preferences import Preferences
+from clearmd.frontend.presenter.intents.reset import copy_details
 from clearmd.frontend.presenter.intents.results import Results
 from clearmd.frontend.presenter.intents.tools import Tools
 from clearmd.frontend.presenter.models import NextChoice
@@ -27,14 +27,8 @@ from clearmd.frontend.presenter.screens.next import next_choices
 from clearmd.frontend.presenter.session import Session
 from clearmd.frontend.presenter.state import AppState, Tool
 from clearmd.frontend.presenter.system_theme import detect_system_theme
+from clearmd.frontend.presenter.version import app_version
 from clearmd.i18n import Catalog
-
-
-def app_version() -> str:
-    try:
-        return version("clearmd")
-    except PackageNotFoundError:  # running from sources without metadata
-        return "dev"
 
 
 class Presenter:
@@ -90,8 +84,7 @@ class Presenter:
         return app_version()
 
     @property
-    def output_folder(self) -> Path | None:
-        """The folder chosen for the results; ``None``: next to the originals."""
+    def output_folder(self) -> Path | None:  # the results' folder; None: next to the originals
         return self._session.output_folder
 
     def start(self) -> None:
@@ -141,8 +134,7 @@ class Presenter:
     def go_to(self, page: int) -> None:  # a step, or 0: Home; only what is on screen changes
         self._navigation.go_to(page)
 
-    def press_primary(self, overwrite: bool | str | None = None) -> None:
-        """The page's primary action: Next, Next, Convert, Open results folder."""
+    def press_primary(self, overwrite: bool | str | None = None) -> None:  # Next, Convert, Open
         self._navigation.press_primary(overwrite)
 
     def next_choices(self) -> tuple[NextChoice, ...]:  # Results' "What Next?" (feature 033)
@@ -157,8 +149,7 @@ class Presenter:
     def confirm(self, overwrite: bool | str | None = None) -> None:
         self._conversion.confirm(overwrite)
 
-    def cancel(self) -> None:
-        """Stop now: an analysis is dropped; a batch stops its current file at once (ADR-0015)."""
+    def cancel(self) -> None:  # an analysis is dropped; a batch stops its file at once (0015)
         if self.state is AppState.ANALYZING:
             self._analysis.cancel()
         elif self.state is AppState.CONVERTING:
@@ -172,6 +163,9 @@ class Presenter:
 
     def open_results(self) -> None:
         self._results.open_results()
+
+    def copy_details(self) -> None:  # "Copy Details" after an unexpected error (D3)
+        copy_details(self._session, self._display)
 
     def save_settings(self, settings: Settings) -> None:
         self._preferences.save_settings(settings)

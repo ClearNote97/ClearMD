@@ -8,6 +8,7 @@ dropped files).
 
 from collections.abc import Callable
 
+from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QApplication
 
 from clearmd.frontend.presenter import Presenter
@@ -77,6 +78,7 @@ class PySideApp:
         self.rail, self.surface, self.actions = frame.rail, frame.surface, frame.actions
         self.home, self.main = frame.home, frame.main
         self.review, self.message = frame.review, frame.message
+        self.details = frame.details  # "Copy Details" (036)
         self.converting, self.results = frame.converting, frame.results
         self.pickers = Pickers(
             self.window, self.presenter, self.shown, self.main.next_to, self.main.in_folder
@@ -125,6 +127,12 @@ class PySideApp:
 
     def show_message(self, text: str) -> None:
         self.view.show_message(text)
+
+    def show_details_button(self, label: str | None) -> None:
+        self.view.show_details_button(label)
+
+    def copy_text(self, text: str) -> None:
+        QGuiApplication.clipboard().setText(text)  # "Copy Details" (036)
 
     def show_welcome(self, steps: tuple[str, ...]) -> None:
         # Once the window is on screen: the presenter asks for it while starting.

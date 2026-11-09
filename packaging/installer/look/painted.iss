@@ -3,29 +3,29 @@
 ; Look is painted. Windows draws the buttons and the check list itself: those stay native.
 
 [CustomMessages]
-english.CardTtkTitle=ClearMD (ttk) - The Classic App
-english.CardTtkTag=RECOMMENDED · about 36 MB
+english.CardTtkTitle=Classic App
+english.CardTtkTag=RECOMMENDED · about 37 MB · made with Tk
 english.CardTtkBody=The lightest: one file. The first start takes a few seconds.
-english.CardQtTitle=ClearMD (Qt) - The Modern App
-english.CardQtTag=about 130 MB
+english.CardQtTitle=Modern App
+english.CardQtTag=about 130 MB · made with Qt
 english.CardQtBody=Smoother, sharper on high-resolution screens; opens quickly.
-english.CardFletTitle=ClearMD (flet) - The Flutter App
-english.CardFletTag=about 120 MB
-english.CardFletBody=Drawn like phone apps; opens quickly. Files added with its buttons.
-english.CardCliTitle=Command Line - For Advanced Users
-english.CardCliTag=about 36 MB
+english.CardFletTitle=Mobile-Style App
+english.CardFletTag=about 120 MB · made with Flutter (flet)
+english.CardFletBody=Looks like a phone app; opens quickly. Add files with its buttons (no dragging).
+english.CardCliTitle=Command Line
+english.CardCliTag=FOR ADVANCED USERS · about 36 MB
 english.CardCliBody=No window: you type clearmd-cli "C:\My documents". For scripts.
-spanish.CardTtkTitle=ClearMD (ttk) - La App Clásica
-spanish.CardTtkTag=RECOMENDADA · unos 36 MB
+spanish.CardTtkTitle=App Clásica
+spanish.CardTtkTag=RECOMENDADA · unos 37 MB · hecha con Tk
 spanish.CardTtkBody=La más liviana: un solo archivo. El primer inicio tarda unos segundos.
-spanish.CardQtTitle=ClearMD (Qt) - La App Moderna
-spanish.CardQtTag=unos 130 MB
+spanish.CardQtTitle=App Moderna
+spanish.CardQtTag=unos 130 MB · hecha con Qt
 spanish.CardQtBody=Más suave y nítida en pantallas de alta resolución; abre rápido.
-spanish.CardFletTitle=ClearMD (flet) - La App Flutter
-spanish.CardFletTag=unos 120 MB
-spanish.CardFletBody=Dibujada como las apps de teléfono; abre rápido. Archivos con sus botones.
-spanish.CardCliTitle=Línea de Comandos - Para Usuarios Avanzados
-spanish.CardCliTag=unos 36 MB
+spanish.CardFletTitle=App Estilo Móvil
+spanish.CardFletTag=unos 120 MB · hecha con Flutter (flet)
+spanish.CardFletBody=Se ve como una app de teléfono; abre rápido. Los archivos se agregan con sus botones (no se arrastran).
+spanish.CardCliTitle=Línea de Comandos
+spanish.CardCliTag=PARA USUARIOS AVANZADOS · unos 36 MB
 spanish.CardCliBody=Sin ventana: escribes clearmd-cli "C:\Mis documentos". Para scripts.
 
 [Code]

@@ -29,6 +29,7 @@ class ListRow:
     name: str
     values: tuple[str, ...]  # one per extra column
     warning: bool = False  # drawn in the warning colour
+    danger: bool = False  # drawn in the danger colour: a failure or a stop (035, AC-03)
     payload: Any = None  # what the row stands for (a path), returned by ``selected``
 
 
@@ -59,6 +60,7 @@ class FileList(QFrame):
         self.checks = checks
         self._rows: tuple[ListRow, ...] = ()
         self._warning = QColor("#B45309")
+        self._danger = QColor("#B91C1C")
         self._stack = QStackedLayout(self)
         self._stack.setContentsMargins(0, 0, 0, 0)  # Qt's default is off the grid
         self.tree = _Tree()
@@ -93,12 +95,13 @@ class FileList(QFrame):
 
     def apply_palette(self, palette: Palette) -> None:
         self._warning = QColor(palette.warning)
+        self._danger = QColor(palette.danger)
         for index, row in enumerate(self._rows):  # recoloured in place: the selection stays
             item = self.tree.topLevelItem(index)
-            if item is None or not row.warning:
+            if item is None or not (row.warning or row.danger):
                 continue
             for column in range(1, 2 + len(row.values)):
-                item.setForeground(column, self._warning)
+                item.setForeground(column, self._tone(row))
 
     def show_rows(self, rows: Sequence[ListRow]) -> None:
         self._rows = tuple(rows)
@@ -113,8 +116,8 @@ class FileList(QFrame):
                 item.setCheckState(0, Qt.CheckState.Unchecked)
             for column in range(1, 2 + len(row.values)):
                 item.setToolTip(column, item.text(column))
-                if row.warning:
-                    item.setForeground(column, self._warning)
+                if row.warning or row.danger:
+                    item.setForeground(column, self._tone(row))
             self.tree.addTopLevelItem(item)
         self._syncing = False
         self._stack.setCurrentIndex(0 if self._rows or not self.empty.text() else 1)
@@ -125,14 +128,20 @@ class FileList(QFrame):
         self.tree.rows = rows
         self.tree.updateGeometry()
 
+    def _tone(self, row: ListRow) -> QColor:
+        return self._danger if row.danger else self._warning
+
     def rows(self) -> tuple[ListRow, ...]:
         return self._rows
 
-    def selected_rows(self) -> list[ListRow]:
-        indexes = sorted(
+    def selected_indexes(self) -> list[int]:
+        """The selected rows' places in the list, in order."""
+        return sorted(
             int(item.data(0, Qt.ItemDataRole.UserRole)) for item in self.tree.selectedItems()
         )
-        return [self._rows[index] for index in indexes]
+
+    def selected_rows(self) -> list[ListRow]:
+        return [self._rows[index] for index in self.selected_indexes()]
 
     def selected(self) -> list[Any]:
         """What the selected rows stand for (their payloads)."""

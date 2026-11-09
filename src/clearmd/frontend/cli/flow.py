@@ -39,7 +39,9 @@ from clearmd.i18n import load_catalog, resolve_language
 
 def run(argv: Sequence[str] | None) -> int:
     settings, settings_warnings = load_settings()
-    catalog = load_catalog(resolve_language(requested_language(argv), settings.language))
+    catalog = load_catalog(
+        resolve_language(requested_language(argv), settings.language)
+    ).for_terminal()
     parser = build_parser(catalog)
     args = parser.parse_args(argv)
     if args.keep and not (args.split_parts or args.split_pages or args.split_words):

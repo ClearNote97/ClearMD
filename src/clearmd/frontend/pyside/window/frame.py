@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QPushButton,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -19,7 +20,7 @@ from clearmd.frontend.design.metrics import GAP, SPACE
 from clearmd.frontend.presenter import Presenter
 from clearmd.frontend.presenter.state import Tool
 from clearmd.frontend.pyside.components.action_bar import ActionBar
-from clearmd.frontend.pyside.components.primitives import label
+from clearmd.frontend.pyside.components.primitives import button, label
 from clearmd.frontend.pyside.components.rail import Rail
 from clearmd.frontend.pyside.components.scroll_page import ScrollPage
 from clearmd.frontend.pyside.components.surface import Surface
@@ -44,6 +45,7 @@ class Frame:
     review: ReviewView
     converting: ConvertView
     results: ResultsView
+    details: QPushButton
 
 
 def build_frame(
@@ -81,7 +83,13 @@ def build_frame(
         stack_layout.setContentsMargins(0, 0, 0, 0)  # Qt's default is off the grid
     inside.addWidget(stack, 1)
     message = label("message", wrap=True)
-    inside.addWidget(message)
+    note = QHBoxLayout()  # the message, and "Copy Details" after an unexpected error (036)
+    note.setSpacing(SPACE)
+    note.addWidget(message, 1)
+    details = button("", lambda: presenter.copy_details())
+    details.hide()
+    note.addWidget(details)
+    inside.addLayout(note)
     actions = ActionBar(on_primary=on_primary, on_offer=lambda: presenter.split_large())
     inside.addWidget(actions)
 
@@ -108,5 +116,6 @@ def build_frame(
     for page in (home, ScrollPage(main), review, converting, results):  # index: the page number
         stack.addWidget(page)
     return Frame(
-        panel, rail, surface, stack, actions, message, home, main, review, converting, results
-    )
+        panel, rail, surface, stack, actions, message, home, main, review, converting, results,
+        details,
+    )  # fmt: skip

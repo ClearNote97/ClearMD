@@ -30,10 +30,13 @@ class ConvertView(QWidget):
         self.layout_.setSpacing(GAP)
         self._catalog: Catalog | None = None
         self.ready, ready_layout = card(padding=3 * SPACE)
-        self.ready_count = label("bigText")
+        self.ready_count = label("bigText", wrap=True)
+        # What happens to the results that already exist, as decided (035, AC-08).
+        self.ready_existing = label("onPage", wrap=True)
+        self.ready_existing.hide()
         self.ready_where = label("muted", wrap=True)
-        ready_layout.addWidget(self.ready_count)
-        ready_layout.addWidget(self.ready_where)
+        for widget in (self.ready_count, self.ready_existing, self.ready_where):
+            ready_layout.addWidget(widget)
         self.layout_.addWidget(self.ready)
         self.progress_card, progress = card(padding=3 * SPACE)
         self.counter = label("bigText")
@@ -67,7 +70,10 @@ class ConvertView(QWidget):
     def show_ready(self, count: str, where: str) -> None:
         self.progress_card.hide()
         self._fade(False)
-        self.ready_count.setText(count)
+        first, _, rest = count.partition("\n")  # how many, then the existing results' fate
+        self.ready_count.setText(first)
+        self.ready_existing.setText(rest)
+        self.ready_existing.setVisible(bool(rest))
         self.ready_where.setText(where)
         self.ready.show()
 
@@ -76,6 +82,7 @@ class ConvertView(QWidget):
         self._fade(True)
         catalog = self._catalog
         self.ready_count.setText(catalog.text("gui.convert.ready", count="—") if catalog else "—")
+        self.ready_existing.hide()
         self.ready_where.setText(where)
         self.ready.show()
 

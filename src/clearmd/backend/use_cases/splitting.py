@@ -55,12 +55,26 @@ def split_skip(detection: Detection, split: SplitSpec) -> SkipReason | None:
     return None if detection.format is FormatId.PDF else SkipReason.NOT_SPLITTABLE
 
 
-def split_cost(limits: Limits, size: int, split: SplitSpec) -> float:
-    """Copying pages is quick; converting the parts costs what converting the PDF does."""
-    copy = limits.estimated_seconds(FormatId.PDF, size, Strategy.FULL) / 20
-    if split.keep.markdown:
-        return copy + limits.estimated_seconds(FormatId.PDF, size, Strategy.FULL)
-    return copy
+def split_cost(
+    limits: Limits, size: int, split: SplitSpec, format_id: FormatId = FormatId.PDF
+) -> float:
+    """Each format's own cost (audit 2026-11-08, B2-01): copying pages or lines is quick and
+    converting the parts costs what converting the file does; an Excel part loads the whole
+    workbook, once per part."""
+    whole = limits.estimated_seconds(format_id, size, Strategy.FULL)
+    if format_id is FormatId.XLSX:
+        parts = split.size if split.cut is Cut.PARTS else 1
+        return whole * max(1, parts) + (whole if split.keep.markdown else 0)
+    return whole / 20 + (whole if split.keep.markdown else 0)
+
+
+def split_memory(limits: Limits, format_id: FormatId, size: int) -> int | None:
+    """The memory an Excel workbook needs to be cut, when it is more than the worker has: the
+    same check as converting it (B2-01). ``None``: it fits, or another format."""
+    if format_id is not FormatId.XLSX:
+        return None
+    needed = limits.estimated_memory(FormatId.XLSX, size)
+    return needed if needed > limits.worker_memory else None
 
 
 def page_ranges(pages: int, cut: Cut, size: int) -> tuple[tuple[int, int], ...]:
@@ -147,8 +161,8 @@ def _markdown(
 ) -> tuple[int, tuple[ConversionNote, ...]]:
     """A Markdown file's parts, cut at its headings in the worker; always Markdown (024)."""
     parts, over = cutter.markdown_parts(item, spec.cut.value, spec.size, cancel)
-    if not parts:
-        raise ConversionError(ErrorCode.NOTHING_TO_MEASURE, "an empty Markdown file")
+    if not any(part.strip() for part in parts):  # nothing in it
+        raise ConversionError(ErrorCode.EMPTY_FILE, "an empty Markdown file")
     for index, text in enumerate(parts, start=1):
         name = part_name(spec, item.target.name, index, len(parts))
         text = relinked(text, item.source.parent, item.target)  # its images still show

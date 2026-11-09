@@ -24,6 +24,8 @@ class Session:
         self.current: tuple[int, int, str, float | None, str] | None = None
         self.started_at = 0.0
         self.done = 0
+        self.details: str | None = None  # what "Copy Details" copies after an error (D3)
+        self.pages: tuple[int, int] | None = None  # the current file's page N of M (3B)
         self.theme: str | None = None
         self.shutting_down = False  # the window is closing: nothing is opened any more
         self.scan_count: tuple[int, int] | None = None  # (generation, latest count), SCAN_MS
