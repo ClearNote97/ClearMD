@@ -133,6 +133,7 @@ class ChooseView(QWidget):
         self.drop_zone.show_text(catalog.text("gui.main.drop"))
         self._inputs_card.apply_language(catalog)
         self.split.apply_language(catalog)
+        self._output_card.summary_choices.fit()  # the words' widths changed
         self.inputs.apply_headings(
             [catalog.text("gui.main.column_name"), catalog.text("gui.main.column_location")],
             catalog.text("gui.main.empty"),

@@ -4,12 +4,14 @@ card to the step's own layout, so the arrangement stays the step's."""
 
 from collections.abc import Callable
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QButtonGroup,
     QHBoxLayout,
     QLabel,
     QPushButton,
     QRadioButton,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -17,6 +19,7 @@ from PySide6.QtWidgets import (
 from clearmd.frontend.design.metrics import GAP, SPACE
 from clearmd.frontend.presenter.models import OutputChoice
 from clearmd.frontend.presenter.state import Tool
+from clearmd.frontend.pyside.components.fold_row import FoldRow
 from clearmd.frontend.pyside.components.merge_choice import MergeChoice
 from clearmd.frontend.pyside.components.primitives import button, card, label, radio_button
 from clearmd.frontend.pyside.components.split_choice import SplitChoice
@@ -81,14 +84,14 @@ class OutputCard:
         self.output_label = label("muted", wrap=True)
         output_layout.addWidget(self.output_label)
 
-        # The summary keeps its own line for every tool, so its label is never cut (038).
-        self._summary_row = QWidget()
-        summary = QHBoxLayout(self._summary_row)
-        summary.setContentsMargins(0, 0, 0, 0)
-        summary.setSpacing(SPACE)
+        # The summary keeps its own line for every tool; its label is never narrower than its
+        # words (wider fonts on Windows, 038): the radios wrap after it instead.
+        summary = QHBoxLayout()
+        summary.setSpacing(GAP)
         self.summary_title = label("strong")
         text(self.summary_title, "gui.main.summary_title")
-        summary.addWidget(self.summary_title)
+        self.summary_title.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
+        summary.addWidget(self.summary_title, 0, Qt.AlignmentFlag.AlignTop)
         self._summary = QButtonGroup(parent)
         self.summary_md = radio_button(self._summary, lambda: on_summary("markdown"))
         self.summary_pdf = radio_button(self._summary, lambda: on_summary("markdown_pdf"))
@@ -96,13 +99,13 @@ class OutputCard:
         text(self.summary_md, "gui.main.summary_md")
         text(self.summary_pdf, "gui.main.summary_pdf")
         text(self.summary_pdf_only, "gui.main.summary_pdf_only")
+        self.summary_choices = FoldRow()
         for radio in (self.summary_md, self.summary_pdf, self.summary_pdf_only):
-            summary.addSpacing(GAP)
-            summary.addWidget(radio)
-        self._summary_line = QHBoxLayout()
-        self._summary_line.addWidget(self._summary_row)
-        self._summary_line.addStretch(1)
-        output_layout.addLayout(self._summary_line)
+            self.summary_choices.add(radio)
+        # As tall as a radio: its words on the first row's line, even when the radios wrap.
+        self.summary_title.setMinimumHeight(self.summary_md.sizeHint().height())
+        summary.addWidget(self.summary_choices, 1)
+        output_layout.addLayout(summary)
         self.frame = output
         layout.addWidget(output)
         self.choice_buttons = (
