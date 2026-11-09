@@ -160,7 +160,7 @@ jobs:
             -LightInstaller "dist/installer/ClearMD-Setup-${{ steps.installer.outputs.version }}.exe" `
             -ReleasedInstaller "dist/installer-old/ClearMD-Setup-2.8.1.exe" `
             -Version "${{ steps.installer.outputs.version }}" `
-            -OldInstaller "dist/installer-old/ClearMD-Setup-0.0.1.exe" `
+            -OldInstaller "dist/installer-old/ClearMD-Setup-Full-0.0.1.exe" `
             -OldVersion "0.0.1"
           if ($LASTEXITCODE -ne 0) { throw "The installer checks failed (see above)" }
       - name: Package
