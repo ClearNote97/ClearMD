@@ -24,6 +24,7 @@ from clearmd.frontend.design.metrics import SPACE
 from clearmd.frontend.presenter.models import OutputChoice
 from clearmd.frontend.pyside.components.fold_row import FoldRow
 from clearmd.frontend.pyside.components.primitives import label, radio_button
+from clearmd.i18n import Catalog
 
 DIGIT_WIDTH = 9  # a digit at 14 px, with room
 Text = Callable[[QLabel | QPushButton | QRadioButton, str], None]
@@ -100,15 +101,18 @@ class SplitChoice:
             text(radio, f"gui.split.keep_{value}")
             heading.addSpacing(SPACE)
             heading.addWidget(radio)
-        for key in ("gui.split.note", "gui.split.hint"):
-            line = label("muted", wrap=True)
-            text(line, key)
-            layout.addWidget(line)
+        # The note and the hint in one paragraph: one line less, so the step fits 1080 x 720 with
+        # the summary on its own line (038); its words come with apply_language.
+        self.note = label("muted", wrap=True)
+        layout.addWidget(self.note)
         self.by_parts, self.by_pages = self.cuts["parts"], self.cuts["pages"]
         self.parts, self.pages = self.boxes["parts"], self.boxes["pages"]
         self.by_words, self.words = self.cuts["words"], self.boxes["words"]
         pairs = ((self.cuts[cut], self.boxes[cut]) for cut, *_ in CUTS)
         self.controls = (*(w for pair in pairs for w in pair), *self.keep.values())
+
+    def apply_language(self, catalog: Catalog) -> None:
+        self.note.setText(f"{catalog.text('gui.split.note')} {catalog.text('gui.split.hint')}")
 
     def show(self, choice: OutputChoice) -> None:
         """What the presenter keeps; setting the numbers sends nothing back."""

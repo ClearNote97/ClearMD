@@ -78,7 +78,7 @@ class ChooseView(QWidget):
         self.in_folder = output.in_folder
         self.pick = output.pick
         self.output_label = output.output_label
-        self.summary_md = output.summary_md
+        self.summary_title, self.summary_md = output.summary_title, output.summary_md
         self.summary_pdf = output.summary_pdf
         self.summary_pdf_only = output.summary_pdf_only
         self.images_omit = output.images_omit
@@ -132,6 +132,7 @@ class ChooseView(QWidget):
             widget.setText(catalog.text(key))
         self.drop_zone.show_text(catalog.text("gui.main.drop"))
         self._inputs_card.apply_language(catalog)
+        self.split.apply_language(catalog)
         self.inputs.apply_headings(
             [catalog.text("gui.main.column_name"), catalog.text("gui.main.column_location")],
             catalog.text("gui.main.empty"),

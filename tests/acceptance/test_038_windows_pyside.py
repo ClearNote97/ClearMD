@@ -1,10 +1,14 @@
 """Feature 038 in the PySide6 window (audit v2): closing the window during a task asks once, and
 only then (AC-06); an unexpected error during a task lands on Results with "Copy Details" and the
-results folder (AC-04). Strings come from the catalog."""
+results folder (AC-04); the longer summary label is whole (AC-09). Strings come from the
+catalog."""
 
 from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 
+import pytest
+from PySide6.QtCore import QPoint
 from support.gui_fakes import FakeBackend, planned
 from support.pyside_acceptance import (
     QUIET,
@@ -94,3 +98,19 @@ def test_ac_04_an_error_during_a_task_shows_results(qt_window: Window, tmp_path:
     assert app.actions.primary.isEnabled()
     held.gate.set()
     pump(app, seconds=0.3)
+
+
+@pytest.mark.parametrize("size", [(1080, 720), (800, 600)])
+@pytest.mark.parametrize("tool", [Tool.CONVERT, Tool.SPLIT, Tool.MERGE])
+def test_ac_09_the_longer_summary_label_is_whole(
+    qt_window: Window, tool: Tool, size: tuple[int, int]
+) -> None:
+    app = qt_window(FakeBackend(settings=replace(QUIET, language="es")))
+    app.window.resize(*size)
+    app.presenter.choose_tool(tool)
+    pump(app, seconds=0.2)
+    title = app.main.summary_title
+    assert title.text() == load_catalog("es").text("gui.main.summary_title")
+    assert title.isVisible() and title.width() >= title.sizeHint().width()  # not clipped
+    row = app.main.summary_md
+    assert title.mapTo(app.window, QPoint(0, 0)).y() <= row.mapTo(app.window, QPoint(0, 0)).y() + 4

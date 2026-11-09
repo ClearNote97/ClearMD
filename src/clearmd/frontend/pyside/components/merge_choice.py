@@ -57,7 +57,6 @@ class MergeChoice:
         note = label("muted", wrap=True)
         text(note, "gui.merge.note")
         layout.addWidget(note)
-        layout.addSpacing(SPACE)  # apart from the results' heading under it
         self.controls = tuple(self.into.values())
 
     def show(self, choice: OutputChoice) -> None:

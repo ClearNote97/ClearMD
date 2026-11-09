@@ -44,7 +44,7 @@ class OutputCard:
         self.merge = MergeChoice(parent, text=text, on_split=on_split)
         self.merge.widget.hide()
         output_layout.addWidget(self.merge.widget)
-        heading = self._heading = QHBoxLayout()
+        heading = QHBoxLayout()
         title = label("strong")
         text(title, "gui.main.output_title")
         heading.addWidget(title)
@@ -81,13 +81,14 @@ class OutputCard:
         self.output_label = label("muted", wrap=True)
         output_layout.addWidget(self.output_label)
 
-        self._summary_row = QWidget()  # its own line; for Split on the heading, as the images
+        # The summary keeps its own line for every tool, so its label is never cut (038).
+        self._summary_row = QWidget()
         summary = QHBoxLayout(self._summary_row)
         summary.setContentsMargins(0, 0, 0, 0)
         summary.setSpacing(SPACE)
-        summary_title = label("strong")
-        text(summary_title, "gui.main.summary_title")
-        summary.addWidget(summary_title)
+        self.summary_title = label("strong")
+        text(self.summary_title, "gui.main.summary_title")
+        summary.addWidget(self.summary_title)
         self._summary = QButtonGroup(parent)
         self.summary_md = radio_button(self._summary, lambda: on_summary("markdown"))
         self.summary_pdf = radio_button(self._summary, lambda: on_summary("markdown_pdf"))
@@ -125,7 +126,6 @@ class OutputCard:
         for tool, block in ((Tool.SPLIT, self.split), (Tool.MERGE, self.merge)):
             block.widget.setVisible(choice.tool is tool)
             block.show(choice)
-        self._place_summary(on_heading=not convert)
 
     def hold(self, width: int) -> None:
         """Never shorter than its wrapped lines need at ``width``: Qt's box layout would squeeze
@@ -133,15 +133,3 @@ class OutputCard:
         layout = self.frame.layout()
         if layout is not None:
             self.frame.setMinimumHeight(layout.totalHeightForWidth(width))
-
-    def _place_summary(self, *, on_heading: bool) -> None:
-        """For Split and Merge the summary goes up to the heading, where the images are for
-        Convert: the block above takes the line it frees (024, 026; the window at 1080 x 720)."""
-        source, target = self._summary_line, self._heading
-        if on_heading:
-            target.removeWidget(self._summary_row)  # no-op unless it is there
-            source.removeWidget(self._summary_row)
-            target.addWidget(self._summary_row)
-        else:
-            target.removeWidget(self._summary_row)
-            source.insertWidget(0, self._summary_row)
