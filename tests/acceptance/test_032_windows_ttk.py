@@ -6,9 +6,10 @@ from collections.abc import Callable
 from pathlib import Path
 
 from support.flet_acceptance import QUIET
-from support.gui_fakes import FakeBackend
+from support.gui_fakes import FakeBackend, planned
 from support.ttk_unit import confirm, pump
 
+from clearmd.backend.schemas.models import BatchPlan
 from clearmd.frontend.presenter import AppState
 from clearmd.frontend.presenter.state import Tool
 from clearmd.frontend.ttk import TtkApp
@@ -39,7 +40,8 @@ def test_ac_04_the_tiles_are_centred_with_the_app_s_own_icons(
 def test_ac_05_order_buttons_what_next_home_and_a_calm_focus(
     window: Callable[..., TtkApp], tmp_path: Path
 ) -> None:
-    app = window(FakeBackend(settings=QUIET))
+    two = BatchPlan((planned("a.md"), planned("b.md")), (), ())  # Merge joins two at least (034)
+    app = window(FakeBackend(settings=QUIET, plan=two))
     files = [tmp_path / f"{name}.md" for name in ("a", "b")]
     for file in files:
         file.write_text(file.stem, "utf-8")
