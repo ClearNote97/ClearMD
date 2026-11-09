@@ -17,6 +17,7 @@ The lessons are grouped by theme:
 | VIII | Releasing to non-technical users |
 | IX | What the audit boards taught (2026-11-08) |
 | X | Applying an audit (2.9.0 – 2.10.0) |
+| XI | What the second audit taught (2026-11-09) |
 
 Each lesson says what happened, then what a template should do. Within a part, the lessons that would have
 saved the most come first.
@@ -605,3 +606,90 @@ questions about people. Lessons from turning findings into releases:
   never reaches the presenter. Write the limit down rather than promise "Copied" without it.
 - **Regenerate screenshots after the version bump.** The windows' shots showed the old version
   until they were taken again (lesson VII.2, met again).
+
+---
+
+## Part XI — What the second audit taught (2026-11-09)
+
+The second audit used new agents from scratch, with Part IX's rules built in, on version 2.10.0.
+The score went from 6.5 to 7 out of 10. Of the first audit's ten recommendations, five were
+fully resolved and five partly, and none got worse. The conciliator verified 27 findings: 21
+were confirmed, 6 partly true, and none was refuted. Report:
+[`audit/2026-11-09-audit-boards-v2.md`](./audit/2026-11-09-audit-boards-v2.md).
+
+### Product
+
+#### XI.1 After "never lose work" comes "never say something false"
+
+- **What happened.** The second audit found results reported as fine that were not:
+  - a Windows-encoded (cp1252) text came out with "ańo", with no note;
+  - "split into 3 parts" could give one part;
+  - "Copy Details" let a quoted file name through;
+  - an empty PDF was called "damaged";
+  - cancelling during Merge's last step showed an "unexpected error".
+- **For the template:**
+  - Every promise written in an ADR or in a message gets a fixed test with its hard case. A
+    promise like "a cell is a cell", "we hide your names" or "nothing is written yet" needs one.
+  - If the code cannot guarantee a promise, the text says "we try".
+  - Whatever is rebuilt by a heuristic, or not delivered as asked, is said in the summary.
+
+#### XI.2 One text decoder for the whole product
+
+- Split decoded cp1252 correctly and Convert did not: two paths, two answers for one file.
+- **For the template:** one decoder, and a cp1252 file with ñ and accents in the fixtures.
+
+#### XI.3 Cancelling is never an error, at any stage
+
+- Add a test that cancels at each long stage, the final write included.
+
+#### XI.4 Output names depend only on the original
+
+- They must never depend on the language or on the batch. Rules per tool live in the backend,
+  so the command line and the windows agree. Images were fixed for the windows but not for the
+  command line.
+
+#### XI.5 Estimates calibrated on synthetic data must be revalidated on real documents
+
+- Do it before a calibrated estimate is allowed to leave a file out. PDFs are better estimated
+  by pages than by bytes.
+
+### Applying an audit
+
+#### XI.6 Verify each recommendation after applying it
+
+- A short pass afterwards that marks each recommendation resolved, partly done or pending
+  would have caught the half-done ones: Merge and images in the command line, the empty file.
+- Prefer corrections of truth over new controls. Each confirmation, undo or extra option must
+  justify itself against "Clarity is care".
+
+### Operations
+
+#### XI.7 Profile CI before parallelising it
+
+- A `gc.collect()` after every test made the suite about 3.5 times slower than needed: 600
+  catalog tests took 27.4 s with it and 7.7 s without.
+- **For the template:** an autouse fixture with a global cost lives only in the folder that
+  needs it. Upload the JUnit report so the slow tests are visible.
+
+#### XI.8 With an installer, install the app as a folder, and measure the time to the window
+
+- A one-file executable unpacks itself on every start (about 5 s on Windows).
+- **For the template:** with an installer, ship the installed copy in folder mode. Measure the
+  time from launch to the window in CI.
+
+### Running audit boards (second time)
+
+#### XI.9 The rules worked; tighten the ones that leaked
+
+- Reading the ADRs, the `reverified` flag and the round-to-round comparison all worked: no real
+  finding disappeared, and the debate fixed a wrongly attributed cause with a new measurement.
+- Some severities still rose without being re-verified.
+- **For the template:**
+  - Require `reverified=true` to raise a severity.
+  - Forbid merges that raise a severity without new evidence.
+
+#### XI.10 The conciliator reproduces the top findings and answers the owner's question
+
+- Running the three most valuable findings and the measurement that answered the owner's
+  question ("is this slowness normal?") took minutes and gave certainty.
+- **For the template:** make both part of the conciliator's brief.

@@ -7,3 +7,5 @@ External reviews of the product, kept so their decisions can be traced. Each aud
   conciliator, on version 2.8.1.
 - [`2026-11-09-doubts-board-1.md`](./2026-11-09-doubts-board-1.md): the doubts board on the light
   installer, the windows' names and the unexpected error, convened while applying the audit.
+- [`2026-11-09-audit-boards-v2.md`](./2026-11-09-audit-boards-v2.md): the second audit, on 2.10.0, with
+  new agents and the first audit's lessons applied.
