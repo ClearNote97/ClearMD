@@ -48,10 +48,12 @@ def test_f1_the_pause_after_a_page_change_is_shown_on_the_button(
     monkeypatch.setattr("clearmd.frontend.presenter.chrome.primary_gate.PRIMARY_PAUSE_SECONDS", 0.3)
     time.sleep(0.4)  # step 1's own pause is over
     app.presenter.add_paths([tmp_path])
+    # Step 2's pause long enough for a slow runner to see it (Windows CI, 040), short enough to end.
+    monkeypatch.setattr("clearmd.frontend.presenter.chrome.primary_gate.PRIMARY_PAUSE_SECONDS", 2.0)
     app.primary_button.press()
     pump(app, until=lambda: app.presenter.page == 2)
     assert app.actions.primary.instate(["disabled"])
-    pump(app, until=lambda: app.actions.primary.instate(["!disabled"]), seconds=2)
+    pump(app, until=lambda: app.actions.primary.instate(["!disabled"]), seconds=6)
     assert app.actions.primary.instate(["!disabled"])
 
 
