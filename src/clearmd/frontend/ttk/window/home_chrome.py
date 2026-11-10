@@ -5,6 +5,7 @@ size."""
 
 import tkinter as tk
 from tkinter import ttk
+from typing import Any
 
 from clearmd.frontend.design.metrics import SPACE
 
@@ -26,3 +27,12 @@ def calm_focus(root: tk.Misc) -> None:
     focused = root.focus_get()
     if isinstance(focused, ttk.Button) or getattr(focused, "lit", None) is not None:
         root.focus_set()
+
+
+def page_changed(root: tk.Misc, message: ttk.Label, actions: Any) -> None:
+    """Another page opened: a message belongs to the page it was given on, and so do its
+    "Copy Details" (036) and "Undo" (039); no button keeps the press's focus ring (032)."""
+    message.configure(text="")
+    actions.show_details(None)
+    actions.show_undo(None)
+    calm_focus(root)

@@ -55,6 +55,21 @@ def test_f1_the_pause_after_a_page_change_is_shown_on_the_button(
     assert app.actions.primary.instate(["!disabled"])
 
 
+def test_f1_a_state_shown_during_the_pause_keeps_the_button_disabled(
+    app: TtkApp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A quick analysis ends inside the pause (Windows CI, 040): showing its state, which enables
+    the primary, must not end the pause early."""
+    monkeypatch.setattr("clearmd.frontend.presenter.chrome.primary_gate.PRIMARY_PAUSE_SECONDS", 5.0)
+    app.presenter.add_paths([tmp_path])  # step 1, Next enabled
+    app.presenter.go_to(2)
+    app.presenter.go_to(1)  # a page change: the pause starts
+    assert app.state is not None and app.state.primary.enabled
+    assert app.actions.primary.instate(["disabled"])
+    app.view.show_state(app.state)  # the same page again, as a quick state shows it
+    assert app.actions.primary.instate(["disabled"])  # still paused
+
+
 def test_a7_1_convert_more_leaves_nothing_of_the_last_batch(app: TtkApp, tmp_path: Path) -> None:
     app.presenter.add_paths([tmp_path])
     app.primary_button.press()

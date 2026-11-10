@@ -80,11 +80,25 @@ def test_ac_10_the_colours_agree_with_the_tones(window: Callable[..., TtkApp]) -
     assert drawn == [colours[stat.tone] for stat in app.last_result.stats]  # as sent
 
 
-def grab(app: TtkApp, widget: Any) -> Image.Image:
+def grab(app: TtkApp, widget: Any) -> Image.Image | None:
+    """The widget as drawn, where an X display can be read (Linux, Xvfb); else None."""
+    if "DISPLAY" not in os.environ:
+        return None
     app.root.update()
     x, y = widget.winfo_rootx(), widget.winfo_rooty()
     box = (x, y, x + widget.winfo_width(), y + widget.winfo_height())
     return ImageGrab.grab(bbox=box, xdisplay=os.environ["DISPLAY"]).convert("RGB")
+
+
+def look(widget: Any, shown: Any) -> object:
+    """What the window draws for focus, as state (every platform): a tile is lit, a list's card
+    wears its ring and tints its row, a button is in ttk's "focus" state (its ring image)."""
+    if hasattr(shown, "lit"):
+        return shown.lit
+    if hasattr(shown, "focus_look"):
+        tree = shown.tree
+        return shown.focus_look.shown, "focused" in tree.item(tree.focus(), "tags")
+    return widget.instate(["focus"])
 
 
 @pytest.mark.parametrize("theme", ["light", "dark"])
@@ -109,9 +123,11 @@ def test_ac_11_every_control_shows_its_focus(window: Callable[..., TtkApp], them
 def check_focus(app: TtkApp, name: str, widget: Any, shown: Any) -> None:
     app.root.focus_force()
     pump(app, until=lambda: app.root.focus_get() is app.root, seconds=2)
-    before = grab(app, shown)
+    before, drawn = look(widget, shown), grab(app, shown)
     widget.focus_force()
     pump(app, until=lambda: app.root.focus_get() is widget, seconds=2)
     pump(app, seconds=0.1)
+    assert look(widget, shown) != before, name  # its focus look is on
     after = grab(app, shown)
-    assert ImageChops.difference(before, after).getbbox() is not None, name  # it looks focused
+    if drawn is not None and after is not None:  # and it is drawn differently (Linux, Xvfb)
+        assert ImageChops.difference(drawn, after).getbbox() is not None, name

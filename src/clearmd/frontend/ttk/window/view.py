@@ -66,12 +66,10 @@ class TtkView:
         self._shown.state = state
         if state.state is not AppState.ANALYZING:
             self._shown.scan = None
-        if previous is not None and previous.page != state.page:
-            self._message.configure(text="")  # a message belongs to the page it was given on
-            self._actions.show_details(None)  # and so does its "Copy Details" (036)
-            self._actions.show_undo(None)  # or its "Undo" (039)
+        changed = previous is not None and previous.page != state.page
+        if changed:
+            home_chrome.page_changed(self._root, self._message, self._actions)
             self._primary_button.page_shown()
-            home_chrome.calm_focus(self._root)
         converting = state.state is AppState.CONVERTING
         if converting and (previous is None or previous.state is not AppState.CONVERTING):
             self._converting.clear()
@@ -86,8 +84,10 @@ class TtkView:
         page = self._shown.page or self._main
         home_chrome.show_bar(self._actions, self._message, page, shown=not home)
         self._actions.show(state.primary)
-        if previous is not None and previous.page != state.page:
+        if changed:
             self._primary_button.pause()
+        else:  # a quick state on the same page (an analysis) keeps the pause (040)
+            self._primary_button.hold()
         self._show_secondary(state)
         offer.show_offer(self._actions, self._shown, self._presenter)
         self._header()

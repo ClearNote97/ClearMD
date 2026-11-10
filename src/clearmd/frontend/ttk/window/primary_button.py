@@ -49,10 +49,17 @@ class PrimaryButton:
             self._root.after_cancel(self._unpause)
             self._unpause = None
         pause = primary_gate.pause_milliseconds()
-        if pause == 0 or self._actions.primary.instate(["disabled"]):
+        if pause == 0:
             return
+        # Even when the button is disabled now (an analysis): a quick one must not enable it
+        # before the pause is over (seen on Windows CI, 040).
         self._actions.primary.state(["disabled"])
         self._unpause = self._root.after(pause, self._end_pause)
+
+    def hold(self) -> None:
+        """A state shown during the pause (its page unchanged) leaves the button disabled."""
+        if self._unpause is not None:
+            self._actions.primary.state(["disabled"])
 
     def cancel_pause(self) -> None:
         if self._unpause is not None:
