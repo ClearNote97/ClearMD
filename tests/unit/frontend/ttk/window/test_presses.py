@@ -1,6 +1,6 @@
 """Held keys and bursts (feature 007, F-1, A7-*)."""
 
-import time
+from collections.abc import Callable
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -9,6 +9,7 @@ from support.ttk_unit import confirm, pump, what_next
 
 from clearmd.frontend.presenter import AppState
 from clearmd.frontend.ttk import TtkApp
+from clearmd.frontend.ttk.window import primary_button
 
 # --- Adversarial check of 007 (F-1, A7-*) --------------------------------------------------------
 
@@ -44,16 +45,33 @@ def test_f1_a_held_enter_runs_one_action_whatever_the_pages(app: TtkApp, tmp_pat
 def test_f1_the_pause_after_a_page_change_is_shown_on_the_button(
     app: TtkApp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    app.presenter.go_to(1)  # the window opens on Home (feature 023)
+    """Deterministic (Windows CI, 040): the gate reads a clock the test moves, and the pause's end
+    is the very callback the window schedules, run when the test says, not when a runner gets
+    to it. What it checks is unchanged: disabled right after the page change, through the
+    analysis's end, enabled when the pause is over."""
+    clock = [100.0]
+    monkeypatch.setattr(primary_button, "time", SimpleNamespace(monotonic=lambda: clock[0]))
     monkeypatch.setattr("clearmd.frontend.presenter.chrome.primary_gate.PRIMARY_PAUSE_SECONDS", 0.3)
-    time.sleep(0.4)  # step 1's own pause is over
+    ends: list[tuple[int, Callable[[], None]]] = []
+    real_after = app.root.after
+
+    def after(ms: int, callback: Callable[[], None]) -> str:
+        if getattr(callback, "__name__", "") == "_end_pause":
+            ends.append((ms, callback))
+            return "held"
+        return str(real_after(ms, callback))
+
+    monkeypatch.setattr(app.root, "after", after)
+    monkeypatch.setattr(app.root, "after_cancel", lambda _id: None)
+    app.presenter.go_to(1)  # the window opens on Home (feature 023); step 1's pause starts
     app.presenter.add_paths([tmp_path])
-    # Step 2's pause long enough for a slow runner to see it (Windows CI, 040), short enough to end.
-    monkeypatch.setattr("clearmd.frontend.presenter.chrome.primary_gate.PRIMARY_PAUSE_SECONDS", 2.0)
+    clock[0] += 1.0  # step 1's pause is over: the press counts
     app.primary_button.press()
-    pump(app, until=lambda: app.presenter.page == 2)
-    assert app.actions.primary.instate(["disabled"])
-    pump(app, until=lambda: app.actions.primary.instate(["!disabled"]), seconds=6)
+    pump(app, until=lambda: app.presenter.state is AppState.WAITING_DECISION)
+    assert app.presenter.page == 2
+    assert ends and ends[-1][0] == 300  # step 2's pause, as long as the gate says
+    assert app.actions.primary.instate(["disabled"])  # shown, even after the analysis ended
+    ends[-1][1]()  # the pause is over
     assert app.actions.primary.instate(["!disabled"])
 
 
