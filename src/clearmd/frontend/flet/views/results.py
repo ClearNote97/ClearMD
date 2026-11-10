@@ -38,7 +38,7 @@ class ResultsView:
             "warning"
         )  # what needs attention, said in its colour (F3-03)
         self._wording.add(self.problems_title, "gui.result.problems")
-        self.problems = FileList(1, widths=(240,), on_selection=self._show_detail)
+        self.problems = FileList(1, widths=(240,), on_selection=self._show_detail, wrap=True)
         self.detail = label("onPage")
         self.control = ft.Column(
             [self.stats.control, self.where, self.with_ai, self.all_good, self.problems_title,

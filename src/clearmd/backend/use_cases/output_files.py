@@ -12,6 +12,7 @@ import os
 import re
 import stat
 import tempfile
+import time
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -132,11 +133,18 @@ def write_images(folder: Path, images: Sequence[ExtractedImage], *, inside: Path
             folder.rmdir()
 
 
+# A temporary file this old was left by a stop; a newer one may be another run's, at work.
+STALE_SECONDS = 24 * 60 * 60
+
+
 def sweep_temporary_files(root: Path) -> None:
     """Remove temporary files (and a split's staged parts) left by a power cut or a forced stop.
 
-    Walks with ``lstat`` only: a link or junction planted in the tree is never entered.
+    Walks with ``lstat`` only: a link or junction planted in the tree is never entered. Only
+    files older than ``STALE_SECONDS``: a second ClearMD working in the same folder keeps its own
+    (audit v4, B1-01).
     """
+    now = time.time()
     pending = [root]
     while pending:
         folder = pending.pop()
@@ -148,8 +156,10 @@ def sweep_temporary_files(root: Path) -> None:
                 if stat.S_ISDIR(status.st_mode):
                     if folder != root or entry.name in _RESULT_FOLDERS:
                         pending.append(Path(entry.path))
-                elif stat.S_ISREG(status.st_mode) and (
-                    entry.name.endswith(TEMP_SUFFIX) or _STAGED_PART.fullmatch(entry.name)
+                elif (
+                    stat.S_ISREG(status.st_mode)
+                    and (entry.name.endswith(TEMP_SUFFIX) or _STAGED_PART.fullmatch(entry.name))
+                    and now - status.st_mtime > STALE_SECONDS
                 ):
                     Path(entry.path).unlink(missing_ok=True)
 

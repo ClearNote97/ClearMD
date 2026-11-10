@@ -31,7 +31,7 @@ class ReviewView:
         self._asks = False
         self._plan_id = -1
         self.stats = Stats()
-        self.files = FileList(2, widths=(240, 220), on_selection=self._show_detail)
+        self.files = FileList(2, widths=(240, 220), on_selection=self._show_detail, wrap=True)
         self.detail = label("onPage")  # never cut: the reason, what to do, the folder in full
         self.detail.selectable = True
         question = label("strong")

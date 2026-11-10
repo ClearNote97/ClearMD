@@ -16,6 +16,7 @@ from clearmd.frontend.ttk.visuals.style_names import (
     CHECK_ON_PAGE,
     DIM,
     DIM_CARD,
+    FOCUS_CARD,
     HINT,
     LINK,
     MUTED,
@@ -83,6 +84,13 @@ def install(
     style.element_create("Card.ClearMD.face", "image", card_face, border=RADIUS, sticky="nsew")
     style.layout(CARD, [("Card.ClearMD.face", {"sticky": "nsew"})])
     style.configure(CARD, background=p.ground)
+    ring = shapes.rounded(
+        3 * RADIUS, 3 * RADIUS, RADIUS, p.card, border=p.border, ring=p.accent, ground=p.ground
+    )
+    style.element_create("Focus.Card.ClearMD.face", "image", photo(p, ring), border=RADIUS,
+                         sticky="nsew")  # fmt: skip
+    style.layout(FOCUS_CARD, [("Focus.Card.ClearMD.face", {"sticky": "nsew"})])
+    style.configure(FOCUS_CARD, background=p.ground)
     dim_fill = blend(p.card, p.ground, DIM_STRENGTH)
     dim = shapes.rounded(3 * RADIUS, 3 * RADIUS, RADIUS, dim_fill, border=p.border, ground=p.ground)
     style.element_create(

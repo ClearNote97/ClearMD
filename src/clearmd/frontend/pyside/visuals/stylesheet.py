@@ -96,6 +96,7 @@ QPushButton#primary:hover {{ background: {p.accent_hover}; }}
 QPushButton#primary:focus {{ border: 2px solid {p.text}; }}
 QPushButton#primary:disabled {{ background: {p.border}; color: {disabled}; }}
 QPushButton#strong {{ border: 2px solid {p.accent}; color: {p.accent_text}; }}
+QPushButton#strong:focus {{ border: 2px solid {p.text}; }}  /* its own focus (audit v4, F2-01) */
 QPushButton#tile {{
     background: {p.ground}; border: 1px solid {p.border}; border-radius: {RADIUS}px; padding: 0;
     min-height: {TILE_HEIGHT}px;
@@ -109,15 +110,17 @@ QPushButton#smallTile {{  /* "What Next?"'s tools (033); the one just used in th
 }}
 QPushButton#smallTile[current="true"] {{ border: 2px solid {p.accent}; }}
 QPushButton#smallTile:hover {{ background: {selected}; border: 2px solid {p.accent}; }}
-QPushButton#smallTile:focus {{ border: 2px solid {p.accent}; }}
+QPushButton#smallTile:focus {{ border: 2px solid {p.text}; }}  /* not the last used's (F2-09) */
 QPushButton#order {{  /* Merge's arrows on the list's rows (032) */
     padding: 0; min-height: 0; border-radius: {RADIUS // 2}px; font-weight: normal;
     color: {p.accent_text};
 }}
 QPushButton#order:disabled {{ color: {disabled}; background: transparent; }}
 QPushButton#link {{
-    background: transparent; border: none; color: {p.accent_text}; padding: 0 {SPACE}px;
+    background: transparent; border: 2px solid transparent; color: {p.accent_text};
+    padding: 0 {SPACE - 2}px;
 }}
+QPushButton#link:focus {{ border-color: {p.accent}; }}
 QPushButton#link:hover {{ background: {blend(p.border, p.ground, 0.6)}; }}
 QPushButton#link:disabled {{ color: {disabled}; }}
 
@@ -173,7 +176,11 @@ QTreeWidget {{
     outline: 0;
     selection-background-color: {selected}; selection-color: {p.text};
 }}
+QTreeWidget:focus {{ border: 2px solid {p.accent}; padding: {SPACE - 1}px; }}
 QTreeWidget::item {{ min-height: {4 * SPACE + 4}px; }}
+QTreeWidget::item:focus {{  /* the current row, while the list has the keyboard (F2-01) */
+    border-top: 1px solid {p.accent}; border-bottom: 1px solid {p.accent};
+}}
 QHeaderView::section {{
     background: {p.card}; color: {p.muted}; font-weight: bold; border: none;
     border-right: 1px solid {p.border}; padding: {SPACE // 2}px {SPACE}px;

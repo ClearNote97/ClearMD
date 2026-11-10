@@ -5,6 +5,7 @@ that ``scanning`` keeps the walk. Stdlib and schemas only.
 """
 
 import os
+import re
 import stat
 from pathlib import Path
 
@@ -47,6 +48,12 @@ def file_rule(
     return None
 
 
+def natural_key(name: str) -> tuple[tuple[int, int | str], ...]:
+    """The order a person counts in: "Capítulo 2" before "Capítulo 10" (audit v4, B1-04)."""
+    parts = re.split(r"(\d+)", name.casefold())
+    return tuple((0, int(part)) if part.isdigit() else (1, part) for part in parts if part)
+
+
 def sorted_entries(folder: Path) -> list[os.DirEntry[str]]:
     with os.scandir(folder) as entries:
-        return sorted(entries, key=lambda entry: (entry.name.casefold(), entry.name))
+        return sorted(entries, key=lambda entry: (natural_key(entry.name), entry.name))

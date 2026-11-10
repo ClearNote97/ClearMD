@@ -12,6 +12,7 @@ from clearmd.backend.schemas.models import (
     SkippedItem,
     tool_of,
 )
+from clearmd.backend.schemas.notes import NoteKind
 from clearmd.backend.services.privacy import without_paths
 from clearmd.backend.services.rejections import (
     error_action,
@@ -58,6 +59,10 @@ def _skipped_place(item: SkippedItem, base: Path) -> tuple[str, str]:
     above = item.input.parent if item.input is not None else base
     relative = _relative(item.path, above)
     return relative.name + ("/" if item.is_dir else ""), _folder(relative.parent)
+
+
+# An article asked for, the whole page written: the row says what was done (audit v4, B5-08).
+FELL_BACK = frozenset({NoteKind.ARTICLE_NOT_FOUND, NoteKind.ARTICLE_TOO_COMPLEX})
 
 
 class SummaryBuilder:
@@ -192,7 +197,8 @@ class SummaryBuilder:
     def _row(self, outcome: ConversionOutcome, markdown: Path) -> Row:
         detection = outcome.item.detection
         fmt = detection.format.value.upper()
-        if outcome.item.strategy is not Strategy.FULL:
+        fell_back = any(note.kind in FELL_BACK for note in outcome.notes)
+        if outcome.item.strategy is not Strategy.FULL and not fell_back:  # what was done (B5-08)
             fmt = self._catalog.text(f"summary.strategy.{outcome.item.strategy}", format=fmt)
         if detection.by_content:
             fmt = self._catalog.text("summary.by_content", format=fmt)

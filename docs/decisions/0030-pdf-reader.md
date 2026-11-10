@@ -85,3 +85,11 @@ are the letters moved by a fixed distance. PDFium also reads rotated text the ri
   capital after it keeps the hyphen: "socio-Economic").
 - Tables come out as lines of text; rebuilding them, and OCR, are out of scope.
 - The executable is smaller (pdfminer and pdfplumber are gone).
+
+## Amendment (2026-11-09, the owner's decision on the fourth audit, B3-01, B3-02)
+
+- **Short documents:** a document of two or three pages loses the lines that stand apart in the
+  same margin of **every** page (a letterhead, "Page 1 of 2"); before, it kept everything, and the
+  letterhead was glued into the middle of sentences. One page still keeps everything.
+- **Numbered lists:** lines that start with "1.", "2)", "a)" where no sentence goes on, followed by
+  a capital, are list items ("1." stays an ordered item; letters keep their letter).

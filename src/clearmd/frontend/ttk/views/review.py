@@ -43,9 +43,11 @@ class ReviewView(ttk.Frame):
         self.files = FileList(
             self,
             name_heading="gui.main.column_name",
-            columns=(Column("location", 220), Column("what", 320, stretch=True)),
+            columns=(Column("location", 144), Column("what", 320, stretch=True)),
             height=4,
             checks=False,  # a list to read: nothing on Review acts on a selection (014)
+            wrap=1,  # "What Happens" whole, on its lines (040)
+            name_width=248,  # narrower names and folders: the reason gets the room
         )
         self.files.pack(fill="both", expand=True, pady=(GAP, 0))
         # The selected row in full: nothing cut without another way to read it (035, AC-05).

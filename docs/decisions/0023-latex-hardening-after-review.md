@@ -61,3 +61,14 @@ made pylatexenc fail, so a whole thesis failed for one bad line, against AC-21.
 - **Remote images as links, with a note:** rejected; the fetch happens when the viewer opens the file, whatever
   the note says.
 - **Failing the file on a parser crash:** rejected; one bad line would lose a whole thesis.
+
+## Amendment (2026-11-09, doubts board 2 on the fourth audit, B3-06, B2-01)
+
+- **Readable marks, the same protection.** A document's "[" and "]" are written "\[" and "\]" (not
+  "&#91;" "&#93;"); an "&" is escaped only when it would form an entity ("&copy;"), so "AT&T" stays;
+  an "_" inside a word stays ("juan_perez"). The first step, doubling the document's own backslash,
+  stays.
+- **One door.** Every result — Convert, Split's Markdown parts, Merge's Markdown read as it is —
+  passes the output guarantee: only relative pictures stay, any other "![" is text, links to
+  `file:`/`javascript:` keep their text only (entities decoded first), and any tag with an attribute
+  is escaped. Tests judge with a real CommonMark reader (markdown-it-py), never by looking for "](".

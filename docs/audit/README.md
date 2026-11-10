@@ -13,3 +13,5 @@ External reviews of the product, kept so their decisions can be traced. Each aud
   five experts per board and three conciliators (truth, "Claridad es cariño", doctrine).
 - [`2026-11-09-audit-boards-v4.md`](./2026-11-09-audit-boards-v4.md): the fourth audit, on 2.12.0, with
   the same method as the third and the owner's decisions passed to every auditor as constraints.
+- [`2026-11-09-doubts-board-2.md`](./2026-11-09-doubts-board-2.md): the doubts board on readable escaping, the saved
+  "full page" setting and the parts' opening line, convened while applying the fourth audit.

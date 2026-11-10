@@ -55,6 +55,10 @@ action_other = "Ábrelo en su programa y guárdalo de nuevo, o como PDF; si sigu
 message = "Este archivo está vacío: no tiene contenido."
 action = "Revisa que sea el archivo correcto y que se haya descargado completo."
 
+[error.empty_result]
+message = "ClearMD no encontró texto que leer en este archivo, así que no escribió un resultado vacío."
+action = "Si son páginas escaneadas (fotos de un documento), pásalo antes por un programa que reconozca el texto (OCR) y convierte el resultado. Si no, revisa que el archivo tenga contenido."
+
 [report]
 # Cómo reportar un problema, una sola vez para todos los mensajes ({report}; auditoría v2, B4-05).
 how = "cuéntanos el problema en la comunidad del proyecto, github.com/ClearNote97/ClearMD/discussions (con una cuenta gratuita de GitHub), o, si no tienes cuenta, escríbenos a nienvasa@gmail.com. Copia solo el detalle técnico, nunca el resumen completo: tiene los nombres de tus archivos."
@@ -90,7 +94,7 @@ output_folder = "ClearMD no convierte sus propios resultados."
 symlink = "Elige el archivo original."
 hidden = "Hazlo visible para convertirlo."
 lock_file = "Se borra al cerrar el documento."
-too_large = "Divídelo en archivos más pequeños."
+too_large = "Por seguridad, ClearMD no abre archivos de más de 250 MB. Divídelo antes con otro programa (por ejemplo, el que usas para abrirlo) en archivos más pequeños."
 already_markdown = "No necesita conversión."
 zip_archive = "Descomprímelo y convierte su contenido."
 archive_too_large = "Si es confiable, guarda una copia nueva desde su programa."
@@ -301,7 +305,8 @@ pdf_text_unreadable = "algunos caracteres no se pudieron leer: aparecen como “
 pdf_running_removed = "se omitieron los encabezados, pies y números de página que se repiten en las páginas"
 pdf_hidden_text_left_out = "se omitió texto que no se ve en la página (fuera de ella, demasiado pequeño para leerse o invisible), para que la IA no lea lo que tú no ves; páginas: {items}"
 pdf_equations_as_text = "algunas ecuaciones no se pudieron reconstruir y quedaron como sus símbolos; revísalas en el original; páginas: {items}"
-parts_not_converted = "no se pudo hacer el Markdown de estas partes; su parte original quedó en la carpeta, para intentarlo de nuevo con ella sola: {items}"
+parts_not_converted = "no se pudo hacer el Markdown de estas partes (por ejemplo, porque son páginas escaneadas sin texto, o se detuvieron); su parte original quedó en la carpeta: {items}"
+html_full_page = "la página web se convirtió completa, con sus menús y anuncios; para guardar solo el texto principal, elige «Solo el artículo» en Ajustes → Páginas Web"
 made_safe = "las imágenes de internet, los enlaces inseguros y el código de página se dejaron como texto, para que abrir el resultado no avise a nadie ni ejecute nada: {items}"
 images_left_out = "imágenes que no se guardaron (un formato que los visores de Markdown no muestran, o por los límites): {items}"
 parts_over_size = "partes más grandes que el tamaño (una página o un párrafo que no se puede cortar): {items}"
@@ -509,7 +514,7 @@ subtitle = "Documentos a Markdown, en tu computador"
 local = "100 % local · nada sale de tu equipo"
 unexpected_error = "Algo inesperado salió mal. Tus documentos originales no se modificaron y lo que ya se convirtió se conserva. Si vuelve a pasar, pulsa Copiar Detalles y {report}"
 copy_details = "Copiar Detalles"
-details_copied = "Copiado. Intentamos ocultar los nombres de tus archivos y carpetas; antes de enviarlo, revisa que no quede ninguno. Pégalo en github.com/ClearNote97/ClearMD/issues."
+details_copied = "Copiado. Intentamos ocultar los nombres de tus archivos y carpetas; antes de enviarlo, revisa que no quede ninguno. Luego, {report}"
 details_text = "ClearMD {version} · {window} · {system}\nPara quien te dé soporte: {detail}"
 file_placeholder = "archivo"
 result_kept = "Cambiaste la lista: los resultados anteriores siguen en su carpeta."

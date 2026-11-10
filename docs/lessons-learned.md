@@ -22,6 +22,7 @@ The lessons are grouped by theme:
 | XIII | What the third audit taught (2026-11-09) |
 | XIV | Applying the third audit (2.12.0) |
 | XV | What the fourth audit taught (2026-11-09) |
+| XVI | Applying the fourth audit (2.13.0) |
 
 Each lesson says what happened, then what a template should do. Within a part, the lessons that would have
 saved the most come first.
@@ -1025,4 +1026,66 @@ partly, and one waits for SignPath. The conciliators verified 26 groups of findi
   acceptable in parts.
 - **For the template:** cap the verified list at a reading, and make every recommendation
   divisible.
+
+## Part XVI — Applying the fourth audit (2.13.0)
+
+The owner accepted the eleven improvements, the empty result as "failed" (and asked that it be
+said), and the amendments to ADR-0054 and ADR-0030. A doubts board was convened for what neither
+covered, as a fixed step of every update. Written before the fifth audit, the last of 2.x.
+
+### XVI.1 Whatever is not plainly safe is text
+
+- Chasing each way Markdown writes a picture with one more pattern failed four audits running.
+  The new rule keeps only what is plainly safe (a relative picture) and writes every other "![" as
+  text.
+- **For the template:** for a security guarantee on a rich syntax, allow a small known-good set
+  and neutralize the rest; judge the result with a real parser, never by looking for "](".
+
+### XVI.2 A substring oracle breaks when the output becomes readable
+
+- Tests asserted that "](javascript" never appears. Readable escaping writes "\[t\](javascript…)",
+  which a viewer shows as text: the tests failed although nothing was live. They now ask a
+  CommonMark reader what is live.
+- **For the template:** test what a reader does with the output, not what the output spells.
+
+### XVI.3 A new rule for short documents needs a guard for the shortest
+
+- Taking the line on every page of a two-page letter as its letterhead also took "Page N" when it
+  was a page's only line, and left the document empty. A page's only line is now never its margin.
+- **For the template:** when a threshold moves down, test the case at the new edge (one line, one
+  page, one part).
+
+### XVI.4 An oracle can be wrong too
+
+- A test of the hostile-HTML guarantee looked for "style=" in the rendered page and found it in the
+  escaped text. The right question was "is there a `<div` element?".
+- **For the template:** read a failing security test's oracle before changing the code.
+
+### XVI.5 A layer rule decides where a guarantee lives
+
+- Use cases may not import services, so Merge's Markdown is made safe where the worker reads it,
+  not where Merge writes it. The architecture test kept the boundary.
+- **For the template:** put a guarantee at the last place every result crosses that the layers
+  allow, and say why there.
+
+### XVI.6 The doubts board as a fixed step
+
+- Three questions came up: readable escaping, a saved setting no one chose, and an opening line for
+  parts. The board settled two and deferred the third with its condition. The owner reads the
+  decisions with the audit.
+- **For the template:** every audit cycle names its doubts board, even when it is not convened, and
+  its report sits beside the audit's.
+
+### XVI.7 A version number is a promise too
+
+- The owner asked when a major version is due. ADR-0055 now says what the public contract is and
+  what each number promises; corrections of something false are minor, told under "Changes in
+  behaviour".
+- **For the template:** decide the versioning contract early and write it as an ADR.
+
+### XVI.8 Partial, said as partial
+
+- Not done: each PDF part's opening line and headers computed on the whole PDF (B3-03), a lock per
+  folder (not needed after the cheap measures), raising Split's 250 MB limit, and markitdown's
+  replacement (the 3.0.0 experiment).
 

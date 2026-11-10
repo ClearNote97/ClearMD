@@ -9,7 +9,10 @@ _ESCAPING_BACKSLASH = re.compile(r"\\(?=[!-/:-@\[-`{-~]|$)")
 
 
 ENTITY = re.compile(r"&[#A-Za-z]")
-_ENTITY_START = re.compile(r"&(?=[#A-Za-z])")
+# Only an "&" that a viewer would read as an entity ("&copy;", or "&copy" at a piece's end, which
+# the next piece could close): "AT&T" stays as it is (audit v4, B3-06).
+_ENTITY_START = re.compile(r"&(?=#?\w+(?:;|$))")
+_EDGE_UNDERSCORE = re.compile(r"(?<![A-Za-z0-9\u00C0-\u024F])_|_(?![A-Za-z0-9\u00C0-\u024F])")
 _CONTROL = re.compile(r"[\x00-\x1f\x7f]")
 _ESCAPED_BANG = re.compile(r"(?<!\\)(?:\\\\)*\\!$")  # an odd run of backslashes before it
 
@@ -35,9 +38,12 @@ def escape_text(text: str) -> str:
     text = _ESCAPING_BACKSLASH.sub(r"\\\\", text.replace(MARK, "")).replace("`", "\\`")
     # An entity the document wrote ("&lt;", "&copy;") shows as written, never decoded.
     text = _ENTITY_START.sub("&amp;", text)
-    # The document's own *, _ and ~ are characters, never emphasis or strike-through.
-    text = text.replace("*", "\\*").replace("_", "\\_").replace("~", "\\~")
-    return text.replace("<", "&lt;").replace("[", "&#91;").replace("]", "&#93;")
+    # The document's own *, _ and ~ are characters, never emphasis or strike-through. An "_"
+    # inside a word is never emphasis (CommonMark): "juan_perez" stays readable (doubts board 2).
+    text = text.replace("*", "\\*").replace("~", "\\~")
+    text = _EDGE_UNDERSCORE.sub("\\_", text)
+    # Readable marks an AI reads as text: "\[", not "&#91;" (audit v4, B3-06; ADR-0023 amended).
+    return text.replace("<", "&lt;").replace("[", "\\[").replace("]", "\\]")
 
 
 def escape_math(text: str) -> str:
@@ -55,8 +61,8 @@ def join_pieces(parts: list[str]) -> str:
     """Pieces written next to each other never form a construct none of them wrote: a ``!``
     before ClearMD's ``[`` (an image), a ``]`` before ``(`` or ``:`` (a link, a definition),
     two backtick runs glued into one (code spans that never close). A ``]`` before ``[`` stays:
-    the document's brackets are always entities, so both are ClearMD's (``[^1][t](u)`` is a
-    footnote and a link, ``[^1][^2]`` two references)."""
+    the document's brackets are always escaped ("\\["), so an unescaped pair is ClearMD's
+    (``[^1][t](u)`` is a footnote and a link, ``[^1][^2]`` two references)."""
     pieces = [part for part in parts if part]
     for index in range(1, len(pieces)):
         left, right = pieces[index - 1], pieces[index]

@@ -4,6 +4,7 @@ from pathlib import Path
 
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
 from clearmd.backend.schemas.split import Cut
+from clearmd.backend.services.conversion.markdown_out.safe_output import safe_output
 from clearmd.backend.services.split.markdown_cut import cut_markdown
 from clearmd.backend.services.split.pdf_pages import count_pages, cut_pages, merge_pdfs
 from clearmd.backend.services.split.text_cut import cut_text
@@ -43,7 +44,8 @@ def _text(path: str, max_result_bytes: int) -> str:
 def _markdown(request: MarkdownCutRequest, max_result_bytes: int) -> Response:
     text = _text(request.source, max_result_bytes)
     parts, over = cut_markdown(text, Cut(request.cut), request.size)
-    return MarkdownParts(parts, over)
+    # A Markdown file's parts are results too: the same door as every result (audit v4, B2-02).
+    return MarkdownParts(tuple(safe_output(part)[0] for part in parts), over)
 
 
 def handle_pages(request: PageJob, max_result_bytes: int) -> Response:
@@ -61,7 +63,8 @@ def handle_pages(request: PageJob, max_result_bytes: int) -> Response:
         if isinstance(request, XlsxCutRequest):
             return FileParts(cut_xlsx(Path(request.source), request.parts))
         if isinstance(request, ReadTextRequest):
-            return TextRead(_text(request.source, max_result_bytes))
+            # Merge's Markdown, read as it is, passes the same door (audit v4, B2-02).
+            return TextRead(safe_output(_text(request.source, max_result_bytes))[0])
         if isinstance(request, MergePdfRequest):
             data = merge_pdfs([Path(source) for source in request.sources])
         else:

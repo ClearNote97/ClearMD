@@ -170,6 +170,7 @@ anteriores._
 | **037** Un instalador liviano (la App Clásica) y uno completo | ✅ lista | v2.10.0 |
 | **038** Decir solo lo que es verdad (codificaciones, N partes, tablas, mensajes) y abrir más rápido | ✅ lista | v2.11.0 |
 | **039** Verdad para la IA (texto oculto, imágenes de internet, textos cortos de Windows), cuidado para la persona, un instalador que dice la verdad | ✅ lista | v2.12.0 |
+| **040** Promesas cumplidas en los casos difíciles: un resultado vacío falla, una sola puerta de salida, marcas legibles, foco visible | ✅ lista | v2.13.0 |
 
 El plan completo está en el [roadmap](./spec/roadmap.md). ClearMD tiene **línea de comandos** y la misma **app de
 escritorio** en tres toolkits, ttkbootstrap (`clearmd-ttk`), PySide6 (`clearmd-pyside`,

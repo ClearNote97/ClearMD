@@ -31,6 +31,10 @@ class Stats(QWidget):
         """The figures as shown (for tests): (label, figure)."""
         return [(name.text(), figure.text()) for figure, name in self._cards]
 
+    def tones(self) -> list[str]:
+        """The figures' tones as drawn (for tests)."""
+        return [str(figure.property("tone")) for figure, _ in self._cards]
+
     def _fill(self, cards: Sequence[tuple[str, str, str]], *, dim: bool) -> None:
         while self._layout.count():
             child = self._layout.takeAt(0)

@@ -9,7 +9,6 @@ fewer than two documents write nothing. A merged file never replaces another: "(
 """
 
 import os
-import re
 from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
@@ -28,6 +27,7 @@ from clearmd.backend.schemas.models import (
 )
 from clearmd.backend.schemas.notes import ConversionNote
 from clearmd.backend.use_cases.cancel import CancelToken
+from clearmd.backend.use_cases.footnotes import own_footnotes
 from clearmd.backend.use_cases.output_files import atomic_write, atomic_write_bytes, prepare_root
 from clearmd.backend.use_cases.ports import Clock, ConversionRunner, PageCutter
 from clearmd.backend.use_cases.relink import relinked
@@ -84,9 +84,6 @@ def _failed(item: PlannedConversion, error: ConversionError) -> ConversionOutcom
     return ConversionOutcome(item, status, error.code, error.detail, limit=error.limit)
 
 
-_FOOTNOTE = re.compile(r"\[\^([^\]\s]{1,64})\]")
-
-
 def _piece(
     item: PlannedConversion,
     runner: ConversionRunner,
@@ -103,7 +100,7 @@ def _piece(
     else:
         result = runner.convert(item, cancel)
         text, notes = result.markdown, result.notes
-    text = _FOOTNOTE.sub(lambda found: f"[^d{index}-{found.group(1)}]", text)
+    text = own_footnotes(text, index)
     return relinked(text, item.source.parent, item.target.parent), notes  # images: OutputUnif
 
 

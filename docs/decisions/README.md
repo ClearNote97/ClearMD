@@ -72,3 +72,4 @@ An accepted ADR is not rewritten to change the decision: a new one is written th
 | [0052](./0052-two-installer-editions.md) | Two installer editions from one script: a light one (the Classic App) and a full one | accepted |
 | [0053](./0053-installed-classic-app-as-a-folder.md) | The installed Classic App is a folder (the portable download stays one file) | accepted |
 | [0054](./0054-hidden-pdf-text.md) | Text no one can see in a PDF is left out, and said (the OCR layer of a scan stays) | accepted |
+| [0055](./0055-versioning.md) | What each version number promises: semantic versioning on ClearMD's public contract | accepted |

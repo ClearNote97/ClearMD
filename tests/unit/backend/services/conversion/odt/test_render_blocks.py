@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 from support import ODT_DIR
+from support.markdown_guarantee import live_syntax
 from support.odt_render import body, convert, notes
 
 from clearmd.backend.schemas.notes import NoteItem, NoteKind, NoteReason
@@ -29,7 +30,7 @@ def test_document_text_never_becomes_markdown(tmp_path: Path) -> None:
         "<text:p>&lt;img src=x&gt; [a](http://evil.example/b.png) `x`</text:p>"
         "<text:p># no</text:p>",
     )
-    assert "<img" not in text and "](" not in text and "\n# no" not in "\n" + text
+    assert not live_syntax(text) and "\n# no" not in "\n" + text
 
 
 def test_footnotes_and_endnotes_share_one_numbering(tmp_path: Path) -> None:

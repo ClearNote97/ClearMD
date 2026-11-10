@@ -46,7 +46,7 @@ class ReviewView(QWidget):
         self._plan_id = -1
         self.stats = Stats()
         self.layout_.addWidget(self.stats)
-        self.files = FileList(2, widths=(240, 220))
+        self.files = FileList(2, widths=(240, 220), wrap=True)
         self.layout_.addWidget(self.files, 1)
         self.detail = label("onPage", wrap=True)  # the selected row in full: nothing cut
         self.detail.setTextInteractionFlags(

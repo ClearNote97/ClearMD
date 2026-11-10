@@ -6,6 +6,7 @@ import pytest
 from builders.odt_bodies import MATHML_SUBSET
 from builders.odt_package import _odt_xml, odt_package
 from support import ODT_DIR
+from support.markdown_guarantee import live_syntax
 
 from clearmd.backend.schemas.notes import NoteItem, NoteKind
 from clearmd.backend.services.conversion.odt import OdtConverter
@@ -114,7 +115,7 @@ def test_formula_text_never_becomes_markdown(tmp_path: Path) -> None:
         )
     )
     markdown, _ = convert(path)
-    assert "](" not in markdown and "<img" not in markdown
+    assert not live_syntax(markdown)
 
 
 def test_formula_objects_are_bounded_in_number_and_size(

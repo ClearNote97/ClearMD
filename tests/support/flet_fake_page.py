@@ -27,6 +27,7 @@ class FakePage:
         self.asked: list[tuple[str, str, str | None]] = []  # (picker, title, start folder)
         self.extensions: list[str] = []
         self.hidden = self.destroyed = False
+        self.revealed: list[int] = []  # the rows brought into view
         self.clipboard: list[str] = []  # what "Copy Details" copied (036)
         self.clipboard_fails = False  # a clipboard that raises, as a busy one may
         self.refreshes = 0  # whole-page refreshes
@@ -103,6 +104,9 @@ class FakePage:
         on_resize: Callable[[float, float], None],
     ) -> None:
         self._on_key, self._on_close, self._on_resize = on_key, on_close, on_resize
+
+    def reveal(self, items: ft.ListView, index: int) -> None:
+        self.revealed.append(index)  # brought into view by the arrows (040)
 
     def copy_text(self, text: str) -> None:
         if self.clipboard_fails:

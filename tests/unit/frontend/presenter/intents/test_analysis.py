@@ -51,7 +51,7 @@ def test_the_plan_gives_its_counts_as_figures_for_the_summary_cards() -> None:
     view.drain()
     assert view.last("plan").stats == (
         Stat("To Convert", 1, Tone.ACCENT),
-        Stat("Skipped", 1, Tone.WARNING),
+        Stat("Skipped", 1, Tone.NEUTRAL),  # already Markdown: nothing to do (audit v4, F5-04)
         Stat("Already Exists", 1, Tone.NEUTRAL),
     )
 

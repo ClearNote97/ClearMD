@@ -25,6 +25,16 @@ class Text:
 
 
 @dataclass(frozen=True)
+class Picture:
+    """A one-pixel picture stretched over a rectangle (an inline image): a logo, or a scan."""
+
+    x: float
+    y: float
+    width: float
+    height: float
+
+
+@dataclass(frozen=True)
 class Box:
     """A filled box: a thin one is a rule (a ruled table's cell side, 013)."""
 
@@ -61,9 +71,17 @@ def _codes(text: str, font: str) -> bytes:
     return bytes(out)
 
 
-def _stream(texts: Sequence[Text | Box]) -> bytes:
+def _stream(texts: Sequence[Text | Box | Picture]) -> bytes:
     out = bytearray()
     for item in texts:
+        if isinstance(item, Picture):
+            out += b"q %g 0 0 %g %g %g cm BI /W 1 /H 1 /CS /RGB /BPC 8 ID \x80\x80\x80 EI Q\n" % (
+                item.width,
+                item.height,
+                item.x,
+                item.y,
+            )
+            continue
         if isinstance(item, Box):
             out += b"%g %g %g %g re f\n" % (item.x, item.y, item.width, item.height)
             continue
@@ -87,7 +105,7 @@ def _stream(texts: Sequence[Text | Box]) -> bytes:
     return bytes(out)
 
 
-def build_pdf(pages: Sequence[Sequence[Text | Box]]) -> bytes:
+def build_pdf(pages: Sequence[Sequence[Text | Box | Picture]]) -> bytes:
     """A PDF with one page per list (an empty list: a page with no text, like a scan)."""
     glyph_codes = sorted(set(range(1, 256)))
     differences = " ".join(f"{code} /g{code}" for code in glyph_codes)

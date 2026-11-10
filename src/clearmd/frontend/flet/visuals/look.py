@@ -41,7 +41,21 @@ TEXTS: dict[str, tuple[int, bool, str]] = {
 }
 TONES = {"accent": "accent_text", "warning": "warning", "danger": "danger", "neutral": "text"}
 DEFAULT, HOVERED = ft.ControlState.DEFAULT, ft.ControlState.HOVERED
-DISABLED = ft.ControlState.DISABLED
+DISABLED, FOCUSED = ft.ControlState.DISABLED, ft.ControlState.FOCUSED
+FOCUS_WIDTH = 2  # the keyboard focus: a 2 px ring, never only a faint veil (040, F2-02)
+
+
+def ring(colour: str, width: float = FOCUS_WIDTH) -> ft.BorderSide:
+    return ft.BorderSide(width, role(colour))
+
+
+def focus_side(
+    rest: ft.BorderSide | None, colour: str = "accent"
+) -> dict[ft.ControlState, ft.BorderSide]:
+    """A border that becomes the focus ring when the control has the keyboard focus; FOCUSED first,
+    so a focused control under the pointer still shows it."""
+    none = ft.BorderSide(0, ft.Colors.TRANSPARENT)
+    return {FOCUSED: ring(colour), DEFAULT: rest or none}
 
 
 def paint(text: ft.Text, kind: str) -> ft.Text:
@@ -79,6 +93,7 @@ def button_style(kind: str) -> ft.ButtonStyle:
         return ft.ButtonStyle(
             color=_states("on_accent", disabled="disabled"),
             bgcolor=_states("accent", hovered="accent_hover", disabled="border"),
+            side=focus_side(None, "text"),  # a ring in the text's colour around the accent
             shape=shape,
             padding=ft.Padding.symmetric(horizontal=GAP),
             text_style=bold,
@@ -94,6 +109,7 @@ def button_style(kind: str) -> ft.ButtonStyle:
                 HOVERED: role("selected"),
             },
             shadow_color=ft.Colors.TRANSPARENT,
+            side=focus_side(None),
             shape=shape,
             padding=ft.Padding.symmetric(horizontal=SPACE),
             text_style=bold,
@@ -105,7 +121,11 @@ def button_style(kind: str) -> ft.ButtonStyle:
         color=_states("accent_text" if strong else "text", disabled="disabled"),
         bgcolor=_states("card", disabled="card"),
         shadow_color=ft.Colors.TRANSPARENT,
-        side={DEFAULT: side, HOVERED: ft.BorderSide(side.width, role("accent"))},
+        side={
+            FOCUSED: ring("accent", 2 + side.width),
+            HOVERED: ft.BorderSide(side.width, role("accent")),
+            DEFAULT: side,
+        },  # fmt: skip
         shape=shape,
         padding=ft.Padding.symmetric(horizontal=GAP),
         text_style=bold,
@@ -125,7 +145,8 @@ def tile_style(top: int = GAP, *, current: bool = False, centred: bool = False) 
         bgcolor={DEFAULT: role("ground"), HOVERED: role("selected"), DISABLED: role("ground")},
         overlay_color=ft.Colors.TRANSPARENT,
         shadow_color=ft.Colors.TRANSPARENT,
-        side={DEFAULT: border, HOVERED: ft.BorderSide(2, role("accent"))},
+        # Focus: a thicker ring in the text's colour, unlike the hover and the "last used" border.
+        side={FOCUSED: ring("text", 3), HOVERED: ft.BorderSide(2, role("accent")), DEFAULT: border},
         shape=ft.RoundedRectangleBorder(radius=RADIUS),
         padding=ft.Padding.only(left=GAP, top=GAP if centred else top, right=GAP, bottom=GAP),
         # icons and titles in line, whatever the text below; a lone title: in the middle

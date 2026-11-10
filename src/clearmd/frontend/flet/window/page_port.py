@@ -64,6 +64,9 @@ class PagePort(Protocol):
     ) -> None:
         """The keyboard, the window's close button (which only asks) and its size."""
 
+    def reveal(self, items: ft.ListView, index: int) -> None:
+        """Scroll ``items`` until its row ``index`` (its ``ScrollKey``) is in view (040)."""
+
     def copy_text(self, text: str) -> None:
         """Put ``text`` on the system clipboard ("Copy Details", feature 036)."""
 

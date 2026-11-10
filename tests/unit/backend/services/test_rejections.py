@@ -60,7 +60,9 @@ def test_a_limit_says_the_files_value_and_the_limit(item: SkippedItem, expected:
 def test_the_line_says_the_kind_the_reason_and_what_to_do() -> None:
     item = SkippedItem(Path("a.pdf"), SkipReason.TOO_LARGE, measured=300 * MIB, limit=250 * MIB)
     assert skipped_line(EN, item, "a.pdf") == (
-        "– Skipped: a.pdf — too large (300 MB; limit 250 MB). Split it into smaller files."
+        "– Skipped: a.pdf — too large (300 MB; limit 250 MB). For safety, ClearMD opens no file"
+        " over 250 MB. Split it first with another program (for example, the one you open it"
+        " with) into smaller files."
     )
     assert skipped_line(ES, item, "a.pdf").startswith(
         "– Omitido: a.pdf — demasiado grande (300 MB;"

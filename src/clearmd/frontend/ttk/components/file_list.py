@@ -12,7 +12,9 @@ from PIL import ImageTk
 
 from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.ttk.components.file_list_keys import ListKeys
+from clearmd.frontend.ttk.components.list_focus import ListFocus
 from clearmd.frontend.ttk.components.row_pictures import RowPictures
+from clearmd.frontend.ttk.components.row_wrap import RowWrap
 from clearmd.frontend.ttk.visuals import marks
 from clearmd.frontend.ttk.visuals.style_names import CARD, MUTED
 
@@ -44,6 +46,8 @@ class FileList(ttk.Frame):
         columns: Sequence[Column],
         height: int = 6,
         checks: bool = True,
+        wrap: int | None = None,
+        name_width: int = 300,
     ) -> None:
         """``checks``: a checkbox on each row, for a list whose selection does something (Choose's
         Remove selected); a list to read has none: a box promises a choice (feature 014)."""
@@ -59,15 +63,16 @@ class FileList(ttk.Frame):
         self._header_boxes: dict[str, ImageTk.PhotoImage] = {}
         keys = [f"c{i}" for i in range(len(self._columns))]
         self.tree = ttk.Treeview(self, columns=keys, height=height, selectmode="extended")
-        self.tree.column("#0", width=300, stretch=False)  # the extra columns take what is left
+        self.tree.column("#0", width=name_width, stretch=False)  # the others take what is left
         for key, column in zip(keys, self._columns, strict=True):
             self.tree.column(key, width=column.width, stretch=column.stretch, anchor="w")
         self.scroll = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=self._scrolled)
-        # The bar first: a narrow list keeps it, the rows take what is left (035, AC-07).
-        self.scroll.pack(side="right", fill="y")
+        self.scroll.pack(side="right", fill="y")  # first: a narrow list keeps it (035)
         self.tree.pack(side="left", fill="both", expand=True)
         self.pictures = RowPictures(self, self.tree, checks=checks)
+        self.wrap = RowWrap(self.tree, self._items, wrap) if wrap is not None else None  # 040
+        self.focus_look = ListFocus(self, self.tree)  # the focus made visible (040)
         self.empty = ttk.Label(self.tree, style=MUTED, anchor="center", justify="center")
         self.tree.bind("<<TreeviewSelect>>", lambda _event: self._sync_boxes(), add="+")
         self.shortcuts = ListKeys(self.tree, checks=checks)
@@ -89,12 +94,15 @@ class FileList(ttk.Frame):
         self._palette = palette
         self.tree.tag_configure("warning", foreground=palette.warning)
         self.tree.tag_configure("danger", foreground=palette.danger)
+        self.focus_look.apply_palette(palette)
         self._header_boxes = {
             state: ImageTk.PhotoImage(self._box(state, palette), master=self)
             for state in ("off", "on", "some")
             if self.checks
         }
         self.pictures.use(palette)  # the rows stay: only those on screen are painted again
+        if self.wrap is not None:  # a style's row height belongs to its theme
+            self.wrap.refresh(force=True)
         self._sync_boxes()
 
     # --- Rows ----------------------------------------------------------------------------------
@@ -115,8 +123,11 @@ class FileList(ttk.Frame):
             )
             self._items[item] = row
         self._sync_boxes()
+        if self.wrap is not None:
+            self.wrap.rows_changed()
         if self._rows:
             self.tree.focus(self.tree.get_children()[min(place, len(self._rows) - 1)])
+            self.focus_look.mark()
             self.empty.place_forget()
         else:
             self.empty.place(relx=0.5, rely=0.55, anchor="center")
@@ -171,12 +182,6 @@ class FileList(ttk.Frame):
         """The row with the keyboard focus or the first selected one."""
         chosen = self.tree.selection() or ((self.tree.focus(),) if self.tree.focus() else ())
         return self._items.get(chosen[0]) if chosen else None
-
-    def select_first(self) -> None:
-        children = self.tree.get_children()
-        if children:
-            self.tree.selection_set(children[0])
-            self.tree.focus(children[0])
 
     def selected(self) -> list[Any]:
         return [self._items[item].payload for item in self.tree.selection() if item in self._items]

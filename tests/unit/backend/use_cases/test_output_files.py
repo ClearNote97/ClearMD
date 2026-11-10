@@ -81,11 +81,14 @@ def test_stale_temporary_files_are_swept(tmp_path: Path) -> None:
     stale = root / "OutputMD" / "deep" / ".abc.clearmd-tmp"
     stale.parent.mkdir(parents=True)
     stale.write_text("half", encoding="utf-8")
+    os.utime(stale, (0, 0))
+    fresh = root / "OutputMD" / "deep" / ".def.clearmd-tmp"  # another run's, at work
+    fresh.write_text("busy", encoding="utf-8")
     keep = root / "OutputMD" / "deep" / "a.md"
     keep.write_text("ok", encoding="utf-8")
     sweep_temporary_files(root)
     assert not stale.exists()
-    assert keep.exists()
+    assert keep.exists() and fresh.exists()
 
 
 def test_a_failed_write_removes_its_temp_file(

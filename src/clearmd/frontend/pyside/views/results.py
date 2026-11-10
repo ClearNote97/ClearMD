@@ -44,7 +44,7 @@ class ResultsView(QWidget):
         self.problems_title = label("strong")
         self._text(self.problems_title, "gui.result.problems")
         self.layout_.addWidget(self.problems_title)
-        self.problems = FileList(1, widths=(240,))
+        self.problems = FileList(1, widths=(240,), wrap=True)
         self.layout_.addWidget(self.problems, 1)
         self.detail = label("onPage", wrap=True)
         self.layout_.addWidget(self.detail)

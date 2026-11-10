@@ -107,7 +107,12 @@ def handle(registry: _Registry, request: Job, max_result_chars: int) -> Response
             f"result too large: {len(result.markdown)} characters, limit {max_result_chars}",
         )
     markdown, made_safe = safe_output(result.markdown)  # whoever converted it (audit v3, B2-01)
+    if not markdown.strip():  # no text: "failed", with what to do (audit v4, B1-03)
+        scanned = any(note.kind is NoteKind.PDF_PAGES_WITHOUT_TEXT for note in result.notes)
+        return Failed(ErrorCode.EMPTY_RESULT.value, "scanned" if scanned else "no text")
     notes = result.notes
+    if format_id is FormatId.HTML and Strategy(request.strategy) is Strategy.FULL:
+        notes = (*notes, ConversionNote(NoteKind.HTML_FULL_PAGE))
     if made_safe:
         notes = (*notes, ConversionNote(NoteKind.MADE_SAFE, (NoteItem(str(made_safe)),)))
     if sink is not None and sink.left_out:  # pictures a viewer cannot show, or past the limits

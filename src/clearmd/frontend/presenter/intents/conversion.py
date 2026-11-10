@@ -68,7 +68,8 @@ class Conversion:
         summary_pdf = s.settings.summary_format in {"markdown_pdf", "pdf"}
         summary_markdown = s.settings.summary_format != "pdf"  # "pdf": the PDF alone (020)
         images = s.settings.images == "folder" and s.tool is Tool.CONVERT  # Split, Merge: none
-        s.done = 0
+        s.done = s.kept = 0
+        s.stopped = None
         s.current = None
         s.page = 3  # the progress is shown on Convert (ADR-0029)
         self._display.set_state(AppState.CONVERTING)
@@ -79,13 +80,14 @@ class Conversion:
                 icon = icon_of_format(event.item.detection.format)
                 name = printable(name)
                 self._background.later(
-                    generation, lambda: self._started(event.index, event.total, name, left, icon)
+                    generation, lambda: self._started(event.total, name, left, icon)
                 )
             elif isinstance(event, ConversionProgress):
                 pages = (event.done, event.pages)
                 self._background.later(generation, lambda: setattr(s, "pages", pages))
             elif isinstance(event, ConversionFinished):
-                self._background.later(generation, self._finished_one)
+                kept = event.outcome.status is OutcomeStatus.KEPT
+                self._background.later(generation, lambda: self._finished_one(kept=kept))
 
         def work() -> None:
             try:
@@ -115,15 +117,20 @@ class Conversion:
             s.cancel.cancel()
             self._display.view.show_message(s.catalog.text("gui.progress.cancelling"))
 
-    def _started(self, index: int, total: int, name: str, left: float | None, icon: str) -> None:
+    def _started(self, total: int, name: str, left: float | None, icon: str) -> None:
+        """ "File 1 of 5" counts what is written: a kept result is no file of the task (F3-04)."""
         s = self._session
-        s.current = (index, total, name, left, icon)
+        s.current = (s.done + 1, total - s.kept, name, left, icon)
         s.pages = None
         s.started_at = self._clock()
         self._display.show_progress()
 
-    def _finished_one(self) -> None:
-        self._session.done += 1
+    def _finished_one(self, *, kept: bool = False) -> None:
+        s = self._session
+        if kept:
+            s.kept += 1
+        else:
+            s.done += 1
 
     def _tick(self, generation: int) -> None:
         s = self._session

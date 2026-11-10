@@ -18,6 +18,8 @@ MUTED = "Muted.ClearMD.TLabel"  # secondary text on a card
 # A card shown before there is anything to show in it: faded, like the rail's steps out of reach
 # (feature 014).
 DIM_CARD = "Dim.Card.ClearMD.TFrame"
+# A list's card while the list has the keyboard's focus: an accent ring (feature 040, F2-01).
+FOCUS_CARD = "Focus.Card.ClearMD.TFrame"
 DIM = "Dim.ClearMD.TLabel"  # its text
 WARNING = "Warning.ClearMD.TLabel"  # a message on the ground
 ON_PAGE = "OnPage.ClearMD.TLabel"  # text on the ground

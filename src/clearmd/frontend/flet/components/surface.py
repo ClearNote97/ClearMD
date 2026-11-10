@@ -48,8 +48,13 @@ class Surface:
             [*self.shapes, content], expand=True, clip_behavior=ft.ClipBehavior.HARD_EDGE
         )
 
-    def show_header(self, *, eyebrow: str, title: str, subtitle: str) -> None:
+    def show_header(
+        self, *, eyebrow: str, title: str, subtitle: str, warning: bool = False
+    ) -> None:
+        """``warning``: the eyebrow in the warning colour (finished with problems), as Qt and ttk
+        (040, F3-06)."""
         self.eyebrow.value = eyebrow
+        self.eyebrow.color = role("warning" if warning else "accent_text")
         self.eyebrow.visible = bool(eyebrow)  # Home has no step counter (feature 023)
         self.title.value = title
         self.subtitle.value = subtitle

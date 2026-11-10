@@ -97,9 +97,15 @@ def test_running_headers_and_page_numbers_go_and_it_is_told(tmp_path: Path) -> N
     assert NoteKind.PDF_RUNNING_REMOVED in kinds(result)
 
 
-def test_with_few_pages_a_repeated_line_is_content(tmp_path: Path) -> None:
+def test_a_letter_of_two_pages_loses_its_letterhead(tmp_path: Path) -> None:
+    # ADR-0030 amended (audit v4, B3-02): on every page of a short document, in the margin.
     result = convert(tmp_path, [_page(n, BODY) for n in range(1, 3)])
-    assert result.markdown.count("Review of Law and Economics") == 2
+    assert "Review of Law and Economics" not in result.markdown
+
+
+def test_with_few_pages_a_line_on_only_one_page_is_content(tmp_path: Path) -> None:
+    pages = [_page(1, BODY), paragraph(BODY, top=700)]
+    assert convert(tmp_path, pages).markdown.count("Review of Law and Economics") == 1
 
 
 def test_headings_are_told_by_their_size_the_tallest_first(tmp_path: Path) -> None:

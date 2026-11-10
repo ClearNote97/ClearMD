@@ -10,13 +10,12 @@ from clearmd.backend.api import (
     skip_reason,
     stopped_message,
 )
-from clearmd.backend.schemas.errors import SkipReason
 from clearmd.backend.schemas.formats import MERGE_DIR_NAME, RESULTS_DIR_NAME, SPLIT_DIR_NAME
 from clearmd.backend.schemas.models import BatchReport, ConversionOutcome, OutcomeStatus, tool_of
 from clearmd.frontend.presenter.icons import FOLDER, icon_for, icon_of_format
 from clearmd.frontend.presenter.models import ResultRow, ResultView, Tone
 from clearmd.frontend.presenter.screens.choose import shown
-from clearmd.frontend.presenter.screens.review import split_offer, stat
+from clearmd.frontend.presenter.screens.review import INFORMING, skipped_tone, split_offer, stat
 from clearmd.frontend.presenter.state import AppState
 from clearmd.i18n import Catalog
 
@@ -62,11 +61,12 @@ def result_view(catalog: Catalog, report: BatchReport, state: AppState) -> Resul
     headline = catalog.text(f"gui.state.{state.value}")
     stats = [
         stat(catalog, "gui.result.stat_converted", count[OutcomeStatus.CONVERTED], Tone.ACCENT),
-        stat(catalog, "gui.result.stat_skipped", len(report.skipped)),
+        stat(catalog, "gui.result.stat_skipped", len(report.skipped), skipped_tone(report.skipped)),
         stat(catalog, "gui.result.stat_failed", count[OutcomeStatus.FAILED], Tone.DANGER),
     ]
     if count[OutcomeStatus.KEPT]:
-        stats.insert(1, stat(catalog, "gui.result.stat_kept", count[OutcomeStatus.KEPT]))
+        kept = count[OutcomeStatus.KEPT]  # the person's choice: never a warning (F5-04)
+        stats.insert(1, stat(catalog, "gui.result.stat_kept", kept, Tone.NEUTRAL))
     if count[OutcomeStatus.STOPPED]:
         stats.append(stat(catalog, "gui.result.stat_stopped", count[OutcomeStatus.STOPPED]))
     folders = result_folders(report)
@@ -74,19 +74,6 @@ def result_view(catalog: Catalog, report: BatchReport, state: AppState) -> Resul
     where = where_line(catalog, report)
     with_ai = catalog.text("gui.result.with_ai") if count[OutcomeStatus.CONVERTED] else ""
     return ResultView(headline, counts, tuple(rows), folders, tuple(stats), offer, where, with_ai)
-
-
-# Left out because nothing had to be done: no colour of alarm (audit v3, F5-02).
-INFORMING = frozenset(
-    {
-        SkipReason.ALREADY_MARKDOWN,
-        SkipReason.ALREADY_INCLUDED,
-        SkipReason.LOCK_FILE,
-        SkipReason.HIDDEN,
-        SkipReason.OUTPUT_FOLDER,
-        SkipReason.EXISTING_OUTPUT,
-    }
-)
 
 
 def result_folders(report: BatchReport | None) -> tuple[Path, ...]:

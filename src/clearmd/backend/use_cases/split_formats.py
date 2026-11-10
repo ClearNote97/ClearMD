@@ -60,9 +60,11 @@ def split_file(
             result = part_markdown(runner, part, cancel)
             if result is None:
                 failed.append(index)
+                stage.drop(part.target)  # no Markdown for this part: its original stays
                 continue  # its original part stays, to try again
             atomic_write(part.target, result.markdown, inside=item.output_root)
             notes.extend(result.notes)
             if not spec.keep.original:
                 remove_regular_file(path, inside=item.output_root)
+                stage.drop(path)
     return len(parts), tuple(dict.fromkeys(notes)) + over_size(over) + not_converted(failed)

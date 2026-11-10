@@ -55,6 +55,10 @@ action_other = "Open it in its program and save it again, or as a PDF; if it kee
 message = "This file is empty: it has no content."
 action = "Check that it is the right file and that it was downloaded completely."
 
+[error.empty_result]
+message = "ClearMD found no text to read in this file, so it did not write an empty result."
+action = "If its pages are scanned (photos of a document), run it through a program that recognises text (OCR) first, and convert the result. Otherwise, check that the file has content."
+
 [report]
 # How to report a problem, once for every message ({report}; audit v2, B4-05).
 how = "tell us about the problem in the project's community, github.com/ClearNote97/ClearMD/discussions (with a free GitHub account), or, without an account, write to nienvasa@gmail.com. Copy only the technical detail, never the whole summary: it has your files' names."
@@ -90,7 +94,7 @@ output_folder = "ClearMD does not convert its own results."
 symlink = "Choose the original file."
 hidden = "Make it visible to convert it."
 lock_file = "It is deleted when the document closes."
-too_large = "Split it into smaller files."
+too_large = "For safety, ClearMD opens no file over 250 MB. Split it first with another program (for example, the one you open it with) into smaller files."
 already_markdown = "It needs no conversion."
 zip_archive = "Extract it and convert its contents."
 archive_too_large = "If you trust it, save a new copy from its program."
@@ -301,7 +305,8 @@ pdf_text_unreadable = "some characters could not be read: they are shown as “�
 pdf_running_removed = "headers, footers and page numbers repeated on the pages were left out"
 pdf_hidden_text_left_out = "text that cannot be seen on the page (off the page, too small to read, or invisible) was left out, so an AI does not read what you cannot; pages: {items}"
 pdf_equations_as_text = "equations ClearMD could not rebuild were kept as their symbols; check them against the original; pages: {items}"
-parts_not_converted = "the Markdown of these parts could not be made; their original part is in the folder, to try again on its own: {items}"
+parts_not_converted = "the Markdown of these parts could not be made (for example, scanned pages without text, or a part that stopped); their original part is in the folder: {items}"
+html_full_page = "the web page was converted whole, with its menus and ads; to keep only the main text, choose “Only the article” in Settings → Web Pages"
 made_safe = "pictures from the internet, unsafe links and page code were turned into text, so opening the result notifies no one and runs nothing: {items}"
 images_left_out = "images left out (a format Markdown viewers do not show, or past the limits): {items}"
 parts_over_size = "parts larger than the size (a page or a paragraph that cannot be cut): {items}"
@@ -508,7 +513,7 @@ subtitle = "Documents to Markdown, on your computer"
 local = "100 % local · nothing leaves your computer"
 unexpected_error = "Something unexpected went wrong. Your original documents were not changed, and what was already converted is kept. If it happens again, press Copy Details and {report}"
 copy_details = "Copy Details"
-details_copied = "Copied. We tried to hide the names of your files and folders; before you send it, check that none is left. Paste it at github.com/ClearNote97/ClearMD/issues."
+details_copied = "Copied. We tried to hide the names of your files and folders; before you send it, check that none is left. Then {report}"
 details_text = "ClearMD {version} · {window} · {system}\nFor whoever helps you: {detail}"
 file_placeholder = "file"
 result_kept = "You changed the list: the earlier results stay in their folder."

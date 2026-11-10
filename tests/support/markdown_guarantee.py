@@ -52,3 +52,20 @@ def broken_promises(
         elif token.type in {"code_block", "html_block"} and token.level > 0:
             found.append(f"block: {token.type} (nested)")  # ClearMD never writes either
     return [f"{problem} in {markdown!r}" for problem in found]
+
+
+def live_syntax(markdown: str) -> list[str]:
+    """What a CommonMark viewer would make of ``markdown`` that fetches, runs or links: raw HTML,
+    images, and links other than web ones (audit v4: judged by a real reader, never by looking
+    for "](" in the text, which escaped document text may hold)."""
+    found = []
+    for token in _tokens(markdown):
+        if token.type in {"html_inline", "html_block"}:
+            found.append(f"html: {token.content!r}")
+        elif token.type == "image":
+            found.append(f"image: {token.attrs.get('src')!r}")
+        elif token.type == "link_open":
+            href = str(token.attrs.get("href", ""))
+            if not href.startswith(("http://", "https://", "mailto:", "#")):
+                found.append(f"link: {href!r}")
+    return found

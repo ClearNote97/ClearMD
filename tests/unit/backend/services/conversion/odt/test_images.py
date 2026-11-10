@@ -6,6 +6,7 @@ from builders.odt_bodies import ODT_IMAGES_BODY
 from builders.odt_package import _odt_styles, _odt_xml, odt_package
 from builders.png import tiny_png
 from support import ODT_DIR
+from support.markdown_guarantee import live_syntax
 
 from clearmd.backend.schemas.notes import NoteItem, NoteKind
 from clearmd.backend.services.conversion.odt import OdtConverter
@@ -59,7 +60,7 @@ def test_an_image_title_never_becomes_markdown(tmp_path: Path) -> None:
     path = tmp_path / "t.odt"
     path.write_bytes(odt_package(_odt_xml("document-content", body)))
     markdown, _ = convert(path)
-    assert "](" not in markdown and "<img" not in markdown
+    assert not live_syntax(markdown)
 
 
 def test_a_framed_caption_keeps_its_text_and_its_image(tmp_path: Path) -> None:

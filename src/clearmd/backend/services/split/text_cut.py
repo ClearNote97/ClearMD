@@ -13,17 +13,36 @@ def lines(text: str) -> list[str]:
     return text.splitlines(keepends=True)
 
 
+DELIMITERS = ",;\t|"
+
+
 def csv_rows(text: str) -> list[str]:
-    """The raw rows of a CSV, each with its line break; a quoted field may hold line breaks."""
+    """The raw rows of a CSV, each with its line break; a quoted field may hold line breaks.
+    A quote opens a field only at its start (RFC 4180): an inch mark in the middle of a field
+    ("24\" monitor") is text, never the start of a quoted field (audit v4, B1-05)."""
     rows: list[str] = []
     start = 0
     quoted = False
-    for index, char in enumerate(text):
-        if char == '"':
-            quoted = not quoted  # "" inside a field toggles twice: no change
-        elif char == "\n" and not quoted:
+    field_start = True
+    index = 0
+    while index < len(text):
+        char = text[index]
+        if quoted:
+            if char == '"':
+                if text[index + 1 : index + 2] == '"':
+                    index += 1  # an escaped quote inside the field
+                else:
+                    quoted = False
+        elif char == '"' and field_start:
+            quoted = True
+        elif char == "\n":
             rows.append(text[start : index + 1])
             start = index + 1
+            field_start = True
+            index += 1
+            continue
+        field_start = (not quoted) and char in DELIMITERS
+        index += 1
     if start < len(text):
         rows.append(text[start:])
     return rows

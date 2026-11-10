@@ -166,6 +166,7 @@ _Plus the failed and skipped files with a plain-words reason, and the history of
 | **037** A light installer (the Classic App) and a full one | ✅ done | v2.10.0 |
 | **038** Say only what is true (encodings, N parts, tables, messages) and start faster | ✅ done | v2.11.0 |
 | **039** Truth for the AI (hidden text, remote images, short Windows texts), care for the person, a true installer | ✅ done | v2.12.0 |
+| **040** Promises kept in the hard cases: empty results fail, one output door, readable marks, visible focus | ✅ done | v2.13.0 |
 
 Full plan in the [roadmap](./spec/roadmap.md). ClearMD has a **command line** and the same **desktop app** in three toolkits,
 ttkbootstrap (`clearmd-ttk`), PySide6 (`clearmd-pyside`, [screenshots](./docs/screenshots/016/)) and flet

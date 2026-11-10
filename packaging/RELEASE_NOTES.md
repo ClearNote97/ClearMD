@@ -23,6 +23,29 @@
   Versiones anteriores: [el historial completo](https://github.com/ClearNote97/ClearMD/blob/main/packaging/RELEASE_NOTES.md).
 <!-- what-to-download:end -->
 
+**New in 2.13.0 / Novedades de la 2.13.0** — the fourth audit's improvements / las mejoras de la cuarta auditoría
+- **A blank result is never "converted".** A scanned PDF or an empty presentation now "failed",
+  with what to do (a text-recognition program first); no blank file is written. / **Un resultado
+  en blanco nunca es "convertido".** Un PDF escaneado o una presentación vacía ahora "falló", con
+  qué hacer (antes, un programa que reconozca texto); no se escribe un archivo en blanco.
+- **Changes in behaviour / Cambios de comportamiento:** the command line ends with code 1 for such a
+  file (it said 0); a saved "Whole page" setting is respected, and the summary now says each time
+  that "Only the article" exists. / la línea de comandos termina con código 1 en ese caso (antes 0);
+  el ajuste guardado "Página completa" se respeta, y el resumen ahora dice cada vez que existe "Solo
+  el artículo".
+- **What reaches your AI is cleaner and safer:** no way of writing a picture fetches anything, in
+  every tool, Merge included; readable marks ("AT&T", "juan_perez" as written); "Sí" and "¿Qué?"
+  keep their letters; numbered lists stay lists; a short letter loses its letterhead; a logo no
+  longer lets hidden text through. / **Lo que llega a tu IA es más limpio y seguro:** ninguna forma de
+  escribir una imagen descarga nada, en todas las herramientas, Unir incluida; marcas legibles
+  ("AT&T", "juan_perez" tal cual); "Sí" y "¿Qué?" conservan sus letras; las listas numeradas siguen
+  siendo listas; una carta corta pierde su membrete; un logo ya no deja pasar texto oculto.
+- **Clear and complete:** Merge in the order you count (1, 2, 10); every row shows its whole
+  reason; Copy Details points to the community page or e-mail; numbers and colours agree; the
+  keyboard focus is visible. / **Claro y completo:** Unir en el orden en que cuentas (1, 2, 10); cada
+  fila muestra su razón completa; Copiar Detalles lleva a la comunidad o al correo; cifras y colores
+  coinciden; el foco del teclado se ve.
+
 **New in 2.12.0 / Novedades de la 2.12.0** — the third audit's improvements / las mejoras de la tercera auditoría
 - **What reaches your AI is what you see.** Short notes and CSV files saved by Windows keep their
   letters; text no one can see in a PDF is left out and the summary says so; pictures from the

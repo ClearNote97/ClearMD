@@ -89,3 +89,8 @@ Markdown link to them makes the viewer fetch them when the file is opened.
 - Whatever converts a page (ClearMD or markitdown), one common pass after every converter turns
   remote images, `file:`/`javascript:` links and active HTML into text, with a note (audit v3,
   B2-01). An e-mail's HTML body is written by ClearMD's page writer, in memory (B2-07).
+
+## Amendment (2026-11-09, doubts board 2)
+
+The saved value is respected (no migration). When a web page is converted whole, the summary says
+so each time, and says that Settings → Web Pages offers "Only the article".

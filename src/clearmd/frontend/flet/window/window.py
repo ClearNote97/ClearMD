@@ -85,9 +85,10 @@ class FletApp:
             frame,
             self.focus,
         )
-        self.keys = Keys(
-            self.presenter, self.dialogs, self.primary_button.press, self.main, self.focus
-        )
+        lists = {2: self.review.files, 4: self.results.problems}  # the arrows' lists (040)
+        self.keys = Keys(self.presenter, self.dialogs, self.primary_button.press, self.main,
+                         self.focus, lists)  # fmt: skip
+        self.review.files.on_reveal = self.results.problems.on_reveal = self.page.reveal
         self.focus.watch(self.root)
 
     # --- The View the presenter draws on ---------------------------------------------------------

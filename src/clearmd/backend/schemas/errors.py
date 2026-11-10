@@ -25,6 +25,9 @@ class ErrorCode(StrEnum):
     NOTHING_TO_MERGE = "nothing_to_merge"
     # Split: a text, CSV or Markdown file with nothing in it (audit 2026-11-08, B1-07b).
     EMPTY_FILE = "empty_file"
+    # The conversion gave no text (a scanned PDF, an empty presentation): never "converted", the
+    # owner's empty-file rule applied to the result (audit v4, B1-03).
+    EMPTY_RESULT = "empty_result"
 
     @property
     def message_key(self) -> str:

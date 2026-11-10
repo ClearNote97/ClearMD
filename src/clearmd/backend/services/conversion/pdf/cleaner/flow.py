@@ -21,6 +21,7 @@ class Flow:
     typical: float = 80.0  # a full line's length on this page, in characters
     grown: bool = False  # the paragraph started as a heading: a larger font, too long for one
     numbered: bool = False  # the heading came from a bold number, not from its size
+    marker: str = "- "  # how the list item being built starts: "- ", or "3. " (audit v4, B3-01)
 
 
 def sentence_ended(flow: Flow) -> bool:

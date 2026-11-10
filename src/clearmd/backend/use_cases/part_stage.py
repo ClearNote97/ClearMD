@@ -23,6 +23,7 @@ class PartStage:
         self._item = item
         self._spec = spec
         self._staged: list[tuple[Path, Path]] = []
+        self._dropped: set[Path] = set()  # parts removed on purpose (only their Markdown kept)
 
     def at(self, final: Path) -> Path:
         """Where to write the part that will be ``final``; its extension stays (the worker
@@ -31,6 +32,10 @@ class PartStage:
         self._staged.append((staged, final))
         return staged
 
+    def drop(self, staged: Path) -> None:
+        """A staged part removed on purpose: only its Markdown is kept."""
+        self._dropped.add(staged)
+
     def commit(self) -> None:
         """Every part in place, then the earlier cut's other parts removed."""
         for _staged, final in self._staged:  # an obstacle stops it before anything moves
@@ -38,6 +43,10 @@ class PartStage:
                 raise UnsafeOutput(f"not a regular file: {final}")
         old = earlier_parts(self._item, self._spec)
         finals = set()
+        missing = [staged for staged, _ in self._staged if not os.path.lexists(staged)]
+        missing = [path for path in missing if path not in self._dropped]
+        if missing:  # gone without ClearMD removing it: never "split" with parts missing (B1-01)
+            raise OSError(f"{len(missing)} prepared parts disappeared before they were moved")
         for staged, final in self._staged:
             if os.path.lexists(staged):  # a part's original removed after its Markdown: gone
                 os.replace(staged, final)

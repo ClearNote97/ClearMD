@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 from clearmd.frontend.design.metrics import SPACE
 from clearmd.frontend.design.palette import Palette
 from clearmd.frontend.pyside.components.primitives import card, label
+from clearmd.frontend.pyside.components.row_wrap import RowWrap
 from clearmd.frontend.pyside.components.tone_delegate import ToneDelegate
 from clearmd.frontend.pyside.layout.units import ICON, LIST_HEADER, ROW_HEIGHT
 from clearmd.frontend.pyside.visuals.images import icon
@@ -56,7 +57,14 @@ class FileList(QFrame):
 
     selection_changed = Signal()
 
-    def __init__(self, columns: int, *, checks: bool = False, widths: Sequence[int] = ()) -> None:
+    def __init__(
+        self,
+        columns: int,
+        *,
+        checks: bool = False,
+        widths: Sequence[int] = (),
+        wrap: bool = False,
+    ) -> None:
         super().__init__()
         self.checks = checks
         self._rows: tuple[ListRow, ...] = ()
@@ -81,6 +89,8 @@ class FileList(QFrame):
             self.tree.setColumnWidth(column, width)
         self.tree.itemSelectionChanged.connect(self._selection_changed)
         self.tree.itemChanged.connect(self._checked)
+        # ``wrap``: each row's whole text on as many lines as it takes (audit v4, F3-01).
+        self._wrap = RowWrap(self.tree) if wrap else None
         self._stack.addWidget(self.tree)
         self.empty = label("empty", wrap=True)
         self.empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -123,6 +133,8 @@ class FileList(QFrame):
             self.tree.addTopLevelItem(item)
         self._syncing = False
         self._stack.setCurrentIndex(0 if self._rows or not self.empty.text() else 1)
+        if self._wrap is not None:
+            self._wrap.fit()
 
     def ask_rows(self, rows: int) -> None:
         """Ask for ``rows`` rows under the header, at the least and no more: the list takes the

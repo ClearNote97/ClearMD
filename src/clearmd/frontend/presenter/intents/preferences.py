@@ -5,9 +5,8 @@ from dataclasses import replace
 
 from clearmd.backend.schemas.settings import CHOICES, Settings
 from clearmd.frontend.presenter.display import Display
-from clearmd.frontend.presenter.intents.reset import editable
+from clearmd.frontend.presenter.intents.reset import editable, shown_result
 from clearmd.frontend.presenter.ports import Backend
-from clearmd.frontend.presenter.screens.results import result_view
 from clearmd.frontend.presenter.screens.review import plan_view
 from clearmd.frontend.presenter.session import Session
 from clearmd.frontend.presenter.state import WORKING, AppState
@@ -84,7 +83,7 @@ class Preferences:
                 plan_view(s.catalog, s.plan, s.settings.on_existing_output, s.plan_id)
             )
         if s.report is not None:  # the results, in the new language
-            self._display.view.show_result(result_view(s.catalog, s.report, s.state))
+            self._display.view.show_result(shown_result(s, s.state))
         self._display.set_state(s.state)
 
     def choose_summary_format(self, summary_format: str) -> None:

@@ -141,7 +141,9 @@ class MarkItDownConverter:
                 stream = io.BytesIO(text.encode("utf-8"))
                 hint = StreamInfo(extension=hint.extension, filename=source.name, charset="utf-8")
                 if decoded.guessed:
-                    item = NoteItem(f"{source.name} ({decoded.encoding})")
+                    item = NoteItem(
+                        source.name
+                    )  # the codec's name means nothing to a person (B5-03)
                     notes = (ConversionNote(NoteKind.ENCODING_GUESSED, (item,)),)
             try:
                 result = converter.convert(stream, hint, **options)

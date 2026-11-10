@@ -169,6 +169,8 @@ class FletView:
         if self._shown.catalog is None or self._shown.state is None:
             return
         header = header_of(self._shown.catalog, self._shown.state, self._shown.scan)
+        problems = self._shown.state.state is AppState.FINISHED_WITH_PROBLEMS  # as Qt (040)
         self._surface.show_header(  # the eyebrow in capitals: the draft's own look (as Qt)
-            eyebrow=header.eyebrow.upper(), title=header.title, subtitle=header.subtitle
-        )
+            eyebrow=header.eyebrow.upper(), title=header.title, subtitle=header.subtitle,
+            warning=problems,
+        )  # fmt: skip

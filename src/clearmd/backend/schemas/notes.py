@@ -37,6 +37,8 @@ class NoteKind(StrEnum):
     PARTS_OVER_SIZE = "parts_over_size"
     # Split into N parts: the file allowed fewer (fewer pages, sheets or blocks than parts).
     PARTS_FEWER = "parts_fewer"
+    # A web page written whole (the saved "full" setting): said each time (doubts board 2, D2).
+    HTML_FULL_PAGE = "html_full_page"
     # Text no one sees on the page (off it, tiny, invisible without a picture): ADR-0054.
     PDF_HIDDEN_TEXT_LEFT_OUT = "pdf_hidden_text_left_out"
     # Display equations ClearMD could not rebuild, kept as their characters (audit v3, B3-02).

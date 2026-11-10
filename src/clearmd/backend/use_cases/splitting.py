@@ -113,11 +113,13 @@ def _pdf(
             result = part_markdown(runner, part, cancel)
             if result is None:
                 failed.append(index)
+                stage.drop(part.target)  # no Markdown for this part: its original stays
                 continue  # its original part stays, to try again
             atomic_write(part.target, result.markdown, inside=item.output_root)
             notes.extend((first, note) for note in result.notes)
             if not spec.keep.original:
                 remove_regular_file(pdf, inside=item.output_root)
+                stage.drop(pdf)
     converted = len(ranges) - len(failed) if spec.keep.markdown else 0
     cleaned = sum(1 for _, note in notes if note.kind is NoteKind.PDF_RUNNING_REMOVED)
     if cleaned < converted:  # never "headers left out" when some part kept them (audit v3, B3-03)

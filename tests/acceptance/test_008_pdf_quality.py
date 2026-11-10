@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 from support import DOCUMENTS_DIR
+from support.markdown_guarantee import live_syntax
 from support.pdf_builder import GLYPH_CODE, Text, build_pdf, paragraph
 
 from clearmd.backend.schemas.errors import ConversionError, ErrorCode
@@ -89,15 +90,18 @@ def test_ac_04_a_locked_or_broken_pdf_fails_with_its_reason(
     assert raised.value.code is code
 
 
-def test_ac_05_running_lines_and_page_numbers_go_but_not_in_a_short_document(
+def test_ac_05_running_lines_and_page_numbers_go_also_in_a_short_document(
     tmp_path: Path,
 ) -> None:
     long = convert(tmp_path, article(5))
     assert "Rev. Law Econ." not in long.markdown
     assert not any(line.strip().isdigit() for line in long.markdown.splitlines())
     assert NoteKind.PDF_RUNNING_REMOVED in kinds(long)
+    # ADR-0030 amended (audit v4, B3-02): on every page of a short document, it goes too.
     short = convert(tmp_path, article(2))
-    assert short.markdown.count("Rev. Law Econ.") == 2
+    assert "Rev. Law Econ." not in short.markdown
+    one = convert(tmp_path, article(1))  # one page keeps everything
+    assert one.markdown.count("Rev. Law Econ.") == 1
 
 
 def test_ac_06_headings_by_size_or_bold_numbers_never_a_sentence(tmp_path: Path) -> None:
@@ -139,7 +143,7 @@ def test_ac_08_broken_words_are_joined_and_bullets_are_list_items(tmp_path: Path
 def test_ac_09_document_text_never_becomes_markdown_it_did_not_write(tmp_path: Path) -> None:
     hostile = ["# heading?", "[x](javascript:alert(1))", "<img src=x onerror=alert(1)>", "> quote"]
     markdown = convert(tmp_path, [paragraph(hostile, top=700)]).markdown
-    assert "<img" not in markdown and "](javascript" not in markdown
+    assert not live_syntax(markdown)
     assert not any(line.startswith(("#", ">")) for line in markdown.splitlines())
 
 

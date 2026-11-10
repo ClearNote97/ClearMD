@@ -11,7 +11,8 @@ from clearmd.backend.services.conversion.pdf.cleaner.sizes import size_key
 from clearmd.backend.services.conversion.pdf.model import UPRIGHT, Line
 
 EDGE_LINES = 3  # a running header or footer is among the first or last lines of a page
-MIN_PAGES_FOR_RUNNING = 4  # fewer pages: nothing is taken for a running line
+MIN_PAGES_FOR_RUNNING = 4  # fewer pages: only lines on every page are running ones
+MIN_PAGES_FOR_SHORT = 2  # one page: nothing is taken for a running line
 RUNNING_SHARE = 0.3  # on this share of the pages (odd and even pages often differ)
 MIN_RUNNING_PAGES = 3
 PLACE_POINTS = 6.0  # the same place on the page, within this
@@ -72,9 +73,12 @@ def without_running(
     without the page numbers. A short document keeps everything; a line the size of a heading,
     or one whose text is also in the body of a page, is content."""
     with_text = sum(1 for lines in pages if lines)
-    if with_text < MIN_PAGES_FOR_RUNNING:
+    if with_text < MIN_PAGES_FOR_SHORT:
         return pages, 0
-    threshold = max(MIN_RUNNING_PAGES, math.ceil(RUNNING_SHARE * with_text))
+    # A letter of two or three pages: only what is on every one of them (ADR-0030 amended,
+    # audit v4, B3-02); a longer document: on a share of its pages.
+    short = with_text < MIN_PAGES_FOR_RUNNING
+    threshold = with_text if short else max(MIN_RUNNING_PAGES, math.ceil(RUNNING_SHARE * with_text))
     seen: Counter[RunningKey] = Counter()
     in_body: set[str] = set()
     numbers: Counter[tuple[str, int]] = Counter()
@@ -100,10 +104,17 @@ def without_running(
     running = {key for key, count in seen.items() if count >= threshold}
     running = {key for key in running if _shape(key[0]) not in in_body}
     # A run of page numbers is one at three pages already (the roman ii-viii of a front matter).
-    numbering = {key for key, count in numbers.items() if count >= MIN_RUNNING_PAGES}
+    numbering = {
+        key
+        for key, count in numbers.items()
+        if count >= (with_text if short else MIN_RUNNING_PAGES)
+    }
     kept: list[list[Line]] = []
     removed = 0
     for page, lines in enumerate(pages):
+        if len(lines) == 1:  # a page's only line is its content, never its margin (audit v4)
+            kept.append(lines)
+            continue
         edges = _edges(lines)
         out = []
         for index, line in enumerate(lines):

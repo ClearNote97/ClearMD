@@ -71,6 +71,12 @@ class FletPage:
         except RuntimeError:  # the loop is gone: the window has closed, nothing to draw
             return
 
+    def reveal(self, items: ft.ListView, index: int) -> None:
+        async def scroll() -> None:
+            await items.scroll_to(scroll_key=index, duration=100)
+
+        self._page.run_task(scroll)
+
     def copy_text(self, text: str) -> None:
         """flet 1.0.5's clipboard is a page service whose ``set`` is a coroutine: it runs as a
         task on the page's loop (a failure there is flet's to log, after the message changed)."""

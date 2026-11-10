@@ -7,8 +7,9 @@ flet gives every key to the page, not to a control: the window decides here what
 dialog's keys first (Esc closes it, Enter runs its default action), then the window's. Enter is
 the focused control's when one has the focus (``focus.py``)."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 
+from clearmd.frontend.flet.components.file_list import FileList
 from clearmd.frontend.flet.views.choose import ChooseView
 from clearmd.frontend.flet.window.dialog_host import DialogHost
 from clearmd.frontend.flet.window.focus import Focus
@@ -16,7 +17,8 @@ from clearmd.frontend.flet.window.page_port import KeyPress
 from clearmd.frontend.presenter import Presenter
 from clearmd.frontend.presenter.state import HOME, STEPS
 
-ENTER = frozenset({"Enter", "Numpad Enter"})  # the main keyboard's and the keypad's
+ENTER = frozenset({"Enter", "Numpad Enter"})
+ARROWS = {"Arrow Up": -1, "Arrow Down": +1}  # flet's names  # the main keyboard's and the keypad's
 STEP_KEYS = {str(number): number for number in range(HOME, len(STEPS) + 1)}  # 0: Home (023)
 
 
@@ -28,7 +30,9 @@ class Keys:
         press_primary: Callable[[], None],
         main: ChooseView,
         focus: Focus,
+        lists: Mapping[int, FileList] | None = None,
     ) -> None:
+        self._lists = dict(lists or {})  # a page's list to read: the arrows move in it (040)
         self._focus = focus
         self._presenter = presenter
         self._dialogs = dialogs
@@ -49,8 +53,16 @@ class Keys:
                 self._press_primary()
         elif key.ctrl and key.key in STEP_KEYS:  # the rail by keyboard
             self._presenter.go_to(STEP_KEYS[key.key])
+        elif key.key in ARROWS and not self._focus.taken:
+            self._step(ARROWS[key.key])
         elif self._presenter.page == 1:
             self._on_choose(key)
+
+    def _step(self, offset: int) -> None:
+        """Up and Down in Review's and Results' lists, as ttk's and Qt's (040, F2-03)."""
+        rows = self._lists.get(self._presenter.page)
+        if rows is not None and rows.control.visible:
+            rows.step(offset)
 
     def _on_choose(self, key: KeyPress) -> None:
         """The list of Choose: Delete removes the checked files, Ctrl+A checks them all; only

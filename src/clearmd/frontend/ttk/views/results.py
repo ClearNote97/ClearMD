@@ -54,6 +54,7 @@ class ResultsView(ttk.Frame):
             columns=(Column("what", 520, stretch=True),),
             height=4,
             checks=False,  # a list to read: a row chosen shows its detail, nothing more (014)
+            wrap=0,  # "What Happened" whole, on its lines (040)
         )
         # The selected problem in full: a long explanation does not fit its column.
         self.detail = ttk.Label(self, style=ON_PAGE, wraplength=760, justify="left")

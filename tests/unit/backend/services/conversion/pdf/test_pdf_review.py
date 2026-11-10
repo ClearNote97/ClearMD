@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 from support import DOCUMENTS_DIR
+from support.markdown_guarantee import live_syntax
 from support.pdf_builder import Text, build_pdf, paragraph
 from support.pdf_cases import BODY, DETECTION, convert, lines_of
 
@@ -25,7 +26,7 @@ def test_document_text_never_becomes_markdown_it_did_not_write(
     tmp_path: Path, hostile: str
 ) -> None:
     markdown = convert(tmp_path, [paragraph([hostile], top=700)]).markdown
-    assert "<script" not in markdown and "](javascript" not in markdown
+    assert not live_syntax(markdown)
     assert not markdown.lstrip().startswith(("#", "1.", "|"))
 
 

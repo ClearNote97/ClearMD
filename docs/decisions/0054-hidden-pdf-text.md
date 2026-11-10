@@ -35,3 +35,9 @@ its text in invisible mode, laid over the picture of the page. It is the only te
 - **Costs:** white-on-white text still passes; a line cut by the page's edge by less than an inch
   stays (a reader half sees it). The checks add one pass over a page's characters, and a look at its
   objects when it has invisible text.
+
+## Amendment (2026-11-09, the owner's decision on the fourth audit, B3-04)
+
+"A page with a picture" was too broad: a letterhead's small logo was enough to let hidden text
+through. Invisible text now stays only on a page where **one picture covers at least half of the
+page**, as a scan does. A logo or a photo no longer protects it.

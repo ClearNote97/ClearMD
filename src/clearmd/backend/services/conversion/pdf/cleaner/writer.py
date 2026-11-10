@@ -89,7 +89,8 @@ class Writer:
         elif item := list_item(flow, line):
             self.buffer.flush()
             flow.kind = "item"
-            flow.parts.append(item)
+            flow.marker, text = item
+            flow.parts.append(text)
         else:
             lower = line.text[:1].islower()
             new = flow.parts and not lower and paragraph_ended(flow)

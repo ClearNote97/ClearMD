@@ -1,6 +1,6 @@
 [project]
 name = "clearmd"
-version = "2.12.0"
+version = "2.13.0"
 description = "Prepare documents for AI: convert to Markdown, split and merge. 100% local."
 # PyPI's own page (feature 031): absolute links, as PyPI shows no relative ones.
 readme = "packaging/pypi-readme.md"

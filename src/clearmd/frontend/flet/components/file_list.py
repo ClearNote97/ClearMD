@@ -2,47 +2,19 @@
 message in place of an empty list; optionally a box on each row."""
 
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
-from functools import partial
 from typing import Any
 
 import flet as ft
 
 from clearmd.frontend.design.metrics import GAP, HALF, RADIUS, SPACE
+from clearmd.frontend.flet.components.list_line import Line as Line
+from clearmd.frontend.flet.components.list_line import ListRow as ListRow
+from clearmd.frontend.flet.components.list_line import build_line
+from clearmd.frontend.flet.components.list_line import size as size
 from clearmd.frontend.flet.components.primitives import card, label
-from clearmd.frontend.flet.components.row_tone import mark, tint
-from clearmd.frontend.flet.layout.units import CHECK_WIDTH, ICON, NUMBER_WIDTH, ROW_HEIGHT
-from clearmd.frontend.flet.visuals.images import icon_src
+from clearmd.frontend.flet.components.row_tone import tint
+from clearmd.frontend.flet.layout.units import CHECK_WIDTH, NUMBER_WIDTH
 from clearmd.frontend.flet.visuals.theme import role
-
-
-@dataclass(frozen=True)
-class ListRow:
-    icon: str
-    name: str
-    values: tuple[str, ...]  # one per extra column
-    tone: str = ""  # its texts' colour role ("warning", "danger"; "": the page's text), 035
-    payload: Any = None  # what the row stands for (a path), returned by ``selected``
-    extra: ft.LayoutControl | None = None  # a last cell of its own (Merge's ▲ ▼, feature 032)
-
-
-def size(cell: ft.LayoutControl, column: int, widths: Sequence[int | None]) -> None:
-    """A column's width; the last one takes what is left."""
-    width = widths[column] if column < len(widths) else None
-    if width is None or column == len(widths) - 1:
-        cell.expand = True
-    else:
-        cell.width = width
-
-
-@dataclass(frozen=True)
-class Line:
-    """A row on screen: its frame, its box (a list with boxes) and its texts."""
-
-    frame: ft.Container
-    box: ft.Checkbox | None
-    texts: tuple[ft.Text, ...]
-    picture: ft.Image
 
 
 class FileList:
@@ -58,8 +30,12 @@ class FileList:
         checks: bool = False,
         widths: Sequence[int] = (),
         on_selection: Callable[[], None] | None = None,
+        wrap: bool = False,
     ) -> None:
         self.checks = checks
+        self._wrap = wrap  # a list to read: its texts wrapped whole (040)
+        # The window's: brings a row into view (the list scrolls on flet's side), after the arrows.
+        self.on_reveal: Callable[[ft.ListView, int], None] | None = None
         self._widths = (*widths, *([None] * columns))[: columns + 1]
         self._rows: tuple[ListRow, ...] = ()
         self._selected: set[int] = set()
@@ -105,7 +81,11 @@ class FileList:
     def show_rows(self, rows: Sequence[ListRow]) -> None:
         self._rows = tuple(rows)
         self._selected.clear()
-        self.lines = [self._line(index, row) for index, row in enumerate(self._rows)]
+        self.lines = [
+            build_line(index, row, self._widths, self._wrap, self.toggle if self.checks else None,
+                       self.click)
+            for index, row in enumerate(self._rows)
+        ]  # fmt: skip
         self.list.controls = [line.frame for line in self.lines]
         self._show_which()
 
@@ -132,6 +112,18 @@ class FileList:
         if 0 <= index < len(self._rows):
             self._set({index})
 
+    def step(self, offset: int) -> None:
+        """The arrow keys (040): the next or previous row selected, the first or last when none
+        is, and brought into view."""
+        if not self._rows:
+            return
+        last = len(self._rows) - 1
+        current = min(self._selected) if self._selected else (-1 if offset > 0 else last + 1)
+        index = max(0, min(last, current + offset))
+        self.select(index)
+        if self.on_reveal is not None:
+            self.on_reveal(self.list, index)
+
     def toggle(self, index: int) -> None:
         """A row's box clicked: it joins or leaves the selection."""
         if 0 <= index < len(self._rows):
@@ -157,38 +149,6 @@ class FileList:
                 line.box.value = chosen
         if self._on_selection is not None:
             self._on_selection()
-
-    def _line(self, index: int, row: ListRow) -> Line:
-        number = label("onPage", str(index + 1))
-        number.width = NUMBER_WIDTH
-        picture = ft.Image(src=icon_src(row.icon), width=ICON, height=ICON)
-        texts = [label("onPage", text) for text in (row.name, *row.values)]
-        for text in texts:
-            text.max_lines, text.overflow = 1, ft.TextOverflow.ELLIPSIS
-            text.tooltip = text.value
-        tint(texts, row.tone)
-        texts[0].expand = True
-        name = ft.Row([picture, texts[0]], spacing=SPACE)
-        cells: list[ft.LayoutControl] = [number, name, *texts[1:]]
-        for column, cell in enumerate(cells[1:]):
-            size(cell, column, self._widths)
-        if row.extra is not None:
-            cells.append(row.extra)
-        box = None
-        if self.checks:
-            box = ft.Checkbox(value=False, on_change=partial(self.toggle, index))
-            box.width = CHECK_WIDTH
-            cells.insert(0, box)
-        shown: list[ft.Control] = list(cells)
-        frame = ft.Container(
-            content=ft.Row(shown, spacing=SPACE),
-            height=ROW_HEIGHT,
-            padding=ft.Padding.symmetric(horizontal=SPACE),
-            border_radius=ft.BorderRadius.all(RADIUS // 2),
-            border=mark(row.tone),  # kept when selected (039)
-            on_click=partial(self.click, index),  # flet passes no event to it
-        )
-        return Line(frame, box, tuple(texts), picture)
 
     def _show_which(self) -> None:
         empty = not self._rows and bool(self.empty.value)

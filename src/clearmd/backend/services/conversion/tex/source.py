@@ -27,6 +27,7 @@ WESTERN = frozenset(
 # Western text is mostly ASCII: when more than this share of its letters are not, it is another
 # script decoded wrongly (Cyrillic saved as cp1251 reads as "Ïðèâåò" in cp1252).
 MAX_NON_ASCII_LETTERS = 0.3
+SHORT_ALLOWANCE = 2
 _INPUTENC = re.compile(rb"\\usepackage\s*\[([^\]\n]{0,256})\]\s*\{inputenc\}")
 
 
@@ -49,6 +50,11 @@ def _declared_codec(data: bytes) -> str | None:
 
 
 def decode_source(data: bytes) -> SourceText:
+    if data.startswith((b"\xff\xfe", b"\xfe\xff")):  # a byte-order mark says it (B1-10)
+        try:
+            return SourceText(data.decode("utf-16"), "utf-16", guessed=False)
+        except UnicodeDecodeError:
+            pass
     try:
         return SourceText(data.decode("utf-8-sig"), "utf-8", guessed=False)
     except UnicodeDecodeError:
@@ -102,6 +108,8 @@ def _as_western(data: bytes) -> str | None:
             return None
         if char.isalpha():
             beyond += 1
-    if letters and beyond / letters > MAX_NON_ASCII_LETTERS:
+    # A very short note ("Sí", "¿Qué?") is mostly accents: two such letters are always allowed,
+    # or a detector reads it as Chinese (audit v4, B5-03).
+    if letters and beyond > SHORT_ALLOWANCE and beyond / letters > MAX_NON_ASCII_LETTERS:
         return None
     return text

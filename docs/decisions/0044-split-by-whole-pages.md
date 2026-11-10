@@ -71,3 +71,10 @@ away good work: when one part's Markdown stops or fails, the parts already cut a
 original stays in the folder to try again, and the summary names it. A folder holds a result only
 when it has ClearMD's own parts: an empty folder left by a failure is removed, and never counts as
 "already exists".
+
+## Planned (doubts board 2, not yet in 2.13.0)
+
+Each PDF part's Markdown will open with one italic line of ClearMD's ("Part 2 of 5 of report.pdf —
+pages 6–10"), in the window's language, after the parts stop repeating the document's headers and
+footers (audit v4, B3-03). Parts of a Markdown or a text file will not carry it: those are the
+person's own words.

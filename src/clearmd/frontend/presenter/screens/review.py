@@ -1,9 +1,11 @@
 """Review: the plan's rows, summary and figures."""
 
+from collections.abc import Sequence
 from pathlib import Path
 
 from clearmd.backend.api import Strategy, large_in_plan, skip_action, skip_reason
-from clearmd.backend.schemas.models import BatchPlan, PlannedConversion
+from clearmd.backend.schemas.errors import SkipReason
+from clearmd.backend.schemas.models import BatchPlan, PlannedConversion, SkippedItem
 from clearmd.frontend.presenter.icons import icon_for, icon_of_format
 from clearmd.frontend.presenter.models import PlanRow, PlanView, RowKind, Stat, Tone
 from clearmd.frontend.presenter.screens.choose import shown
@@ -42,12 +44,35 @@ def plan_view(catalog: Catalog, plan: BatchPlan, on_existing_output: str, plan_i
     asks = existing > 0 and on_existing_output == "ask"
     stats = (
         stat(catalog, "gui.plan.stat_convert", new, Tone.ACCENT),
-        stat(catalog, "gui.plan.stat_skipped", len(plan.skipped) + len(plan.input_errors)),
+        stat(
+            catalog,
+            "gui.plan.stat_skipped",
+            len(plan.skipped) + len(plan.input_errors),
+            Tone.WARNING if plan.input_errors else skipped_tone(plan.skipped),
+        ),
         stat(catalog, "gui.plan.stat_existing", existing, Tone.NEUTRAL),
     )
     return PlanView(
         summary, tuple(rows), asks, stats, plan_id, split_offer(catalog, large_in_plan(plan))
     )
+
+
+# Left out because nothing had to be done: no colour of alarm (audit v3, F5-02).
+INFORMING = frozenset(
+    {
+        SkipReason.ALREADY_MARKDOWN,
+        SkipReason.ALREADY_INCLUDED,
+        SkipReason.LOCK_FILE,
+        SkipReason.HIDDEN,
+        SkipReason.OUTPUT_FOLDER,
+        SkipReason.EXISTING_OUTPUT,
+    }
+)
+
+
+def skipped_tone(skipped: Sequence[SkippedItem]) -> Tone:
+    """Amber only when a left-out file asks something of the person (audit v4, F5-04)."""
+    return Tone.WARNING if any(s.reason not in INFORMING for s in skipped) else Tone.NEUTRAL
 
 
 def split_offer(catalog: Catalog, found: tuple[tuple[Path, int], ...]) -> str:

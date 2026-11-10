@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 
 import pytest
+from support.markdown_guarantee import live_syntax
 from support.tex_review import doc, md, write
 
 from clearmd.backend.schemas.notes import NoteKind
@@ -91,18 +92,19 @@ def test_f7_entities_never_make_a_remote_image(argument: str, tmp_path: Path) ->
 
 
 def test_f8_entities_and_text_never_make_links_or_html() -> None:
-    assert "](" not in md(doc("\\href{javascript&#58;alert(1)}{click}"))
+    assert not live_syntax(md(doc("\\href{javascript&#58;alert(1)}{click}")))
     injected = md(doc("\\href{https://e.test}{a](javascript:alert(1)) [b}"))
-    assert "](javascript" not in injected
+    assert not live_syntax(injected)
     alt = md(
         doc(
             "\\begin{figure}\\includegraphics{a}"
             "\\caption{x](https://e.test/b.png) ![y}\\end{figure}"
         )
     )
-    assert "](https://e.test" not in alt
+    # The figure's own picture (a) stays; its caption never makes another.
+    assert live_syntax(alt) == ["image: 'a'"]
     plain = md(doc('Look ![](https://e.test/beacon.png) and <img src="https://e.test/b.png">'))
-    assert "](https" not in plain and "<img" not in plain
+    assert not live_syntax(plain)
 
 
 def test_l3_text_never_starts_a_block_by_accident() -> None:

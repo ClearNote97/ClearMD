@@ -34,7 +34,7 @@ class ParagraphBuffer:
         elif flow.kind == "item":
             # "• # x" is no heading in an item (security audit of 008): what follows the
             # marker is neutralized like any line, its indentation (marks removed) dropped.
-            self.blocks.append(f"{MARK}- " + neutralize(text.lstrip(), keep_marks=True))
+            self.blocks.append(f"{MARK}{flow.marker}" + neutralize(text.lstrip(), keep_marks=True))
         else:
             self.blocks.append(text)
         ended = flow.kind != "text" or bool(SENTENCE_END.search(flow.parts[-1]))

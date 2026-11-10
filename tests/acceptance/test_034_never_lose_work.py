@@ -52,7 +52,9 @@ def test_ac_01_a_split_that_works_still_replaces_the_earlier_cut(workdir: Path) 
 def test_ac_01_staged_parts_left_by_a_power_cut_are_swept(workdir: Path) -> None:
     folder = workdir / "ClearMD_Output" / "OutputSep" / "book"
     folder.mkdir(parents=True)
-    (folder / ".book - part 1 of 2.clearmd-part.pdf").write_bytes(b"half")
+    staged = folder / ".book - part 1 of 2.clearmd-part.pdf"
+    staged.write_bytes(b"half")
+    os.utime(staged, (0, 0))  # left long ago: another run's fresh parts are never swept (v4)
     (folder / "mine.pdf").write_bytes(b"mine")
     sweep_temporary_files(workdir / "ClearMD_Output")
     assert listing(folder) == ["mine.pdf"]

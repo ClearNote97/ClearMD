@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 
 import pytest
+from support.markdown_guarantee import live_syntax
 from support.tex_review import doc, md, write
 
 from clearmd.backend.schemas.notes import NoteKind
@@ -28,7 +29,7 @@ BEACON = "https://e.test/b.png"
 )
 def test_r2_1_2_3_no_output_path_lets_html_or_links_through(body: str) -> None:
     text = md(doc(body))
-    assert "<img" not in text and "](javascript" not in text and "](https://e.test" not in text
+    assert not live_syntax(text)
 
 
 @pytest.mark.parametrize(

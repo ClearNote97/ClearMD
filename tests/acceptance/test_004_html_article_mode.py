@@ -132,7 +132,7 @@ def test_ac_09_notes_in_the_users_language(workdir: Path) -> None:
     assert "no se encontró un artículo en la página; se convirtió la página completa" in summary(
         workdir
     )
-    assert "| HTML (Artículo) |" in summary(workdir)
+    assert "| HTML |" in summary(workdir)  # the whole page was written: said (audit v4, B5-08)
 
 
 def test_ac_10_the_cli_process_never_imports_trafilatura(workdir: Path) -> None:

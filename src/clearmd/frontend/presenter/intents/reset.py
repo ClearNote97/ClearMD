@@ -6,6 +6,7 @@ from datetime import datetime
 
 from clearmd.backend.schemas.models import BatchReport
 from clearmd.frontend.presenter.display import Display
+from clearmd.frontend.presenter.models import ResultView
 from clearmd.frontend.presenter.screens.details import details_text
 from clearmd.frontend.presenter.screens.results import result_view
 from clearmd.frontend.presenter.session import Session
@@ -21,6 +22,7 @@ def editable(session: Session, display: Display) -> bool:
         return False
     if session.state is not AppState.READY:
         had_result = session.report is not None
+        session.stopped = None
         session.plan = None
         session.report = None
         session.state = AppState.READY
@@ -30,6 +32,18 @@ def editable(session: Session, display: Display) -> bool:
             if had_result:  # the files on disk stay as they are; the window says so
                 session.notice = session.catalog.text("gui.app.result_kept")
     return True
+
+
+def shown_result(session: Session, state: AppState) -> ResultView:
+    """Results as they are, and after an unexpected error never "0 converted" beside "what was
+    converted is kept" (audit v3, F1-05), also when it is drawn again (a new language, v4 F1-01)."""
+    assert session.report is not None
+    view = result_view(session.catalog, session.report, state)
+    if session.stopped is None:
+        return view
+    done, total = session.stopped
+    counts = session.catalog.text("gui.result.stopped_by_error", done=done, total=total)
+    return replace(view, counts=counts, stats=())
 
 
 def unexpected(session: Session, display: Display, error: Exception) -> None:
@@ -50,14 +64,10 @@ def unexpected(session: Session, display: Display, error: Exception) -> None:
     if plan is not None:  # Results, with the folders that may hold what was written (F1-02)
         folders = tuple(dict.fromkeys(item.output_root for item in plan.conversions))
         now = datetime.now()
-        session.report = report = BatchReport(now, now, (), (), (), False, folders=folders)
+        session.report = BatchReport(now, now, (), (), (), False, folders=folders)
         state = AppState.FINISHED_WITH_PROBLEMS
-        # Never "0 converted" beside "what was converted is kept" (audit v3, F1-05).
-        stopped = session.catalog.text(
-            "gui.result.stopped_by_error", done=session.done, total=len(plan.conversions)
-        )
-        view = replace(result_view(session.catalog, report, state), counts=stopped, stats=())
-        display.view.show_result(view)
+        session.stopped = (session.done, len(plan.conversions))
+        display.view.show_result(shown_result(session, state))
         session.page = 4
         display.set_state(state)
     else:

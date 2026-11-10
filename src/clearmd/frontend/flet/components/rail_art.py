@@ -5,7 +5,7 @@ import flet as ft
 from clearmd.frontend.design.metrics import RADIUS, SPACE
 from clearmd.frontend.flet.components.primitives import label
 from clearmd.frontend.flet.layout.units import BADGE
-from clearmd.frontend.flet.visuals.look import DEFAULT, DISABLED, HOVERED
+from clearmd.frontend.flet.visuals.look import DEFAULT, DISABLED, HOVERED, focus_side
 from clearmd.frontend.flet.visuals.theme import role
 
 
@@ -42,6 +42,7 @@ def rail_style(
             HOVERED: role("accent") if current else role("rail_hover"),
         },
         shadow_color=ft.Colors.TRANSPARENT,
+        side=focus_side(None, "rail_text"),  # a light ring on the dark rail (040, F2-02)
         shape=ft.RoundedRectangleBorder(radius=RADIUS - 2),
         padding=ft.Padding.symmetric(horizontal=0 if compact else inset),
         alignment=ft.Alignment.CENTER if compact else ft.Alignment.CENTER_LEFT,
