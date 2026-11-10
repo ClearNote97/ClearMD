@@ -15,3 +15,5 @@ External reviews of the product, kept so their decisions can be traced. Each aud
   the same method as the third and the owner's decisions passed to every auditor as constraints.
 - [`2026-11-09-doubts-board-2.md`](./2026-11-09-doubts-board-2.md): the doubts board on readable escaping, the saved
   "full page" setting and the parts' opening line, convened while applying the fourth audit.
+- [`2026-11-10-audit-boards-v5.md`](./2026-11-10-audit-boards-v5.md): the fifth audit, on 2.13.0, the last of the
+  2.x line (at most five audits per major version).

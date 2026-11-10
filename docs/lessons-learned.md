@@ -23,6 +23,7 @@ The lessons are grouped by theme:
 | XIV | Applying the third audit (2.12.0) |
 | XV | What the fourth audit taught (2026-11-09) |
 | XVI | Applying the fourth audit (2.13.0) |
+| XVII | What the fifth audit taught (2026-11-10), and the 2.x line in review |
 
 Each lesson says what happened, then what a template should do. Within a part, the lessons that would have
 saved the most come first.
@@ -1088,4 +1089,86 @@ covered, as a fixed step of every update. Written before the fifth audit, the la
 - Not done: each PDF part's opening line and headers computed on the whole PDF (B3-03), a lock per
   folder (not needed after the cheap measures), raising Split's 250 MB limit, and markitdown's
   replacement (the 3.0.0 experiment).
+
+## Part XVII — What the fifth audit taught (2026-11-10), and the 2.x line in review
+
+The fifth audit, the last of 2.x (the owner set five per major version), reviewed 2.13.0 with the
+same method. Score 7 of 10 again. Of the fourth audit's eleven recommendations, six were fully
+resolved and five partly; none got worse. The conciliators verified 27 groups: 25 confirmed, 2
+partly true, none refuted. Report: [`audit/2026-11-10-audit-boards-v5.md`](./audit/2026-11-10-audit-boards-v5.md).
+
+### Product
+
+#### XVII.1 Every protection lives in one gate that every tool passes
+
+- The same gap appeared tool by tool: Convert checked archive bombs, passwords and memory, Split
+  and Merge did not; Convert failed an empty result, Merge counted an empty Markdown as merged.
+- **For the template:** a single pre-flight gate and a single "empty result" function, used by
+  every tool, each with a test per tool on the hardest case.
+
+#### XVII.2 The final screen and the written summary share one source
+
+- Results said "all converted" and opened the folder while the summary listed what needed
+  attention.
+- **For the template:** compute the window's headline from the same data as the summary, and test
+  that they agree on the same batch.
+
+#### XVII.3 "Good news" must never be false
+
+- "Headers left out" was told as good news, but in a two-page letter with the number drawn after
+  the body the page number stayed.
+- **For the template:** a cleaning step's note says what it touched; only what can never be wrong
+  is reported as good news. Page logic reasons by position on the page, never by drawing order.
+
+#### XVII.4 Copies keep their bytes
+
+- Split's CSV parts changed encoding and BOM, against ADR-0047's "nothing inside changes".
+- **For the template:** a tool that copies a person's file writes the original's bytes back:
+  same codec, same BOM, same line endings.
+
+### Applying an audit
+
+#### XVII.5 An amended ADR is tested on its hardest case
+
+- The owner amended ADR-0030; its test used the easy letter, not the one with the footer drawn
+  last.
+- **For the template:** when an ADR is amended, its test is the hardest case the amendment names.
+
+#### XVII.6 Board decisions go into the ADR as "we do not do X"
+
+- The boards proposed again migrating the saved "full page" setting, which doubts board 2 had
+  declined. The ADR now says so in words.
+- **For the template:** every declined option is written in the ADR, with "reopening needs new
+  evidence".
+
+#### XVII.7 Verify before you commit, with the shell's help
+
+- The lead committed a test change whose run had failed: the command chain piped the result into
+  `tail`, so its failure did not stop the commit.
+- **For the template:** run gates with `set -o pipefail` (or no pipe), and never chain a commit
+  after a command whose exit code a pipe hides.
+
+#### XVII.8 A runner's own failure is not a bug
+
+- One Windows job failed because Tcl could not read its own library files; the rerun passed.
+- **For the template:** read the error before fixing; a failure in the platform's own files is
+  rerun once, and recorded if it repeats.
+
+### The method, after five audits
+
+#### XVII.9 Returns diminish, and that is the signal to stop
+
+- The first audit found losses of work; the fifth found edges of new features. Each round's
+  recommendations were mostly resolved by the next. Five per major version is a sound limit: after
+  it, a new major version (here 3.0.0, replacing markitdown) resets what is worth auditing.
+- **For the template:** cap audits per major version, and let the next major version start a fresh
+  cycle with the pending list as its input.
+
+#### XVII.10 The method that held
+
+- Two boards of five experts (with "Claridad es cariño" on both), a debate round, three
+  conciliators in a chain (truth, value for the person, doctrine and a plain synthesis), a doubts
+  board whenever applying an audit raises a question no decision covers, lessons written before and
+  after, the owner's decisions passed to every auditor as constraints, and deliverables for the
+  owner (report, deck, links). The owner asked to turn it into a standard procedure before 3.0.0.
 
